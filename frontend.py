@@ -184,10 +184,12 @@ def list_agents(update=None):
     return action('agent', 'GET')
 
 
-def list_jobs():
-    return _request_message('job', 'GET')
-
-
+def list_jobs(string_to_search=None):
+    if string_to_search:
+        return _request_message('job', 'GET', string_to_search=string_to_search)
+    else:
+        return _request_message('job', 'GET')
+   
 def list_installed_jobs(agent_ip, update=None):
     action = _request_message
     if update:

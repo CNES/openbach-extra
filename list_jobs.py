@@ -41,10 +41,10 @@ from frontend import list_jobs, pretty_print
 
 if __name__ == "__main__":
     # Define Usage
-    parser = argparse.ArgumentParser(description='OpenBach - List Jobs',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    
+    parser = argparse.ArgumentParser(description='OpenBach - List Jobs (all jobs or a filtered list)', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-s', '--string-to-search', help='the string to search in the jobs keywords (for filtering pruposes)')
+     
     # get args
     args = parser.parse_args()
+    pretty_print(list_jobs)(args.string_to_search)
 
-    pretty_print(list_jobs)()
