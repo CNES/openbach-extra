@@ -184,9 +184,11 @@ def list_agents(update=None):
     return action('agent', 'GET')
 
 
-def list_jobs(string_to_search=None):
+def list_jobs(string_to_search=None, ratio=None):
     if string_to_search:
-        return _request_message('job', 'GET', string_to_search=string_to_search)
+        print ("ratio:", ratio)
+        return _request_message('job', 'GET', string_to_search=string_to_search,
+                               ratio=ratio)
     else:
         return _request_message('job', 'GET')
    
