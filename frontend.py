@@ -1,40 +1,41 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-""" 
+"""
    OpenBACH is a generic testbed able to control/configure multiple
    network/physical entities (under test) and collect data from them. It is
    composed of an Auditorium (HMIs), a Controller, a Collector and multiple
    Agents (one for each network entity that wants to be tested).
-   
-   
+
+
    Copyright © 2016 CNES
-   
-   
+
+
    This file is part of the OpenBACH testbed.
-   
-   
-   OpenBACH is a free software : you can redistribute it and/or modify it under the
-   terms of the GNU General Public License as published by the Free Software
-   Foundation, either version 3 of the License, or (at your option) any later
-   version.
-   
+
+
+   OpenBACH is a free software : you can redistribute it and/or modify it under
+   the terms of the GNU General Public License as published by the Free
+   Software Foundation, either version 3 of the License, or (at your option)
+   any later version.
+
    This program is distributed in the hope that it will be useful, but WITHOUT
-   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
-   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-   details.
-   
+   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or
+   FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+   more details.
+
    You should have received a copy of the GNU General Public License along with
    this program. If not, see http://www.gnu.org/licenses/.
-   
-   
-   
+
+
+
    @file     frontend.py
    @brief    The frontend script (aggregate all the function callable by the user)
    @author   Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
 """
 
 
+import os.path
 import requests
 import datetime
 import pprint
@@ -48,25 +49,31 @@ try:
 except ImportError:
     import json
 
-config_file = 'config.yml'
-with open(config_file, 'r') as stream:
+
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yml')) as stream:
     content = yaml.load(stream)
-controller_ip = content['controller_ip']
+
+controller_ip = content.get('controller_ip')
 if controller_ip is None:
-    print('Please, fill the controller_ip in the config file')
-    exit(1)
+    exit('Please, fill the controller_ip in the config file')
 
 _URL = "http://" + controller_ip + ":8000/{}/"
 
 
-def wait_for_success(state_function, status=None, valid_statuses=(200, 204),
-                     **kwargs):
+def wait_for_success(state_function, status=None, valid_statuses=(200, 204), **kwargs):
     while True:
         sleep(1)
-        response = state_function(**kwargs).json()
+        response = state_function(**kwargs)
+        try:
+            content = response.json()
+        except ValueError:
+            pprint.pprint(response.text)
+            code = response.status_code
+            exit('Server returned non-JSON response with status code {}'.format(code))
+
         if status:
-            response = response[status]
-        returncode = response['returncode']
+            content = content[status]
+        returncode = content['returncode']
         if returncode != 202:
             print('Returncode:', returncode)
             pprint.pprint(response['response'])
@@ -89,15 +96,22 @@ def _request_message(entry_point, verb, **kwargs):
 
 
 def pretty_print(function):
-    """    
-    warning terminate the program on error form the server
+    """Helper function to nicely format the response
+    from the server.
+
+    Terminate the program on error from the server.
     """
+
     @wraps(function)
     def wrapper(*args, **kwargs):
         response = function(*args, **kwargs)
         print(response)
         if response.status_code != 204:
-            pprint.pprint(response.json())
+            try:
+                content = response.json()
+            except ValueError:
+                content = response.text
+            pprint.pprint(content, width=120)
         if 400 <= response.status_code < 600:
             exit(1)
     return wrapper
