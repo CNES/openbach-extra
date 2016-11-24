@@ -76,7 +76,7 @@ def wait_for_success(state_function, status=None, valid_statuses=(200, 204), **k
         returncode = content['returncode']
         if returncode != 202:
             print('Returncode:', returncode)
-            pprint.pprint(response['response'])
+            pprint.pprint(content['response'])
             exit(returncode not in valid_statuses)
 
 
