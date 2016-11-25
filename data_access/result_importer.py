@@ -137,7 +137,7 @@ class Importer:
                         'logsource': agent_name,
                         'program': job_name,
                         'message': log.message,
-                        'pid': 5000,
+                        'pid': log.pid,
                         'priority': log.priority,
                         'severity': log.severity,
                         'severity_label': log.severity_label,
