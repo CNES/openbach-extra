@@ -35,7 +35,6 @@
 """
 
 
-import pprint
 import requests
 import yaml
 import json
@@ -50,15 +49,14 @@ class Importer:
     def __init__(self, config_file='config.yml'):
         with open(config_file, 'r') as stream:
             content = yaml.load(stream)
-        self.collector_ip = content['collector_ip']
+        collector_ip = content['collector_ip']
         influxdb_port = content['influxdb_port']
         database_name = content['database_name']
-        epoch = content['epoch']
-        self.elasticsearch_port = content['elasticsearch_port']
-        self.influxdb_URL = 'http://{}:{}/query?db={}&epoch={}&q='.format(
-            self.collector_ip, influxdb_port, database_name, epoch)
-        self.elasticsearch_URL = 'http://{}:{}/logstash-*/logs/_search'.format(
-            self.collector_ip, self.elasticsearch_port)
+        elasticsearch_port = content['elasticsearch_port']
+        self.influxdb_URL = 'http://{}:{}/write?db={}'.format(
+            collector_ip, influxdb_port, database_name)
+        self.elasticsearch_URL = 'http://{}:{}/_bulk'.format(
+            collector_ip, elasticsearch_port)
 
     def import_scenario_instance(self, scenario_file):
         """ Function that imports the scenario instance from a file to the
@@ -84,27 +82,77 @@ class Importer:
                         log_json['_id'], log_json['_index'],
                         log_json['_timestamp'], log_json['_version'],
                         log_json['facility'], log_json['facility_label'],
-                        log_json['flag'], log_json['message'], log_json['pid'],
-                        log_json['priority'], log_json['severity'],
-                        log_json['severity_label'], log_json['type'])
-                statistics_json = job_instance_json.pop('statistics')
-                for statistic_json in statistics_json:
-                    stat_name = statistic_json.pop('name')
-                    statistic = job_instance.get_statisticresult(stat_name)
-                    statistic_values_json = statistic_json.pop('values')
-                    for timestamp, value in statistic_values_json.items():
-                        statistic.get_statisticvalue(timestamp, value)
+                        log_json['flag'], log_json['host'], log_json['message'],
+                        log_json['pid'], log_json['priority'],
+                        log_json['severity'], log_json['severity_label'],
+                        log_json['type'])
+                series_json = job_instance_json.pop('series')
+                for serie_json in series_json:
+                    timestamp = serie_json.pop('timestamp')
+                    statistics = {}
+                    for name, value in serie_json.items():
+                        statistics[name] = value
+                    job_instance.get_serieresult(timestamp, **statistics)
         return scenario_instance
 
     def import_to_collector(self, scenario_instance):
+        """ Import the results of the scenario instance in InfluxDB and
+        ElasticSearch """
+        first_request_to_elasticsearch_done = False
         scenario_instance_id = scenario_instance.scenario_instance_id
         for agent in scenario_instance.agentresults.values():
             agent_name = agent.name
             for job_instance in agent.jobinstanceresults.values():
                 job_instance_id = job_instance.job_instance_id
                 job_name = job_instance.job_name
-
+                measurement_name = '{}.{}.{}.{}'.format(
+                    scenario_instance_id, job_instance_id, agent_name, job_name)
+                for serie in job_instance.serieresults.values():
+                    timestamp = serie.timestamp
+                    statistics = serie.statistics
+                    data = ''
+                    for name, value in statistics.items():
+                        if data:
+                            data = '{},'.format(data)
+                        data = '{}{}={}'.format(data, name, value)
+                    data = '{} {} {}'.format(measurement_name, data, timestamp)
+                    response = requests.post(self.influxdb_URL, data.encode())
                 for log in job_instance.logresults.values():
-                    pass #???
-                #pprint.pprint(job_instance.json)
-
+                    timestamp = datetime.fromtimestamp(log._timestamp/1000)
+                    metadata = {
+                        'index': {
+                            '_id': log._id,
+                            '_index': log._index,
+                            '_type': "logs",
+                            '_routing': None
+                        }
+                    }
+                    data = {
+                        'facility': log.facility,
+                        'facility_label': log.facility_label,
+                        'flag': log.flag,
+                        'host': log.host,
+                        'job_instance_id': job_instance_id,
+                        'scenario_instance_id': scenario_instance_id,
+                        'logsource': agent_name,
+                        'program': job_name,
+                        'message': log.message,
+                        'pid': 5000,
+                        'priority': log.priority,
+                        'severity': log.severity,
+                        'severity_label': log.severity_label,
+                        '_type': log.type,
+                        'timestamp': timestamp.strftime('%b %d %H:%M:%S'),
+                        '@timestamp': timestamp.strftime(
+                            '%Y-%m-%dT%H:%M:%S.{0:0=3d}Z').format(
+                                log._timestamp%1000),
+                        '@version': log._version
+                    }
+                    content = '{}\n{}\n'.format(json.dumps(metadata),
+                                             json.dumps(data))
+                    if not first_request_to_elasticsearch_done:
+                        response = requests.post(self.elasticsearch_URL,
+                                                 data=content.encode())
+                        first_request_to_elasticsearch_done = True
+                    response = requests.post(self.elasticsearch_URL,
+                                             data=content.encode())

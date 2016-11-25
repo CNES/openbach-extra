@@ -433,10 +433,10 @@ class Requester:
                         url = '{}+and'.format(url)
                     try:
                         timestamp_down, timestamp_up = timestamp
-                        url = '{}+time+<=+{}+and+time+>=+{}'.format(
+                        url = '{}+time+<=+{}ms+and+time+>=+{}ms'.format(
                             url, timestamp_up, timestamp_down)
                     except ValueError:
-                        url = '{}+time+=+{}'.format(url, timestamp)
+                        url = '{}+time+=+{}ms'.format(url, timestamp)
                 response = requests.get(url).json()
                 try:
                     stat_names = response['results'][0]['series'][0]['columns']
@@ -453,14 +453,14 @@ class Requester:
                     values = response['results'][0]['series'][0]['values']
                 except KeyError:
                     return
+                job_instance = agent.get_jobinstanceresult(job_instance_id,
+                                                           job_name)
                 for value in values:
                     time = value[0]
-                    job_instance = agent.get_jobinstanceresult(job_instance_id,
-                                                               job_name)
+                    serie = {}
                     for index, stat_name in stats.items():
-                        statistic = job_instance.get_statisticresult(stat_name)
-                        stat_value = value[index]
-                        statistic.get_statisticvalue(time, stat_value)
+                        serie[stat_name] = value[index]
+                    job_instance.get_serieresult(time, **serie)
         for log in self.get_logs(scenario_instance_id, agent_name,
                                  job_instance_id, job_name, condition,
                                  timestamp):
@@ -477,8 +477,8 @@ class Requester:
             job_instance.get_logresult(
                 log['_id'], log['_index'], log['timestamp'], log['version'],
                 log['facility'], log['facility_label'], log['flag'],
-                log['message'], log['pid'], log['priority'], log['severity'],
-                log['severity_label'], log['type'])
+                log['host'], log['message'], log['pid'], log['priority'],
+                log['severity'], log['severity_label'], log['type'])
 
     def get_scenario_instance_values(self, scenario_instance_id,
                                      agent_name=None, job_instance_id=None,
@@ -532,10 +532,10 @@ class Requester:
                     url = '{}+and'.format(url)
                 try:
                     timestamp_down, timestamp_up = timestamp
-                    url = '{}+time+<=+{}+and+time+>=+{}'.format(
+                    url = '{}+time+<=+{}ms+and+time+>=+{}ms'.format(
                         url, timestamp_up, timestamp_down)
                 except TypeError:
-                    url = '{}+time+=+{}'.format(url, timestamp)
+                    url = '{}+time+=+{}ms'.format(url, timestamp)
             response = requests.get(url).json()
             try:
                 stat_names = response['results'][0]['series'][0]['columns']
@@ -552,14 +552,14 @@ class Requester:
                 values = response['results'][0]['series'][0]['values']
             except KeyError:
                 return
+            job_instance = agent.get_jobinstanceresult(job_instance_id,
+                                                       job_name)
             for value in values:
                 time = value[0]
-                job_instance = agent.get_jobinstanceresult(job_instance_id,
-                                                           job_name)
+                serie = {}
                 for index, stat_name in stats.items():
-                    statistic = job_instance.get_statisticresult(stat_name)
-                    stat_value = value[index]
-                    statistic.get_statisticvalue(time, stat_value)
+                    serie[stat_name] = value[index]
+                job_instance.get_serieresult(time, **serie)
         for log in self.get_logs(scenario_instance_id, agent_name,
                                  job_instance_id, job_name, condition,
                                  timestamp):
@@ -576,8 +576,8 @@ class Requester:
             job_instance.get_logresult(
                 log['_id'], log['_index'], log['timestamp'], log['version'],
                 log['facility'], log['facility_label'], log['flag'],
-                log['message'], log['pid'], log['priority'], log['severity'],
-                log['severity_label'], log['type'])
+                log['host'], log['message'], log['pid'], log['priority'],
+                log['severity'], log['severity_label'], log['type'])
 
     def get_agent_values(self, scenario_instance_id, agent_name,
                          job_instance_id=None, job_name=None, stat_names=[],
@@ -618,32 +618,32 @@ class Requester:
                 url = '{}+and'.format(url)
             try:
                 timestamp_down, timestamp_up = timestamp
-                url = '{}+where+time+<=+{}+and+time+>=+{}'.format(
+                url = '{}+where+time+<=+{}ms+and+time+>=+{}ms'.format(
                     url, timestamp_up, timestamp_down)
             except ValueError:
-                url = '{}+where+time+=+{}'.format(url, timestamp)
+                url = '{}+where+time+=+{}ms'.format(url, timestamp)
         response = requests.get(url).json()
         try:
             stat_names = response['results'][0]['series'][0]['columns']
         except KeyError:
             return
-        statistics = {}
+        stats = {}
         current_index = -1
         for stat_name in stat_names:
             current_index += 1
             if stat_name in ('time'):
                 continue
-            statistic = job_instance.get_statisticresult(stat_name)
-            statistics[current_index] = statistic
+            stats[current_index] = stat_name
         try:
             values = response['results'][0]['series'][0]['values']
         except KeyError:
             return
         for value in values:
             time = value[0]
-            for index, statistic in statistics.items():
-                stat_value = value[index]
-                statistic.get_statisticvalue(time, stat_value)
+            serie = {}
+            for index, statistic in stats.items():
+                serie[stat_name] = value[index]
+            job_instance.get_serieresult(time, **serie)
         for log in self.get_logs(scenario_instance_id, agent_name,
                                  job_instance_id, job_name, condition,
                                  timestamp):
@@ -659,8 +659,8 @@ class Requester:
             job_instance.get_logresult(
                 log['_id'], log['_index'], log['timestamp'], log['version'],
                 log['facility'], log['facility_label'], log['flag'],
-                log['message'], log['pid'], log['priority'], log['severity'],
-                log['severity_label'], log['type'])
+                log['host'], log['message'], log['pid'], log['priority'],
+                log['severity'], log['severity_label'], log['type'])
 
     def get_job_instance_values(self, scenario_instance_id, agent_name,
                                 job_instance_id, job_name, stat_names=[],
@@ -674,55 +674,62 @@ class Requester:
                                       timestamp)
         return job_instance
 
-    def _get_statistic_values(self, statistic, condition, timestamp):
-        """ Function that fills the StatisticResult given of the
-        available statistics and logs from InfluxDB and ElasticSearch """
-        agent_name = statistic.job_instance.agent.name
-        job_name = statistic.job_instance.job_name
-        stat_name = statistic.name
-        job_instance_id = statistic.job_instance.job_instance_id
-        scenario_instance_id = statistic.job_instance.agent.scenario_instance.scenario_instance_id
+    def _get_serie_values(self, serie, stat_names, condition):
+        """ Function that fills the SerieResult given of the
+        available statistics and logs from InfluxDB """
+        agent_name = serie.job_instance.agent.name
+        job_name = serie.job_instance.job_name
+        job_instance_id = serie.job_instance.job_instance_id
+        scenario_instance_id = serie.job_instance.agent.scenario_instance.scenario_instance_id
+        timestamp = serie.timestamp
         request_filter = Filter(
             scenario_instance_id, agent_name, job_instance_id, job_name,
-            [stat_name], condition)
+            stat_names, condition)
         measurement = '{}.{}.{}.{}'.format(scenario_instance_id,
                                            job_instance_id, agent_name,
                                            job_name)
-        url = ('{}select+{}+from+"{}"').format(self.influxdb_URL, stat_name, measurement)
+        if stat_names:
+            url = '{}select+{}'.format(self.influxdb_URL, ',+'.join(stat_names))
+        else:
+            url = '{}select+*'.format(self.influxdb_URL)
+        url = ('{}+from+"{}"').format(url, measurement)
         if condition is not None:
-            url = '{}{}'.format(url, request_filter)
-        if timestamp is not None:
-            if condition is None:
-                url = '{}+where'.format(url)
-            else:
-                url = '{}+and'.format(url)
-            try:
-                timestamp_down, timestamp_up = timestamp
-                url = '{}+time+<=+{}+and+time+>=+{}'.format(
-                    url, timestamp_up, timestamp_down)
-            except ValueError:
-                url = '{}+time+=+{}'.format(url, timestamp)
+            url = '{}{}+and'.format(url, request_filter)
+        else:
+            url = '{}+where'.format(url)
+        url = '{}+time+=+{}ms'.format(url, timestamp)
         response = requests.get(url).json()
+        try:
+            stat_names = response['results'][0]['series'][0]['columns']
+        except KeyError:
+            return
+        stats = {}
+        current_index = -1
+        for stat_name in stat_names:
+            current_index += 1
+            if stat_name in ('time'):
+                continue
+            stats[current_index] = stat_name
         try:
             values = response['results'][0]['series'][0]['values']
         except KeyError:
             return
         for value in values:
             time = value[0]
-            stat_value = value[1]
-            statistic.get_statisticvalue(time, stat_value)
+            for index, stat_name in stats.items():
+                serie.statistics[stat_name] = value[index]
 
-    def get_statistic_values(self, scenario_instance_id, agent_name,
-                             job_instance_id, job_name, stat_name,
-                             condition=None, timestamp=None):
+    def get_serie_values(self, scenario_instance_id, agent_name,
+                         job_instance_id, job_name, timestamp, stat_names=[],
+                         condition=None):
         """ Function that returns the StatisticResult full of the
         available statistics and logs from InfluxDB and ElasticSearch """
         scenario_instance = ScenarioInstanceResult(scenario_instance_id)
         agent = scenario_instance.get_agentresult(agent_name)
         job_instance = agent.get_jobinstanceresult(job_instance_id, job_name)
-        statistic = job_instance.get_statisticresult(stat_name)
-        self._get_statistic_values(statistic, condition, timestamp)
-        return statistic
+        serie = job_instance.get_serieresult(timestamp)
+        self._get_serie_values(serie, stat_names, condition)
+        return serie
 
     def get_logs(self, scenario_instance_id=None, agent_name=None,
                  job_instance_id=None, job_name=None, condition=None,
@@ -764,6 +771,7 @@ class Requester:
                     log['facility'] = hit['_source']['facility']
                     log['facility_label'] = hit['_source']['facility_label']
                     log['flag'] = hit['_source']['flag']
+                    log['host'] = hit['_source']['host']
                     log['message'] = hit['_source']['message']
                     log['pid'] = hit['_source']['pid']
                     log['priority'] = hit['_source']['priority']

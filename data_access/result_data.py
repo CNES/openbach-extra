@@ -119,55 +119,44 @@ class JobInstanceResult(metaclass=ForeignKey(AgentResult, 'job_instance_id')):
             'job_instance_id': self.job_instance_id,
             'job_name': self.job_name,
             'logs': [log.json for log in self.logresults.values()],
-            'statistics': [stat.json for stat in self.statisticresults.values()]
+            'series': [stat.json for stat in self.serieresults.values()]
         }
         return info_json
 
 
-class StatisticResult(metaclass=ForeignKey(JobInstanceResult, 'name')):
-    """ Structure that represents all the results of a Statistic """
-    def __init__(self, name, job_instance):
-        self.name = name
+class SerieResult(metaclass=ForeignKey(JobInstanceResult, 'timestamp')):
+    """ Structure that represents all the results of a Serie """
+    def __init__(self, timestamp, job_instance, **kwargs):
+        self.timestamp = timestamp
         self.job_instance = job_instance
+        self.statistics = {}
+        for name, value in kwargs.items():
+            self.statistics[name] = value
 
     @property
     def json(self):
         """ Function that print the results in JSON """
         info_json = {
-            'name': self.name,
-            'values': {}
+            'timestamp': self.timestamp,
         }
-        for value in self.statisticvalues.values():
-            info_json['values'] = {**info_json['values'], **value.json}
+        for name, value in self.statistics.items():
+            info_json[name] = value
         return info_json
-
-
-class StatisticValue(metaclass=ForeignKey(StatisticResult, 'timestamp')):
-    """ Structure that represents the value of a Statistic at a specific
-    timestamp """
-    def __init__(self, timestamp, statistic, value):
-        self.timestamp = timestamp
-        self.value = value
-        self.statistic = statistic
-
-    @property
-    def json(self):
-        """ Function that print the results in JSON """
-        return {self.timestamp: self.value}
 
 
 class LogResult(metaclass=ForeignKey(JobInstanceResult, '_id')):
     """ Structure that represents a Log """
     def __init__(self, _id, job_instance, _index, _timestamp, _version,
-                 facility, facility_label, flag, message, pid, priority,
+                 facility, facility_label, flag, host, message, pid, priority,
                  severity, severity_label, type):
         self._id = _id
         self._index = _index
-        self._timestamps = _timestamp
+        self._timestamp = _timestamp
         self._version = _version
         self.facility = facility
         self.facility_label = facility_label
         self.flag = flag
+        self.host = host
         self.message = message
         self.pid = pid
         self.priority = priority
@@ -182,11 +171,12 @@ class LogResult(metaclass=ForeignKey(JobInstanceResult, '_id')):
         info_json = {
             '_id': self._id,
             '_index': self._index,
-            '_timestamp': self._timestamps,
+            '_timestamp': self._timestamp,
             '_version': self._version,
             'facility': self.facility,
             'facility_label': self.facility_label,
             'flag': self.flag,
+            'host': self.host,
             'message': self.message,
             'pid': self.pid,
             'priority': self.priority,
