@@ -58,8 +58,8 @@ class Importer:
         self.elasticsearch_URL = 'http://{}:{}/_bulk'.format(
             collector_ip, elasticsearch_port)
 
-    def import_scenario_instance(self, scenario_file):
-        """ Function that imports the scenario instance from a file to the
+    def generate_scenario_instance(self, scenario_file):
+        """ Function that generates the scenario instance from a file to the
         result structure """
         with open(scenario_file, 'r') as f:
             scenario_json = f.read()
@@ -86,13 +86,13 @@ class Importer:
                         log_json['pid'], log_json['priority'],
                         log_json['severity'], log_json['severity_label'],
                         log_json['type'])
-                series_json = job_instance_json.pop('series')
-                for serie_json in series_json:
-                    timestamp = serie_json.pop('timestamp')
-                    statistics = {}
-                    for name, value in serie_json.items():
-                        statistics[name] = value
-                    job_instance.get_serieresult(timestamp, **statistics)
+                statistics_json = job_instance_json.pop('statistics')
+                for statistic_json in statistics_json:
+                    timestamp = statistic_json.pop('timestamp')
+                    values = {}
+                    for name, value in statistic_json.items():
+                        values[name] = value
+                    job_instance.get_statisticresult(timestamp, **values)
         return scenario_instance
 
     def import_to_collector(self, scenario_instance):
@@ -107,11 +107,11 @@ class Importer:
                 job_name = job_instance.job_name
                 measurement_name = '{}.{}.{}.{}'.format(
                     scenario_instance_id, job_instance_id, agent_name, job_name)
-                for serie in job_instance.serieresults.values():
-                    timestamp = serie.timestamp
-                    statistics = serie.statistics
+                for statistic in job_instance.statisticresults.values():
+                    timestamp = statistic.timestamp
+                    values = statistic.values
                     data = ''
-                    for name, value in statistics.items():
+                    for name, value in values.items():
                         if data:
                             data = '{},'.format(data)
                         data = '{}{}={}'.format(data, name, value)

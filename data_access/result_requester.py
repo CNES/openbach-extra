@@ -449,10 +449,10 @@ class Requester:
                     current_job_instance_id, current_job_name)
                 for value in values:
                     time = value[0]
-                    serie = {}
+                    statistic = {}
                     for index, stat_name in stats.items():
-                        serie[stat_name] = value[index]
-                    job_instance.get_serieresult(time, **serie)
+                        statistic[stat_name] = value[index]
+                    job_instance.get_statisticresult(time, **statistic)
         for log in self.get_logs(scenario_instance_id, agent_name,
                                  job_instance_id, job_name, condition,
                                  timestamp):
@@ -537,10 +537,10 @@ class Requester:
                 current_job_instance_id, current_job_name)
             for value in values:
                 time = value[0]
-                serie = {}
+                statistic = {}
                 for index, stat_name in stats.items():
-                    serie[stat_name] = value[index]
-                job_instance.get_serieresult(time, **serie)
+                    statistic[stat_name] = value[index]
+                job_instance.get_statisticresult(time, **statistic)
         for log in self.get_logs(scenario_instance_id, agent_name,
                                  job_instance_id, job_name, condition,
                                  timestamp):
@@ -610,10 +610,10 @@ class Requester:
             return
         for value in values:
             time = value[0]
-            serie = {}
+            statistic = {}
             for index, statistic in stats.items():
-                serie[stat_name] = value[index]
-            job_instance.get_serieresult(time, **serie)
+                statistic[stat_name] = value[index]
+            job_instance.get_statisticresult(time, **statistic)
         for log in self.get_logs(scenario_instance_id, agent_name,
                                  job_instance_id, job_name, condition,
                                  timestamp):
@@ -644,14 +644,15 @@ class Requester:
                                       timestamp)
         return job_instance
 
-    def _get_serie_values(self, serie, stat_names, timestamp, condition):
-        """ Function that fills the SerieResult given of the
+    def _get_statisitc_values(self, statistic, stat_names, timestamp,
+                              condition):
+        """ Function that fills the StatisticResult given of the
         available statistics and logs from InfluxDB """
-        agent_name = serie.job_instance.agent.name
-        job_name = serie.job_instance.job_name
-        job_instance_id = serie.job_instance.job_instance_id
-        scenario_instance_id = serie.job_instance.agent.scenario_instance.scenario_instance_id
-        timestamp = serie.timestamp
+        agent_name = statistic.job_instance.agent.name
+        job_name = statistic.job_instance.job_name
+        job_instance_id = statistic.job_instance.job_instance_id
+        scenario_instance_id = statistic.job_instance.agent.scenario_instance.scenario_instance_id
+        timestamp = statistic.timestamp
         request_filter = Filter(
             scenario_instance_id, agent_name, job_instance_id, job_name,
             stat_names, timestamp, condition)
@@ -686,9 +687,9 @@ class Requester:
         for value in values:
             time = value[0]
             for index, stat_name in stats.items():
-                serie.statistics[stat_name] = value[index]
+                statistic.values[stat_name] = value[index]
 
-    def get_serie_values(self, scenario_instance_id, agent_name,
+    def get_statistic_values(self, scenario_instance_id, agent_name,
                          job_instance_id, job_name, timestamp, stat_names=[],
                          condition=None):
         """ Function that returns the StatisticResult full of the
@@ -696,9 +697,9 @@ class Requester:
         scenario_instance = ScenarioInstanceResult(scenario_instance_id)
         agent = scenario_instance.get_agentresult(agent_name)
         job_instance = agent.get_jobinstanceresult(job_instance_id, job_name)
-        serie = job_instance.get_serieresult(timestamp)
-        self._get_serie_values(serie, stat_names, condition)
-        return serie
+        statistic = job_instance.get_statisticresult(timestamp)
+        self._get_statistic_values(statistic, stat_names, condition)
+        return statistic
 
     def get_logs(self, scenario_instance_id=None, agent_name=None,
                  job_instance_id=None, job_name=None, timestamp=None,

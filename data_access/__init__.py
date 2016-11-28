@@ -19,5 +19,5 @@ from .result_data import (
         AgentResult,
         JobInstanceResult,
         StatisticResult,
-        StatisticValue,
+        LogResult
 )

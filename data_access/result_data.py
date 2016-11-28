@@ -119,19 +119,19 @@ class JobInstanceResult(metaclass=ForeignKey(AgentResult, 'job_instance_id')):
             'job_instance_id': self.job_instance_id,
             'job_name': self.job_name,
             'logs': [log.json for log in self.logresults.values()],
-            'series': [stat.json for stat in self.serieresults.values()]
+            'statistics': [stat.json for stat in self.statisticresults.values()]
         }
         return info_json
 
 
-class SerieResult(metaclass=ForeignKey(JobInstanceResult, 'timestamp')):
-    """ Structure that represents all the results of a Serie """
+class StatisticResult(metaclass=ForeignKey(JobInstanceResult, 'timestamp')):
+    """ Structure that represents all the results of a Statistic """
     def __init__(self, timestamp, job_instance, **kwargs):
         self.timestamp = timestamp
         self.job_instance = job_instance
-        self.statistics = {}
+        self.values = {}
         for name, value in kwargs.items():
-            self.statistics[name] = value
+            self.values[name] = value
 
     @property
     def json(self):
@@ -139,7 +139,7 @@ class SerieResult(metaclass=ForeignKey(JobInstanceResult, 'timestamp')):
         info_json = {
             'timestamp': self.timestamp,
         }
-        for name, value in self.statistics.items():
+        for name, value in self.values.items():
             info_json[name] = value
         return info_json
 
