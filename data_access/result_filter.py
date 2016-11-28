@@ -184,12 +184,13 @@ class Filter:
     """ Class that helps creating the requests to InfluxDB and ElasticSearch """
     def __init__(self, scenario_instance_id=None, agent_name=None,
                  job_instance_id=None, job_name=None, stat_names=[],
-                 condition=None):
+                 timestamp=None, condition=None):
         self.scenario_instance_id = scenario_instance_id
         self.agent_name = agent_name
         self.job_instance_id = job_instance_id
         self.job_name = job_name
         self.stat_names = stat_names
+        self.timestamp = timestamp
         self.condition = condition
 
     def get_query(self):
@@ -208,6 +209,23 @@ class Filter:
         if self.job_name is not None:
             match = {'match': {'program': self.job_name}}
             query['must'].append(match)
+        if self.timestamp is not None:
+            try:
+                timestamp_down, timestamp_up = self.timestamp
+            except TypeError:
+                timestamp_down = timestamp_up = self.timestamp
+            query['filter'] = {
+                'bool': {
+                    'must': {
+                        'range': {
+                            '@timestamp': {
+                                'gte': timestamp_down,
+                                'lte': timestamp_up
+                            }
+                        }
+                    }
+                }
+            }
         if not query['must']:
             query = {'match_all': {}}
         return query
@@ -227,6 +245,17 @@ class Filter:
                 result = '{}+and+'.format(result)
             changed = True
             result = '{}{}'.format(result, self.condition)
+        if self.timestamp is not None:
+            if changed:
+                result = '{}+and+'.format(result)
+            changed = True
+            try:
+                timestamp_down, timestamp_up = self.timestamp
+            except TypeError:
+                result = '{}time+=+{}ms'.format(result, self.timestamp)
+            else:
+                result = '{}time+<=+{}ms+and+time+>=+{}ms'.format(
+                    result, timestamp_up, timestamp_down)
         if changed:
             result = 'where+{}'.format(result)
         return result

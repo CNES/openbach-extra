@@ -60,11 +60,11 @@ class Requester:
 
     def get_all_measurements(self, scenario_instance_id=None, agent_name=None,
                              job_instance_id=None, job_name=None, stat_names=[],
-                             condition=None):
+                             timestamp=None, condition=None):
         """ Function that returns all the available measurements in InfluxDB """
         request_filter = Filter(
             scenario_instance_id, agent_name, job_instance_id, job_name,
-            stat_names, condition)
+            stat_names, timestamp, condition)
         url = '{}SHOW+MEASUREMENTS'.format(self.influxdb_URL)
         response = requests.get(url).json()
         values = response['results'][0]['series'][0]['values']
@@ -88,7 +88,7 @@ class Requester:
             if job_name is not None:
                 if job != job_name:
                     continue
-            if stat_names or condition is not None:
+            if stat_names or condition is not None or timestamp is not None:
                 url = '{}select+*+from+"{}"+{}'.format(
                     self.influxdb_URL, measurement[0], request_filter)
                 response = requests.get(url).json()
@@ -100,12 +100,13 @@ class Requester:
         return measurements
 
     def get_scenario_instance_ids(self, agent_name=None, job_instance_id=None,
-                                  job_name=None, stat_names=[], condition=None):
+                                  job_name=None, stat_names=[], timestamp=None,
+                                  condition=None):
         """ Function that returns all the available scenario_instance_ids in
         InfluxDB and ElasticSearch """
         request_filter = Filter(
             None, agent_name, job_instance_id, job_name,
-            stat_names, condition)
+            stat_names, timestamp, condition)
         scenario_instance_ids = set()
         all_measurements = self.get_all_measurements(
             None, agent_name, job_instance_id, job_name,
@@ -158,12 +159,12 @@ class Requester:
 
     def get_agent_names(self, scenario_instance_id=None,
                         job_instance_id=None, job_name=None, stat_names=[],
-                        condition=None):
+                        timestamp=None, condition=None):
         """ Function that returns all the avaible agent_names in InfluxDB and
         ElasticSearch """
         request_filter = Filter(
             scenario_instance_id, None, job_instance_id, job_name,
-            stat_names, condition)
+            stat_names, timestamp, condition)
         all_measurements = self.get_all_measurements(
             scenario_instance_id, None, job_instance_id, job_name,
             stat_names, condition)
@@ -209,13 +210,14 @@ class Requester:
         return agent_names
 
     def get_job_instance_ids(self, scenario_instance_id=None, agent_name=None,
-                             job_name=None, stat_names=[], condition=None):
+                             job_name=None, stat_names=[], timestamp=None, 
+                             condition=None):
         """ Function that returns all the available job_instance_ids in InfluxDB
         """
         job_instance_ids = set()
         request_filter = Filter(
             scenario_instance_id, agent_name, None, job_name,
-            stat_names, condition)
+            stat_names, timestamp, condition)
         all_measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, None, job_name,
             stat_names, condition)
@@ -260,13 +262,14 @@ class Requester:
         return job_instance_ids
 
     def get_job_names(self, scenario_instance_id=None, agent_name=None,
-                      job_instance_id=None, stat_names=[], condition=None):
+                      job_instance_id=None, stat_names=[], timestamp=None,
+                      condition=None):
         """ Function that returns all the available job_names in InfluxDB
         """
         job_names = set()
         request_filter = Filter(
             scenario_instance_id, agent_name, job_instance_id, None,
-            stat_names, condition)
+            stat_names, timestamp, condition)
         all_measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, job_instance_id, None,
             stat_names, condition)
@@ -317,7 +320,7 @@ class Requester:
         ElasticSearch """
         request_filter = Filter(
             scenario_instance_id, agent_name, job_instance_id, job_name,
-            stat_names, condition)
+            stat_names, None, condition)
         measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, job_instance_id, job_name,
             stat_names, condition)
@@ -385,37 +388,37 @@ class Requester:
 
     def _get_scenario_instance_values(self, scenario_instance, agent_name,
                                       job_instance_id, job_name, stat_names,
-                                      condition, timestamp):
+                                      timestamp, condition):
         """ Function that fills the ScenarioInstanceResult given of the
         available statistics and logs from InfluxDB and ElasticSearch """
         scenario_instance_id = scenario_instance.scenario_instance_id
         request_filter = Filter(
             scenario_instance_id, agent_name, job_instance_id, job_name,
-            stat_names, condition)
+            stat_names, timestamp, condition)
         all_measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, job_instance_id, job_name,
             stat_names, condition)
         agent_names = set()
         for measurement in all_measurements:
             try:
-                _, _, agent_name, _ = measurement.split('.')
+                _, _, agent_n, _ = measurement.split('.')
             except ValueError:
                 continue
-            agent_names.add(agent_name)
-        for agent_name in agent_names:
-            agent = scenario_instance.get_agentresult(agent_name)
+            agent_names.add(agent_n)
+        for agent_n in agent_names:
+            agent = scenario_instance.get_agentresult(agent_n)
             measurements = []
             for measurement in all_measurements:
                 try:
-                    _, _, agent_n, _ = measurement.split('.')
-                    if agent_n == agent_name:
+                    _, _, current_agent_n, _ = measurement.split('.')
+                    if current_agent_n == agent_n:
                         measurements.append(measurement)
                 except ValueError:
                     continue
             for measurement in measurements:
                 try:
-                    _, job_instance_id, _, job_name = measurement.split('.')
-                    job_instance_id = int(job_instance_id)
+                    _, current_job_instance_id, _, current_job_name = measurement.split('.')
+                    current_job_instance_id = int(current_job_instance_id)
                 except ValueError:
                     continue
                 if stat_names:
@@ -424,27 +427,16 @@ class Requester:
                 else:
                     url = '{}select+*'.format(self.influxdb_URL)
                 url = '{}+from+"{}"'.format(url, measurement)
-                if condition is not None:
+                if condition is not None or timestamp is not None:
                     url = '{}{}'.format(url, request_filter)
-                if timestamp is not None:
-                    if condition is None:
-                        url = '{}+where'.format(url)
-                    else:
-                        url = '{}+and'.format(url)
-                    try:
-                        timestamp_down, timestamp_up = timestamp
-                        url = '{}+time+<=+{}ms+and+time+>=+{}ms'.format(
-                            url, timestamp_up, timestamp_down)
-                    except ValueError:
-                        url = '{}+time+=+{}ms'.format(url, timestamp)
                 response = requests.get(url).json()
                 try:
-                    stat_names = response['results'][0]['series'][0]['columns']
+                    current_stat_names = response['results'][0]['series'][0]['columns']
                 except KeyError:
-                    return
+                    continue
                 stats = {}
                 current_index = -1
-                for stat_name in stat_names:
+                for stat_name in current_stat_names:
                     current_index += 1
                     if stat_name in ('time'):
                         continue
@@ -452,9 +444,9 @@ class Requester:
                 try:
                     values = response['results'][0]['series'][0]['values']
                 except KeyError:
-                    return
-                job_instance = agent.get_jobinstanceresult(job_instance_id,
-                                                           job_name)
+                    continue
+                job_instance = agent.get_jobinstanceresult(
+                    current_job_instance_id, current_job_name)
                 for value in values:
                     time = value[0]
                     serie = {}
@@ -493,14 +485,14 @@ class Requester:
         return scenario_instance
 
     def _get_agent_values(self, agent, job_instance_id, job_name, stat_names,
-                          condition, timestamp):
+                          timestamp, condition):
         """ Function that fills the AgentResult given of the
         available statistics and logs from InfluxDB and ElasticSearch """
         agent_name = agent.name
         scenario_instance_id = agent.scenario_instance.scenario_instance_id
         request_filter = Filter(
             scenario_instance_id, agent_name, job_instance_id, job_name,
-            stat_names, condition)
+            stat_names, timestamp, condition)
         all_measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, job_instance_id, job_name,
             stat_names, condition)
@@ -514,8 +506,8 @@ class Requester:
                 continue
         for measurement in measurements:
             try:
-                _, job_instance_id, _, job_name = measurement.split('.')
-                job_instance_id = int(job_instance_id)
+                _, current_job_instance_id, _, current_job_name = measurement.split('.')
+                current_job_instance_id = int(current_job_instance_id)
             except ValueError:
                 continue
             if stat_names:
@@ -523,27 +515,16 @@ class Requester:
             else:
                 url = '{}select+*'.format(self.influxdb_URL)
             url = '{}+from+"{}"'.format(url, measurement)
-            if condition is not None:
+            if condition is not None or timestamp is not None:
                 url = '{}{}'.format(url, request_filter)
-            if timestamp is not None:
-                if condition is None:
-                    url = '{}+where'.format(url)
-                else:
-                    url = '{}+and'.format(url)
-                try:
-                    timestamp_down, timestamp_up = timestamp
-                    url = '{}+time+<=+{}ms+and+time+>=+{}ms'.format(
-                        url, timestamp_up, timestamp_down)
-                except TypeError:
-                    url = '{}+time+=+{}ms'.format(url, timestamp)
             response = requests.get(url).json()
             try:
-                stat_names = response['results'][0]['series'][0]['columns']
+                current_stat_names = response['results'][0]['series'][0]['columns']
             except KeyError:
                 return
             stats = {}
             current_index = -1
-            for stat_name in stat_names:
+            for stat_name in current_stat_names:
                 current_index += 1
                 if stat_name in ('time'):
                     continue
@@ -552,8 +533,8 @@ class Requester:
                 values = response['results'][0]['series'][0]['values']
             except KeyError:
                 return
-            job_instance = agent.get_jobinstanceresult(job_instance_id,
-                                                       job_name)
+            job_instance = agent.get_jobinstanceresult(
+                current_job_instance_id, current_job_name)
             for value in values:
                 time = value[0]
                 serie = {}
@@ -590,8 +571,8 @@ class Requester:
                                condition, timestamp)
         return agent
 
-    def _get_job_instance_values(self, job_instance, stat_names, condition,
-                                 timestamp):
+    def _get_job_instance_values(self, job_instance, stat_names, timestamp,
+                                 condition):
         """ Function that fills the JobInstanceResult given of the
         available statistics and logs from InfluxDB and ElasticSearch """
         agent_name = job_instance.agent.name
@@ -600,7 +581,7 @@ class Requester:
         scenario_instance_id = job_instance.agent.scenario_instance.scenario_instance_id
         request_filter = Filter(
             scenario_instance_id, agent_name, job_instance_id, job_name,
-            stat_names, condition)
+            stat_names, timestamp, condition)
         measurement = '{}.{}.{}.{}'.format(scenario_instance_id,
                                            job_instance_id, agent_name,
                                            job_name)
@@ -609,27 +590,16 @@ class Requester:
         else:
             url = '{}select+*'.format(self.influxdb_URL)
         url = '{}+from+"{}"'.format(url, measurement)
-        if condition is not None:
+        if condition is not None or timestamp is not None:
             url = '{}{}'.format(url, request_filter)
-        if timestamp is not None:
-            if condition is None:
-                url = '{}+where'.format(url)
-            else:
-                url = '{}+and'.format(url)
-            try:
-                timestamp_down, timestamp_up = timestamp
-                url = '{}+where+time+<=+{}ms+and+time+>=+{}ms'.format(
-                    url, timestamp_up, timestamp_down)
-            except ValueError:
-                url = '{}+where+time+=+{}ms'.format(url, timestamp)
         response = requests.get(url).json()
         try:
-            stat_names = response['results'][0]['series'][0]['columns']
+            current_stat_names = response['results'][0]['series'][0]['columns']
         except KeyError:
             return
         stats = {}
         current_index = -1
-        for stat_name in stat_names:
+        for stat_name in current_stat_names:
             current_index += 1
             if stat_name in ('time'):
                 continue
@@ -674,7 +644,7 @@ class Requester:
                                       timestamp)
         return job_instance
 
-    def _get_serie_values(self, serie, stat_names, condition):
+    def _get_serie_values(self, serie, stat_names, timestamp, condition):
         """ Function that fills the SerieResult given of the
         available statistics and logs from InfluxDB """
         agent_name = serie.job_instance.agent.name
@@ -684,7 +654,7 @@ class Requester:
         timestamp = serie.timestamp
         request_filter = Filter(
             scenario_instance_id, agent_name, job_instance_id, job_name,
-            stat_names, condition)
+            stat_names, timestamp, condition)
         measurement = '{}.{}.{}.{}'.format(scenario_instance_id,
                                            job_instance_id, agent_name,
                                            job_name)
@@ -693,19 +663,18 @@ class Requester:
         else:
             url = '{}select+*'.format(self.influxdb_URL)
         url = ('{}+from+"{}"').format(url, measurement)
-        if condition is not None:
+        if condition is not None or timestamp is not None:
             url = '{}{}+and'.format(url, request_filter)
         else:
             url = '{}+where'.format(url)
-        url = '{}+time+=+{}ms'.format(url, timestamp)
         response = requests.get(url).json()
         try:
-            stat_names = response['results'][0]['series'][0]['columns']
+            current_stat_names = response['results'][0]['series'][0]['columns']
         except KeyError:
             return
         stats = {}
         current_index = -1
-        for stat_name in stat_names:
+        for stat_name in current_stat_names:
             current_index += 1
             if stat_name in ('time'):
                 continue
@@ -732,12 +701,12 @@ class Requester:
         return serie
 
     def get_logs(self, scenario_instance_id=None, agent_name=None,
-                 job_instance_id=None, job_name=None, condition=None,
-                 timestamp=None):
+                 job_instance_id=None, job_name=None, timestamp=None,
+                 condition=None):
         """ Function that do the request to ElasticSearch """
         request_filter = Filter(
             scenario_instance_id, agent_name, job_instance_id, job_name, [],
-            condition)
+            timestamp, condition)
         query = request_filter.get_query()
         data = {'query': {'bool': query}}
         url = '{}?scroll=1m'.format(self.elasticsearch_URL)
