@@ -40,7 +40,6 @@ import yaml
 import json
 from datetime import datetime
 from .result_data import ScenarioInstanceResult
-from .result_filter import Filter
 
 
 class Importer:
