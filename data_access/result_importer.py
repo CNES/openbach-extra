@@ -40,22 +40,14 @@ import yaml
 import json
 from datetime import datetime
 from .result_data import ScenarioInstanceResult
+from .collector_connection import CollectorConnection
 
 
 class Importer:
     """ Class that imports Results from files to recreate the Result Structure
     and import it to InfluxDB and ElasticSearch on demand """
     def __init__(self, config_file='config.yml'):
-        with open(config_file, 'r') as stream:
-            content = yaml.load(stream)
-        collector_ip = content['collector_ip']
-        influxdb_port = content['influxdb_port']
-        database_name = content['database_name']
-        elasticsearch_port = content['elasticsearch_port']
-        self.influxdb_URL = 'http://{}:{}/write?db={}'.format(
-            collector_ip, influxdb_port, database_name)
-        self.elasticsearch_URL = 'http://{}:{}/_bulk'.format(
-            collector_ip, elasticsearch_port)
+        self.collector_connection = CollectorConnection(config_file)
 
     def generate_scenario_instance(self, scenario_file):
         """ Function that generates the scenario instance from a file to the
@@ -97,61 +89,4 @@ class Importer:
     def import_to_collector(self, scenario_instance):
         """ Import the results of the scenario instance in InfluxDB and
         ElasticSearch """
-        first_request_to_elasticsearch_done = False
-        scenario_instance_id = scenario_instance.scenario_instance_id
-        for agent in scenario_instance.agentresults.values():
-            agent_name = agent.name
-            for job_instance in agent.jobinstanceresults.values():
-                job_instance_id = job_instance.job_instance_id
-                job_name = job_instance.job_name
-                measurement_name = '{}.{}.{}.{}'.format(
-                    scenario_instance_id, job_instance_id, agent_name, job_name)
-                for statistic in job_instance.statisticresults.values():
-                    timestamp = statistic.timestamp
-                    values = statistic.values
-                    data = ''
-                    for name, value in values.items():
-                        if data:
-                            data = '{},'.format(data)
-                        data = '{}{}={}'.format(data, name, value)
-                    data = '{} {} {}'.format(measurement_name, data, timestamp)
-                    response = requests.post(self.influxdb_URL, data.encode())
-                for log in job_instance.logresults.values():
-                    timestamp = datetime.fromtimestamp(log._timestamp/1000)
-                    metadata = {
-                        'index': {
-                            '_id': log._id,
-                            '_index': log._index,
-                            '_type': "logs",
-                            '_routing': None
-                        }
-                    }
-                    data = {
-                        'facility': log.facility,
-                        'facility_label': log.facility_label,
-                        'flag': log.flag,
-                        'host': log.host,
-                        'job_instance_id': job_instance_id,
-                        'scenario_instance_id': scenario_instance_id,
-                        'logsource': agent_name,
-                        'program': job_name,
-                        'message': log.message,
-                        'pid': log.pid,
-                        'priority': log.priority,
-                        'severity': log.severity,
-                        'severity_label': log.severity_label,
-                        '_type': log.type,
-                        'timestamp': timestamp.strftime('%b %d %H:%M:%S'),
-                        '@timestamp': timestamp.strftime(
-                            '%Y-%m-%dT%H:%M:%S.{0:0=3d}Z').format(
-                                log._timestamp%1000),
-                        '@version': log._version
-                    }
-                    content = '{}\n{}\n'.format(json.dumps(metadata),
-                                             json.dumps(data))
-                    if not first_request_to_elasticsearch_done:
-                        response = requests.post(self.elasticsearch_URL,
-                                                 data=content.encode())
-                        first_request_to_elasticsearch_done = True
-                    response = requests.post(self.elasticsearch_URL,
-                                             data=content.encode())
+        self.collector_connection.import_to_collector(scenario_instance)

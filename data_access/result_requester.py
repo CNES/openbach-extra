@@ -138,5 +138,5 @@ class Requester:
         job_instance = agent.get_jobinstanceresult(job_instance_id, job_name)
         statistic = job_instance.get_statisticresult(timestamp)
         self.collector_connection.get_statistic_values(
-            statistic, stat_names, timestamp, condition)
+            statistic, stat_names, condition)
         return statistic

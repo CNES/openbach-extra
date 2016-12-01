@@ -138,12 +138,17 @@ class CollectorConnection:
         self.logs.get_job_instance_values(
             job_instance, timestamp)
 
-    def get_statistic_values(self, statistic, stat_names, timestamp,
-                             condition):
+    def get_statistic_values(self, statistic, stat_names, condition):
         """ Function that fills the StatisticResult given of the
         available statistics from InfluxDB """
         self.stats.get_statistic_values(
-            statistic, stat_names, timestamp, condition)
+            statistic, stat_names, condition)
+
+    def import_to_collector(self, scenario_instance):
+        """ Import the results of the scenario instance in InfluxDB and
+        ElasticSearch """
+        self.stats.import_to_collector(scenario_instance)
+        self.logs.import_to_collector(scenario_instance)
 
 
 class InfluxDBConnection:
@@ -156,8 +161,10 @@ class InfluxDBConnection:
         influxdb_port = content['influxdb_port']
         database_name = content['database_name']
         epoch = content['epoch']
-        self.influxdb_URL = 'http://{}:{}/query?db={}&epoch={}&q='.format(
+        self.querying_URL = 'http://{}:{}/query?db={}&epoch={}&q='.format(
             collector_ip, influxdb_port, database_name, epoch)
+        self.writing_URL = 'http://{}:{}/write?db={}'.format(
+            collector_ip, influxdb_port, database_name)
 
     def get_query(self, stat_names, timestamp, condition):
         """ Function that constructs the query """
@@ -193,7 +200,7 @@ class InfluxDBConnection:
                              job_instance_id=None, job_name=None, stat_names=[],
                              timestamp=None, condition=None):
         """ Function that returns all the available measurements in InfluxDB """
-        url = '{}SHOW+MEASUREMENTS'.format(self.influxdb_URL)
+        url = '{}SHOW+MEASUREMENTS'.format(self.querying_URL)
         response = requests.get(url).json()
         values = response['results'][0]['series'][0]['values']
         measurements = set()
@@ -219,7 +226,7 @@ class InfluxDBConnection:
                     continue
             if query:
                 url = '{}select+*+from+"{}"+{}'.format(
-                    self.influxdb_URL, measurement[0], query)
+                    self.querying_URL, measurement[0], query)
                 response = requests.get(url).json()
                 try:
                     response['results'][0]['series']
@@ -303,9 +310,9 @@ class InfluxDBConnection:
         for measurement in measurements:
             if stat_names:
                 url = '{}select+{}'.format(
-                    self.influxdb_URL, ',+'.join(stat_names))
+                    self.querying_URL, ',+'.join(stat_names))
             else:
-                url = '{}select+*'.format(self.influxdb_URL)
+                url = '{}select+*'.format(self.querying_URL)
             url = '{}+from+"{}"'.format(url, measurement)
             if query:
                 url = '{}{}'.format(url, query)
@@ -353,9 +360,9 @@ class InfluxDBConnection:
                     continue
                 if stat_names:
                     url = '{}select+{}'.format(
-                        self.influxdb_URL, ',+'.join(stat_names))
+                        self.querying_URL, ',+'.join(stat_names))
                 else:
-                    url = '{}select+*'.format(self.influxdb_URL)
+                    url = '{}select+*'.format(self.querying_URL)
                 url = '{}+from+"{}"'.format(url, measurement)
                 if query:
                     url = '{}{}'.format(url, query)
@@ -409,9 +416,9 @@ class InfluxDBConnection:
             except ValueError:
                 continue
             if stat_names:
-                url = '{}select+{}'.format(self.influxdb_URL, ',+'.join(stat_names))
+                url = '{}select+{}'.format(self.querying_URL, ',+'.join(stat_names))
             else:
-                url = '{}select+*'.format(self.influxdb_URL)
+                url = '{}select+*'.format(self.querying_URL)
             url = '{}+from+"{}"'.format(url, measurement)
             if query:
                 url = '{}{}'.format(url, query)
@@ -453,9 +460,9 @@ class InfluxDBConnection:
                                            job_instance_id, agent_name,
                                            job_name)
         if stat_names:
-            url = '{}select+{}'.format(self.influxdb_URL, ',+'.join(stat_names))
+            url = '{}select+{}'.format(self.querying_URL, ',+'.join(stat_names))
         else:
-            url = '{}select+*'.format(self.influxdb_URL)
+            url = '{}select+*'.format(self.querying_URL)
         url = '{}+from+"{}"'.format(url, measurement)
         if query:
             url = '{}{}'.format(url, query)
@@ -482,8 +489,7 @@ class InfluxDBConnection:
                 statistic[stat_name] = value[index]
             job_instance.get_statisticresult(time, **statistic)
 
-    def get_statistic_values(self, statistic, stat_names, timestamp,
-                             condition):
+    def get_statistic_values(self, statistic, stat_names, condition):
         """ Function that fills the StatisticResult given of the
         available statistics from InfluxDB """
         agent_name = statistic.job_instance.agent.name
@@ -496,9 +502,9 @@ class InfluxDBConnection:
                                            job_instance_id, agent_name,
                                            job_name)
         if stat_names:
-            url = '{}select+{}'.format(self.influxdb_URL, ',+'.join(stat_names))
+            url = '{}select+{}'.format(self.querying_URL, ',+'.join(stat_names))
         else:
-            url = '{}select+*'.format(self.influxdb_URL)
+            url = '{}select+*'.format(self.querying_URL)
         url = ('{}+from+"{}"').format(url, measurement)
         if query:
             url = '{}{}'.format(url, query)
@@ -525,6 +531,27 @@ class InfluxDBConnection:
             for index, stat_name in stats.items():
                 statistic.values[stat_name] = value[index]
 
+    def import_to_collector(self, scenario_instance):
+        """ Import the results of the scenario instance in InfluxDB """
+        scenario_instance_id = scenario_instance.scenario_instance_id
+        for agent in scenario_instance.agentresults.values():
+            agent_name = agent.name
+            for job_instance in agent.jobinstanceresults.values():
+                job_instance_id = job_instance.job_instance_id
+                job_name = job_instance.job_name
+                measurement_name = '{}.{}.{}.{}'.format(
+                    scenario_instance_id, job_instance_id, agent_name, job_name)
+                for statistic in job_instance.statisticresults.values():
+                    timestamp = statistic.timestamp
+                    values = statistic.values
+                    data = ''
+                    for name, value in values.items():
+                        if data:
+                            data = '{},'.format(data)
+                        data = '{}{}={}'.format(data, name, value)
+                    data = '{} {} {}'.format(measurement_name, data, timestamp)
+                    requests.post(self.writing_URL, data.encode())
+
 
 class ElasticSearchConnection:
     """ Class that make the requests to ElasticSearch """
@@ -533,9 +560,11 @@ class ElasticSearchConnection:
         with open(config_file, 'r') as stream:
             content = yaml.load(stream)
         self.collector_ip = content['collector_ip']
-        self.elasticsearch_port = content['elasticsearch_port']
-        self.elasticsearch_URL = 'http://{}:{}/logstash-*/logs/_search'.format(
-            self.collector_ip, self.elasticsearch_port)
+        self.port = content['elasticsearch_port']
+        self.querying_URL = 'http://{}:{}/logstash-*/logs/_search'.format(
+            self.collector_ip, self.port)
+        self.writing_URL = 'http://{}:{}/_bulk'.format(
+            self.collector_ip, self.port)
 
     def get_query(self, scenario_instance_id, agent_name, job_instance_id,
                   job_name, timestamp):
@@ -583,7 +612,7 @@ class ElasticSearchConnection:
                                timestamp)
         query = {'query': query}
         url = '{}?fields=scenario_instance_id&scroll=1m'.format(
-            self.elasticsearch_URL)
+            self.querying_URL)
         response = requests.post(url, data=json.dumps(query).encode()).json()
         scroll_id = response['_scroll_id']
         try:
@@ -595,7 +624,7 @@ class ElasticSearchConnection:
             while current_hits:
                 url = 'http://{}:{}/_search/scroll'
                 data = {'scroll': '1m', 'scroll_id': scroll_id}
-                url = url.format(self.collector_ip, self.elasticsearch_port,
+                url = url.format(self.collector_ip, self.port,
                                  scroll_id)
                 response = requests.post(url, data=json.dumps(data)).json()
                 scroll_id = response['_scroll_id']
@@ -626,7 +655,7 @@ class ElasticSearchConnection:
         query = self.get_query(scenario_instance_id, None, job_instance_id,
                                job_name, timestamp)
         query = {'query': query}
-        url = '{}?fields=agent_name&scroll=1m'.format(self.elasticsearch_URL)
+        url = '{}?fields=agent_name&scroll=1m'.format(self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
         scroll_id = response['_scroll_id']
         try:
@@ -638,7 +667,7 @@ class ElasticSearchConnection:
             while current_hits:
                 url = 'http://{}:{}/_search/scroll'
                 data = {'scroll': '1m', 'scroll_id': scroll_id}
-                url = url.format(self.collector_ip, self.elasticsearch_port,
+                url = url.format(self.collector_ip, self.port,
                                  scroll_id)
                 response = requests.post(url, data=json.dumps(data)).json()
                 scroll_id = response['_scroll_id']
@@ -665,7 +694,7 @@ class ElasticSearchConnection:
                                timestamp)
         query = {'query': query}
         url = '{}?fields=job_instance_id&scroll=1m'.format(
-            self.elasticsearch_URL)
+            self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
         scroll_id = response['_scroll_id']
         try:
@@ -677,7 +706,7 @@ class ElasticSearchConnection:
             while current_hits:
                 url = 'http://{}:{}/_search/scroll'
                 data = {'scroll': '1m', 'scroll_id': scroll_id}
-                url = url.format(self.collector_ip, self.elasticsearch_port,
+                url = url.format(self.collector_ip, self.port,
                                  scroll_id)
                 response = requests.post(url, data=json.dumps(data)).json()
                 scroll_id = response['_scroll_id']
@@ -704,7 +733,7 @@ class ElasticSearchConnection:
                                job_instance_id, None, timestamp)
         query = {'query': query}
         url = '{}?fields=program&scroll=1m'.format(
-            self.elasticsearch_URL)
+            self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
         scroll_id = response['_scroll_id']
         try:
@@ -716,7 +745,7 @@ class ElasticSearchConnection:
             while current_hits:
                 url = 'http://{}:{}/_search/scroll'
                 data = {'scroll': '1m', 'scroll_id': scroll_id}
-                url = url.format(self.collector_ip, self.elasticsearch_port,
+                url = url.format(self.collector_ip, self.port,
                                  scroll_id)
                 response = requests.post(url, data=json.dumps(data)).json()
                 scroll_id = response['_scroll_id']
@@ -743,7 +772,7 @@ class ElasticSearchConnection:
                                job_instance_id, job_name, None)
         query = {'query': query}
         url = '{}?fields=timestamp&scroll=1m'.format(
-            self.elasticsearch_URL)
+            self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
         scroll_id = response['_scroll_id']
         try:
@@ -755,7 +784,7 @@ class ElasticSearchConnection:
             while current_hits:
                 url = 'http://{}:{}/_search/scroll'
                 data = {'scroll': '1m', 'scroll_id': scroll_id}
-                url = url.format(self.collector_ip, self.elasticsearch_port,
+                url = url.format(self.collector_ip, self.port,
                                  scroll_id)
                 response = requests.post(url, data=json.dumps(data)).json()
                 scroll_id = response['_scroll_id']
@@ -848,13 +877,60 @@ class ElasticSearchConnection:
                 log['host'], log['message'], log['pid'], log['priority'],
                 log['severity'], log['severity_label'], log['type'])
 
+    def import_to_collector(self, scenario_instance):
+        """ Import the results of the scenario instance in ElasticSearch """
+        first_request_to_elasticsearch_done = False
+        scenario_instance_id = scenario_instance.scenario_instance_id
+        for agent in scenario_instance.agentresults.values():
+            agent_name = agent.name
+            for job_instance in agent.jobinstanceresults.values():
+                job_instance_id = job_instance.job_instance_id
+                job_name = job_instance.job_name
+                for log in job_instance.logresults.values():
+                    timestamp = datetime.fromtimestamp(log._timestamp/1000)
+                    metadata = {
+                        'index': {
+                            '_id': log._id,
+                            '_index': log._index,
+                            '_type': "logs",
+                            '_routing': None
+                        }
+                    }
+                    data = {
+                        'facility': log.facility,
+                        'facility_label': log.facility_label,
+                        'flag': log.flag,
+                        'host': log.host,
+                        'job_instance_id': job_instance_id,
+                        'scenario_instance_id': scenario_instance_id,
+                        'logsource': agent_name,
+                        'program': job_name,
+                        'message': log.message,
+                        'pid': log.pid,
+                        'priority': log.priority,
+                        'severity': log.severity,
+                        'severity_label': log.severity_label,
+                        '_type': log.type,
+                        'timestamp': timestamp.strftime('%b %d %H:%M:%S'),
+                        '@timestamp': timestamp.strftime(
+                            '%Y-%m-%dT%H:%M:%S.{0:0=3d}Z').format(
+                                log._timestamp%1000),
+                        '@version': log._version
+                    }
+                    content = '{}\n{}\n'.format(json.dumps(metadata),
+                                                json.dumps(data))
+                    if not first_request_to_elasticsearch_done:
+                        requests.post(self.writing_URL, data=content.encode())
+                        first_request_to_elasticsearch_done = True
+                    requests.post(self.writing_URL, data=content.encode())
+
     def get_logs(self, scenario_instance_id=None, agent_name=None,
                  job_instance_id=None, job_name=None, timestamp=None):
         """ Function that do the request to ElasticSearch """
         query = self.get_query(scenario_instance_id, agent_name,
                                job_instance_id, job_name, None)
         query = {'query': {'bool': query}}
-        url = '{}?scroll=1m'.format(self.elasticsearch_URL)
+        url = '{}?scroll=1m'.format(self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
         scroll_id = response['_scroll_id']
         try:
@@ -866,7 +942,7 @@ class ElasticSearchConnection:
             while current_hits:
                 url = 'http://{}:{}/_search/scroll'
                 data = {'scroll': '1m', 'scroll_id': scroll_id}
-                url = url.format(self.collector_ip, self.elasticsearch_port,
+                url = url.format(self.collector_ip, self.port,
                                  scroll_id)
                 response = requests.post(url, data=json.dumps(data)).json()
                 scroll_id = response['_scroll_id']
