@@ -36,7 +36,7 @@
 
 
 from .result_requester import Requester
-from .result_importer import Importer
+from .result_handler import Handler
 from .result_filter import (
         OperandStatistic,
         OperandTimestamp,

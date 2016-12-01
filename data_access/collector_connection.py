@@ -163,8 +163,8 @@ class InfluxDBConnection:
         epoch = content['epoch']
         self.querying_URL = 'http://{}:{}/query?db={}&epoch={}&q='.format(
             collector_ip, influxdb_port, database_name, epoch)
-        self.writing_URL = 'http://{}:{}/write?db={}'.format(
-            collector_ip, influxdb_port, database_name)
+        self.writing_URL = 'http://{}:{}/write?db={}&precision={}'.format(
+            collector_ip, influxdb_port, database_name, epoch)
 
     def get_query(self, stat_names, timestamp, condition):
         """ Function that constructs the query """

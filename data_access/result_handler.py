@@ -29,7 +29,7 @@
 
 
 
-   @file     result_importer.py
+   @file     result_handler.py
    @brief    
    @author   Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
 """
@@ -43,7 +43,7 @@ from .result_data import ScenarioInstanceResult
 from .collector_connection import CollectorConnection
 
 
-class Importer:
+class Handler:
     """ Class that imports Results from files to recreate the Result Structure
     and import it to InfluxDB and ElasticSearch on demand """
     def __init__(self, config_file='config.yml'):
