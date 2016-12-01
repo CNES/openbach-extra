@@ -52,18 +52,6 @@ class OperandStatistic(Operand):
         return '"{}"'.format(self.name)
 
 
-class OperandTimestamp(Operand):
-    """ Operand that refers to a timestamp """
-    def __init__(self, timestamp, unit='ms'):
-        Operand.__init__(self)
-        self.timestamp = timestamp
-        self.unit = unit
-
-    def __str__(self):
-        """ Function that formate the Operand to create the request """
-        return '{}{}'.format(self.timestamp, self.unit)
-
-
 class OperandValue(Operand):
     """ Operand that refers to a value """
     def __init__(self, value):
@@ -76,6 +64,17 @@ class OperandValue(Operand):
             return '\'{}\''.format(self.value)
         else:
             return str(self.value)
+
+
+class OperandTimestamp(OperandValue):
+    """ Operand that refers to a timestamp """
+    def __init__(self, timestamp, unit='ms'):
+        OperandValue.__init__(self, timestamp)
+        self.unit = unit
+
+    def __str__(self):
+        """ Function that formate the Operand to create the request """
+        return '{}{}'.format(self.value, self.unit)
 
 
 class Condition:
