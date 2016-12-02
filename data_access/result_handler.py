@@ -90,3 +90,63 @@ class Handler:
         """ Import the results of the scenario instance in InfluxDB and
         ElasticSearch """
         self.collector_connection.import_to_collector(scenario_instance)
+
+    def del_scenario_instance(self, scenario_instance_id, agent_name=None,
+                              job_instance_id=None, job_name=None,
+                              stat_names=[], timestamp=None, condition=None):
+        if agent_name is None:
+            agent_names = self.collector_connection.get_agent_names(
+                scenario_instance_id, job_instance_id, job_name, [], timestamp,
+                None)
+            success = True
+            for agent_n in agent_names:
+                success &= self.del_agent(scenario_instance_id, agent_n,
+                                          job_instance_id, job_name, stat_names,
+                                          timestamp, condition)
+        else:
+            success = self.del_agent(scenario_instance_id, agent_name,
+                                     job_instance_id, job_name, stat_names,
+                                     timestamp, condition)
+        return success
+
+    def del_agent(self, scenario_instance_id, agent_name, job_instance_id=None,
+                  job_name=None, stat_names=[], timestamp=None, condition=None):
+        if job_instance_id is None:
+            job_instance_ids = self.collector_connection.get_job_instance_ids(
+                scenario_instance_id, agent_name, job_name, [], timestamp, None)
+            success = True
+            for job_instance_i in job_instance_ids:
+                job_instance_i = int(job_instance_i)
+                if job_name is None:
+                    job_names = self.collector_connection.get_job_names(
+                        scenario_instance_id, agent_name, job_instance_i, [],
+                        timestamp, None)
+                    for job_n in job_names:
+                        success &= self.del_job_instance(
+                            scenario_instance_id, agent_name, job_instance_i,
+                            job_n, stat_names, timestamp, condition)
+                else:
+                    success &= self.del_job_instance(
+                        scenario_instance_id, agent_name, job_instance_i,
+                        job_name, stat_names,  timestamp, condition)
+        elif job_name is None:
+            job_names = self.collector_connection.get_job_names(
+                scenario_instance_id, agent_name, job_instance_id, [],
+                timestamp, None)
+            for job_n in job_names:
+                success &= self.del_job_instance(
+                    scenario_instance_id, agent_name, job_instance_id, job_n,
+                    stat_names, timestamp, condition)
+        else:
+            success = self.del_job_instance(scenario_instance_id, agent_name,
+                                            job_instance_id, job_name,
+                                            stat_names, timestamp, condition)
+        return success
+
+    def del_job_instance(self, scenario_instance_id, agent_name,
+                         job_instance_id, job_name, stat_names=[],
+                         timestamp=None, condition=None):
+        return self.collector_connection.del_statistic(
+            scenario_instance_id, agent_name, job_instance_id, job_name,
+            stat_names, timestamp, condition)
+

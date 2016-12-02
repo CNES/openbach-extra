@@ -39,6 +39,20 @@ import requests
 import json
 import yaml
 from datetime import datetime
+from .result_data import ScenarioInstanceResult
+from .result_filter import (
+        OperandStatistic,
+        OperandTimestamp,
+        OperandValue,
+        ConditionAnd,
+        ConditionOr,
+        ConditionEqual,
+        ConditionUpperOrEqual,
+        ConditionUpper,
+        ConditionNotEqual,
+        ConditionBelow,
+        ConditionBelowOrEqual,
+)
 
 
 class CollectorConnection:
@@ -149,6 +163,16 @@ class CollectorConnection:
         ElasticSearch """
         self.stats.import_to_collector(scenario_instance)
         self.logs.import_to_collector(scenario_instance)
+
+    def del_statistic(self, scenario_instance_id, agent_name, job_instance_id,
+                      job_name, stat_names, timestamp, condition):
+        # TODO See how to delete logs in ElasticSearch
+        # For now, the API is new and may change
+        # See https://www.elastic.co/guide/en/elasticsearch/reference/5.0/docs-delete-by-query.html
+        result = self.stats.del_statistic(
+            scenario_instance_id, agent_name, job_instance_id, job_name,
+            stat_names, timestamp, condition)
+        return result
 
 
 class InfluxDBConnection:
@@ -552,6 +576,97 @@ class InfluxDBConnection:
                     data = '{} {} {}'.format(measurement_name, data, timestamp)
                     requests.post(self.writing_URL, data.encode())
 
+    def check_statistic(self, statistic, condition):
+        if isinstance(condition, ConditionAnd):
+            delete = self.check_statistic(statistic, condition.condition1)
+            delete &= self.check_statistic(statistic, condition.condition2)
+        elif isinstance(condition, ConditionOr):
+            delete = self.check_statistic(statistic, condition.condition1)
+            delete |= self.check_statistic(statistic, condition.condition2)
+        else:
+            operand1 = condition.operand1
+            operand2 = condition.operand2
+            if isinstance(operand1, OperandStatistic):
+                try:
+                    value1 = statistic.values[operand1.name]
+                except KeyError:
+                    return False
+            elif isinstance(operand1, OperandValue):
+                value1 = operand1.value
+            if isinstance(operand2, OperandStatistic):
+                try:
+                    value2 = statistic.values[operand1.name]
+                except KeyError:
+                    return False
+            elif isinstance(operand2, OperandValue):
+                value2 = operand2.value
+            if isinstance(condition, ConditionEqual):
+                return value1 == value2
+            elif isinstance(condition, ConditionNotEqual):
+                return value1 != value2
+            elif isinstance(condition, ConditionUpperOrEqual):
+                return value1 >= value2
+            elif isinstance(condition, ConditionUpper):
+                return value1 > value2
+            elif isinstance(condition, ConditionBelowOrEqual):
+                return value1 <= value2
+            elif isinstance(condition, ConditionBelow):
+                return value1 < value2
+        return delete
+
+    def filter_scenario_instance(self, scenario_instance, stat_names, timestamp,
+                                 condition):
+        for agent in scenario_instance.agentresults.values():
+            for job_instance in agent.jobinstanceresults.values():
+                delete1 = False
+                delete_timestamps = []
+                if timestamp is None:
+                    delete1 = True
+                else:
+                    try:
+                        timestamp_down, timestamp_up = timestamp
+                    except ValueError:
+                        timestamp_down = timestamp_up = timestamp
+                for statistic in job_instance.statisticresults.values():
+                    delete2 = False
+                    delete3 = False
+                    delete4 = False
+                    if timestamp is not None:
+                        if statistic.timestamp >= timestamp_down:
+                            delete2 = True
+                        if statistic.timestamp <= timestamp_up:
+                            delete2 &= True
+                        else:
+                            delete2 = False
+                    for stat_name in stat_names:
+                        if stat_name in statistic.values:
+                            delete3 = True
+                    if condition is None:
+                        delete4 = True
+                    else:
+                        delete4 = self.check_statistic(statistic, condition)
+                    if (delete1 or delete2) and delete3 and delete4:
+                        delete_timestamps.append(statistic.timestamp)
+                for timestamp in delete_timestamps:
+                    del job_instance.statisticresults[timestamp]
+
+    def del_statistic(self, scenario_instance_id, agent_name,
+                      job_instance_id, job_name, stat_names, timestamp,
+                      condition):
+        scenario_instance = ScenarioInstanceResult(scenario_instance_id)
+        self.get_scenario_instance_values(
+            scenario_instance, agent_name, job_instance_id, job_name, [],
+            None, None)
+        measurement = '{}.{}.{}.{}'.format(scenario_instance_id,
+                                           job_instance_id, agent_name,
+                                           job_name)
+        url = '{}drop+measurement+"{}"'.format(self.querying_URL, measurement)
+        response = requests.get(url).json()
+        self.filter_scenario_instance(scenario_instance, stat_names, timestamp,
+                                      condition)
+        self.import_to_collector(scenario_instance)
+        return True
+
 
 class ElasticSearchConnection:
     """ Class that make the requests to ElasticSearch """
@@ -610,7 +725,10 @@ class ElasticSearchConnection:
         scenario_instance_ids = set()
         query = self.get_query(None, agent_name, job_instance_id, job_name,
                                timestamp)
-        query = {'query': query}
+        if 'match_all' in query:
+            query = {'query': query}
+        else:
+            query = {'query': {'bool': query}}
         url = '{}?fields=scenario_instance_id&scroll=1m'.format(
             self.querying_URL)
         response = requests.post(url, data=json.dumps(query).encode()).json()
@@ -654,7 +772,10 @@ class ElasticSearchConnection:
         agent_names = set()
         query = self.get_query(scenario_instance_id, None, job_instance_id,
                                job_name, timestamp)
-        query = {'query': query}
+        if 'match_all' in query:
+            query = {'query': query}
+        else:
+            query = {'query': {'bool': query}}
         url = '{}?fields=agent_name&scroll=1m'.format(self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
         scroll_id = response['_scroll_id']
@@ -692,9 +813,11 @@ class ElasticSearchConnection:
         job_instance_ids = set()
         query = self.get_query(scenario_instance_id, agent_name, None, job_name,
                                timestamp)
-        query = {'query': query}
-        url = '{}?fields=job_instance_id&scroll=1m'.format(
-            self.querying_URL)
+        if 'match_all' in query:
+            query = {'query': query}
+        else:
+            query = {'query': {'bool': query}}
+        url = '{}?fields=job_instance_id&scroll=1m'.format(self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
         scroll_id = response['_scroll_id']
         try:
@@ -731,7 +854,10 @@ class ElasticSearchConnection:
         job_names = set()
         query = self.get_query(scenario_instance_id, agent_name,
                                job_instance_id, None, timestamp)
-        query = {'query': query}
+        if 'match_all' in query:
+            query = {'query': query}
+        else:
+            query = {'query': {'bool': query}}
         url = '{}?fields=program&scroll=1m'.format(
             self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
@@ -929,7 +1055,10 @@ class ElasticSearchConnection:
         """ Function that do the request to ElasticSearch """
         query = self.get_query(scenario_instance_id, agent_name,
                                job_instance_id, job_name, None)
-        query = {'query': {'bool': query}}
+        if 'match_all' in query:
+            query = {'query': query}
+        else:
+            query = {'query': {'bool': query}}
         url = '{}?scroll=1m'.format(self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
         scroll_id = response['_scroll_id']
