@@ -140,3 +140,11 @@ class Requester:
         self.collector_connection.get_statistic_values(
             statistic, stat_names, condition)
         return statistic
+
+    def get_orphan_logs(self, timestamp=None):
+        """ Function that returns the orphan logs from ElasticSearch """
+        return self.collector_connection.get_orphan_logs(timestamp)
+
+    def get_orphan_stats(self, timestamp=None):
+        """ Function that returns the orphan statistics from InfluxDB """
+        return self.collector_connection.get_orphan_stats(timestamp)

@@ -39,7 +39,6 @@ import requests
 import json
 import yaml
 from datetime import datetime
-from .result_data import ScenarioInstanceResult
 from .result_filter import (
         OperandStatistic,
         OperandTimestamp,
@@ -52,6 +51,11 @@ from .result_filter import (
         ConditionNotEqual,
         ConditionBelow,
         ConditionBelowOrEqual,
+)
+from .result_data import (
+        ScenarioInstanceResult,
+        StatisticResult,
+        LogResult,
 )
 
 
@@ -173,6 +177,14 @@ class CollectorConnection:
             scenario_instance_id, agent_name, job_instance_id, job_name,
             stat_names, timestamp, condition)
         return result
+
+    def get_orphan_logs(self, timestamp):
+        """ Function that returns the orphan logs from ElasticSearch """
+        return self.logs.get_orphan(timestamp)
+
+    def get_orphan_stats(self, timestamp):
+        """ Function that returns the orphan statistics from InfluxDB """
+        return self.stats.get_orphan(timestamp)
 
 
 class InfluxDBConnection:
@@ -667,6 +679,50 @@ class InfluxDBConnection:
         self.import_to_collector(scenario_instance)
         return True
 
+    def get_orphan(self, timestamp):
+        """ Function that returns the orphans statistics from InfluxDB """
+        statistics = []
+        url = '{}SHOW+MEASUREMENTS'.format(self.querying_URL)
+        response = requests.get(url).json()
+        values = response['results'][0]['series'][0]['values']
+        measurements = set()
+        for measurement in values:
+            try:
+                scenario_instance, job_instance, agent_n, job = measurement[0].split('.')
+                continue
+            except ValueError:
+                measurements.add(measurement[0])
+        query = self.get_query([], timestamp, None)
+        for measurement in measurements:
+            url = ('{}select+*+from+"{}"').format(self.querying_URL,
+                                                  measurement)
+            if query:
+                url = '{}{}'.format(url, query)
+            response = requests.get(url).json()
+            try:
+                current_stat_names = response['results'][0]['series'][0]['columns']
+            except KeyError:
+                continue
+            stats = {}
+            current_index = -1
+            for stat_name in current_stat_names:
+                current_index += 1
+                if stat_name in ('time'):
+                    continue
+                stats[current_index] = stat_name
+            try:
+                values = response['results'][0]['series'][0]['values']
+            except KeyError:
+                continue
+            for value in values:
+                time = value[0]
+                statistic = {}
+                for index, stat_name in stats.items():
+                    statistic[stat_name] = value[index]
+                statistic_result = StatisticResult(time, None, **statistic)
+                statistics.append(statistic_result)
+        return statistics
+
 
 class ElasticSearchConnection:
     """ Class that make the requests to ElasticSearch """
@@ -1050,11 +1106,25 @@ class ElasticSearchConnection:
                         first_request_to_elasticsearch_done = True
                     requests.post(self.writing_URL, data=content.encode())
 
+    def get_orphan(self, timestamp):
+        """ Function that returns the orphans logs from ElasticSearch """
+        logs = []
+        for log in self.get_logs(timestamp=timestamp):
+            if 'scenario_instance_id' in log:
+                continue
+            log_result = LogResult(
+                log['_id'], None, log['_index'], log['timestamp'], log['version'],
+                log['facility'], log['facility_label'], log['flag'],
+                log['host'], log['message'], log['pid'], log['priority'],
+                log['severity'], log['severity_label'], log['type'])
+            logs.append(log_result)
+        return logs
+
     def get_logs(self, scenario_instance_id=None, agent_name=None,
                  job_instance_id=None, job_name=None, timestamp=None):
         """ Function that do the request to ElasticSearch """
         query = self.get_query(scenario_instance_id, agent_name,
-                               job_instance_id, job_name, None)
+                               job_instance_id, job_name, timestamp)
         if 'match_all' in query:
             query = {'query': query}
         else:
