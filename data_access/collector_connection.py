@@ -170,6 +170,7 @@ class CollectorConnection:
 
     def del_statistic(self, scenario_instance_id, agent_name, job_instance_id,
                       job_name, stat_names, timestamp, condition):
+        """ Function that delete the statistics that match from InfluxDB """
         # TODO See how to delete logs in ElasticSearch
         # For now, the API is new and may change
         # See https://www.elastic.co/guide/en/elasticsearch/reference/5.0/docs-delete-by-query.html
@@ -243,13 +244,15 @@ class InfluxDBConnection:
         query = self.get_query(stat_names, timestamp, condition)
         for measurement in values:
             try:
-                scenario_instance, job_instance, agent_n, job = measurement[0].split('.')
+                owner_scenario_instance_id, scenario_instance, job_instance, agent_n, job = measurement[0].split('.')
             except ValueError:
                 continue
+            owner_scenario_instance_id = int(owner_scenario_instance_id)
             scenario_instance = int(scenario_instance)
             job_instance = int(job_instance)
             if scenario_instance_id is not None:
-                if scenario_instance != scenario_instance_id:
+                if (scenario_instance != scenario_instance_id or
+                    owner_scenario_instance_id != scenario_instance_id):
                     continue
             if agent_name is not None:
                 if agent_n != agent_name:
@@ -281,7 +284,7 @@ class InfluxDBConnection:
             stat_names, condition)
         for measurement in all_measurements:
             try:
-                scenario_instance, _, _, _ = measurement.split('.')
+                _, scenario_instance, _, _, _ = measurement.split('.')
             except ValueError:
                 continue
             scenario_instance = int(scenario_instance)
@@ -297,7 +300,7 @@ class InfluxDBConnection:
             stat_names, condition)
         for measurement in all_measurements:
             try:
-                _, _, agent_name, _ = measurement.split('.')
+                _, _, _, agent_name, _ = measurement.split('.')
             except ValueError:
                 continue
             agent_names.add(agent_name)
@@ -313,7 +316,7 @@ class InfluxDBConnection:
             stat_names, condition)
         for measurement in all_measurements:
             try:
-                _, job_instance_id, _, _ = measurement.split('.')
+                _, _, job_instance_id, _, _ = measurement.split('.')
             except ValueError:
                 continue
             job_instance_ids.add(job_instance_id)
@@ -329,7 +332,7 @@ class InfluxDBConnection:
             stat_names, condition)
         for measurement in all_measurements:
             try:
-                _, _, _, job_name = measurement.split('.')
+                _, _, _, _, job_name = measurement.split('.')
             except ValueError:
                 continue
             job_names.add(job_name)
@@ -374,23 +377,31 @@ class InfluxDBConnection:
         agent_names = set()
         for measurement in all_measurements:
             try:
-                _, _, agent_n, _ = measurement.split('.')
+                owner_scenario_instance_i, scenario_instance_i, _, agent_n, _ = measurement.split('.')
             except ValueError:
                 continue
+            owner_scenario_instance_i = int(owner_scenario_instance_i)
+            scenario_instance_i = int(scenario_instance_i)
+            if scenario_instance_i != scenario_instance_id:
+                scenario_instance.sub_scenario_instance_ids.add(
+                    scenario_instance_i)
+                continue
+            elif scenario_instance.owner_scenario_instance_id is None:
+                scenario_instance.owner_scenario_instance_id = owner_scenario_instance_i
             agent_names.add(agent_n)
         for agent_n in agent_names:
             agent = scenario_instance.get_agentresult(agent_n)
             measurements = []
             for measurement in all_measurements:
                 try:
-                    _, _, current_agent_n, _ = measurement.split('.')
+                    _, _, _, current_agent_n, _ = measurement.split('.')
                     if current_agent_n == agent_n:
                         measurements.append(measurement)
                 except ValueError:
                     continue
             for measurement in measurements:
                 try:
-                    _, current_job_instance_id, _, current_job_name = measurement.split('.')
+                    _, _, current_job_instance_id, _, current_job_name = measurement.split('.')
                     current_job_instance_id = int(current_job_instance_id)
                 except ValueError:
                     continue
@@ -440,14 +451,18 @@ class InfluxDBConnection:
         measurements = []
         for measurement in all_measurements:
             try:
-                _, _, agent_n, _ = measurement.split('.')
+                _, scenario_instance_i, _, agent_n, _ = measurement.split('.')
+                if scenario_instance_i != scenario_instance_id:
+                    agent.scenario_instance.sub_scenario_instance_ids.add(
+                        scenario_instance_i)
+                    continue
                 if agent_n == agent_name:
                     measurements.append(measurement)
             except ValueError:
                 continue
         for measurement in measurements:
             try:
-                _, current_job_instance_id, _, current_job_name = measurement.split('.')
+                _, _, current_job_instance_id, _, current_job_name = measurement.split('.')
                 current_job_instance_id = int(current_job_instance_id)
             except ValueError:
                 continue
@@ -491,10 +506,11 @@ class InfluxDBConnection:
         job_name = job_instance.job_name
         job_instance_id = job_instance.job_instance_id
         scenario_instance_id = job_instance.agent.scenario_instance.scenario_instance_id
+        owner_scenario_instance_id = job_instance.agent.scenario_instance.owner_scenario_instance_id
         query = self.get_query(stat_names, timestamp, condition)
-        measurement = '{}.{}.{}.{}'.format(scenario_instance_id,
-                                           job_instance_id, agent_name,
-                                           job_name)
+        measurement = '{}.{}.{}.{}.{}'.format(
+            owner_scenario_instance_id, scenario_instance_id, job_instance_id,
+            agent_name, job_name)
         if stat_names:
             url = '{}select+{}'.format(self.querying_URL, ',+'.join(stat_names))
         else:
@@ -532,11 +548,12 @@ class InfluxDBConnection:
         job_name = statistic.job_instance.job_name
         job_instance_id = statistic.job_instance.job_instance_id
         scenario_instance_id = statistic.job_instance.agent.scenario_instance.scenario_instance_id
+        owner_scenario_instance_id = statistic.job_instance.agent.scenario_instance.owner_scenario_instance_id
         timestamp = statistic.timestamp
         query = self.get_query(stat_names, timestamp, condition)
-        measurement = '{}.{}.{}.{}'.format(scenario_instance_id,
-                                           job_instance_id, agent_name,
-                                           job_name)
+        measurement = '{}.{}.{}.{}.{}'.format(
+            owner_scenario_instance_id, scenario_instance_id, job_instance_id,
+            agent_name, job_name)
         if stat_names:
             url = '{}select+{}'.format(self.querying_URL, ',+'.join(stat_names))
         else:
@@ -570,13 +587,15 @@ class InfluxDBConnection:
     def import_to_collector(self, scenario_instance):
         """ Import the results of the scenario instance in InfluxDB """
         scenario_instance_id = scenario_instance.scenario_instance_id
+        owner_scenario_instance_id = scenario_instance.owner_scenario_instance_id
         for agent in scenario_instance.agentresults.values():
             agent_name = agent.name
             for job_instance in agent.jobinstanceresults.values():
                 job_instance_id = job_instance.job_instance_id
                 job_name = job_instance.job_name
-                measurement_name = '{}.{}.{}.{}'.format(
-                    scenario_instance_id, job_instance_id, agent_name, job_name)
+                measurement_name = '{}.{}.{}.{}.{}'.format(
+                    owner_scenario_instance_id, scenario_instance_id,
+                    job_instance_id, agent_name, job_name)
                 for statistic in job_instance.statisticresults.values():
                     timestamp = statistic.timestamp
                     values = statistic.values
@@ -589,6 +608,7 @@ class InfluxDBConnection:
                     requests.post(self.writing_URL, data.encode())
 
     def check_statistic(self, statistic, condition):
+        """ Check if a statistic matches the condition """
         if isinstance(condition, ConditionAnd):
             delete = self.check_statistic(statistic, condition.condition1)
             delete &= self.check_statistic(statistic, condition.condition2)
@@ -628,6 +648,7 @@ class InfluxDBConnection:
 
     def filter_scenario_instance(self, scenario_instance, stat_names, timestamp,
                                  condition):
+        """ Delete the statistics that match from the ScenarioInstanceResult """
         for agent in scenario_instance.agentresults.values():
             for job_instance in agent.jobinstanceresults.values():
                 delete1 = False
@@ -662,10 +683,12 @@ class InfluxDBConnection:
                 for timestamp in delete_timestamps:
                     del job_instance.statisticresults[timestamp]
 
-    def del_statistic(self, scenario_instance_id, agent_name,
-                      job_instance_id, job_name, stat_names, timestamp,
-                      condition):
-        scenario_instance = ScenarioInstanceResult(scenario_instance_id)
+    def del_statistic(self, scenario_instance_id, owner_scenario_instance_id,
+                      agent_name, job_instance_id, job_name, stat_names,
+                      timestamp, condition):
+        """ Function that delete the statistics that match from InfluxDB """
+        scenario_instance = ScenarioInstanceResult(scenario_instance_id,
+                                                   owner_scenario_instance_id)
         self.get_scenario_instance_values(
             scenario_instance, agent_name, job_instance_id, job_name, [],
             None, None)
@@ -688,7 +711,7 @@ class InfluxDBConnection:
         measurements = set()
         for measurement in values:
             try:
-                scenario_instance, job_instance, agent_n, job = measurement[0].split('.')
+                _, _, _, _, _ = measurement[0].split('.')
                 continue
             except ValueError:
                 measurements.add(measurement[0])
@@ -740,10 +763,13 @@ class ElasticSearchConnection:
     def get_query(self, scenario_instance_id, agent_name, job_instance_id,
                   job_name, timestamp):
         """ Function that constructs the query """
-        query = {'must': []}
+        query = {'must': [], 'should': []}
         if scenario_instance_id is not None:
+            match = {'match': {'owner_scenario_instance_id':
+                               scenario_instance_id}}
+            query['should'].append(match)
             match = {'match': {'scenario_instance_id': scenario_instance_id}}
-            query['must'].append(match)
+            query['should'].append(match)
         if agent_name is not None:
             match = {'match': {'agent_name': agent_name}}
             query['must'].append(match)
@@ -771,6 +797,10 @@ class ElasticSearchConnection:
                 }
             }
         if not query['must']:
+            del query['must']
+        if not query['should']:
+            del query['should']
+        if not query:
             query = {'match_all': {}}
         return query
 
@@ -998,7 +1028,8 @@ class ElasticSearchConnection:
                                  job_instance_id, job_name, timestamp):
             log_scenario_instance_id = int(log.pop('scenario_instance_id'))
             if log_scenario_instance_id != scenario_instance_id:
-                #TODO See how to inform of this error
+                scenario_instance.sub_scenario_instance_ids.add(
+                    log_scenario_instance_id)
                 continue
             log_agent_name = log.pop('agent_name')
             log_job_instance_id = int(log.pop('job_instance_id'))
@@ -1021,9 +1052,9 @@ class ElasticSearchConnection:
                                  job_instance_id, job_name, timestamp):
             log_scenario_instance_id = int(log.pop('scenario_instance_id'))
             log_agent_name = log.pop('agent_name')
-            if not (log_scenario_instance_id == scenario_instance_id and
-                    log_agent_name == agent_name):
-                #TODO See how to inform of this error
+            if log_scenario_instance_id != scenario_instance_id:
+                agent.scenario_instance.sub_scenario_instance_ids.add(
+                    log_scenario_instance_id)
                 continue
             log_job_instance_id = int(log.pop('job_instance_id'))
             log_job_name = log.pop('job_name')
@@ -1048,10 +1079,9 @@ class ElasticSearchConnection:
             log_agent_name = log.pop('agent_name')
             log_job_instance_id = int(log.pop('job_instance_id'))
             log_job_name = log.pop('job_name')
-            if not (log_scenario_instance_id == scenario_instance_id and
-                    log_agent_name == agent_name and log_job_instance_id ==
-                    job_instance_id and log_job_name == job_name):
-                #TODO See how to inform of this error
+            if log_scenario_instance_id != scenario_instance_id:
+                job_instance.agent.scenario_instance.sub_scenario_instance_ids.add(
+                    log_scenario_instance_id)
                 continue
             job_instance.get_logresult(
                 log['_id'], log['_index'], log['timestamp'], log['version'],
@@ -1063,6 +1093,7 @@ class ElasticSearchConnection:
         """ Import the results of the scenario instance in ElasticSearch """
         first_request_to_elasticsearch_done = False
         scenario_instance_id = scenario_instance.scenario_instance_id
+        owner_scenario_instance_id = scenario_instance.owner_scenario_instance_id
         for agent in scenario_instance.agentresults.values():
             agent_name = agent.name
             for job_instance in agent.jobinstanceresults.values():
@@ -1085,6 +1116,7 @@ class ElasticSearchConnection:
                         'host': log.host,
                         'job_instance_id': job_instance_id,
                         'scenario_instance_id': scenario_instance_id,
+                        'owner_scenario_instance_id': owner_scenario_instance_id,
                         'logsource': agent_name,
                         'program': job_name,
                         'message': log.message,
@@ -1169,6 +1201,10 @@ class ElasticSearchConnection:
                     log['type'] = hit['_source']['type']
                 except KeyError:
                     continue
+                try:
+                    log['owner_scenario_instance_id'] = hit['_source']['owner_scenario_instance_id']
+                except KeyError:
+                    pass
                 try:
                     log['scenario_instance_id'] = hit['_source']['scenario_instance_id']
                 except KeyError:

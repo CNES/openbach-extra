@@ -56,7 +56,13 @@ class Handler:
             scenario_json = f.read()
         scenario_json = json.loads(scenario_json)
         scenario_instance_id = scenario_json.pop('scenario_instance_id')
-        scenario_instance = ScenarioInstanceResult(scenario_instance_id)
+        owner_scenario_instance_id = scenario_json.pop(
+            'owner_scenario_instance_id')
+        sub_scenario_instance_ids = scenario_json.pop(
+            'sub_scenario_instance_id')
+        scenario_instance = ScenarioInstanceResult(scenario_instance_id,
+                                                   owner_scenario_instance_id,
+                                                   sub_scenario_instance_ids)
         agents_json = scenario_json.pop('agents')
         for agent_json in agents_json:
             agent_name = agent_json.pop('name')
@@ -94,6 +100,7 @@ class Handler:
     def del_scenario_instance(self, scenario_instance_id, agent_name=None,
                               job_instance_id=None, job_name=None,
                               stat_names=[], timestamp=None, condition=None):
+        """ Function that deletes a Scenario Instance from InfluxDB """
         if agent_name is None:
             agent_names = self.collector_connection.get_agent_names(
                 scenario_instance_id, job_instance_id, job_name, [], timestamp,
@@ -111,6 +118,7 @@ class Handler:
 
     def del_agent(self, scenario_instance_id, agent_name, job_instance_id=None,
                   job_name=None, stat_names=[], timestamp=None, condition=None):
+        """ Function that deletes an Agent from InfluxDB """
         if job_instance_id is None:
             job_instance_ids = self.collector_connection.get_job_instance_ids(
                 scenario_instance_id, agent_name, job_name, [], timestamp, None)
@@ -146,7 +154,7 @@ class Handler:
     def del_job_instance(self, scenario_instance_id, agent_name,
                          job_instance_id, job_name, stat_names=[],
                          timestamp=None, condition=None):
+        """ Function that deletes a Job Instance from InfluxDB """
         return self.collector_connection.del_statistic(
             scenario_instance_id, agent_name, job_instance_id, job_name,
             stat_names, timestamp, condition)
-

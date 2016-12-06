@@ -99,7 +99,7 @@ class Requester:
                                      condition=None, timestamp=None):
         """ Function that returns a ScenarioInstanceResult full of the available
         statistics and logs from InfluxDB and ElasticSearch """
-        scenario_instance = ScenarioInstanceResult(scenario_instance_id)
+        scenario_instance = ScenarioInstanceResult(scenario_instance_id, None)
         self.collector_connection.get_scenario_instance_values(
             scenario_instance, agent_name, job_instance_id, job_name,
             stat_names, timestamp, condition)
@@ -110,7 +110,7 @@ class Requester:
                          condition=None, timestamp=None):
         """ Function that returns a AgentResult full of the available statistics
         and logs from InfluxDB and ElasticSearch """
-        scenario_instance = ScenarioInstanceResult(scenario_instance_id)
+        scenario_instance = ScenarioInstanceResult(scenario_instance_id, None)
         agent = scenario_instance.get_agentresult(agent_name)
         self.collector_connection.get_agent_values(
             agent, job_instance_id, job_name, stat_names, condition, timestamp)
@@ -121,7 +121,7 @@ class Requester:
                                 condition=None, timestamp=None):
         """ Function that returns a JobInstanceResult full of the
         available statistics and logs from InfluxDB and ElasticSearch """
-        scenario_instance = ScenarioInstanceResult(scenario_instance_id)
+        scenario_instance = ScenarioInstanceResult(scenario_instance_id, None)
         agent = scenario_instance.get_agentresult(agent_name)
         job_instance = agent.get_jobinstanceresult(job_instance_id, job_name)
         self.collector_connection.get_job_instance_values(

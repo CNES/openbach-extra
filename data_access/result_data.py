@@ -72,14 +72,19 @@ def ForeignKey(cls, name):
 
 class ScenarioInstanceResult:
     """ Structure that represents all the results of a Scenario Instance """
-    def __init__(self, scenario_instance_id):
+    def __init__(self, scenario_instance_id, owner_scenario_instance_id,
+                 sub_scenario_instance_ids=[]):
         self.scenario_instance_id = scenario_instance_id
+        self.owner_scenario_instance_id = owner_scenario_instance_id
+        self.sub_scenario_instance_ids = set(sub_scenario_instance_ids)
 
     @property
     def json(self):
         """ Function that print the results in JSON """
         info_json = {
             'scenario_instance_id': self.scenario_instance_id,
+            'owner_scenario_instance_id': self.owner_scenario_instance_id,
+            'sub_scenario_instance_ids': list(self.sub_scenario_instance_ids),
             'agents': [agent.json for agent in self.agentresults.values()]
         }
         return info_json
