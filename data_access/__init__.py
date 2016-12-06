@@ -35,8 +35,10 @@
 """
 
 
-from .result_requester import Requester
-from .result_handler import Handler
+from .collector_connection import (
+    generate_scenario_instance,
+    CollectorConnection
+)
 from .result_filter import (
         OperandStatistic,
         OperandTimestamp,
