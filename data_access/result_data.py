@@ -117,6 +117,16 @@ class JobInstanceResult(metaclass=ForeignKey(AgentResult, 'job_instance_id')):
         self.job_name = job_name
         self.agent = agent
 
+    def get_statisticresults(self, suffix_name):
+        """ Function that returns the statistic results with the specific suffix
+        """
+        return self.suffixresults[suffix_name].statisticresults
+
+    @property
+    def statisticresults(self):
+        """ Function that returns the statistic results with no suffix """
+        return self.suffixresults[None].statisticresults
+
     @property
     def json(self):
         """ Function that print the results in JSON """
@@ -124,16 +134,32 @@ class JobInstanceResult(metaclass=ForeignKey(AgentResult, 'job_instance_id')):
             'job_instance_id': self.job_instance_id,
             'job_name': self.job_name,
             'logs': [log.json for log in self.logresults.values()],
+            'suffixes': [suffix.json for suffix in self.suffixresults.values()]
+        }
+        return info_json
+
+
+class SuffixResult(metaclass=ForeignKey(JobInstanceResult, 'name')):
+    """ Structure that represents all the results of a Suffix """
+    def __init__(self, name, job_instance):
+        self.name = name
+        self.job_instance = job_instance
+
+    @property
+    def json(self):
+        """ Function that print the results in JSON """
+        info_json = {
+            'name': self.name,
             'statistics': [stat.json for stat in self.statisticresults.values()]
         }
         return info_json
 
 
-class StatisticResult(metaclass=ForeignKey(JobInstanceResult, 'timestamp')):
+class StatisticResult(metaclass=ForeignKey(SuffixResult, 'timestamp')):
     """ Structure that represents all the results of a Statistic """
-    def __init__(self, timestamp, job_instance, **kwargs):
+    def __init__(self, timestamp, suffix, **kwargs):
         self.timestamp = timestamp
-        self.job_instance = job_instance
+        self.suffix = suffix
         self.values = {}
         for name, value in kwargs.items():
             self.values[name] = value

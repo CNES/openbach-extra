@@ -384,7 +384,7 @@ class ElasticSearchConnection:
                 log['host'], log['message'], log['pid'], log['priority'],
                 log['severity'], log['severity_label'], log['type'])
 
-    def import_to_collector(self, scenario_instance):
+    def export_to_collector(self, scenario_instance):
         """ Import the results of the scenario instance in ElasticSearch """
         first_request_to_elasticsearch_done = False
         scenario_instance_id = scenario_instance.scenario_instance_id

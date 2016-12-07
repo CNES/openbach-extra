@@ -102,8 +102,9 @@ class InfluxDBConnection:
         return result
 
     def get_all_measurements(self, scenario_instance_id=None, agent_name=None,
-                             job_instance_id=None, job_name=None, stat_names=[],
-                             timestamp=None, condition=None):
+                             job_instance_id=None, job_name=None,
+                             suffix_name=None, stat_names=[], timestamp=None,
+                             condition=None):
         """ Function that returns all the available measurements in InfluxDB """
         url = '{}SHOW+MEASUREMENTS'.format(self.querying_URL)
         response = requests.get(url).json()
@@ -112,9 +113,13 @@ class InfluxDBConnection:
         query = self.get_query(stat_names, timestamp, condition)
         for measurement in values:
             try:
-                owner_scenario_instance_id, scenario_instance, job_instance, agent_n, job = measurement[0].split('.')
+                owner_scenario_instance_id, scenario_instance, job_instance, agent_n, job, suffix_n = measurement[0].split('.')
             except ValueError:
-                continue
+                try:
+                    owner_scenario_instance_id, scenario_instance, job_instance, agent_n, job = measurement[0].split('.')
+                    suffix_n = None
+                except ValueError:
+                    continue
             owner_scenario_instance_id = int(owner_scenario_instance_id)
             scenario_instance = int(scenario_instance)
             job_instance = int(job_instance)
@@ -131,6 +136,9 @@ class InfluxDBConnection:
             if job_name is not None:
                 if job != job_name:
                     continue
+            if suffix_name is not None:
+                if suffix_n != suffix_name:
+                    continue
             if query:
                 url = '{}select+*+from+"{}"+{}'.format(
                     self.querying_URL, measurement[0], query)
@@ -143,77 +151,110 @@ class InfluxDBConnection:
         return measurements
 
     def get_scenario_instance_ids(self, agent_name, job_instance_id, job_name,
-                                  stat_names, timestamp, condition):
+                                  suffix_name, stat_names, timestamp,
+                                  condition):
         """ Function that returns all the available scenario_instance_ids in
         InfluxDB """
         scenario_instance_ids = set()
         all_measurements = self.get_all_measurements(
-            None, agent_name, job_instance_id, job_name,
+            None, agent_name, job_instance_id, job_name, suffix_name,
             stat_names, condition)
         for measurement in all_measurements:
             try:
-                _, scenario_instance, _, _, _ = measurement.split('.')
+                _, scenario_instance, _, _, _, _ = measurement.split('.')
             except ValueError:
-                continue
+                try:
+                    _, scenario_instance, _, _, _ = measurement.split('.')
+                except ValueError:
+                    continue
             scenario_instance = int(scenario_instance)
             scenario_instance_ids.add(scenario_instance)
         return scenario_instance_ids
 
     def get_agent_names(self, scenario_instance_id, job_instance_id, job_name,
-                        stat_names, timestamp, condition):
+                        suffix_name, stat_names, timestamp, condition):
         """ Function that returns all the avaible agent_names in InfluxDB """
         agent_names = set()
         all_measurements = self.get_all_measurements(
-            scenario_instance_id, None, job_instance_id, job_name,
+            scenario_instance_id, None, job_instance_id, job_name, suffix_name,
             stat_names, condition)
         for measurement in all_measurements:
             try:
-                _, _, _, agent_name, _ = measurement.split('.')
+                _, _, _, agent_name, _, _ = measurement.split('.')
             except ValueError:
-                continue
+                try:
+                    _, _, _, agent_name, _ = measurement.split('.')
+                except ValueError:
+                    continue
             agent_names.add(agent_name)
         return agent_names
 
     def get_job_instance_ids(self, scenario_instance_id, agent_name, job_name,
-                             stat_names, timestamp, condition):
+                             suffix_name, stat_names, timestamp, condition):
         """ Function that returns all the available job_instance_ids in InfluxDB
         """
         job_instance_ids = set()
         all_measurements = self.get_all_measurements(
-            scenario_instance_id, agent_name, None, job_name,
+            scenario_instance_id, agent_name, None, job_name, suffix_name,
             stat_names, condition)
         for measurement in all_measurements:
             try:
-                _, _, job_instance_id, _, _ = measurement.split('.')
+                _, _, job_instance_id, _, _, _ = measurement.split('.')
             except ValueError:
-                continue
+                try:
+                    _, _, job_instance_id, _, _ = measurement.split('.')
+                except ValueError:
+                    continue
             job_instance_ids.add(job_instance_id)
         return job_instance_ids
 
     def get_job_names(self, scenario_instance_id, agent_name, job_instance_id,
-                      stat_names, timestamp, condition):
+                      suffix_name, stat_names, timestamp, condition):
         """ Function that returns all the available job_names in InfluxDB
         """
         job_names = set()
         all_measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, job_instance_id, None,
-            stat_names, condition)
+            suffix_name, stat_names, condition)
         for measurement in all_measurements:
             try:
-                _, _, _, _, job_name = measurement.split('.')
+                _, _, _, _, job_name, _ = measurement.split('.')
             except ValueError:
-                continue
+                try:
+                    _, _, _, _, job_name = measurement.split('.')
+                except ValueError:
+                    continue
             job_names.add(job_name)
         return job_names
 
+    def get_suffix_names(self, scenario_instance_id=None, agent_name=None,
+                         job_instance_id=None, job_name=None, stat_names=[],
+                         timestamp=None, condition=None):
+        """ Function that returns all the available suffix_names in InfluxDB """
+        suffix_names = set()
+        all_measurements = self.get_all_measurements(
+            scenario_instance_id, agent_name, job_instance_id, job_name,
+            None, stat_names, condition)
+        for measurement in all_measurements:
+            try:
+                _, _, _, _, _, suffix_name = measurement.split('.')
+            except ValueError:
+                try:
+                    _, _, _, _, _ = measurement.split('.')
+                    suffix_name = None
+                except ValueError:
+                    continue
+            suffix_names.add(suffix_name)
+        return suffix_names
+
     def get_timestamps(self, scenario_instance_id, agent_name, job_instance_id,
-                       job_name, stat_names, condition):
+                       job_name, suffix_name, stat_names, condition):
         """ Function that returns all the timestamps available in InfluxDB """
         timestamps = set()
         query = self.get_query(stat_names, None, condition)
         measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, job_instance_id, job_name,
-            stat_names, condition)
+            suffix_name, stat_names, condition)
         for measurement in measurements:
             if stat_names:
                 url = '{}select+{}'.format(
@@ -233,21 +274,24 @@ class InfluxDBConnection:
         return timestamps
 
     def get_scenario_instance_values(self, scenario_instance, agent_name,
-                                     job_instance_id, job_name, stat_names,
-                                     timestamp, condition):
+                                     job_instance_id, job_name, suffix_name,
+                                     stat_names, timestamp, condition):
         """ Function that fills the ScenarioInstanceResult given of the
         available statistics from InfluxDB """
         scenario_instance_id = scenario_instance.scenario_instance_id
         query = self.get_query(stat_names, timestamp, condition)
         all_measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, job_instance_id, job_name,
-            stat_names, condition)
+            suffix_name, stat_names, condition)
         agent_names = set()
         for measurement in all_measurements:
             try:
-                owner_scenario_instance_i, scenario_instance_i, _, agent_n, _ = measurement.split('.')
+                owner_scenario_instance_i, scenario_instance_i, _, agent_n, _, _ = measurement.split('.')
             except ValueError:
-                continue
+                try:
+                    owner_scenario_instance_i, scenario_instance_i, _, agent_n, _ = measurement.split('.')
+                except ValueError:
+                    continue
             owner_scenario_instance_i = int(owner_scenario_instance_i)
             scenario_instance_i = int(scenario_instance_i)
             if scenario_instance_i != scenario_instance_id:
@@ -269,10 +313,17 @@ class InfluxDBConnection:
                     continue
             for measurement in measurements:
                 try:
-                    _, _, current_job_instance_id, _, current_job_name = measurement.split('.')
-                    current_job_instance_id = int(current_job_instance_id)
+                    _, _, current_job_instance_id, _, current_job_name, suffix_n = measurement.split('.')
                 except ValueError:
-                    continue
+                    try:
+                        _, _, current_job_instance_id, _, current_job_name = measurement.split('.')
+                        suffix_n = None
+                    except ValueError:
+                        continue
+                current_job_instance_id = int(current_job_instance_id)
+                job_instance = agent.get_jobinstanceresult(
+                    current_job_instance_id, current_job_name)
+                suffix = job_instance.get_suffixresult(suffix_n)
                 if stat_names:
                     url = '{}select+{}'.format(
                         self.querying_URL, ',+'.join(stat_names))
@@ -297,17 +348,15 @@ class InfluxDBConnection:
                     values = response['results'][0]['series'][0]['values']
                 except KeyError:
                     continue
-                job_instance = agent.get_jobinstanceresult(
-                    current_job_instance_id, current_job_name)
                 for value in values:
                     time = value[0]
                     statistic = {}
                     for index, stat_name in stats.items():
                         statistic[stat_name] = value[index]
-                    job_instance.get_statisticresult(time, **statistic)
+                    suffix.get_statisticresult(time, **statistic)
 
-    def get_agent_values(self, agent, job_instance_id, job_name, stat_names,
-                         timestamp, condition):
+    def get_agent_values(self, agent, job_instance_id, job_name, suffix_name,
+                         stat_names, timestamp, condition):
         """ Function that fills the AgentResult given of the
         available statistics from InfluxDB """
         agent_name = agent.name
@@ -315,25 +364,35 @@ class InfluxDBConnection:
         query = self.get_query(stat_names, timestamp, condition)
         all_measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, job_instance_id, job_name,
-            stat_names, condition)
+            suffix_name, stat_names, condition)
         measurements = []
         for measurement in all_measurements:
             try:
-                _, scenario_instance_i, _, agent_n, _ = measurement.split('.')
-                if scenario_instance_i != scenario_instance_id:
-                    agent.scenario_instance.sub_scenario_instance_ids.add(
-                        scenario_instance_i)
-                    continue
-                if agent_n == agent_name:
-                    measurements.append(measurement)
+                _, scenario_instance_i, _, _, _, _ = measurement.split('.')
             except ValueError:
+                try:
+                    _, scenario_instance_i, _, _, _ = measurement.split('.')
+                except ValueError:
+                    continue
+            scenario_instance_i = int(scenario_instance_i)
+            if scenario_instance_i != scenario_instance_id:
+                agent.scenario_instance.sub_scenario_instance_ids.add(
+                    scenario_instance_i)
                 continue
+            measurements.append(measurement)
         for measurement in measurements:
             try:
-                _, _, current_job_instance_id, _, current_job_name = measurement.split('.')
-                current_job_instance_id = int(current_job_instance_id)
+                _, _, current_job_instance_id, _, current_job_name, suffix_n = measurement.split('.')
             except ValueError:
-                continue
+                try:
+                    _, _, current_job_instance_id, _, current_job_name = measurement.split('.')
+                    suffix_n = None
+                except ValueError:
+                    continue
+            current_job_instance_id = int(current_job_instance_id)
+            job_instance = agent.get_jobinstanceresult(
+                current_job_instance_id, current_job_name)
+            suffix = job_instance.get_suffixresult(suffix_n)
             if stat_names:
                 url = '{}select+{}'.format(self.querying_URL, ',+'.join(stat_names))
             else:
@@ -357,28 +416,94 @@ class InfluxDBConnection:
                 values = response['results'][0]['series'][0]['values']
             except KeyError:
                 return
-            job_instance = agent.get_jobinstanceresult(
-                current_job_instance_id, current_job_name)
             for value in values:
                 time = value[0]
                 statistic = {}
                 for index, stat_name in stats.items():
                     statistic[stat_name] = value[index]
-                job_instance.get_statisticresult(time, **statistic)
+                suffix.get_statisticresult(time, **statistic)
 
-    def get_job_instance_values(self, job_instance, stat_names, timestamp,
-                                condition):
+    def get_job_instance_values(self, job_instance, suffix_name, stat_names,
+                                timestamp, condition):
         """ Function that fills the JobInstanceResult given of the
         available statistics from InfluxDB """
         agent_name = job_instance.agent.name
         job_name = job_instance.job_name
         job_instance_id = job_instance.job_instance_id
         scenario_instance_id = job_instance.agent.scenario_instance.scenario_instance_id
-        owner_scenario_instance_id = job_instance.agent.scenario_instance.owner_scenario_instance_id
+        query = self.get_query(stat_names, timestamp, condition)
+        all_measurements = self.get_all_measurements(
+            scenario_instance_id, agent_name, job_instance_id, job_name,
+            suffix_name, stat_names, condition)
+        measurements = []
+        for measurement in all_measurements:
+            try:
+                _, scenario_instance_i, _, _, _, _ = measurement.split('.')
+            except ValueError:
+                try:
+                    _, scenario_instance_i, _, _, _ = measurement.split('.')
+                except ValueError:
+                    continue
+            scenario_instance_i = int(scenario_instance_i)
+            if scenario_instance_i != scenario_instance_id:
+                job_instance.agent.scenario_instance.sub_scenario_instance_ids.add(
+                    scenario_instance_i)
+                continue
+            measurements.append(measurement)
+        for measurement in measurements:
+            try:
+                _, _, _, _, _, suffix_n = measurement.split('.')
+            except ValueError:
+                suffix_n = None
+            suffix = job_instance.get_suffixresult(suffix_n)
+            if stat_names:
+                url = '{}select+{}'.format(self.querying_URL, ',+'.join(
+                    stat_names))
+            else:
+                url = '{}select+*'.format(self.querying_URL)
+            url = '{}+from+"{}"'.format(url, measurement)
+            if query:
+                url = '{}{}'.format(url, query)
+            response = requests.get(url).json()
+            try:
+                current_stat_names = response['results'][0]['series'][0]['columns']
+            except KeyError:
+                return
+            stats = {}
+            current_index = -1
+            for stat_name in current_stat_names:
+                current_index += 1
+                if stat_name in ('time'):
+                    continue
+                stats[current_index] = stat_name
+            try:
+                values = response['results'][0]['series'][0]['values']
+            except KeyError:
+                return
+            for value in values:
+                time = value[0]
+                statistic = {}
+                for index, stat_name in stats.items():
+                    statistic[stat_name] = value[index]
+                suffix.get_statisticresult(time, **statistic)
+
+    def get_suffix_values(self, suffix, stat_names, timestamp, condition):
+        """ Function that fills the JobInstanceResult given of the
+        available suffix from InfluxDB """
+        suffix_name = suffix.name
+        agent_name = suffix.job_instance.agent.name
+        job_name = suffix.job_instance.job_name
+        job_instance_id = suffix.job_instance.job_instance_id
+        scenario_instance_id = suffix.job_instance.agent.scenario_instance.scenario_instance_id
+        owner_scenario_instance_id = suffix.job_instance.agent.scenario_instance.owner_scenario_instance_id
+        if owner_scenario_instance_id is None:
+            owner_scenario_instance_id = scenario_instance_id
         query = self.get_query(stat_names, timestamp, condition)
         measurement = '{}.{}.{}.{}.{}'.format(
             owner_scenario_instance_id, scenario_instance_id, job_instance_id,
             agent_name, job_name)
+        if suffix_name is not None:
+            measurement += '.' + suffix_name
         if stat_names:
             url = '{}select+{}'.format(self.querying_URL, ',+'.join(stat_names))
         else:
@@ -407,21 +532,26 @@ class InfluxDBConnection:
             statistic = {}
             for index, stat_name in stats.items():
                 statistic[stat_name] = value[index]
-            job_instance.get_statisticresult(time, **statistic)
+            suffix.get_statisticresult(time, **statistic)
 
     def get_statistic_values(self, statistic, stat_names, condition):
         """ Function that fills the StatisticResult given of the
         available statistics from InfluxDB """
-        agent_name = statistic.job_instance.agent.name
-        job_name = statistic.job_instance.job_name
-        job_instance_id = statistic.job_instance.job_instance_id
-        scenario_instance_id = statistic.job_instance.agent.scenario_instance.scenario_instance_id
-        owner_scenario_instance_id = statistic.job_instance.agent.scenario_instance.owner_scenario_instance_id
+        agent_name = statistic.suffix.job_instance.agent.name
+        suffix_name = statistic.suffix.name
+        job_name = statistic.suffix.job_instance.job_name
+        job_instance_id = statistic.suffix.job_instance.job_instance_id
+        scenario_instance_id = statistic.suffix.job_instance.agent.scenario_instance.scenario_instance_id
+        owner_scenario_instance_id = statistic.suffix.job_instance.agent.scenario_instance.owner_scenario_instance_id
+        if owner_scenario_instance_id is None:
+            owner_scenario_instance_id = scenario_instance_id
         timestamp = statistic.timestamp
         query = self.get_query(stat_names, timestamp, condition)
         measurement = '{}.{}.{}.{}.{}'.format(
             owner_scenario_instance_id, scenario_instance_id, job_instance_id,
             agent_name, job_name)
+        if suffix_name is not None:
+            measurement += '.' + suffix_name
         if stat_names:
             url = '{}select+{}'.format(self.querying_URL, ',+'.join(stat_names))
         else:
@@ -452,7 +582,7 @@ class InfluxDBConnection:
             for index, stat_name in stats.items():
                 statistic.values[stat_name] = value[index]
 
-    def import_to_collector(self, scenario_instance):
+    def export_to_collector(self, scenario_instance):
         """ Import the results of the scenario instance in InfluxDB """
         scenario_instance_id = scenario_instance.scenario_instance_id
         owner_scenario_instance_id = scenario_instance.owner_scenario_instance_id
@@ -552,22 +682,35 @@ class InfluxDBConnection:
                     del job_instance.statisticresults[timestamp]
 
     def del_statistic(self, owner_scenario_instance_id, scenario_instance_id,
-                      agent_name, job_instance_id, job_name, stat_names,
-                      timestamp, condition):
+                      agent_name, job_instance_id, job_name, suffix_name,
+                      stat_names, timestamp, condition):
         """ Function that delete the statistics that match from InfluxDB """
         scenario_instance = ScenarioInstanceResult(scenario_instance_id,
                                                    owner_scenario_instance_id)
         self.get_scenario_instance_values(
-            scenario_instance, agent_name, job_instance_id, job_name, [],
-            None, None)
-        measurement = '{}.{}.{}.{}'.format(scenario_instance_id,
-                                           job_instance_id, agent_name,
-                                           job_name)
-        url = '{}drop+measurement+"{}"'.format(self.querying_URL, measurement)
-        response = requests.get(url).json()
+            scenario_instance, agent_name, job_instance_id, job_name,
+            suffix_name, [], None, None)
+        measurement = '{}.{}.{}.{}.{}'.format(
+            owner_scenario_instance_id, scenario_instance_id, job_instance_id,
+            agent_name, job_name)
+        measurements = []
+        if suffix_name is not None:
+            measurement += '.' + suffix_name
+            measurements.append(measurement)
+        else:
+            for suffix_name in scenario_instance.agentresults[agent_name].jobinstanceresults[job_instance_id].suffixresults:
+                if suffix_name is None:
+                    measurements.append(measurement)
+                else:
+                    m = measurement + '.' + suffix_name
+                    measurements.append(m)
+        for measurement in measurements:
+            url = '{}drop+measurement+"{}"'.format(
+                self.querying_URL, measurement)
+            response = requests.get(url).json()
         self.filter_scenario_instance(scenario_instance, stat_names, timestamp,
                                       condition)
-        self.import_to_collector(scenario_instance)
+        self.export_to_collector(scenario_instance)
         return True
 
     def get_orphan(self, timestamp):
@@ -582,7 +725,11 @@ class InfluxDBConnection:
                 _, _, _, _, _ = measurement[0].split('.')
                 continue
             except ValueError:
-                measurements.add(measurement[0])
+                try:
+                    _, _, _, _, _, _ = measurement[0].split('.')
+                    continue
+                except ValueError:
+                    measurements.add(measurement[0])
         query = self.get_query([], timestamp, None)
         for measurement in measurements:
             url = ('{}select+*+from+"{}"').format(self.querying_URL,

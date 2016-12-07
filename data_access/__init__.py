@@ -56,6 +56,7 @@ from .result_data import (
         ScenarioInstanceResult,
         AgentResult,
         JobInstanceResult,
+        SuffixResult,
         StatisticResult,
         LogResult
 )
