@@ -71,16 +71,10 @@ class InfluxDBConnection:
         self.writing_URL = 'http://{}:{}/write?db={}&precision={}'.format(
             collector_ip, influxdb_port, database_name, epoch)
 
-    def get_query(self, stat_names, timestamp, condition):
+    def get_query(self, timestamp, condition):
         """ Function that constructs the query """
         result = ''
         changed = False
-        if stat_names:
-            for stat_name in stat_names:
-                if changed:
-                    result = '{}+and+'.format(result)
-                changed = True
-                result = '{}"{}"+=~+/./'.format(result, stat_name)
         if condition is not None:
             if changed:
                 result = '{}+and+'.format(result)
@@ -110,7 +104,7 @@ class InfluxDBConnection:
         response = requests.get(url).json()
         values = response['results'][0]['series'][0]['values']
         measurements = set()
-        query = self.get_query(stat_names, timestamp, condition)
+        query = self.get_query(timestamp, condition)
         for measurement in values:
             try:
                 owner_scenario_instance_id, scenario_instance, job_instance, agent_n, job, suffix_n = measurement[0].split('.')
@@ -139,9 +133,11 @@ class InfluxDBConnection:
             if suffix_name is not None:
                 if suffix_n != suffix_name:
                     continue
+            url = '+from+"' + measurement[0] + '"'
             if query:
-                url = '{}select+*+from+"{}"+{}'.format(
-                    self.querying_URL, measurement[0], query)
+                url += '+' + query
+            if query or stat_names:
+                url = '{}select+{}{}'.format(self.querying_URL, ','.join(stat_names), url)
                 response = requests.get(url).json()
                 try:
                     response['results'][0]['series']
@@ -251,7 +247,7 @@ class InfluxDBConnection:
                        job_name, suffix_name, stat_names, condition):
         """ Function that returns all the timestamps available in InfluxDB """
         timestamps = set()
-        query = self.get_query(stat_names, None, condition)
+        query = self.get_query(None, condition)
         measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, job_instance_id, job_name,
             suffix_name, stat_names, condition)
@@ -279,7 +275,7 @@ class InfluxDBConnection:
         """ Function that fills the ScenarioInstanceResult given of the
         available statistics from InfluxDB """
         scenario_instance_id = scenario_instance.scenario_instance_id
-        query = self.get_query(stat_names, timestamp, condition)
+        query = self.get_query(timestamp, condition)
         all_measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, job_instance_id, job_name,
             suffix_name, stat_names, condition)
@@ -352,7 +348,8 @@ class InfluxDBConnection:
                     time = value[0]
                     statistic = {}
                     for index, stat_name in stats.items():
-                        statistic[stat_name] = value[index]
+                        if value[index] is not None:
+                            statistic[stat_name] = value[index]
                     suffix.get_statisticresult(time, **statistic)
 
     def get_agent_values(self, agent, job_instance_id, job_name, suffix_name,
@@ -361,7 +358,7 @@ class InfluxDBConnection:
         available statistics from InfluxDB """
         agent_name = agent.name
         scenario_instance_id = agent.scenario_instance.scenario_instance_id
-        query = self.get_query(stat_names, timestamp, condition)
+        query = self.get_query(timestamp, condition)
         all_measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, job_instance_id, job_name,
             suffix_name, stat_names, condition)
@@ -420,7 +417,8 @@ class InfluxDBConnection:
                 time = value[0]
                 statistic = {}
                 for index, stat_name in stats.items():
-                    statistic[stat_name] = value[index]
+                    if value[index] is not None:
+                        statistic[stat_name] = value[index]
                 suffix.get_statisticresult(time, **statistic)
 
     def get_job_instance_values(self, job_instance, suffix_name, stat_names,
@@ -431,7 +429,7 @@ class InfluxDBConnection:
         job_name = job_instance.job_name
         job_instance_id = job_instance.job_instance_id
         scenario_instance_id = job_instance.agent.scenario_instance.scenario_instance_id
-        query = self.get_query(stat_names, timestamp, condition)
+        query = self.get_query(timestamp, condition)
         all_measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, job_instance_id, job_name,
             suffix_name, stat_names, condition)
@@ -484,7 +482,8 @@ class InfluxDBConnection:
                 time = value[0]
                 statistic = {}
                 for index, stat_name in stats.items():
-                    statistic[stat_name] = value[index]
+                    if value[index] is not None:
+                        statistic[stat_name] = value[index]
                 suffix.get_statisticresult(time, **statistic)
 
     def get_suffix_values(self, suffix, stat_names, timestamp, condition):
@@ -498,7 +497,7 @@ class InfluxDBConnection:
         owner_scenario_instance_id = suffix.job_instance.agent.scenario_instance.owner_scenario_instance_id
         if owner_scenario_instance_id is None:
             owner_scenario_instance_id = scenario_instance_id
-        query = self.get_query(stat_names, timestamp, condition)
+        query = self.get_query(timestamp, condition)
         measurement = '{}.{}.{}.{}.{}'.format(
             owner_scenario_instance_id, scenario_instance_id, job_instance_id,
             agent_name, job_name)
@@ -531,7 +530,8 @@ class InfluxDBConnection:
             time = value[0]
             statistic = {}
             for index, stat_name in stats.items():
-                statistic[stat_name] = value[index]
+                if value[index] is not None:
+                    statistic[stat_name] = value[index]
             suffix.get_statisticresult(time, **statistic)
 
     def get_statistic_values(self, statistic, stat_names, condition):
@@ -546,7 +546,7 @@ class InfluxDBConnection:
         if owner_scenario_instance_id is None:
             owner_scenario_instance_id = scenario_instance_id
         timestamp = statistic.timestamp
-        query = self.get_query(stat_names, timestamp, condition)
+        query = self.get_query(timestamp, condition)
         measurement = '{}.{}.{}.{}.{}'.format(
             owner_scenario_instance_id, scenario_instance_id, job_instance_id,
             agent_name, job_name)
@@ -730,7 +730,7 @@ class InfluxDBConnection:
                     continue
                 except ValueError:
                     measurements.add(measurement[0])
-        query = self.get_query([], timestamp, None)
+        query = self.get_query(timestamp, None)
         for measurement in measurements:
             url = ('{}select+*+from+"{}"').format(self.querying_URL,
                                                   measurement)
