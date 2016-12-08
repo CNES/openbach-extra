@@ -72,7 +72,7 @@ class ElasticSearchConnection:
         if job_instance_id is not None:
             if query:
                 query += ' && '
-            query += 'job_instance_id=' + job_instance_id
+            query += 'job_instance_id=' + str(job_instance_id)
         if job_name is not None:
             if query:
                 query += ' && '
