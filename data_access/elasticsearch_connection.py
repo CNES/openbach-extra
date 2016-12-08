@@ -58,28 +58,32 @@ class ElasticSearchConnection:
     def get_query(self, scenario_instance_id, agent_name, job_instance_id,
                   job_name, timestamp):
         """ Function that constructs the query """
-        query = {'must': [], 'should': []}
+        result = {
+            'filtered': {}
+        }
+        query = ''
         if scenario_instance_id is not None:
-            match = {'match': {'owner_scenario_instance_id':
-                               scenario_instance_id}}
-            query['should'].append(match)
-            match = {'match': {'scenario_instance_id': scenario_instance_id}}
-            query['should'].append(match)
+            query = 'scenario_instance_id={0} || owner_scenario_instance={0}'.format(
+                scenario_instance_id)
         if agent_name is not None:
-            match = {'match': {'agent_name': agent_name}}
-            query['must'].append(match)
+            if query:
+                query += ' && '
+            query += 'agent_name=' + agent_name
         if job_instance_id is not None:
-            match = {'match': {'job_instance_id': job_instance_id}}
-            query['must'].append(match)
+            if query:
+                query += ' && '
+            query += 'job_instance_id=' + job_instance_id
         if job_name is not None:
-            match = {'match': {'program': job_name}}
-            query['must'].append(match)
+            if query:
+                query += ' && '
+            query += 'program=' + job_name
+        time_filter = None
         if timestamp is not None:
             try:
                 timestamp_down, timestamp_up = timestamp
             except TypeError:
                 timestamp_down = timestamp_up = timestamp
-            query['filter'] = {
+            time_filter = {
                 'bool': {
                     'must': {
                         'range': {
@@ -91,13 +95,13 @@ class ElasticSearchConnection:
                     }
                 }
             }
-        if not query['must']:
-            del query['must']
-        if not query['should']:
-            del query['should']
-        if not query:
-            query = {'match_all': {}}
-        return query
+        if time_filter is not None:
+            result['filtered']['filter'] = time_filter
+        if query:
+            result['filtered']['query'] = {'query_string': {'query': query}}
+        else:
+            result['filtered']['query'] = {'match_all': {}}
+        return {'query': result}
 
     def get_scenario_instance_ids(self, agent_name, job_instance_id, job_name,
                                   timestamp):
@@ -106,10 +110,6 @@ class ElasticSearchConnection:
         scenario_instance_ids = set()
         query = self.get_query(None, agent_name, job_instance_id, job_name,
                                timestamp)
-        if 'match_all' in query:
-            query = {'query': query}
-        else:
-            query = {'query': {'bool': query}}
         url = '{}?fields=scenario_instance_id&scroll=1m'.format(
             self.querying_URL)
         response = requests.post(url, data=json.dumps(query).encode()).json()
@@ -153,10 +153,6 @@ class ElasticSearchConnection:
         agent_names = set()
         query = self.get_query(scenario_instance_id, None, job_instance_id,
                                job_name, timestamp)
-        if 'match_all' in query:
-            query = {'query': query}
-        else:
-            query = {'query': {'bool': query}}
         url = '{}?fields=agent_name&scroll=1m'.format(self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
         scroll_id = response['_scroll_id']
@@ -194,10 +190,6 @@ class ElasticSearchConnection:
         job_instance_ids = set()
         query = self.get_query(scenario_instance_id, agent_name, None, job_name,
                                timestamp)
-        if 'match_all' in query:
-            query = {'query': query}
-        else:
-            query = {'query': {'bool': query}}
         url = '{}?fields=job_instance_id&scroll=1m'.format(self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
         scroll_id = response['_scroll_id']
@@ -235,10 +227,6 @@ class ElasticSearchConnection:
         job_names = set()
         query = self.get_query(scenario_instance_id, agent_name,
                                job_instance_id, None, timestamp)
-        if 'match_all' in query:
-            query = {'query': query}
-        else:
-            query = {'query': {'bool': query}}
         url = '{}?fields=program&scroll=1m'.format(
             self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
@@ -277,7 +265,6 @@ class ElasticSearchConnection:
         timestamps = set()
         query = self.get_query(scenario_instance_id, agent_name,
                                job_instance_id, job_name, None)
-        query = {'query': query}
         url = '{}?fields=timestamp&scroll=1m'.format(
             self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
@@ -452,10 +439,6 @@ class ElasticSearchConnection:
         """ Function that do the request to ElasticSearch """
         query = self.get_query(scenario_instance_id, agent_name,
                                job_instance_id, job_name, timestamp)
-        if 'match_all' in query:
-            query = {'query': query}
-        else:
-            query = {'query': {'bool': query}}
         url = '{}?scroll=1m'.format(self.querying_URL)
         response = requests.post(url, data=json.dumps(query)).json()
         scroll_id = response['_scroll_id']
