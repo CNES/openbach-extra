@@ -72,11 +72,10 @@ def ForeignKey(cls, name):
 
 class ScenarioInstanceResult:
     """ Structure that represents all the results of a Scenario Instance """
-    def __init__(self, scenario_instance_id, owner_scenario_instance_id,
-                 sub_scenario_instance_ids=[]):
+    def __init__(self, scenario_instance_id, owner_scenario_instance_id):
         self.scenario_instance_id = scenario_instance_id
         self.owner_scenario_instance_id = owner_scenario_instance_id
-        self.sub_scenario_instance_ids = set(sub_scenario_instance_ids)
+        self.sub_scenario_instances = {}
 
     @property
     def json(self):
@@ -84,7 +83,9 @@ class ScenarioInstanceResult:
         info_json = {
             'scenario_instance_id': self.scenario_instance_id,
             'owner_scenario_instance_id': self.owner_scenario_instance_id,
-            'sub_scenario_instance_ids': list(self.sub_scenario_instance_ids),
+            'sub_scenario_instances': [scenario_instance.json for
+                                       scenario_instance in
+                                       self.sub_scenario_instances.values()],
             'agents': [agent.json for agent in self.agentresults.values()]
         }
         return info_json
@@ -125,7 +126,10 @@ class JobInstanceResult(metaclass=ForeignKey(AgentResult, 'job_instance_id')):
     @property
     def statisticresults(self):
         """ Function that returns the statistic results with no suffix """
-        return self.suffixresults[None].statisticresults
+        try:
+            return self.suffixresults[None].statisticresults
+        except KeyError:
+            return {}
 
     @property
     def json(self):

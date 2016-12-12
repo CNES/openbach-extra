@@ -47,14 +47,16 @@ def generate_scenario_instance(scenario_file):
     with open(scenario_file, 'r') as f:
         scenario_json = f.read()
     scenario_json = json.loads(scenario_json)
+    return load_from_json(scenario_json)
+
+def load_from_json(scenario_json):
     scenario_instance_id = scenario_json.pop('scenario_instance_id')
     owner_scenario_instance_id = scenario_json.pop(
         'owner_scenario_instance_id')
-    sub_scenario_instance_ids = scenario_json.pop(
-        'sub_scenario_instance_ids')
-    scenario_instance = ScenarioInstanceResult(scenario_instance_id,
-                                               owner_scenario_instance_id,
-                                               sub_scenario_instance_ids)
+    sub_scenario_instances_json = scenario_json.pop(
+        'sub_scenario_instances')
+    scenario_instance = ScenarioInstanceResult(
+        scenario_instance_id, owner_scenario_instance_id)
     agents_json = scenario_json.pop('agents')
     for agent_json in agents_json:
         agent_name = agent_json.pop('name')
@@ -86,6 +88,10 @@ def generate_scenario_instance(scenario_file):
                     for name, value in statistic_json.items():
                         values[name] = value
                     suffix.get_statisticresult(timestamp, **values)
+    for sub_scenario_instance_json in sub_scenario_instances_json:
+        sub_scenario_instance = load_from_json(sub_scenario_instance_json)
+        sub_scenario_instance_id = sub_scenario_instance.scenario_instance_id
+        scenario_instance.sub_scenario_instances[sub_scenario_instance_id] = sub_scenario_instance
     return scenario_instance
 
 
@@ -181,6 +187,10 @@ class CollectorConnection:
             suffix_name, stat_names, timestamp, condition)
         self.logs.get_scenario_instance_values(
             scenario_instance, agent_name, job_instance_id, job_name, timestamp)
+        for sub_scenario_instance in scenario_instance.sub_scenario_instances.values():
+            self._get_scenario_instance_values(
+                sub_scenario_instance, agent_name, job_instance_id, job_name,
+                suffix_name, stat_names, timestamp, condition)
 
     def get_scenario_instance_values(self, scenario_instance_id,
                                      agent_name=None, job_instance_id=None,

@@ -63,20 +63,20 @@ class ElasticSearchConnection:
         }
         query = ''
         if scenario_instance_id is not None:
-            query = 'scenario_instance_id={0} || owner_scenario_instance={0}'.format(
+            query = 'scenario_instance_id:{0} || owner_scenario_instance_id:{0}'.format(
                 scenario_instance_id)
         if agent_name is not None:
             if query:
                 query += ' && '
-            query += 'agent_name=' + agent_name
+            query += 'agent_name:' + agent_name
         if job_instance_id is not None:
             if query:
                 query += ' && '
-            query += 'job_instance_id=' + str(job_instance_id)
+            query += 'job_instance_id:' + str(job_instance_id)
         if job_name is not None:
             if query:
                 query += ' && '
-            query += 'program=' + job_name
+            query += 'program:' + job_name
         time_filter = None
         if timestamp is not None:
             try:
@@ -310,8 +310,10 @@ class ElasticSearchConnection:
                                  job_instance_id, job_name, timestamp):
             log_scenario_instance_id = int(log.pop('scenario_instance_id'))
             if log_scenario_instance_id != scenario_instance_id:
-                scenario_instance.sub_scenario_instance_ids.add(
-                    log_scenario_instance_id)
+                if log_scenario_instance_id not in scenario_instance.sub_scenario_instances:
+                    sub_scenario_instance = ScenarioInstanceResult(
+                        log_scenario_instance_id, scenario_instance_id)
+                    scenario_instance.sub_scenario_instances[log_scenario_instance_id] = sub_scenario_instance
                 continue
             log_agent_name = log.pop('agent_name')
             log_job_instance_id = int(log.pop('job_instance_id'))
@@ -419,6 +421,8 @@ class ElasticSearchConnection:
                         requests.post(self.writing_URL, data=content.encode())
                         first_request_to_elasticsearch_done = True
                     requests.post(self.writing_URL, data=content.encode())
+        for sub_scenario_instance in scenario_instance.sub_scenario_instances.values():
+            self.export_to_collector(sub_scenario_instance)
 
     def get_orphan(self, timestamp):
         """ Function that returns the orphans logs from ElasticSearch """

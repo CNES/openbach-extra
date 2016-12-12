@@ -118,7 +118,7 @@ class InfluxDBConnection:
             scenario_instance = int(scenario_instance)
             job_instance = int(job_instance)
             if scenario_instance_id is not None:
-                if (scenario_instance != scenario_instance_id or
+                if (scenario_instance != scenario_instance_id and
                     owner_scenario_instance_id != scenario_instance_id):
                     continue
             if agent_name is not None:
@@ -280,6 +280,7 @@ class InfluxDBConnection:
             scenario_instance_id, agent_name, job_instance_id, job_name,
             suffix_name, stat_names, condition)
         agent_names = set()
+        measurements_scenario = []
         for measurement in all_measurements:
             try:
                 owner_scenario_instance_i, scenario_instance_i, _, agent_n, _, _ = measurement.split('.')
@@ -291,16 +292,19 @@ class InfluxDBConnection:
             owner_scenario_instance_i = int(owner_scenario_instance_i)
             scenario_instance_i = int(scenario_instance_i)
             if scenario_instance_i != scenario_instance_id:
-                scenario_instance.sub_scenario_instance_ids.add(
-                    scenario_instance_i)
+                if scenario_instance_i not in scenario_instance.sub_scenario_instances:
+                    sub_scenario_instance = ScenarioInstanceResult(
+                        scenario_instance_i, scenario_instance_id)
+                    scenario_instance.sub_scenario_instances[scenario_instance_i] = sub_scenario_instance
                 continue
             elif scenario_instance.owner_scenario_instance_id is None:
                 scenario_instance.owner_scenario_instance_id = owner_scenario_instance_i
             agent_names.add(agent_n)
+            measurements_scenario.append(measurement)
         for agent_n in agent_names:
             agent = scenario_instance.get_agentresult(agent_n)
             measurements = []
-            for measurement in all_measurements:
+            for measurement in measurements_scenario:
                 try:
                     _, _, _, current_agent_n, _ = measurement.split('.')
                     if current_agent_n == agent_n:
@@ -604,6 +608,8 @@ class InfluxDBConnection:
                         data = '{}{}={}'.format(data, name, value)
                     data = '{} {} {}'.format(measurement_name, data, timestamp)
                     requests.post(self.writing_URL, data.encode())
+        for sub_scenario_instance in scenario_instance.sub_scenario_instances.values():
+            self.export_to_collector(sub_scenario_instance)
 
     def check_statistic(self, statistic, condition):
         """ Check if a statistic matches the condition """
