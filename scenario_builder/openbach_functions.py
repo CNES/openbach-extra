@@ -27,8 +27,8 @@ class OpenBachFunction:
         """
 
         context = {'wait': {'time': self.time}}
-        context['wait']['launched_indexes'] = list(safe_indexor(functions, self.wait_launched))
-        context['wait']['finished_indexes'] = list(safe_indexor(functions, self.wait_finished))
+        context['wait']['launched_ids'] = list(safe_indexor(functions, self.wait_launched))
+        context['wait']['finished_ids'] = list(safe_indexor(functions, self.wait_finished))
         return context
 
 
@@ -103,7 +103,7 @@ class StopJobInstance(OpenBachFunction):
 
         context = super().build(functions)
         context['stop_job_instance'] = {
-            'openbach_function_indexes': list(
+            'openbach_function_ids': list(
                 safe_indexor(functions, self.openbach_function_indexes))}
         return context
 

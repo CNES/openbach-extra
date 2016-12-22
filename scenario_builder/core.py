@@ -89,6 +89,9 @@ class Scenario:
 
         openbach_functions = self.openbach_functions
         functions = [f.build(openbach_functions) for f in openbach_functions]
+        for index, function in enumerate(functions):
+            function['id'] = index
+
         return {
             'name': self.name,
             'description': self.description,
