@@ -486,5 +486,5 @@ def state_push_file(filename, path, agent_ip):
 
 
 def state_job_instance(job_instance_id):
-    return _request_message('job_instance/{}/state'.format(job_instance_id))
-
+    return _request_message('job_instance/{}/state'.format(job_instance_id),
+                            'GET')
