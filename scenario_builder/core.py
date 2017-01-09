@@ -1,5 +1,6 @@
 import json
-from .openbach_functions import OpenBachFunction
+
+from . import openbach_functions
 
 
 class Scenario:
@@ -62,8 +63,7 @@ class Scenario:
         wait_launched = check_and_build_waiting_list(wait_launched)
         wait_finished = check_and_build_waiting_list(wait_finished)
 
-        n = ''.join(name.title().split('_')) if '_' in name else name
-        factory = get_function_factory(n)
+        factory = get_function_factory(name)
         function = factory(wait_launched, wait_finished, wait_delay)
         self.openbach_functions.append(function)
         return function
@@ -117,7 +117,7 @@ def check_and_build_waiting_list(wait_on=None):
     """
 
     wait_on = [] if wait_on is None else list(wait_on)
-    if not all(isinstance(obj, OpenBachFunction) for obj in wait_on):
+    if not all(isinstance(obj, openbach_functions.OpenBachFunction) for obj in wait_on):
         raise TypeError('can only wait on iterables of openbach functions')
     return wait_on
 
@@ -125,7 +125,10 @@ def check_and_build_waiting_list(wait_on=None):
 def get_function_factory(name):
     """Convert a name to the appropriate openbach function"""
 
-    for cls in OpenBachFunction.__subclasses__():
-        if cls.__name__ == name:
-            return cls
-    raise ValueError('{} is not a valid OpenBach function'.format(name))
+    n = ''.join(name.title().split('_'))
+    try:
+        cls = getattr(openbach_functions, n)
+    except AttributeError:
+        cls = getattr(openbach_functions, name)
+    assert issubclass(cls, openbach_functions.OpenBachFunction)
+    return cls

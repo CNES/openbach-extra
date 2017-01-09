@@ -1,4 +1,4 @@
-from .conditions import OpenBachCondition
+from .conditions import Condition
 
 
 class ImproperlyConfiguredFunction(Exception):
@@ -219,7 +219,7 @@ class RetrieveStatusAgents(OpenBachFunction):
                    it.
         """
 
-        self.agents_addresses = addresses
+        self.agents_addresses = list(addresses)
         self.update = update
 
     def build(self, functions):
@@ -253,9 +253,9 @@ class _Condition(OpenBachFunction):
          - condition: test to execute during the scenario execution.
         """
 
-        if not isinstance(condition, OpenBachCondition):
+        if not isinstance(condition, Condition):
             raise TypeError('{}.configure() argument should be an '
-                            'instance of OpenBachCondition'.format(
+                            'instance of `Condition`'.format(
                             self.__class__.__name__))
 
         self.condition = condition
@@ -315,7 +315,7 @@ class If(_Condition):
         return super().build(functions, 'if', name_true, name_false)
 
 
-class While(OpenBachFunction):
+class While(_Condition):
     """Representation of the while openbach function."""
 
     def configure_while_body(self, *openbach_functions):

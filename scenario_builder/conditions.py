@@ -26,7 +26,7 @@ class Operator(enum.Enum):
         uses its name).
         """
 
-        return self.name
+        return self.value
 
 
 class Condition:
