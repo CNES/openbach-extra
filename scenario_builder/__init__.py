@@ -36,9 +36,15 @@ Creation and configuration of various OpenBach functions is done
 through objects references rather than manual edition and indexing.
 """
 
-from .core import Scenario
-from .openbach_functions import ImproperlyConfiguredFunction
 
 __author__ = 'Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>'
-__version__ = 'v0.1.0-alpha'
-__all__ = ['Scenario', 'ImproperlyConfiguredFunction']
+__version__ = 'v0.2.0'
+__all__ = [
+    'Scenario', 'Condition', 'Operand',
+    'ImproperlyConfiguredFunction',
+]
+
+
+from .core import Scenario
+from .openbach_functions import ImproperlyConfiguredFunction
+from .conditions import Condition, Operand

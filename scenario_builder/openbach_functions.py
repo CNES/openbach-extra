@@ -1,3 +1,6 @@
+from .conditions import OpenBachCondition
+
+
 class ImproperlyConfiguredFunction(Exception):
     """Exception raised when an openbach function that has not been
     configured yet is used to build a scenario.
@@ -87,12 +90,17 @@ class StopJobInstance(OpenBachFunction):
         super().__init__(launched, finished, delay)
         self.openbach_function_indexes = ()
 
-    def configure(self, *functions):
+    def configure(self, *openbach_functions):
         """Define this openbach function with the mandatory values:
-         - functions: openbach functions to stop.
+         - openbach_functions: list of openbach functions to stop.
         """
 
-        self.openbach_function_indexes = functions
+        if not all(isinstance(f, StartJobInstance) for f in openbach_functions):
+            raise TypeError('{}.configure() arguments must '
+                            'be StartScenarioInstance\'s '
+                            'instances'.format(self.__class__.__name__))
+
+        self.openbach_function_indexes = openbach_functions
 
     def build(self, functions):
         """Construct a dictionary representing this function.
@@ -106,6 +114,236 @@ class StopJobInstance(OpenBachFunction):
             'openbach_function_ids': list(
                 safe_indexor(functions, self.openbach_function_indexes))}
         return context
+
+
+class StartScenarioInstance(OpenBachFunction):
+    """Representation of the start_scenario_instance openbach function."""
+
+    def __init__(self, launched, finished, delay):
+        super().__init__(launched, finished, delay)
+        self.scenario_name = None
+
+    def configure(self, scenario_name, date='now', **scenario_arguments):
+        """Define this openbach function with the mandatory values:
+         - scenario_name: name of the sub-scenario to start.
+         - scenario_arguments: dictionary of arguments to use in
+                               order to start the sub-scenario.
+         - date: timestamp at which to start the sub-scenario.
+                 [unused in OpenBach at the moment]
+        """
+
+        self.scenario_name = scenario_name
+        self.scenario_arguments = scenario_arguments
+        self.scenario_start_date = date
+
+    def build(self, functions):
+        """Construct a dictionary representing this function.
+
+        This dictionary is suitable to be included in the
+        `openbach_functions` array of the associated scenario.
+        """
+
+        if self.scenario_name is None:
+            raise ImproperlyConfiguredFunction('start_scenario_instance')
+
+        context = super().build(functions)
+        context['start_scenario_instance'] = {
+            'scenario_name': self.scenario_name,
+            'arguments': self.scenario_arguments,
+            'date': self.scenario_start_date,
+        }
+        return context
+
+
+class StopScenarioInstance(OpenBachFunction):
+    """Representation of the stop_scenario_instance openbach functio."""
+
+    def __init__(self, launched, finished, delay):
+        super().__init__(launched, finished, delay)
+        self.openbach_function_id = None
+
+    def configure(self, openbach_function):
+        """Define this openbach function with the mandatory values:
+         - openbach_function: instance of the openbach function to
+                              stop. This function must be a
+                              StartScenarioInstance instance.
+        """
+
+        if not isinstance(openbach_function, StartScenarioInstance):
+            raise TypeError('{}.configure() argument must '
+                            'be a StartScenarioInstance '
+                            'instance'.format(self.__class__.__name__))
+
+        self.openbach_function_id = openbach_function
+
+    def build(self, functions):
+        """Construct a dictionary representing this function.
+
+        This dictionary is suitable to be included in the
+        `openbach_functions` array of the associated scenario.
+        """
+
+        if self.openbach_function_id is None:
+            raise ImproperlyConfiguredFunction('stop_scenario_instance')
+
+        ids = self.openbach_function_id,
+        try:
+            openbach_function_id, = safe_indexor(functions, ids)
+        except ValueError:
+            raise ValueError('configured function in stop_scenario_instance '
+                             'does not reference a valid openbach_function '
+                             'for this scenario') from None
+
+        context = super().build(functions)
+        context['stop_scenario_instance'] = {
+            'openbach_function_id': openbach_function_id,
+        }
+        return context
+
+
+class RetrieveStatusAgents(OpenBachFunction):
+    """Representation of the retrieve_status_agents openbach function."""
+
+    def __init__(self, launched, finished, delay):
+        super().__init__(launched, finished, delay)
+        self.agents_addresses = ()
+        self.update = False
+
+    def configure(self, *addresses, update=False):
+        """Define this openbach function with the mandatory values:
+         - addresses: addresses of the agent from whom to fetch
+                      the status.
+        Optional parameter:
+         - update: connect to the agent and ask it to update its
+                   status in the backend database before returning
+                   it.
+        """
+
+        self.agents_addresses = addresses
+        self.update = update
+
+    def build(self, functions):
+        """Construct a dictionary representing this function.
+
+        This dictionary is suitable to be included in the
+        `openbach_functions` array of the associated scenario.
+        """
+
+        context = super().build(functions)
+        context['retrieve_status_agents'] = {
+            'addresses': self.agents_addresses,
+            'update': self.update,
+        }
+        return context
+
+
+class _Condition(OpenBachFunction):
+    """Intermediate representation for openbach function
+    that makes use of conditions.
+    """
+
+    def __init__(self, launched, finished, delay):
+        super().__init__(launched, finished, delay)
+        self.condition = None
+        self.branch_true = ()
+        self.branch_false = ()
+
+    def configure(self, condition):
+        """Define this openbach function with the mandatory values:
+         - condition: test to execute during the scenario execution.
+        """
+
+        if not isinstance(condition, OpenBachCondition):
+            raise TypeError('{}.configure() argument should be an '
+                            'instance of OpenBachCondition'.format(
+                            self.__class__.__name__))
+
+        self.condition = condition
+
+    def _check_openbach_functions(self, functions, name):
+        if not all(isinstance(f, OpenBachFunction) for f in functions):
+            raise TypeError('{}.{}() arguments must be OpenBachFunction\'s '
+                            'instances'.format(self.__class__.__name__, name))
+
+    def build(self, functions, name, branch_true_name, branch_false_name):
+        """Construct a dictionary representing this function.
+
+        This dictionary is suitable to be included in the
+        `openbach_functions` array of the associated scenario.
+        """
+
+        if self.condition is None:
+            raise ImproperlyConfiguredFunction(name)
+
+        context = super().build(functions)
+        context[name] = {
+            'condition': self.condition.build(functions),
+            branch_true_name: list(safe_indexor(functions, self.branch_true)),
+            branch_false_name: list(safe_indexor(functions, self.branch_false)),
+        }
+        return context
+
+
+class If(_Condition):
+    """Representation of the if openbach function."""
+
+    def configure_if_true(self, *openbach_functions):
+        """Define the functions to execute if the test evaluates
+        to True during the scenario execution.
+        """
+
+        self._check_openbach_functions(openbach_functions, 'configure_if_true')
+        self.branch_true = openbach_functions
+
+    def configure_if_false(self, *openbach_functions):
+        """Define the functions to execute if the test evaluates
+        to False during the scenario execution.
+        """
+
+        self._check_openbach_functions(openbach_functions, 'configure_if_false')
+        self.branch_false = openbach_functions
+
+    def build(self, functions):
+        """Construct a dictionary representing this function.
+
+        This dictionary is suitable to be included in the
+        `openbach_functions` array of the associated scenario.
+        """
+
+        name_true = 'openbach_functions_true'
+        name_false = 'openbach_functions_false'
+        return super().build(functions, 'if', name_true, name_false)
+
+
+class While(OpenBachFunction):
+    """Representation of the while openbach function."""
+
+    def configure_while_body(self, *openbach_functions):
+        """Define the functions to execute if the test evaluates
+        to True during the scenario execution.
+        """
+
+        self._check_openbach_functions(openbach_functions, 'configure_while_body')
+        self.branch_true = openbach_functions
+
+    def configure_while_end(self, *openbach_functions):
+        """Define the functions to execute if the test evaluates
+        to False during the scenario execution.
+        """
+
+        self._check_openbach_functions(openbach_functions, 'configure_while_end')
+        self.branch_false = openbach_functions
+
+    def build(self, functions):
+        """Construct a dictionary representing this function.
+
+        This dictionary is suitable to be included in the
+        `openbach_functions` array of the associated scenario.
+        """
+
+        name_true = 'openbach_functions_while'
+        name_false = 'openbach_functions_end'
+        return super().build(functions, 'while', name_true, name_false)
 
 
 def safe_indexor(reference, lookup):
