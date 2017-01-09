@@ -3,6 +3,10 @@ from collections import namedtuple
 
 
 class Operator(enum.Enum):
+    """Enumeration for the various supported operands
+    in the `if` and `while` openbach functions.
+    """
+
     Equal = '='
     DoubleEqual = '=='
     LowerOrEqual = '<='
@@ -16,10 +20,18 @@ class Operator(enum.Enum):
     Not = 'not'
 
     def build(self, *args):
-        return self.value
+        """Helper function to simplify usage in `Condition`.
+
+        Construct a string representing this operator (hint:
+        uses its name).
+        """
+
+        return self.name
 
 
 class Condition:
+    """Representation of a condition to be used by some openbach functions"""
+
     def __init__(self, operator, left_operand=None, right_operand=None):
         switch = {
             Operator.Equal: self._init_two_operands,
@@ -65,16 +77,27 @@ class Condition:
         self._inner['right_operand'] = right_operand
 
     def build(self, functions):
+        """Construct a dictionary representing this condition.
+
+        This dictionary is suitable to be included as a condition
+        for an openbach functions accepting them.
+        """
         return {key: value.build(functions) for key, value in self._inner.items()}
 
 
 class OperandDescription(enum.Enum):
+    """Enumeration describing the various fields
+    expected by each kind of operand.
+    """
+
     database = 'name key attribute'
     value = 'value'
     statistic = 'measurement field'
 
 
 class Operand:
+    """Representation of an operand to be used by some `Condition`s"""
+
     def __init__(self, kind, *args, **kwargs):
         try:
             self._type = OperandDescription[kind]
@@ -86,6 +109,12 @@ class Operand:
         self._values = values_factory(*args, **kwargs)
 
     def build(self, functions):
+        """Construct a dictionary representing this operand.
+
+        This dictionary is suitable to be included as a left
+        or right operand for conditions accepting them.
+        """
+
         context = {'type': self._type.name}
         context.update(zip(self._values._fields, self._values))
 
