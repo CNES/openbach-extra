@@ -31,12 +31,48 @@ __version__ = 'v0.2'
 
 
 import unittest
-import pprint
 
 import scenario_builder as sb
 
 
 class TestScenarioBuilder(unittest.TestCase):
+    def test_condition_creation(self):
+        expected_results = {
+            'type': 'and',
+            'left_condition': {
+                'type': '<',
+                'left_operand': {
+                    'type': 'value',
+                    'value': '3',
+                },
+                'right_operand': {
+                    'type': 'value',
+                    'value': '5',
+                },
+            },
+            'right_condition': {
+                'type': '>',
+                'left_operand': {
+                    'type': 'value',
+                    'value': '4',
+                },
+                'right_operand': {
+                    'type': 'value',
+                    'value': '6',
+                },
+            },
+        }
+
+        cond = sb.Condition('and',
+                sb.Condition('<',
+                    sb.Operand('value', '3'),
+                    sb.Operand('value', '5')),
+                sb.Condition('>',
+                    sb.Operand('value', '4'),
+                    sb.Operand('value', '6')))
+
+        self.assertEqual(cond.build([]), expected_results)
+
     def test_scenario_if(self):
         expected_results = {
             "name": "If",
