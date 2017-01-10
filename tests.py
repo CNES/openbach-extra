@@ -184,6 +184,117 @@ class TestScenarioBuilder(unittest.TestCase):
 
         self.assertEqual(scenario.build(), expected_results)
 
+    def test_scenario_while(self):
+        expected_results = {
+            "name": "While",
+            "description": "While scenario (for test)",
+            "arguments": {},
+            "constants": {
+                "agentA": "172.20.34.38",
+                "agentB": "172.20.34.37",
+                "agentC": "172.20.34.39"
+            },
+            "openbach_functions": [
+                {
+                    "id": 0,
+                    "retrieve_status_agents": {
+                        "addresses": ["$agentA"],
+                        "update": True
+                    },
+                    "wait": {
+                        "time": 0,
+                        "launched_ids": [],
+                        "finished_ids": []
+                    }
+                },
+                {
+                    "id": 1,
+                    "while": {
+                        "condition": {
+                            "type": "=",
+                            "left_operand": {
+                                "type": "database",
+                                "name": "Agent",
+                                "key": "$agentA",
+                                "attribute": "status"
+                            },
+                            "right_operand": {
+                                "type": "value",
+                                "value": "Available"
+                            }
+                        },
+                        "openbach_functions_while": [2],
+                        "openbach_functions_end": [3] 
+                    },
+                    "wait": {
+                        "time": 0,
+                        "launched_ids": [0],
+                        "finished_ids": []
+                    }
+                },
+                {
+                    "id": 2,
+                    "retrieve_status_agents": {
+                        "addresses": ["$agentA"],
+                        "update": True
+                    },
+                    "wait": {
+                        "time": 0,
+                        "launched_ids": [],
+                        "finished_ids": []
+                    }
+                },
+                {
+                    "id": 3,
+                    "start_job_instance": {
+                        "agent_ip": "$agentB",
+                        "fping": {
+                            "destination_ip": "$agentC",
+                            "duration": 60
+                        },
+                        "offset": 5
+                    },
+                    "wait": {
+                        "time": 0,
+                        "launched_ids": [],
+                        "finished_ids": []
+                    }
+                },
+                {
+                    "id": 4,
+                    "stop_job_instance": {
+                        "openbach_function_ids": [3] 
+                    },
+                    "wait": {
+                        "time": 10,
+                        "launched_ids": [3],
+                        "finished_ids": []
+                    }
+                }
+            ]
+        }
+
+        scenario = sb.Scenario('While', 'While scenario (for test)')
+        scenario.add_constant('agentA', '172.20.34.38')
+        scenario.add_constant('agentB', '172.20.34.37')
+        scenario.add_constant('agentC', '172.20.34.39')
+        status = scenario.add_function('retrieve_status_agents')
+        status.configure('$agentA', update=True)
+        while_function = scenario.add_function('while', wait_launched=[status])
+        while_function.configure(
+                sb.Condition('=',
+                sb.Operand('database', 'Agent', '$agentA', 'status'),
+                sb.Operand('value', 'Available')))
+        status = scenario.add_function('retrieve_status_agents')
+        status.configure('$agentA', update=True)
+        ping = scenario.add_function('start_job_instance')
+        ping.configure('fping', '$agentB', offset=5, destination_ip='$agentC', duration=60)
+        while_function.configure_while_body(status)
+        while_function.configure_while_end(ping)
+        scenario.add_function('stop_job_instance', 10, [ping]).configure(ping)
+
+        self.assertEqual(scenario.build(), expected_results)
+
 
 if __name__ == '__main__':
     unittest.main()
