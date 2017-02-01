@@ -38,35 +38,52 @@
 import functools
 
 
-def ForeignKey(cls, name):
+def ForeignKey(cls, key):
     """ Metaclass """
     class Auto(type):
         def __call__(mcls, *args, **kwargs):
+            """At construction, put our instance into the attributes of
+            the other end of the relationship.
+            """
             instance = super().__call__(*args, **kwargs)
             attrname = mcls.__name__.lower() + 's'
             for arg in args + tuple(kwargs.values()):
                 if isinstance(arg, cls):
-                    getattr(arg, attrname)[getattr(instance, name)] = instance
+                    getattr(arg, attrname)[getattr(instance, key)] = instance
             return instance
 
         def __init__(mcls, name, bases, dct):
+            """At creation, setup a dictionnary into the other end of
+            the relationship to store our instances.
+            """
+            mcls_name = mcls.__name__.lower()
             super().__init__(name, bases, dct)
-            attrname = mcls.__name__.lower() + 's'
+            attrname = mcls_name + 's'
+            # Decorate the other end's __init__
             def initter(init):
+                """Setup an empty dictionnary"""
                 @functools.wraps(init)
                 def wrapper(self, identificator, *args, **kwargs):
                     init(self, identificator, *args, **kwargs)
                     setattr(self, attrname, {})
                 return wrapper
+            cls.__init__ = initter(cls.__init__)
+            # Add an accessor for a given foreign key
             def getter(self, identificator, *args, **kwargs):
+                """Cache foreign keys in a dictionnary"""
                 try:
                     return getattr(self, attrname)[identificator]
                 except KeyError:
                     return mcls(identificator, self, *args, **kwargs)
-            methodname = 'get_' + mcls.__name__.lower()
+            methodname = 'get_' + mcls_name
             if not hasattr(cls, methodname):
                 setattr(cls, methodname, getter)
-            cls.__init__ = initter(cls.__init__)
+            # Add an iterator over foreign keys
+            def instances_getter(self):
+                return iter(getattr(self, attrname).values())
+            methodname = mcls_name + '_iter'
+            if not hasattr(cls, methodname):
+                setattr(cls, methodname, property(instances_getter))
     return Auto
 
 
@@ -79,14 +96,14 @@ class ScenarioInstanceResult:
 
     @property
     def json(self):
-        """ Function that print the results in JSON """
+        """Return a JSON representation of the Scenario"""
         info_json = {
             'scenario_instance_id': self.scenario_instance_id,
             'owner_scenario_instance_id': self.owner_scenario_instance_id,
             'sub_scenario_instances': [scenario_instance.json for
                                        scenario_instance in
                                        self.sub_scenario_instances.values()],
-            'agents': [agent.json for agent in self.agentresults.values()]
+            'agents': [agent.json for agent in self.agentresult_iter]
         }
         return info_json
 
@@ -100,11 +117,11 @@ class AgentResult(metaclass=ForeignKey(ScenarioInstanceResult, 'name')):
 
     @property
     def json(self):
-        """ Function that print the results in JSON """
+        """Return a JSON representation of the Agent"""
         info_json = {
             'name': self.name,
             'job_instances': [job_instance.json for job_instance in
-                              self.jobinstanceresults.values()]
+                              self.jobinstanceresult_iter]
         }
         if self.ip is not None:
             info_json['ip'] = self.ip
@@ -125,7 +142,7 @@ class JobInstanceResult(metaclass=ForeignKey(AgentResult, 'job_instance_id')):
 
     @property
     def statisticresults(self):
-        """ Function that returns the statistic results with no suffix """
+        """Return the StatisticResults with no suffix"""
         try:
             return self.suffixresults[None].statisticresults
         except KeyError:
@@ -133,14 +150,13 @@ class JobInstanceResult(metaclass=ForeignKey(AgentResult, 'job_instance_id')):
 
     @property
     def json(self):
-        """ Function that print the results in JSON """
-        info_json = {
+        """Return a JSON representation of the Job"""
+        return {
             'job_instance_id': self.job_instance_id,
             'job_name': self.job_name,
-            'logs': [log.json for log in self.logresults.values()],
-            'suffixes': [suffix.json for suffix in self.suffixresults.values()]
+            'logs': [log.json for log in self.logresult_iter],
+            'suffixes': [suffix.json for suffix in self.suffixresult_iter]
         }
-        return info_json
 
 
 class SuffixResult(metaclass=ForeignKey(JobInstanceResult, 'name')):
@@ -151,10 +167,10 @@ class SuffixResult(metaclass=ForeignKey(JobInstanceResult, 'name')):
 
     @property
     def json(self):
-        """ Function that print the results in JSON """
+        """Return a JSON representation of the Suffix"""
         info_json = {
             'name': self.name,
-            'statistics': [stat.json for stat in self.statisticresults.values()]
+            'statistics': [stat.json for stat in self.statisticresult_iter]
         }
         return info_json
 
@@ -164,18 +180,13 @@ class StatisticResult(metaclass=ForeignKey(SuffixResult, 'timestamp')):
     def __init__(self, timestamp, suffix, **kwargs):
         self.timestamp = timestamp
         self.suffix = suffix
-        self.values = {}
-        for name, value in kwargs.items():
-            self.values[name] = value
+        self.values = kwargs.copy()
 
     @property
     def json(self):
-        """ Function that print the results in JSON """
-        info_json = {
-            'timestamp': self.timestamp,
-        }
-        for name, value in self.values.items():
-            info_json[name] = value
+        """Return a JSON representation of the Statistic"""
+        info_json = self.values.copy()
+        info_json['timestamp'] = self.timestamp
         return info_json
 
 
@@ -202,8 +213,8 @@ class LogResult(metaclass=ForeignKey(JobInstanceResult, '_id')):
 
     @property
     def json(self):
-        """ Function that print the Log in JSON """
-        info_json = {
+        """Return a JSON representation of the Log"""
+        return {
             '_id': self._id,
             '_index': self._index,
             '_timestamp': self._timestamp,
@@ -219,4 +230,3 @@ class LogResult(metaclass=ForeignKey(JobInstanceResult, '_id')):
             'severity_label': self.severity_label,
             'type': self.type
         }
-        return info_json

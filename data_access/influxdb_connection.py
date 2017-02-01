@@ -36,7 +36,6 @@
 
 
 import requests
-import yaml
 from .result_filter import (
         OperandStatistic,
         OperandTimestamp,
@@ -59,13 +58,7 @@ from .result_data import (
 class InfluxDBConnection:
     """ Class taht make the requests to InfluxDB """
 
-    def __init__(self, config_file):
-        with open(config_file, 'r') as stream:
-            content = yaml.load(stream)
-        collector_ip = content['collector_ip']
-        influxdb_port = content['influxdb_port']
-        database_name = content['database_name']
-        epoch = content['epoch']
+    def __init__(self, collector_ip, influxdb_port, database_name, epoch='ms'):
         self.querying_URL = 'http://{}:{}/query?db={}&epoch={}&q='.format(
             collector_ip, influxdb_port, database_name, epoch)
         self.writing_URL = 'http://{}:{}/write?db={}&precision={}'.format(

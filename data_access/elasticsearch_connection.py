@@ -37,23 +37,17 @@
 
 import requests
 import json
-import yaml
 from datetime import datetime
-from .result_data import  LogResult
+from .result_data import LogResult
 
 
 class ElasticSearchConnection:
     """ Class that make the requests to ElasticSearch """
 
-    def __init__(self, config_file):
-        with open(config_file, 'r') as stream:
-            content = yaml.load(stream)
-        self.collector_ip = content['collector_ip']
-        self.port = content['elasticsearch_port']
-        self.querying_URL = 'http://{}:{}/logstash-*/logs/_search'.format(
-            self.collector_ip, self.port)
-        self.writing_URL = 'http://{}:{}/_bulk'.format(
-            self.collector_ip, self.port)
+    def __init__(self, collector_ip, elasticsearch_port):
+        self.base_url = 'http://{}:{}'.format(collector_ip, elasticsearch_port)
+        self.querying_URL = '{}/logstash-*/logs/_search'.format(self.base_url)
+        self.writing_URL = '{}/_bulk'.format(self.base_url)
 
     def get_query(self, scenario_instance_id, agent_name, job_instance_id,
                   job_name, timestamp):
@@ -120,11 +114,9 @@ class ElasticSearchConnection:
         except KeyError:
             pass
         else:
+            url = '{}/_search/scroll'.format(self.base_url)
             while current_hits:
-                url = 'http://{}:{}/_search/scroll'
                 data = {'scroll': '1m', 'scroll_id': scroll_id}
-                url = url.format(self.collector_ip, self.port,
-                                 scroll_id)
                 response = requests.post(url, data=json.dumps(data)).json()
                 scroll_id = response['_scroll_id']
                 try:
@@ -162,11 +154,9 @@ class ElasticSearchConnection:
         except KeyError:
             pass
         else:
+            url = '{}/_search/scroll'.format(self.base_url)
             while current_hits:
-                url = 'http://{}:{}/_search/scroll'
                 data = {'scroll': '1m', 'scroll_id': scroll_id}
-                url = url.format(self.collector_ip, self.port,
-                                 scroll_id)
                 response = requests.post(url, data=json.dumps(data)).json()
                 scroll_id = response['_scroll_id']
                 try:
@@ -199,11 +189,9 @@ class ElasticSearchConnection:
         except KeyError:
             pass
         else:
+            url = '{}/_search/scroll'.format(self.base_url)
             while current_hits:
-                url = 'http://{}:{}/_search/scroll'
                 data = {'scroll': '1m', 'scroll_id': scroll_id}
-                url = url.format(self.collector_ip, self.port,
-                                 scroll_id)
                 response = requests.post(url, data=json.dumps(data)).json()
                 scroll_id = response['_scroll_id']
                 try:
@@ -237,11 +225,9 @@ class ElasticSearchConnection:
         except KeyError:
             pass
         else:
+            url = '{}/_search/scroll'.format(self.base_url)
             while current_hits:
-                url = 'http://{}:{}/_search/scroll'
                 data = {'scroll': '1m', 'scroll_id': scroll_id}
-                url = url.format(self.collector_ip, self.port,
-                                 scroll_id)
                 response = requests.post(url, data=json.dumps(data)).json()
                 scroll_id = response['_scroll_id']
                 try:
@@ -275,11 +261,9 @@ class ElasticSearchConnection:
         except KeyError:
             pass
         else:
+            url = '{}/_search/scroll'.format(self.base_url)
             while current_hits:
-                url = 'http://{}:{}/_search/scroll'
                 data = {'scroll': '1m', 'scroll_id': scroll_id}
-                url = url.format(self.collector_ip, self.port,
-                                 scroll_id)
                 response = requests.post(url, data=json.dumps(data)).json()
                 scroll_id = response['_scroll_id']
                 try:
@@ -452,11 +436,9 @@ class ElasticSearchConnection:
         except KeyError:
             pass
         else:
+            url = '{}/_search/scroll'.format(self.base_url)
             while current_hits:
-                url = 'http://{}:{}/_search/scroll'
                 data = {'scroll': '1m', 'scroll_id': scroll_id}
-                url = url.format(self.collector_ip, self.port,
-                                 scroll_id)
                 response = requests.post(url, data=json.dumps(data)).json()
                 scroll_id = response['_scroll_id']
                 try:

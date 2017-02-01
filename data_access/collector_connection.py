@@ -98,9 +98,9 @@ def load_from_json(scenario_json):
 class CollectorConnection:
     """ Class that makes the requests to the Collector """
 
-    def __init__(self, config_file='config.yml'):
-        self.stats = InfluxDBConnection(config_file)
-        self.logs = ElasticSearchConnection(config_file)
+    def __init__(self, collector_ip, elasticsearch_port, influxdb_port, database_name, epoch):
+        self.stats = InfluxDBConnection(collector_ip, influxdb_port, database_name, epoch)
+        self.logs = ElasticSearchConnection(collector_ip, elasticsearch_port)
 
     def get_scenario_instance_ids(self, agent_name=None, job_instance_id=None,
                                   job_name=None, suffix_name=None,
