@@ -55,6 +55,32 @@ from .result_data import (
 )
 
 
+def escape_names(name, measurement=False):
+    """Escape measurements and fields names as per InfluxDB parsing rules.
+
+    See https://docs.influxdata.com/influxdb/v1.2/
+    write_protocols/line_protocol_reference/#special-characters
+    for details.
+    """
+    # Ugly quick hack, replace it with a proper implementation ASAP
+    # Use re or whatnot
+    escaped = name.replace(' ', '\\ ').replace(',', '\\,')
+    if measurement:
+        return escaped
+    return escaped.replace('=', '\\=')
+
+
+def escape_field(name, value):
+    """Format field names and values as per InfluxDB parsing rules.
+
+    See https://docs.influxdata.com/influxdb/v1.2/
+    write_protocols/line_protocol_reference/ for details.
+    """
+    if isinstance(value, str):
+        value = '"{}"'.format(value.replace('"', '\\"'))
+    return '{}={}'.format(escape_names(name), value)
+
+
 class InfluxDBConnection:
     """ Class taht make the requests to InfluxDB """
 
@@ -588,19 +614,14 @@ class InfluxDBConnection:
             for job_instance in agent.jobinstanceresults.values():
                 job_instance_id = job_instance.job_instance_id
                 job_name = job_instance.job_name
-                measurement_name = '{}.{}.{}.{}.{}'.format(
+                measurement_name = escape_names('{}.{}.{}.{}.{}'.format(
                     owner_scenario_instance_id, scenario_instance_id,
-                    job_instance_id, agent_name, job_name)
+                    job_instance_id, agent_name, job_name), True)
                 for statistic in job_instance.statisticresults.values():
                     timestamp = statistic.timestamp
-                    values = statistic.values
-                    data = ''
-                    for name, value in values.items():
-                        if data:
-                            data = '{},'.format(data)
-                        data = '{}{}={}'.format(data, name, value)
-                    data = '{} {} {}'.format(measurement_name, data, timestamp)
-                    requests.post(self.writing_URL, data.encode())
+                    data = ','.join(escape_field(n, v) for n, v in statistic.values.items())
+                    body = '{} {} {}'.format(measurement_name, data, timestamp)
+                    requests.post(self.writing_URL, body.encode())
         for sub_scenario_instance in scenario_instance.sub_scenario_instances.values():
             self.export_to_collector(sub_scenario_instance)
 

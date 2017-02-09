@@ -98,7 +98,11 @@ def load_from_json(scenario_json):
 class CollectorConnection:
     """ Class that makes the requests to the Collector """
 
-    def __init__(self, collector_ip, elasticsearch_port, influxdb_port, database_name, epoch):
+    def __init__(self, collector_ip,
+                 elasticsearch_port=9200,
+                 influxdb_port=8086,
+                 database_name='openbach',
+                 epoch='ms'):
         self.stats = InfluxDBConnection(collector_ip, influxdb_port, database_name, epoch)
         self.logs = ElasticSearchConnection(collector_ip, elasticsearch_port)
 

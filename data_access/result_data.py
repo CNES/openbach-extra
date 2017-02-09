@@ -36,6 +36,7 @@
 
 
 import functools
+from collections import OrderedDict
 
 
 def ForeignKey(cls, key):
@@ -65,7 +66,7 @@ def ForeignKey(cls, key):
                 @functools.wraps(init)
                 def wrapper(self, identificator, *args, **kwargs):
                     init(self, identificator, *args, **kwargs)
-                    setattr(self, attrname, {})
+                    setattr(self, attrname, OrderedDict())
                 return wrapper
             cls.__init__ = initter(cls.__init__)
             # Add an accessor for a given foreign key
