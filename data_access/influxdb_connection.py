@@ -92,27 +92,20 @@ class InfluxDBConnection:
 
     def get_query(self, timestamp, condition):
         """ Function that constructs the query """
-        result = ''
-        changed = False
+        clauses = []
         if condition is not None:
-            if changed:
-                result = '{}+and+'.format(result)
-            changed = True
-            result = '{}{}'.format(result, condition)
+            clauses.append(str(condition))
         if timestamp is not None:
-            if changed:
-                result = '{}+and+'.format(result)
-            changed = True
             try:
                 timestamp_down, timestamp_up = timestamp
             except TypeError:
-                result = '{}time+=+{}ms'.format(result, timestamp)
+                clauses.append('time+=+{}ms'.format(timestamp))
             else:
-                result = '{}time+<=+{}ms+and+time+>=+{}ms'.format(
-                    result, timestamp_up, timestamp_down)
-        if changed:
-            result = 'where+{}'.format(result)
-        return result
+                clauses.append('time+<=+{}ms'.format(timestamp_up))
+                clauses.append('time+>=+{}ms'.format(timestamp_down))
+        if clauses:
+            return '+where+{}'.format('+and+'.join(clauses))
+        return '' 
 
     def get_all_measurements(self, scenario_instance_id=None, agent_name=None,
                              job_instance_id=None, job_name=None,
@@ -154,7 +147,7 @@ class InfluxDBConnection:
                     continue
             url = '+from+"' + measurement[0] + '"'
             if query:
-                url += '+' + query
+                url += query
             if query or stat_names:
                 url = '{}select+{}{}'.format(self.querying_URL, ','.join(stat_names), url)
                 response = requests.get(url).json()
@@ -266,26 +259,21 @@ class InfluxDBConnection:
                        job_name, suffix_name, stat_names, condition):
         """ Function that returns all the timestamps available in InfluxDB """
         timestamps = set()
-        query = self.get_query(None, condition)
+        condition = self.get_query(None, condition)
+        select = ',+'.join(stat_names) if stat_names else '*'
+        url_template = '{}select+{}+from+"{{}}"{}'.format(
+                self.querying_URL, select, condition)
         measurements = self.get_all_measurements(
             scenario_instance_id, agent_name, job_instance_id, job_name,
             suffix_name, stat_names, condition)
         for measurement in measurements:
-            if stat_names:
-                url = '{}select+{}'.format(
-                    self.querying_URL, ',+'.join(stat_names))
-            else:
-                url = '{}select+*'.format(self.querying_URL)
-            url = '{}+from+"{}"'.format(url, measurement)
-            if query:
-                url = '{}{}'.format(url, query)
-            response = requests.get(url).json()
+            response = requests.get(url_template.format(measurement)).json()
             try:
                 values = response['results'][0]['series'][0]['values']
-            except KeyError:
-                continue
-            for value in values:
-                timestamps.add(value[0])
+            except LookupError:
+                pass
+            else:
+                timestamps.update(value[0] for value in values)
         return timestamps
 
     def get_scenario_instance_values(self, scenario_instance, agent_name,

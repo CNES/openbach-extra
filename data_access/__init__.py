@@ -39,7 +39,7 @@ well as means to filter them at will.
 __author__ = 'Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>'
 __version__ = 'v0.1'
 __all__ = [
-    'generate_scenario_instance',
+    'read_scenario',
     'CollectorConnection',
     'OperandStatistic',
     'OperandTimestamp',
@@ -56,7 +56,7 @@ __all__ = [
 
 
 from .collector_connection import (
-    generate_scenario_instance,
+    read_scenario,
     CollectorConnection,
 )
 from .result_filter import (

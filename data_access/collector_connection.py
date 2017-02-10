@@ -41,58 +41,17 @@ from .influxdb_connection import InfluxDBConnection
 from .elasticsearch_connection import ElasticSearchConnection
 
 
-def generate_scenario_instance(scenario_file):
-    """ Function that generates the scenario instance from a file to the
-    result structure """
-    with open(scenario_file, 'r') as f:
-        scenario_json = f.read()
-    scenario_json = json.loads(scenario_json)
-    return load_from_json(scenario_json)
+def read_scenario(filename):
+    """Generate a ScenarioInstanceResult instance from a file.
 
-def load_from_json(scenario_json):
-    scenario_instance_id = scenario_json.pop('scenario_instance_id')
-    owner_scenario_instance_id = scenario_json.pop(
-        'owner_scenario_instance_id')
-    sub_scenario_instances_json = scenario_json.pop(
-        'sub_scenario_instances')
-    scenario_instance = ScenarioInstanceResult(
-        scenario_instance_id, owner_scenario_instance_id)
-    agents_json = scenario_json.pop('agents')
-    for agent_json in agents_json:
-        agent_name = agent_json.pop('name')
-        agent = scenario_instance.get_agentresult(agent_name)
-        job_instances_json = agent_json.pop('job_instances')
-        for job_instance_json in job_instances_json:
-            job_instance_id = job_instance_json.pop('job_instance_id')
-            job_name = job_instance_json.pop('job_name')
-            job_instance = agent.get_jobinstanceresult(job_instance_id,
-                                                       job_name)
-            logs_json = job_instance_json.pop('logs')
-            for log_json in logs_json:
-                job_instance.get_logresult(
-                    log_json['_id'], log_json['_index'],
-                    log_json['_timestamp'], log_json['_version'],
-                    log_json['facility'], log_json['facility_label'],
-                    log_json['flag'], log_json['host'], log_json['message'],
-                    log_json['pid'], log_json['priority'],
-                    log_json['severity'], log_json['severity_label'],
-                    log_json['type'])
-            suffixes_json = job_instance_json.pop('suffixes')
-            for suffix_json in suffixes_json:
-                suffix_name = suffix_json.pop('name')
-                suffix = job_instance.get_suffixresult(suffix_name)
-                statistics_json = suffix_json.pop('statistics')
-                for statistic_json in statistics_json:
-                    timestamp = statistic_json.pop('timestamp')
-                    values = {}
-                    for name, value in statistic_json.items():
-                        values[name] = value
-                    suffix.get_statisticresult(timestamp, **values)
-    for sub_scenario_instance_json in sub_scenario_instances_json:
-        sub_scenario_instance = load_from_json(sub_scenario_instance_json)
-        sub_scenario_instance_id = sub_scenario_instance.scenario_instance_id
-        scenario_instance.sub_scenario_instances[sub_scenario_instance_id] = sub_scenario_instance
-    return scenario_instance
+    The file should contain the equivalent of a JSON
+    dump of the dictionary returned by the `json` property
+    of the corresponding ScenarioInstanceResult instance.
+    """
+
+    with open(filename) as f:
+        scenario_json = json.load(f)
+    return ScenarioInstanceResult.load(scenario_json)
 
 
 class CollectorConnection:

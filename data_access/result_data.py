@@ -108,6 +108,21 @@ class ScenarioInstanceResult:
         }
         return info_json
 
+    @classmethod
+    def load(cls, scenario_data):
+        """Generate a ScenarioInstanceResult instance from a JSON representation"""
+        instance_id = scenario_data['scenario_instance_id']
+        owner_id = scenario_data['owner_scenario_instance_id']
+        instance = cls(instance_id, owner_id)
+        for agent_data in scenario_data['agents']:
+            agent = AgentResult.load(agent_data, instance)
+            instance.agentresults[agent.name] = agent
+        for sub_scenario_data in scenario_data['sub_scenario_instances']:
+            sub_scenario = cls.load(sub_scenario_data)
+            sub_instance_id = sub_scenario.scenario_instance_id
+            instance.sub_scenario_instances[sub_instance_id] = sub_scenario
+        return instance
+
 
 class AgentResult(metaclass=ForeignKey(ScenarioInstanceResult, 'name')):
     """ Structure that represents all the results of an Agent """
@@ -127,6 +142,18 @@ class AgentResult(metaclass=ForeignKey(ScenarioInstanceResult, 'name')):
         if self.ip is not None:
             info_json['ip'] = self.ip
         return info_json
+
+    @classmethod
+    def load(cls, agent_data, scenario=None):
+        """Generate a AgentResult instance from a JSON representation"""
+        name = agent_data['name']
+        ip = agent_data.get('ip')
+        instance = cls(name, scenario_instance=scenario)
+        instance.ip = ip
+        for job_data in agent_data['job_instances']:
+            job = JobInstanceResult.load(job_data, instance)
+            instance.jobinstanceresults[job.job_instance_id] = job
+        return instance
 
 
 class JobInstanceResult(metaclass=ForeignKey(AgentResult, 'job_instance_id')):
@@ -159,6 +186,20 @@ class JobInstanceResult(metaclass=ForeignKey(AgentResult, 'job_instance_id')):
             'suffixes': [suffix.json for suffix in self.suffixresult_iter]
         }
 
+    @classmethod
+    def load(cls, job_data, agent=None):
+        """Generate a JobInstanceResult instance from a JSON representation"""
+        name = job_data['name']
+        instance_id = job_data['job_instance_id']
+        instance = cls(instance_id, agent=agent, job_name=name)
+        for suffix_data in job_data['suffixes']:
+            suffix = SuffixResult.load(suffix_data, instance)
+            instance.suffixresults[suffix.name] = suffix
+        for log_data in job_data['logs']:
+            log = LogResult.load(log_data, instance)
+            instance.logresults[log._id] = log
+        return instance
+
 
 class SuffixResult(metaclass=ForeignKey(JobInstanceResult, 'name')):
     """ Structure that represents all the results of a Suffix """
@@ -175,13 +216,23 @@ class SuffixResult(metaclass=ForeignKey(JobInstanceResult, 'name')):
         }
         return info_json
 
+    @classmethod
+    def load(cls, suffix_data, job=None):
+        """Generate a SuffixResult instance from a JSON representation"""
+        name = suffix_data['name']
+        instance = cls(name, job_instance=job)
+        for statistic_data in suffix_data['statistics']:
+            statistic = StatisticResult.load(statistic_data, instance)
+            instance.statisticresults[statistic.timestamp] = statistic
+        return instance
+
 
 class StatisticResult(metaclass=ForeignKey(SuffixResult, 'timestamp')):
     """ Structure that represents all the results of a Statistic """
     def __init__(self, timestamp, suffix, **kwargs):
         self.timestamp = timestamp
         self.suffix = suffix
-        self.values = kwargs.copy()
+        self.values = kwargs
 
     @property
     def json(self):
@@ -189,6 +240,11 @@ class StatisticResult(metaclass=ForeignKey(SuffixResult, 'timestamp')):
         info_json = self.values.copy()
         info_json['timestamp'] = self.timestamp
         return info_json
+
+    @classmethod
+    def load(cls, statistic_data, suffix=None):
+        """Generate a StatisticResult instance from a JSON representation"""
+        return cls(suffix=suffix, **statistic_data)
 
 
 class LogResult(metaclass=ForeignKey(JobInstanceResult, '_id')):
@@ -215,19 +271,10 @@ class LogResult(metaclass=ForeignKey(JobInstanceResult, '_id')):
     @property
     def json(self):
         """Return a JSON representation of the Log"""
-        return {
-            '_id': self._id,
-            '_index': self._index,
-            '_timestamp': self._timestamp,
-            '_version': self._version,
-            'facility': self.facility,
-            'facility_label': self.facility_label,
-            'flag': self.flag,
-            'host': self.host,
-            'message': self.message,
-            'pid': self.pid,
-            'priority': self.priority,
-            'severity': self.severity,
-            'severity_label': self.severity_label,
-            'type': self.type
-        }
+        return {key: value for key, value in vars(self).items()
+                if key != 'job_instance'}
+
+    @classmethod
+    def load(cls, log_data, job=None):
+        """Generate a LogResult instance from a JSON representation"""
+        return cls(job_instance=job, **log_data)
