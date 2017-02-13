@@ -189,7 +189,7 @@ class JobInstanceResult(metaclass=ForeignKey(AgentResult, 'job_instance_id')):
     @classmethod
     def load(cls, job_data, agent=None):
         """Generate a JobInstanceResult instance from a JSON representation"""
-        name = job_data['name']
+        name = job_data['job_name']
         instance_id = job_data['job_instance_id']
         instance = cls(instance_id, agent=agent, job_name=name)
         for suffix_data in job_data['suffixes']:
