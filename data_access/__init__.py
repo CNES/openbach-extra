@@ -41,6 +41,7 @@ __version__ = 'v0.1'
 __all__ = [
     'read_scenario',
     'CollectorConnection',
+    'AsyncCollectorConnection',
     'OperandStatistic',
     'OperandTimestamp',
     'OperandValue',
@@ -57,6 +58,7 @@ __all__ = [
 from .collector_connection import (
     read_scenario,
     CollectorConnection,
+    AsyncCollectorConnection,
 )
 from .result_filter import (
     OperandStatistic,
