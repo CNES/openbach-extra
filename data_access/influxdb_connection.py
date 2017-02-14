@@ -95,7 +95,7 @@ class InfluxDBConnection:
     def _request_query(self, sql_query):
         return requests.get(
                 self.querying_URL,
-                params={'q': query}).json()
+                params={'q': sql_query}).json()
 
     def build_select_template(self, stats_names, timestamp, condition):
         """Construct a SELECT query whose measurement name is missing"""
@@ -113,7 +113,7 @@ class InfluxDBConnection:
 
         conditions = ' WHERE {}'.format(' AND '.join(clauses)) if clauses else ''
         select = ','.join("{}".format(n) for n in stats_names) if stats_names else '*'
-        return 'SELECT {} FROM "{}"{}'.format(select, conditions)
+        return 'SELECT {} FROM "{{}}"{}'.format(select, conditions)
 
     def get_all_measurements(
             self, scenario_instance_id=None,
@@ -124,7 +124,7 @@ class InfluxDBConnection:
         """
 
         regexp = r'\.'.join(
-                '.*' if part is None else part
+                '.*' if part is None else str(part)
                 for part in (None, scenario_instance_id,
                              job_instance_id, agent_name, job_name))
         if suffix_name is not None:
