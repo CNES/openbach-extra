@@ -65,62 +65,56 @@ class CollectorConnection:
         self.stats = InfluxDBConnection(collector_ip, influxdb_port, database_name, epoch)
         self.logs = ElasticSearchConnection(collector_ip, elasticsearch_port)
 
-    def get_scenario_instance_ids(self, agent_name=None, job_instance_id=None,
-                                  job_name=None, suffix_name=None,
-                                  stat_names=[], timestamp=None,
-                                  condition=None):
+    def get_scenario_instance_ids(
+            self, agent_name=None, job_instance_id=None,
+            job_name=None, suffix_name=None, timestamp=None):
         """ Function that returns all the available scenario_instance_ids in
         InfluxDB and ElasticSearch """
         scenario_instance_ids = self.stats.get_scenario_instance_ids(
-            agent_name, job_instance_id, job_name, suffix_name, stat_names,
-            timestamp, condition)
+            agent_name, job_instance_id, job_name, suffix_name)
         scenario_instance_ids |= self.logs.get_scenario_instance_ids(
             agent_name, job_instance_id, job_name, timestamp)
         return scenario_instance_ids
 
-    def get_agent_names(self, scenario_instance_id=None,
-                        job_instance_id=None, job_name=None, suffix_name=None,
-                        stat_names=[], timestamp=None, condition=None):
+    def get_agent_names(
+            self, scenario_instance_id=None, job_instance_id=None,
+            job_name=None, suffix_name=None, timestamp=None):
         """ Function that returns all the avaible agent_names in InfluxDB and
         ElasticSearch """
         agent_names = self.stats.get_agent_names(
-            scenario_instance_id, job_instance_id, job_name, suffix_name,
-            stat_names, timestamp, condition)
+            scenario_instance_id, job_instance_id, job_name, suffix_name)
         agent_names |= self.logs.get_agent_names(
             scenario_instance_id, job_instance_id, job_name, timestamp)
         return agent_names
 
-    def get_job_instance_ids(self, scenario_instance_id=None, agent_name=None,
-                             job_name=None, suffix_name=None, stat_names=[],
-                             timestamp=None, condition=None):
+    def get_job_instance_ids(
+            self, scenario_instance_id=None, agent_name=None,
+            job_name=None, suffix_name=None, timestamp=None):
         """ Function that returns all the available job_instance_ids in InfluxDB
         and ElasticSearch """
         job_instance_ids = self.stats.get_job_instance_ids(
-            scenario_instance_id, agent_name, job_name, suffix_name, stat_names,
-            timestamp, condition)
+            scenario_instance_id, agent_name, job_name, suffix_name)
         job_instance_ids |= self.logs.get_job_instance_ids(
             scenario_instance_id, agent_name, job_name, timestamp)
         return job_instance_ids
 
-    def get_job_names(self, scenario_instance_id=None, agent_name=None,
-                      job_instance_id=None, suffix_name=None, stat_names=[],
-                      timestamp=None, condition=None):
+    def get_job_names(
+            self, scenario_instance_id=None, agent_name=None,
+            job_instance_id=None, suffix_name=None, timestamp=None):
         """ Function that returns all the available job_names in InfluxDB
         and ElasticSearch """
         job_names = self.stats.get_job_names(
-            scenario_instance_id, agent_name, job_instance_id, suffix_name,
-            stat_names, timestamp, condition)
+            scenario_instance_id, agent_name, job_instance_id, suffix_name)
         job_names |= self.logs.get_job_names(
             scenario_instance_id, agent_name, job_instance_id, timestamp)
         return job_names
 
-    def get_suffix_names(self, scenario_instance_id=None, agent_name=None,
-                         job_instance_id=None, job_name=None, stat_names=[],
-                         timestamp=None, condition=None):
+    def get_suffix_names(
+            self, scenario_instance_id=None, agent_name=None,
+            job_instance_id=None, job_name=None):
         """ Function that returns all the available suffix_names in InfluxDB """
         return self.stats.get_suffix_names(
-            scenario_instance_id, agent_name, job_instance_id, job_name,
-            stat_names, timestamp, condition)
+            scenario_instance_id, agent_name, job_instance_id, job_name)
 
     def get_timestamps(self, scenario_instance_id=None, agent_name=None,
                        job_instance_id=None, job_name=None, suffix_name=None,

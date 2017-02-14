@@ -35,8 +35,8 @@ Statistics and logs are available through various methods as
 well as means to filter them at will.
 """
 
-
 __author__ = 'Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>'
+__credits__ = 'contributions: Mathias ETTINGER'
 __version__ = 'v0.1'
 __all__ = [
     'read_scenario',
@@ -53,7 +53,6 @@ __all__ = [
     'ConditionBelow',
     'ConditionBelowOrEqual',
 ]
-
 
 from .collector_connection import (
     read_scenario,

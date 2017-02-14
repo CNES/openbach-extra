@@ -1,58 +1,55 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-   OpenBACH is a generic testbed able to control/configure multiple
-   network/physical entities (under test) and collect data from them. It is
-   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
-   Agents (one for each network entity that wants to be tested).
+# OpenBACH is a generic testbed able to control/configure multiple
+# network/physical entities (under test) and collect data from them. It is
+# composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+# Agents (one for each network entity that wants to be tested).
+#
+#
+# Copyright © 2016 CNES
+#
+#
+# This file is part of the OpenBACH testbed.
+#
+#
+# OpenBACH is a free software : you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program. If not, see http://www.gnu.org/licenses/.
 
-
-   Copyright © 2016 CNES
-
-
-   This file is part of the OpenBACH testbed.
-
-
-   OpenBACH is a free software : you can redistribute it and/or modify it under the
-   terms of the GNU General Public License as published by the Free Software
-   Foundation, either version 3 of the License, or (at your option) any later
-   version.
-
-   This program is distributed in the hope that it will be useful, but WITHOUT
-   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
-   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-   details.
-
-   You should have received a copy of the GNU General Public License along with
-   this program. If not, see http://www.gnu.org/licenses/.
-
-
-
-   @file     influxdb_connection.py
-   @brief
-   @author   Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
+"""Collection of tools to fetch information from an InfluxDB server.
 """
 
+__author__ = 'Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>'
+__credits__ = 'contributions: Mathias ETTINGER'
+__all__ = ['InfluxDBConnection']
+
+from collections import defaultdict
 
 import requests
+
 from .result_filter import (
-        OperandStatistic,
-        OperandTimestamp,
-        OperandValue,
-        ConditionAnd,
-        ConditionOr,
-        ConditionEqual,
-        ConditionUpperOrEqual,
-        ConditionUpper,
-        ConditionNotEqual,
-        ConditionBelow,
-        ConditionBelowOrEqual,
+    OperandStatistic,
+    OperandValue,
+    ConditionAnd,
+    ConditionOr,
+    ConditionEqual,
+    ConditionUpperOrEqual,
+    ConditionUpper,
+    ConditionNotEqual,
+    ConditionBelow,
+    ConditionBelowOrEqual,
 )
-from .result_data import (
-        ScenarioInstanceResult,
-        StatisticResult,
-)
+from .result_data import ScenarioInstanceResult, SuffixResult, StatisticResult
 
 
 def escape_names(name, measurement=False):
@@ -82,16 +79,26 @@ def escape_field(name, value):
 
 
 class InfluxDBConnection:
-    """ Class taht make the requests to InfluxDB """
+    """Manage connection to InfluxDB in order to extract or insert data"""
 
     def __init__(self, collector_ip, influxdb_port, database_name, epoch='ms'):
-        self.querying_URL = 'http://{}:{}/query?db={}&epoch={}&q='.format(
-            collector_ip, influxdb_port, database_name, epoch)
-        self.writing_URL = 'http://{}:{}/write?db={}&precision={}'.format(
-            collector_ip, influxdb_port, database_name, epoch)
+        """Configure the connection with request informations"""
+        self.writing_URL = requests.Request(
+                method='GET',
+                url='http://{}:{}/write'.format(collector_ip, influxdb_port),
+                params={'db': database_name, 'precision': epoch}).prepare().url
+        self.querying_URL = requests.Request(
+                method='GET',
+                url='http://{}:{}/query'.format(collector_ip, influxdb_port),
+                params={'db': database_name, 'epoch': epoch}).prepare().url
 
-    def get_query(self, timestamp, condition):
-        """ Function that constructs the query """
+    def _request_query(self, sql_query):
+        return requests.get(
+                self.querying_URL,
+                params={'q': query}).json()
+
+    def build_select_template(self, stats_names, timestamp, condition):
+        """Construct a SELECT query whose measurement name is missing"""
         clauses = []
         if condition is not None:
             clauses.append(str(condition))
@@ -99,175 +106,123 @@ class InfluxDBConnection:
             try:
                 timestamp_down, timestamp_up = timestamp
             except TypeError:
-                clauses.append('time+=+{}ms'.format(timestamp))
+                clauses.append('time = {}ms'.format(timestamp))
             else:
-                clauses.append('time+<=+{}ms'.format(timestamp_up))
-                clauses.append('time+>=+{}ms'.format(timestamp_down))
-        if clauses:
-            return '+where+{}'.format('+and+'.join(clauses))
-        return '' 
+                clauses.append('time <= {}ms'.format(timestamp_up))
+                clauses.append('time >= {}ms'.format(timestamp_down))
 
-    def get_all_measurements(self, scenario_instance_id=None, agent_name=None,
-                             job_instance_id=None, job_name=None,
-                             suffix_name=None, stat_names=[], timestamp=None,
-                             condition=None):
-        """ Function that returns all the available measurements in InfluxDB """
-        url = '{}SHOW+MEASUREMENTS'.format(self.querying_URL)
-        response = requests.get(url).json()
-        values = response['results'][0]['series'][0]['values']
-        measurements = set()
-        query = self.get_query(timestamp, condition)
-        for measurement in values:
-            try:
-                owner_scenario_instance_id, scenario_instance, job_instance, agent_n, job, suffix_n = measurement[0].split('.')
-            except ValueError:
-                try:
-                    owner_scenario_instance_id, scenario_instance, job_instance, agent_n, job = measurement[0].split('.')
-                    suffix_n = None
-                except ValueError:
-                    continue
-            owner_scenario_instance_id = int(owner_scenario_instance_id)
-            scenario_instance = int(scenario_instance)
-            job_instance = int(job_instance)
-            if scenario_instance_id is not None:
-                if (scenario_instance != scenario_instance_id and
-                    owner_scenario_instance_id != scenario_instance_id):
-                    continue
-            if agent_name is not None:
-                if agent_n != agent_name:
-                    continue
-            if job_instance_id is not None:
-                if job_instance != job_instance_id:
-                    continue
-            if job_name is not None:
-                if job != job_name:
-                    continue
-            if suffix_name is not None:
-                if suffix_n != suffix_name:
-                    continue
-            url = '+from+"' + measurement[0] + '"'
-            if query:
-                url += query
-            if query or stat_names:
-                url = '{}select+{}{}'.format(self.querying_URL, ','.join(stat_names), url)
-                response = requests.get(url).json()
-                try:
-                    response['results'][0]['series']
-                except KeyError:
-                    continue
-            measurements.add(measurement[0])
-        return measurements
+        conditions = ' WHERE {}'.format(' AND '.join(clauses)) if clauses else ''
+        select = ','.join("{}".format(n) for n in stats_names) if stats_names else '*'
+        return 'SELECT {} FROM "{}"{}'.format(select, conditions)
 
-    def get_scenario_instance_ids(self, agent_name, job_instance_id, job_name,
-                                  suffix_name, stat_names, timestamp,
-                                  condition):
-        """ Function that returns all the available scenario_instance_ids in
-        InfluxDB """
-        scenario_instance_ids = set()
-        all_measurements = self.get_all_measurements(
-            None, agent_name, job_instance_id, job_name, suffix_name,
-            stat_names, condition)
-        for measurement in all_measurements:
-            try:
-                _, scenario_instance, _, _, _, _ = measurement.split('.')
-            except ValueError:
-                try:
-                    _, scenario_instance, _, _, _ = measurement.split('.')
-                except ValueError:
-                    continue
-            scenario_instance = int(scenario_instance)
-            scenario_instance_ids.add(scenario_instance)
-        return scenario_instance_ids
-
-    def get_agent_names(self, scenario_instance_id, job_instance_id, job_name,
-                        suffix_name, stat_names, timestamp, condition):
-        """ Function that returns all the avaible agent_names in InfluxDB """
-        agent_names = set()
-        all_measurements = self.get_all_measurements(
-            scenario_instance_id, None, job_instance_id, job_name, suffix_name,
-            stat_names, condition)
-        for measurement in all_measurements:
-            try:
-                _, _, _, agent_name, _, _ = measurement.split('.')
-            except ValueError:
-                try:
-                    _, _, _, agent_name, _ = measurement.split('.')
-                except ValueError:
-                    continue
-            agent_names.add(agent_name)
-        return agent_names
-
-    def get_job_instance_ids(self, scenario_instance_id, agent_name, job_name,
-                             suffix_name, stat_names, timestamp, condition):
-        """ Function that returns all the available job_instance_ids in InfluxDB
+    def get_all_measurements(
+            self, scenario_instance_id=None,
+            agent_name=None, job_instance_id=None,
+            job_name=None, suffix_name=None):
+        """Return measurements names in InfluxDB that correspond
+        to the given constraints.
         """
-        job_instance_ids = set()
-        all_measurements = self.get_all_measurements(
-            scenario_instance_id, agent_name, None, job_name, suffix_name,
-            stat_names, condition)
-        for measurement in all_measurements:
-            try:
-                _, _, job_instance_id, _, _, _ = measurement.split('.')
-            except ValueError:
-                try:
-                    _, _, job_instance_id, _, _ = measurement.split('.')
-                except ValueError:
-                    continue
-            job_instance_ids.add(job_instance_id)
-        return job_instance_ids
 
-    def get_job_names(self, scenario_instance_id, agent_name, job_instance_id,
-                      suffix_name, stat_names, timestamp, condition):
-        """ Function that returns all the available job_names in InfluxDB
+        regexp = r'\.'.join(
+                '.*' if part is None else part
+                for part in (None, scenario_instance_id,
+                             job_instance_id, agent_name, job_name))
+        if suffix_name is not None:
+            regexp += r'\.{}'.format(suffix_name)
+
+        query = 'SHOW MEASUREMENTS WITH MEASUREMENT = /{}/'.format(regexp)
+        response = self._request_query(query)
+
+        data = response['results'][0]['series'][0]
+        assert data['name'] == 'measurements'
+        assert data['columns'] == ['name']
+
+        return [measurement[0] for measurement in data['values']]
+
+    def _get_measurement_column(
+            self, column, scenario_instance_id, agent_name,
+            job_instance_id, job_name, suffix_name):
+        """Extract out the nth column from the measurements
+        names that correspond to the given query.
         """
-        job_names = set()
-        all_measurements = self.get_all_measurements(
-            scenario_instance_id, agent_name, job_instance_id, None,
-            suffix_name, stat_names, condition)
-        for measurement in all_measurements:
-            try:
-                _, _, _, _, job_name, _ = measurement.split('.')
-            except ValueError:
-                try:
-                    _, _, _, _, job_name = measurement.split('.')
-                except ValueError:
-                    continue
-            job_names.add(job_name)
-        return job_names
 
-    def get_suffix_names(self, scenario_instance_id=None, agent_name=None,
-                         job_instance_id=None, job_name=None, stat_names=[],
-                         timestamp=None, condition=None):
-        """ Function that returns all the available suffix_names in InfluxDB """
-        suffix_names = set()
-        all_measurements = self.get_all_measurements(
-            scenario_instance_id, agent_name, job_instance_id, job_name,
-            None, stat_names, condition)
-        for measurement in all_measurements:
+        measurements = self.get_all_measurements(
+                scenario_instance_id, agent_name,
+                job_instance_id, job_name, suffix_name)
+
+        def extract_nth(measurement):
             try:
-                _, _, _, _, _, suffix_name = measurement.split('.')
-            except ValueError:
-                try:
-                    _, _, _, _, _ = measurement.split('.')
-                    suffix_name = None
-                except ValueError:
-                    continue
-            suffix_names.add(suffix_name)
-        return suffix_names
+                nth = measurement.split()[column]
+            except IndexError:
+                return None
+            else:
+                return nth
+
+        return {extract_nth(m) for m in measurements}
+
+    def get_scenario_instance_ids(
+            self, agent_name,
+            job_instance_id,
+            job_name, suffix_name):
+        """Return the available scenarios instance ids in
+        InfluxDB that correspond to the given query.
+        """
+        return self._get_measurement_column(
+                1, None, agent_name, job_instance_id,
+                job_name, suffix_name)
+
+    def get_agent_names(
+            self, scenario_instance_id,
+            job_instance_id,
+            job_name, suffix_name):
+        """Return the avaible agents names in InfluxDB that
+        correspond to the given query.
+        """
+        return self._get_measurement_column(
+                3, scenario_instance_id, None,
+                job_instance_id, job_name, suffix_name)
+
+    def get_job_instance_ids(
+            self, scenario_instance_id,
+            agent_name, job_name, suffix_name):
+        """Return the available jobs instance ids in InfluxDB that
+        correspond to the given query.
+        """
+        return self._get_measurement_column(
+                2, scenario_instance_id, agent_name,
+                None, job_name, suffix_name)
+
+    def get_job_names(
+            self, scenario_instance_id, agent_name,
+            job_instance_id, suffix_name):
+        """Return the available jobs names in InfluxDB that
+        correspond to the given query.
+        """
+        return self._get_measurement_column(
+                4, scenario_instance_id, agent_name,
+                job_instance_id, None, suffix_name)
+
+    def get_suffix_names(self, scenario_instance_id, agent_name,
+                         job_instance_id, job_name):
+        """Return the available suffixes names in InfluxDB
+        that correspond to the given query.
+        """
+        return self._get_measurement_column(
+                4, scenario_instance_id, agent_name,
+                job_instance_id, job_name, None)
 
     def get_timestamps(self, scenario_instance_id, agent_name, job_instance_id,
                        job_name, suffix_name, stat_names, condition):
-        """ Function that returns all the timestamps available in InfluxDB """
+        """Return the values of timestamps available in InfluxDB
+        for the given query.
+        """
         timestamps = set()
-        condition = self.get_query(None, condition)
-        select = ',+'.join(stat_names) if stat_names else '*'
-        url_template = '{}select+{}+from+"{{}}"{}'.format(
-                self.querying_URL, select, condition)
+        query = self.build_select_template(stat_names, None, condition)
         measurements = self.get_all_measurements(
-            scenario_instance_id, agent_name, job_instance_id, job_name,
-            suffix_name, stat_names, condition)
+            scenario_instance_id, agent_name,
+            job_instance_id, job_name, suffix_name)
         for measurement in measurements:
-            response = requests.get(url_template.format(measurement)).json()
+            response = self._request_query(query.format(measurement))
             try:
                 values = response['results'][0]['series'][0]['values']
             except LookupError:
@@ -276,92 +231,59 @@ class InfluxDBConnection:
                 timestamps.update(value[0] for value in values)
         return timestamps
 
+    def _fill_suffix_with_values(self, suffix, sql_query):
+        response = self._request_query(sql_query)
+        try:
+            stats_names = response['results'][0]['series'][0]['columns']
+            stats_values = response['results'][0]['series'][0]['values']
+        except LookupError:
+            return
+
+        time_index = stats_names.index('time')
+        for row_value in stats_values:
+            statistic = {
+                name: value
+                for name, value in zip(stats_names, row_value)
+                if name != 'time'
+            }
+            time = row_value[time_index]
+            suffix.get_statisticresult(time, **statistic)
+
     def get_scenario_instance_values(self, scenario_instance, agent_name,
                                      job_instance_id, job_name, suffix_name,
                                      stat_names, timestamp, condition):
-        """ Function that fills the ScenarioInstanceResult given of the
-        available statistics from InfluxDB """
+        """Fill statistics from InfluxDB corresponding to the given
+        query into the provided ScenarioInstanceResult.
+        """
         scenario_instance_id = scenario_instance.scenario_instance_id
-        query = self.get_query(timestamp, condition)
-        all_measurements = self.get_all_measurements(
-            scenario_instance_id, agent_name, job_instance_id, job_name,
-            suffix_name, stat_names, condition)
-        agent_names = set()
-        measurements_scenario = []
-        for measurement in all_measurements:
-            try:
-                owner_scenario_instance_i, scenario_instance_i, _, agent_n, _, _ = measurement.split('.')
-            except ValueError:
-                try:
-                    owner_scenario_instance_i, scenario_instance_i, _, agent_n, _ = measurement.split('.')
-                except ValueError:
-                    continue
-            owner_scenario_instance_i = int(owner_scenario_instance_i)
-            scenario_instance_i = int(scenario_instance_i)
-            if scenario_instance_i != scenario_instance_id:
-                if scenario_instance_i not in scenario_instance.sub_scenario_instances:
+        query = self.build_select_template(stat_names, timestamp, condition)
+        measurements = self.get_all_measurements(
+            scenario_instance_id, agent_name,
+            job_instance_id, job_name, suffix_name)
+        agent_names = defaultdict(list)
+        for measurement in measurements:
+            owner_id, scenario_id, job_id, agent, job_n, *suffix = measurement.split('.')
+            suffix = None if not suffix else suffix[0]
+            owner_id = int(owner_id)
+            scenario_id = int(scenario_id)
+            if scenario_id != scenario_instance_id:
+                if scenario_id not in scenario_instance.sub_scenario_instances:
                     sub_scenario_instance = ScenarioInstanceResult(
-                        scenario_instance_i, scenario_instance_id)
-                    scenario_instance.sub_scenario_instances[scenario_instance_i] = sub_scenario_instance
+                            scenario_id, scenario_instance_id)
+                    scenario_instance.sub_scenario_instances[scenario_id] = sub_scenario_instance
                 continue
             elif scenario_instance.owner_scenario_instance_id is None:
-                scenario_instance.owner_scenario_instance_id = owner_scenario_instance_i
-            agent_names.add(agent_n)
-            measurements_scenario.append(measurement)
-        for agent_n in agent_names:
-            agent = scenario_instance.get_agentresult(agent_n)
-            measurements = []
-            for measurement in measurements_scenario:
-                try:
-                    _, _, _, current_agent_n, _ = measurement.split('.')
-                    if current_agent_n == agent_n:
-                        measurements.append(measurement)
-                except ValueError:
-                    continue
-            for measurement in measurements:
-                try:
-                    _, _, current_job_instance_id, _, current_job_name, suffix_n = measurement.split('.')
-                except ValueError:
-                    try:
-                        _, _, current_job_instance_id, _, current_job_name = measurement.split('.')
-                        suffix_n = None
-                    except ValueError:
-                        continue
-                current_job_instance_id = int(current_job_instance_id)
-                job_instance = agent.get_jobinstanceresult(
-                    current_job_instance_id, current_job_name)
+                scenario_instance.owner_scenario_instance_id = owner_id
+            assert scenario_instance.owner_scenario_instance_id == owner_id
+
+            agent_names[agent].append((int(job_id), job_n, suffix, measurement))
+
+        for agent_name, measurements in agent_names.items():
+            agent = scenario_instance.get_agentresult(agent_name)
+            for job_id, job_n, suffix_n, measurement_name in measurements:
+                job_instance = agent.get_jobinstanceresult(job_id, job_n)
                 suffix = job_instance.get_suffixresult(suffix_n)
-                if stat_names:
-                    url = '{}select+{}'.format(
-                        self.querying_URL, ',+'.join(stat_names))
-                else:
-                    url = '{}select+*'.format(self.querying_URL)
-                url = '{}+from+"{}"'.format(url, measurement)
-                if query:
-                    url = '{}{}'.format(url, query)
-                response = requests.get(url).json()
-                try:
-                    current_stat_names = response['results'][0]['series'][0]['columns']
-                except KeyError:
-                    continue
-                stats = {}
-                current_index = -1
-                for stat_name in current_stat_names:
-                    current_index += 1
-                    if stat_name in ('time'):
-                        continue
-                    stats[current_index] = stat_name
-                try:
-                    values = response['results'][0]['series'][0]['values']
-                except KeyError:
-                    continue
-                for value in values:
-                    time = value[0]
-                    statistic = {}
-                    for index, stat_name in stats.items():
-                        if value[index] is not None:
-                            statistic[stat_name] = value[index]
-                    suffix.get_statisticresult(time, **statistic)
+                self._fill_suffix_with_values(suffix, query.format(measurement_name))
 
     def get_agent_values(self, agent, job_instance_id, job_name, suffix_name,
                          stat_names, timestamp, condition):
@@ -369,133 +291,47 @@ class InfluxDBConnection:
         available statistics from InfluxDB """
         agent_name = agent.name
         scenario_instance_id = agent.scenario_instance.scenario_instance_id
-        query = self.get_query(timestamp, condition)
-        all_measurements = self.get_all_measurements(
-            scenario_instance_id, agent_name, job_instance_id, job_name,
-            suffix_name, stat_names, condition)
-        measurements = []
-        for measurement in all_measurements:
-            try:
-                _, scenario_instance_i, _, _, _, _ = measurement.split('.')
-            except ValueError:
-                try:
-                    _, scenario_instance_i, _, _, _ = measurement.split('.')
-                except ValueError:
-                    continue
-            scenario_instance_i = int(scenario_instance_i)
-            if scenario_instance_i != scenario_instance_id:
-                agent.scenario_instance.sub_scenario_instance_ids.add(
-                    scenario_instance_i)
-                continue
-            measurements.append(measurement)
-        for measurement in measurements:
-            try:
-                _, _, current_job_instance_id, _, current_job_name, suffix_n = measurement.split('.')
-            except ValueError:
-                try:
-                    _, _, current_job_instance_id, _, current_job_name = measurement.split('.')
-                    suffix_n = None
-                except ValueError:
-                    continue
-            current_job_instance_id = int(current_job_instance_id)
-            job_instance = agent.get_jobinstanceresult(
-                current_job_instance_id, current_job_name)
-            suffix = job_instance.get_suffixresult(suffix_n)
-            if stat_names:
-                url = '{}select+{}'.format(self.querying_URL, ',+'.join(stat_names))
-            else:
-                url = '{}select+*'.format(self.querying_URL)
-            url = '{}+from+"{}"'.format(url, measurement)
-            if query:
-                url = '{}{}'.format(url, query)
-            response = requests.get(url).json()
-            try:
-                current_stat_names = response['results'][0]['series'][0]['columns']
-            except KeyError:
-                return
-            stats = {}
-            current_index = -1
-            for stat_name in current_stat_names:
-                current_index += 1
-                if stat_name in ('time'):
-                    continue
-                stats[current_index] = stat_name
-            try:
-                values = response['results'][0]['series'][0]['values']
-            except KeyError:
-                return
-            for value in values:
-                time = value[0]
-                statistic = {}
-                for index, stat_name in stats.items():
-                    if value[index] is not None:
-                        statistic[stat_name] = value[index]
-                suffix.get_statisticresult(time, **statistic)
+        query = self.build_select_template(stat_names, timestamp, condition)
 
-    def get_job_instance_values(self, job_instance, suffix_name, stat_names,
-                                timestamp, condition):
+        measurements = self.get_all_measurements(
+            scenario_instance_id, agent_name,
+            job_instance_id, job_name, suffix_name)
+        for measurement in measurements:
+            _, scenario_id, job_id, _, job, *suffix = measurement.split('.')
+            suffix = suffix[0] if suffix else None
+            scenario_id = int(scenario_id)
+            if scenario_id != scenario_instance_id:
+                # Wait... What?
+                agent.scenario_instance.sub_scenario_instance_ids.add(scenario_id)
+                continue
+            job_id = int(job_id)
+            job_instance = agent.get_jobinstanceresult(job_id, job)
+            suffix_instance = job_instance.get_suffixresult(suffix)
+            self._fill_suffix_with_values(suffix_instance, query.format(measurement))
+
+    def get_job_instance_values(
+            self, job_instance, suffix_name,
+            stat_names, timestamp, condition):
         """ Function that fills the JobInstanceResult given of the
         available statistics from InfluxDB """
         agent_name = job_instance.agent.name
         job_name = job_instance.job_name
         job_instance_id = job_instance.job_instance_id
         scenario_instance_id = job_instance.agent.scenario_instance.scenario_instance_id
-        query = self.get_query(timestamp, condition)
-        all_measurements = self.get_all_measurements(
-            scenario_instance_id, agent_name, job_instance_id, job_name,
-            suffix_name, stat_names, condition)
-        measurements = []
-        for measurement in all_measurements:
-            try:
-                _, scenario_instance_i, _, _, _, _ = measurement.split('.')
-            except ValueError:
-                try:
-                    _, scenario_instance_i, _, _, _ = measurement.split('.')
-                except ValueError:
-                    continue
-            scenario_instance_i = int(scenario_instance_i)
-            if scenario_instance_i != scenario_instance_id:
-                job_instance.agent.scenario_instance.sub_scenario_instance_ids.add(
-                    scenario_instance_i)
-                continue
-            measurements.append(measurement)
+        query = self.build_select_template(stat_names, timestamp, condition)
+        measurements = self.get_all_measurements(
+            scenario_instance_id, agent_name,
+            job_instance_id, job_name, suffix_name)
         for measurement in measurements:
-            try:
-                _, _, _, _, _, suffix_n = measurement.split('.')
-            except ValueError:
-                suffix_n = None
-            suffix = job_instance.get_suffixresult(suffix_n)
-            if stat_names:
-                url = '{}select+{}'.format(self.querying_URL, ',+'.join(
-                    stat_names))
-            else:
-                url = '{}select+*'.format(self.querying_URL)
-            url = '{}+from+"{}"'.format(url, measurement)
-            if query:
-                url = '{}{}'.format(url, query)
-            response = requests.get(url).json()
-            try:
-                current_stat_names = response['results'][0]['series'][0]['columns']
-            except KeyError:
-                return
-            stats = {}
-            current_index = -1
-            for stat_name in current_stat_names:
-                current_index += 1
-                if stat_name in ('time'):
-                    continue
-                stats[current_index] = stat_name
-            try:
-                values = response['results'][0]['series'][0]['values']
-            except KeyError:
-                return
-            for value in values:
-                time = value[0]
-                statistic = {}
-                for index, stat_name in stats.items():
-                    if value[index] is not None:
-                        statistic[stat_name] = value[index]
-                suffix.get_statisticresult(time, **statistic)
+            _, scenario_id, _, _, _, *suffix = measurement.split('.')
+            suffix = suffix[0] if suffix else None
+            scenario_id = int(scenario_id)
+            if scenario_id != scenario_instance_id:
+                # Dude, WTF?
+                job_instance.agent.scenario_instance.sub_scenario_instance_ids.add(scenario_id)
+                continue
+            suffix_instance = job_instance.get_suffixresult(suffix)
+            self._fill_suffix_with_values(suffix_instance, query.format(measurement))
 
     def get_suffix_values(self, suffix, stat_names, timestamp, condition):
         """ Function that fills the JobInstanceResult given of the
@@ -508,42 +344,15 @@ class InfluxDBConnection:
         owner_scenario_instance_id = suffix.job_instance.agent.scenario_instance.owner_scenario_instance_id
         if owner_scenario_instance_id is None:
             owner_scenario_instance_id = scenario_instance_id
-        query = self.get_query(timestamp, condition)
+
+        query = self.build_select_template(stat_names, timestamp, condition)
         measurement = '{}.{}.{}.{}.{}'.format(
-            owner_scenario_instance_id, scenario_instance_id, job_instance_id,
-            agent_name, job_name)
+            owner_scenario_instance_id, scenario_instance_id,
+            job_instance_id, agent_name, job_name)
         if suffix_name is not None:
-            measurement += '.' + suffix_name
-        if stat_names:
-            url = '{}select+{}'.format(self.querying_URL, ',+'.join(stat_names))
-        else:
-            url = '{}select+*'.format(self.querying_URL)
-        url = '{}+from+"{}"'.format(url, measurement)
-        if query:
-            url = '{}{}'.format(url, query)
-        response = requests.get(url).json()
-        try:
-            current_stat_names = response['results'][0]['series'][0]['columns']
-        except KeyError:
-            return
-        stats = {}
-        current_index = -1
-        for stat_name in current_stat_names:
-            current_index += 1
-            if stat_name in ('time'):
-                continue
-            stats[current_index] = stat_name
-        try:
-            values = response['results'][0]['series'][0]['values']
-        except KeyError:
-            return
-        for value in values:
-            time = value[0]
-            statistic = {}
-            for index, stat_name in stats.items():
-                if value[index] is not None:
-                    statistic[stat_name] = value[index]
-            suffix.get_statisticresult(time, **statistic)
+            measurement = '{}.{}'.format(measurement, suffix_name)
+
+        self._fill_suffix_with_values(suffix, query.format(measurement))
 
     def get_statistic_values(self, statistic, stat_names, condition):
         """ Function that fills the StatisticResult given of the
@@ -557,41 +366,27 @@ class InfluxDBConnection:
         if owner_scenario_instance_id is None:
             owner_scenario_instance_id = scenario_instance_id
         timestamp = statistic.timestamp
-        query = self.get_query(timestamp, condition)
+        query = self.build_select_template(stat_names, timestamp, condition)
         measurement = '{}.{}.{}.{}.{}'.format(
             owner_scenario_instance_id, scenario_instance_id, job_instance_id,
             agent_name, job_name)
         if suffix_name is not None:
-            measurement += '.' + suffix_name
-        if stat_names:
-            url = '{}select+{}'.format(self.querying_URL, ',+'.join(stat_names))
-        else:
-            url = '{}select+*'.format(self.querying_URL)
-        url = ('{}+from+"{}"').format(url, measurement)
-        if query:
-            url = '{}{}'.format(url, query)
-        else:
-            url = '{}+where'.format(url)
-        response = requests.get(url).json()
+            measurement = '{}.{}'.format(measurement, suffix_name)
+        response = self._request_query(query.format(measurement))
         try:
-            current_stat_names = response['results'][0]['series'][0]['columns']
-        except KeyError:
+            stats_names = response['results'][0]['series'][0]['columns']
+            stats_values = response['results'][0]['series'][0]['values']
+        except LookupError:
             return
-        stats = {}
-        current_index = -1
-        for stat_name in current_stat_names:
-            current_index += 1
-            if stat_name in ('time'):
-                continue
-            stats[current_index] = stat_name
-        try:
-            values = response['results'][0]['series'][0]['values']
-        except KeyError:
-            return
-        for value in values:
-            time = value[0]
-            for index, stat_name in stats.items():
-                statistic.values[stat_name] = value[index]
+
+        assert len(stats_values) < 2
+        for row_value in stats_values:
+            stats = {
+                name: value
+                for name, value in zip(stats_names, row_value)
+                if name != 'time'
+            }
+            statistic.values.update(stats)
 
     def export_to_collector(self, scenario_instance):
         """ Import the results of the scenario instance in InfluxDB """
@@ -614,7 +409,7 @@ class InfluxDBConnection:
             self.export_to_collector(sub_scenario_instance)
 
     def check_statistic(self, statistic, condition):
-        """ Check if a statistic matches the condition """
+        """Check if a statistic matches the condition"""
         if isinstance(condition, ConditionAnd):
             delete = self.check_statistic(statistic, condition.condition1)
             delete &= self.check_statistic(statistic, condition.condition2)
@@ -652,119 +447,62 @@ class InfluxDBConnection:
                 return value1 < value2
         return delete
 
-    def filter_scenario_instance(self, scenario_instance, stat_names, timestamp,
-                                 condition):
-        """ Delete the statistics that match from the ScenarioInstanceResult """
+    def filter_scenario_instance(self, scenario_instance, stat_names, timestamp, condition):
+        """Delete the statistics from the ScenarioInstanceResult that
+        matches the given conditions.
+        """
+        try:
+            timestamp_down, timestamp_up = timestamp
+        except (TypeError, ValueError):
+            timestamp_down = timestamp_up = timestamp
+
         for agent in scenario_instance.agentresults.values():
             for job_instance in agent.jobinstanceresults.values():
-                delete1 = False
                 delete_timestamps = []
-                if timestamp is None:
-                    delete1 = True
-                else:
-                    try:
-                        timestamp_down, timestamp_up = timestamp
-                    except ValueError:
-                        timestamp_down = timestamp_up = timestamp
                 for statistic in job_instance.statisticresults.values():
-                    delete2 = False
-                    delete3 = False
-                    delete4 = False
-                    if timestamp is not None:
-                        if statistic.timestamp >= timestamp_down:
-                            delete2 = True
-                        if statistic.timestamp <= timestamp_up:
-                            delete2 &= True
-                        else:
-                            delete2 = False
-                    for stat_name in stat_names:
-                        if stat_name in statistic.values:
-                            delete3 = True
-                    if condition is None:
-                        delete4 = True
-                    else:
-                        delete4 = self.check_statistic(statistic, condition)
-                    if (delete1 or delete2) and delete3 and delete4:
-                        delete_timestamps.append(statistic.timestamp)
-                for timestamp in delete_timestamps:
-                    del job_instance.statisticresults[timestamp]
+                    time = statistic.timestamp
+                    if timestamp is None or timestamp_down <= time <= timestamp_up:
+                        for stat_name in stat_names:
+                            if stat_name in statistic.values:
+                                if condition is None or self.check_statistic(statistic, condition):
+                                    delete_timestamps.append(time)
+                for time in delete_timestamps:
+                    del job_instance.statisticresults[time]
 
     def del_statistic(self, owner_scenario_instance_id, scenario_instance_id,
                       agent_name, job_instance_id, job_name, suffix_name,
                       stat_names, timestamp, condition):
-        """ Function that delete the statistics that match from InfluxDB """
+        """Delete the statistics that match from InfluxDB"""
         scenario_instance = ScenarioInstanceResult(scenario_instance_id,
                                                    owner_scenario_instance_id)
         self.get_scenario_instance_values(
             scenario_instance, agent_name, job_instance_id, job_name,
             suffix_name, [], None, None)
         measurement = '{}.{}.{}.{}.{}'.format(
-            owner_scenario_instance_id, scenario_instance_id, job_instance_id,
-            agent_name, job_name)
-        measurements = []
-        if suffix_name is not None:
-            measurement += '.' + suffix_name
-            measurements.append(measurement)
-        else:
-            for suffix_name in scenario_instance.agentresults[agent_name].jobinstanceresults[job_instance_id].suffixresults:
-                if suffix_name is None:
-                    measurements.append(measurement)
-                else:
-                    m = measurement + '.' + suffix_name
-                    measurements.append(m)
+            owner_scenario_instance_id, scenario_instance_id,
+            job_instance_id, agent_name, job_name)
+        measurements = (
+            measurement if name is None else '{}.{}'.format(measurement, name)
+            for name in scenario_instance.agentresults[agent_name]
+                        .jobinstanceresults[job_instance_id].suffixresults
+        )
         for measurement in measurements:
-            url = '{}drop+measurement+"{}"'.format(
-                self.querying_URL, measurement)
-            response = requests.get(url).json()
-        self.filter_scenario_instance(scenario_instance, stat_names, timestamp,
-                                      condition)
+            self._request_query('DROP MEASUREMENT "{}"'.format(measurement))
+        self.filter_scenario_instance(scenario_instance, stat_names, timestamp, condition)
         self.export_to_collector(scenario_instance)
-        return True
 
     def get_orphan(self, timestamp):
         """ Function that returns the orphans statistics from InfluxDB """
-        statistics = []
-        url = '{}SHOW+MEASUREMENTS'.format(self.querying_URL)
-        response = requests.get(url).json()
-        values = response['results'][0]['series'][0]['values']
-        measurements = set()
-        for measurement in values:
-            try:
-                _, _, _, _, _ = measurement[0].split('.')
-                continue
-            except ValueError:
-                try:
-                    _, _, _, _, _, _ = measurement[0].split('.')
-                    continue
-                except ValueError:
-                    measurements.add(measurement[0])
-        query = self.get_query(timestamp, None)
-        for measurement in measurements:
-            url = ('{}select+*+from+"{}"').format(self.querying_URL,
-                                                  measurement)
-            if query:
-                url = '{}{}'.format(url, query)
-            response = requests.get(url).json()
-            try:
-                current_stat_names = response['results'][0]['series'][0]['columns']
-            except KeyError:
-                continue
-            stats = {}
-            current_index = -1
-            for stat_name in current_stat_names:
-                current_index += 1
-                if stat_name in ('time'):
-                    continue
-                stats[current_index] = stat_name
-            try:
-                values = response['results'][0]['series'][0]['values']
-            except KeyError:
-                continue
-            for value in values:
-                time = value[0]
-                statistic = {}
-                for index, stat_name in stats.items():
-                    statistic[stat_name] = value[index]
-                statistic_result = StatisticResult(time, None, **statistic)
-                statistics.append(statistic_result)
-        return statistics
+        suffix = SuffixResult(None, None)
+        response = self._request_query('SHOW MEASUREMENTS')
+        measurements = response['results'][0]['series'][0]['values']
+        query = self.build_select_template([], timestamp, None)
+        for measurement, in measurements:
+            if 5 != len(measurement.split('.')) != 6:
+                self._fill_suffix_with_values(suffix, query.format(measurement))
+
+        # Disassociate stats from temporary suffix
+        return [
+            StatisticResult(stat.timestamp, None, **stat.values)
+            for stat in suffix.statisticresult_iter
+        ]
