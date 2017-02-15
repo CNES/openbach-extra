@@ -167,9 +167,10 @@ class InfluxDBConnection:
         """Return the available scenarios instance ids in
         InfluxDB that correspond to the given query.
         """
-        return self._get_measurement_column(
+        ids = self._get_measurement_column(
                 1, None, agent_name, job_instance_id,
                 job_name, suffix_name)
+        return set(map(int, ids))
 
     def get_agent_names(
             self, scenario_instance_id,
@@ -188,9 +189,10 @@ class InfluxDBConnection:
         """Return the available jobs instance ids in InfluxDB that
         correspond to the given query.
         """
-        return self._get_measurement_column(
+        ids = self._get_measurement_column(
                 2, scenario_instance_id, agent_name,
                 None, job_name, suffix_name)
+        return set(map(int, ids))
 
     def get_job_names(
             self, scenario_instance_id, agent_name,
