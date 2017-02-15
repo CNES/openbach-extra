@@ -152,7 +152,7 @@ class InfluxDBConnection:
 
         def extract_nth(measurement):
             try:
-                nth = measurement.split()[column]
+                nth = measurement.split('.')[column]
             except IndexError:
                 return None
             else:
