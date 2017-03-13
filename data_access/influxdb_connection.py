@@ -404,7 +404,10 @@ class InfluxDBConnection:
                     job_instance_id, agent_name, job_name), True)
                 for statistic in job_instance.statisticresults.values():
                     timestamp = statistic.timestamp
-                    data = ','.join(escape_field(n, v) for n, v in statistic.values.items())
+                    data = ','.join(
+                            escape_field(n, v)
+                            for n, v in statistic.values.items()
+                            if v is not None)
                     body = '{} {} {}'.format(measurement_name, data, timestamp)
                     requests.post(self.writing_URL, body.encode())
         for sub_scenario_instance in scenario_instance.sub_scenario_instances.values():
