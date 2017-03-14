@@ -35,9 +35,12 @@
 """
 
 
-import requests
 import json
 from datetime import datetime
+from contextlib import suppress
+
+import requests
+
 from .result_data import LogResult
 
 
@@ -101,41 +104,32 @@ class ElasticSearchConnection:
                                   timestamp):
         """ Function that returns all the available scenario_instance_ids in
         ElasticSearch """
-        scenario_instance_ids = set()
-        query = self.get_query(None, agent_name, job_instance_id, job_name,
-                               timestamp)
-        url = '{}?fields=scenario_instance_id&scroll=1m'.format(
-            self.querying_URL)
+        hits = []
+        query = self.get_query(None, agent_name, job_instance_id, job_name, timestamp)
+        url = '{}?fields=scenario_instance_id&scroll=1m'.format(self.querying_URL)
+
         response = requests.post(url, data=json.dumps(query).encode()).json()
-        scroll_id = response['_scroll_id']
-        try:
-            current_hits = response['hits']['hits']
-            hits = current_hits
-        except KeyError:
-            pass
-        else:
-            url = '{}/_search/scroll'.format(self.base_url)
-            while current_hits:
+        url = '{}/_search/scroll'.format(self.base_url)
+        while True:
+            current_hits = response.get('hits', {}).get('hits', [])
+            if not current_hits:
+                break
+            hits += current_hits
+            try:
+                scroll_id = response['_scroll_id']
+            except KeyError:
+                break
+            else:
                 data = {'scroll': '1m', 'scroll_id': scroll_id}
                 response = requests.post(url, data=json.dumps(data)).json()
-                scroll_id = response['_scroll_id']
-                try:
-                    current_hits = response['hits']['hits']
-                    hits += current_hits
-                except KeyError:
-                    pass
-            for hit in hits:
-                try:
-                    scenario_instance_id = hit['fields']['scenario_instance_id'][0]
-                except KeyError:
-                    pass
-                else:
-                    try:
-                        scenario_instance_id = int(scenario_instance_id)
-                    except ValueError:
-                        pass
-                    else:
-                        scenario_instance_ids.add(scenario_instance_id)
+
+        scenario_instance_ids = set()
+        for hit in hits:
+            with suppress(LookupError):
+                scenario_instance_id = hit['fields']['scenario_instance_id'][0]
+                with suppress(ValueError):
+                    scenario_instance_ids.add(int(scenario_instance_id))
+
         return scenario_instance_ids
 
     def get_agent_names(self, scenario_instance_id, job_instance_id, job_name,

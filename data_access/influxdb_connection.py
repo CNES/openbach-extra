@@ -133,7 +133,10 @@ class InfluxDBConnection:
         query = 'SHOW MEASUREMENTS WITH MEASUREMENT = /{}/'.format(regexp)
         response = self._request_query(query)
 
-        data = response['results'][0]['series'][0]
+        try:
+            data = response['results'][0]['series'][0]
+        except KeyError:
+            return []
         assert data['name'] == 'measurements'
         assert data['columns'] == ['name']
 
