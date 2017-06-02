@@ -1,280 +1,325 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
-"""
-   OpenBACH is a generic testbed able to control/configure multiple
-   network/physical entities (under test) and collect data from them. It is
-   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
-   Agents (one for each network entity that wants to be tested).
+# OpenBACH is a generic testbed able to control/configure multiple
+# network/physical entities (under test) and collect data from them. It is
+# composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+# Agents (one for each network entity that wants to be tested).
+#
+#
+# Copyright © 2016 CNES
+#
+#
+# This file is part of the OpenBACH testbed.
+#
+#
+# OpenBACH is a free software : you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program. If not, see http://www.gnu.org/licenses/.
 
-
-   Copyright © 2016 CNES
-
-
-   This file is part of the OpenBACH testbed.
-
-
-   OpenBACH is a free software : you can redistribute it and/or modify it under the
-   terms of the GNU General Public License as published by the Free Software
-   Foundation, either version 3 of the License, or (at your option) any later
-   version.
-
-   This program is distributed in the hope that it will be useful, but WITHOUT
-   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
-   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-   details.
-
-   You should have received a copy of the GNU General Public License along with
-   this program. If not, see http://www.gnu.org/licenses/.
-
-
-
-   @file     result_data.py
-   @brief    
-   @author   Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
+"""Collection of classes allowing a meaningful representation of data
+stored on a collector.
 """
 
+__author__ = 'Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>'
+__credits__ = 'Maintainer: Mathias ETTINGER <mettinger@toulouse.viveris.com>'
 
-import functools
+
+import json
 from collections import OrderedDict
 
 
-def ForeignKey(cls, key):
-    """ Metaclass """
-    class Auto(type):
-        def __call__(mcls, *args, **kwargs):
-            """At construction, put our instance into the attributes of
-            the other end of the relationship.
-            """
-            instance = super().__call__(*args, **kwargs)
-            attrname = mcls.__name__.lower() + 's'
-            for arg in args + tuple(kwargs.values()):
-                if isinstance(arg, cls):
-                    getattr(arg, attrname)[getattr(instance, key)] = instance
-            return instance
+class Scenario:
+    def __init__(self, instance_id, owner=None):
+        self.instance_id = instance_id
+        self.owner = owner
+        self.job_instances = OrderedDict({})
+        self.sub_scenarios = OrderedDict({})
 
-        def __init__(mcls, name, bases, dct):
-            """At creation, setup a dictionnary into the other end of
-            the relationship to store our instances.
-            """
-            mcls_name = mcls.__name__.lower()
-            super().__init__(name, bases, dct)
-            attrname = mcls_name + 's'
-            # Decorate the other end's __init__
-            def initter(init):
-                """Setup an empty dictionnary"""
-                @functools.wraps(init)
-                def wrapper(self, identificator, *args, **kwargs):
-                    init(self, identificator, *args, **kwargs)
-                    setattr(self, attrname, OrderedDict())
-                return wrapper
-            cls.__init__ = initter(cls.__init__)
-            # Add an accessor for a given foreign key
-            def getter(self, identificator, *args, **kwargs):
-                """Cache foreign keys in a dictionnary"""
-                try:
-                    return getattr(self, attrname)[identificator]
-                except KeyError:
-                    return mcls(identificator, self, *args, **kwargs)
-            methodname = 'get_' + mcls_name
-            if not hasattr(cls, methodname):
-                setattr(cls, methodname, getter)
-            # Add an iterator over foreign keys
-            def instances_getter(self):
-                return iter(getattr(self, attrname).values())
-            methodname = mcls_name + '_iter'
-            if not hasattr(cls, methodname):
-                setattr(cls, methodname, property(instances_getter))
-    return Auto
+    def get_or_create_subscenario(self, instance_id):
+        try:
+            scenario = self.sub_scenarios[instance_id]
+        except KeyError:
+            self.sub_scenarios[instance_id] = scenario = Scenario(instance_id, self)
+            if self.owner is not None:
+                self.owner._new_scenario(instance_id, scenario)
+        return scenario
 
+    def _new_scenario(self, instance_id, scenario):
+        self.sub_scenarios[instance_id] = scenario
+        if self.owner is not None:
+            self.owner._new_scenario(instance_id, scenario)
 
-class ScenarioInstanceResult:
-    """ Structure that represents all the results of a Scenario Instance """
-    def __init__(self, scenario_instance_id, owner_scenario_instance_id):
-        self.scenario_instance_id = scenario_instance_id
-        self.owner_scenario_instance_id = owner_scenario_instance_id
-        self.sub_scenario_instances = {}
+    def get_or_create_job(self, name, instance_id, agent):
+        key = (name, instance_id, agent)
+        try:
+            job = self.job_instances[key]
+        except KeyError:
+            self.job_instances[key] = job = Job(*key)
+            if self.owner is not None:
+                self.owner._new_job(key, job)
+        return job
+
+    def _new_job(self, key, job):
+        self.job_instances[key] = job
+        if self.owner is not None:
+            self.owner._new_job(key, job)
+
+    @property
+    def owner_instance_id(self):
+        if self.owner is None:
+            return self.instance_id
+        return self.owner.instance_id
+
+    @property
+    def jobs(self):
+        yield from self.job_instances.values()
+
+    @property
+    def agents(self):
+        sub_jobs = set(scenario.jobs for scenario in self.scenarios)
+
+        agents = {}
+        for job in self.jobs:
+            if job in sub_jobs:
+                continue
+            key = (job.agent, self.instance_id)
+            try:
+                agent = agents[key]
+            except KeyError:
+                agents[key] = agent = Agent(job.agent, self)
+            agent.jobs[(job.name, job.instance_id)] = job
+
+        yield from agents.values()
+        for scenario in self.scenarios:
+            yield from scenario.agents
+
+    @property
+    def scenarios(self):
+        yield from self.sub_scenarios.values()
+
+    @property
+    def recursive_scenarios(self):
+        yield self
+        for scenario in self.sub_scenarios.values():
+            yield from scenario.recursive_scenarios
 
     @property
     def json(self):
-        """Return a JSON representation of the Scenario"""
-        info_json = {
-            'scenario_instance_id': self.scenario_instance_id,
-            'owner_scenario_instance_id': self.owner_scenario_instance_id,
-            'sub_scenario_instances': [scenario_instance.json for
-                                       scenario_instance in
-                                       self.sub_scenario_instances.values()],
-            'agents': [agent.json for agent in self.agentresult_iter]
+        """Build a JSON representation of this Scenario instance"""
+        return {
+            'scenario_instance_id': self.instance_id,
+            'owner_scenario_instance_id': self.owner_instance_id,
+            'sub_scenario_instances': [scenario.json for scenario in self.scenarios],
+            'agents': [agent.json for agent in self.agents],
+            'jobs': [job.json for job in self.jobs],
         }
-        return info_json
 
     @classmethod
     def load(cls, scenario_data):
-        """Generate a ScenarioInstanceResult instance from a JSON representation"""
+        """Generate a Scenario instance from a JSON representation"""
         instance_id = scenario_data['scenario_instance_id']
-        owner_id = scenario_data['owner_scenario_instance_id']
-        instance = cls(instance_id, owner_id)
-        for agent_data in scenario_data['agents']:
-            agent = AgentResult.load(agent_data, instance)
-            instance.agentresults[agent.name] = agent
+        # owner_id = scenario_data['owner_scenario_instance_id']
+        scenario_instance = cls(instance_id)
         for sub_scenario_data in scenario_data['sub_scenario_instances']:
             sub_scenario = cls.load(sub_scenario_data)
-            sub_instance_id = sub_scenario.scenario_instance_id
-            instance.sub_scenario_instances[sub_instance_id] = sub_scenario
-        return instance
+            sub_scenario.owner = scenario_instance
+            scenario_instance.sub_scenarios[sub_scenario.instance_id] = sub_scenario
+        for job_data in scenario_data['jobs']:
+            job_instance = Job.load(job_data)
+            key = (job_instance.name, job_instance.agent, job_instance.instance_id)
+            scenario_instance.job_instances[key] = job_instance
+        return scenario_instance
 
 
-class AgentResult(metaclass=ForeignKey(ScenarioInstanceResult, 'name')):
-    """ Structure that represents all the results of an Agent """
-    def __init__(self, name, scenario_instance):
+class Agent:
+    def __init__(self, name, scenario):
+        self._scenario = scenario
         self.name = name
-        self.ip = None
-        self.scenario_instance = scenario_instance
+        self.job_instances = OrderedDict({})
 
-    @property
-    def json(self):
-        """Return a JSON representation of the Agent"""
-        info_json = {
-            'name': self.name,
-            'job_instances': [job_instance.json for job_instance in
-                              self.jobinstanceresult_iter]
-        }
-        if self.ip is not None:
-            info_json['ip'] = self.ip
-        return info_json
-
-    @classmethod
-    def load(cls, agent_data, scenario=None):
-        """Generate a AgentResult instance from a JSON representation"""
-        name = agent_data['name']
-        ip = agent_data.get('ip')
-        instance = cls(name, scenario_instance=scenario)
-        instance.ip = ip
-        for job_data in agent_data['job_instances']:
-            job = JobInstanceResult.load(job_data, instance)
-            instance.jobinstanceresults[job.job_instance_id] = job
-        return instance
-
-
-class JobInstanceResult(metaclass=ForeignKey(AgentResult, 'job_instance_id')):
-    """ Structure that represents all the results of a Job Instance """
-    def __init__(self, job_instance_id, agent, job_name):
-        self.job_instance_id = job_instance_id
-        self.job_name = job_name
-        self.agent = agent
-
-    def get_statisticresults(self, suffix_name):
-        """ Function that returns the statistic results with the specific suffix
-        """
-        return self.suffixresults[suffix_name].statisticresults
-
-    @property
-    def statisticresults(self):
-        """Return the StatisticResults with no suffix"""
+    def get_or_create_job(self, name, instance_id):
+        key = (name, instance_id)
         try:
-            return self.suffixresults[None].statisticresults
+            job = self.job_instances[key]
         except KeyError:
-            return {}
+            job = self._scenario.get_or_create_job(name, self.name, instance_id)
+            self.job_instancess[key] = job
+        return job
 
     @property
     def json(self):
-        """Return a JSON representation of the Job"""
+        """Build a JSON representation of this Agent instance"""
         return {
-            'job_instance_id': self.job_instance_id,
-            'job_name': self.job_name,
-            'logs': [log.json for log in self.logresult_iter],
-            'suffixes': [suffix.json for suffix in self.suffixresult_iter]
+            'agent_name': self.name,
+            'scenario_instance_id': self._scenario.instance_id,
+            'jobs': [job.json for job in self.jobs.values()],
         }
 
-    @classmethod
-    def load(cls, job_data, agent=None):
-        """Generate a JobInstanceResult instance from a JSON representation"""
-        name = job_data['job_name']
-        instance_id = job_data['job_instance_id']
-        instance = cls(instance_id, agent=agent, job_name=name)
-        for suffix_data in job_data['suffixes']:
-            suffix = SuffixResult.load(suffix_data, instance)
-            instance.suffixresults[suffix.name] = suffix
-        for log_data in job_data['logs']:
-            log = LogResult.load(log_data, instance)
-            instance.logresults[log._id] = log
-        return instance
 
-
-class SuffixResult(metaclass=ForeignKey(JobInstanceResult, 'name')):
-    """ Structure that represents all the results of a Suffix """
-    def __init__(self, name, job_instance):
+class Job:
+    def __init__(self, name, instance_id, agent):
         self.name = name
-        self.job_instance = job_instance
+        self.instance_id = instance_id
+        self.agent = agent
+        self.statistics_data = OrderedDict({})
+        self.logs_data = Log()
+
+    def get_or_create_statistics(self, suffix=None):
+        try:
+            statistics = self.statistics_data[suffix]
+        except KeyError:
+            self.statistics_data[suffix] = statistics = Statistic()
+        return statistics
+
+    @property
+    def statistics(self):
+        return [{
+            'suffix': suffix,
+            'data': statistics.json,
+        } for suffix, statistics in self.statistics_data.items()]
+
+    @property
+    def logs(self):
+        return self.logs_data.json
 
     @property
     def json(self):
-        """Return a JSON representation of the Suffix"""
-        info_json = {
-            'name': self.name,
-            'statistics': [stat.json for stat in self.statisticresult_iter]
+        """Build a JSON representation of this Job instance"""
+        return {
+            'job_instance_id': self.instance_id,
+            'job_name': self.name,
+            'agent_name': self.agent,
+            'logs': self.logs,
+            'statistics': self.statistics,
         }
-        return info_json
 
     @classmethod
-    def load(cls, suffix_data, job=None):
-        """Generate a SuffixResult instance from a JSON representation"""
-        name = suffix_data['name']
-        instance = cls(name, job_instance=job)
-        for statistic_data in suffix_data['statistics']:
-            statistic = StatisticResult.load(statistic_data, instance)
-            instance.statisticresults[statistic.timestamp] = statistic
-        return instance
+    def load(cls, job_data):
+        """Generate a Job instance from a JSON representation"""
+        name = job_data['job_name']
+        agent = job_data['agent_name']
+        instance_id = job_data['job_instance_id']
+        job_instance = cls(name, agent, instance_id)
+        job_instance.logs_data = Log.load(job_data['logs'])
+        for statistic in job_data['statistics']:
+            suffix = statistic['suffix']
+            stats_data = statistic['data']
+            job_instance[suffix] = Statistic.load(stats_data)
+        return job_instance
 
 
-class StatisticResult(metaclass=ForeignKey(SuffixResult, 'timestamp')):
-    """ Structure that represents all the results of a Statistic """
-    def __init__(self, timestamp, suffix, **kwargs):
-        self.timestamp = timestamp
-        self.suffix = suffix
-        self.values = kwargs
+class Statistic:
+    def __init__(self):
+        self.dated_data = OrderedDict({})
+
+    def add_statistic(self, timestamp, **kwargs):
+        self.dated_data[timestamp] = kwargs
 
     @property
     def json(self):
-        """Return a JSON representation of the Statistic"""
-        info_json = self.values.copy()
-        info_json['timestamp'] = self.timestamp
-        return info_json
+        """Build a JSON representation of this Statistic instance"""
+        return [
+            {'time': timestamp, **stats}
+            for timestamp, stats in self.dated_data.items()
+        ]
 
     @classmethod
-    def load(cls, statistic_data, suffix=None):
-        """Generate a StatisticResult instance from a JSON representation"""
-        return cls(suffix=suffix, **statistic_data)
+    def load(cls, statistics_data):
+        """Generate a Statistic instance from a JSON representation"""
+        statistic_instance = cls()
+        for stats in statistics_data:
+            statistic_instance.dated_data[stats['time']] = stats
+        return statistic_instance
 
 
-class LogResult(metaclass=ForeignKey(JobInstanceResult, '_id')):
-    """ Structure that represents a Log """
-    def __init__(self, _id, job_instance, _index, _timestamp, _version,
-                 facility, facility_label, flag, host, message, pid, priority,
-                 severity, severity_label, type):
-        self._id = _id
-        self._index = _index
-        self._timestamp = _timestamp
-        self._version = _version
-        self.facility = facility
-        self.facility_label = facility_label
-        self.flag = flag
-        self.host = host
-        self.message = message
-        self.pid = pid
-        self.priority = priority
-        self.severity = severity
-        self.severity_label = severity_label
-        self.type = type
-        self.job_instance = job_instance
+class Log:
+    def __init__(self):
+        self.numbered_data = OrderedDict({})
+
+    def add_log(self, _id, _index, _timestamp, _version, facility,
+                facility_label, flag, host, message, pid, priority,
+                severity, severity_label, type):
+        self.numbered_data[_id] = {
+                '_id': _id,
+                '_index': _index,
+                '_timestamp': _timestamp,
+                '_version': _version,
+                'facility': facility,
+                'facility_label': facility_label,
+                'flag': flag,
+                'host': host,
+                'message': message,
+                'pid': pid,
+                'priority': priority,
+                'severity': severity,
+                'severity_label': severity_label,
+                'type': type,
+        }
 
     @property
     def json(self):
-        """Return a JSON representation of the Log"""
-        return {key: value for key, value in vars(self).items()
-                if key != 'job_instance'}
+        """Build a JSON representation of this Log instance"""
+        return [log for log in self.numbered_data.values()]
 
     @classmethod
-    def load(cls, log_data, job=None):
-        """Generate a LogResult instance from a JSON representation"""
-        return cls(job_instance=job, **log_data)
+    def load(cls, logs_data):
+        """Generate a Log instance from a JSON representation"""
+        log_instance = cls()
+        for log in logs_data:
+            log_instance[log['_id']] = log
+        return log_instance
+
+
+def read_scenario(filename):
+    """Generate a `Scenario` instance from a file.
+
+    The file should contain the equivalent of a JSON
+    dump of the dictionary returned by the `json` property
+    of the corresponding `Scenario` instance.
+    """
+
+    with open(filename) as f:
+        scenario_json = json.load(f)
+    return Scenario.load(scenario_json)
+
+
+def get_or_create_scenario(scenario_id, cache):
+    try:
+        return cache[scenario_id]
+    except KeyError:
+        cache[scenario_id] = scenario = Scenario(scenario_id)
+        return scenario
+
+
+def extract_jobs(scenario, context=None):
+    """Extract out `Job`s from a `Scenario` instance indexed by
+    their sub-scenario instance.
+
+    This function is recursive and uses the `context` parameter
+    to keep track of already emitted jobs. You should not provide
+    any value unless you want to filter out some jobs.
+    """
+    if context is None:
+        # Cache of already yielded jobs
+        context = set()
+
+    # Yield jobs for sub-scenarios first to populate the cache
+    for subscenario in scenario.scenarios:
+        yield from extract_jobs(subscenario, context)
+
+    # Yield each remaining job of the current scenario
+    scenario_id = scenario.instance_id
+    owner_id = scenario.owner_instance_id
+    for job in scenario.jobs:
+        if job not in context:
+            context.add(job)  # Inform the caller we took care of it
+            yield scenario_id, owner_id, job

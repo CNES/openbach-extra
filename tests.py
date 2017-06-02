@@ -33,6 +33,7 @@ __version__ = 'v0.2'
 import unittest
 
 import scenario_builder as sb
+import data_access as da
 
 
 class TestScenarioBuilder(unittest.TestCase):
@@ -330,6 +331,84 @@ class TestScenarioBuilder(unittest.TestCase):
         scenario.add_function('stop_job_instance', 10, [ping]).configure(ping)
 
         self.assertEqual(scenario.build(), expected_results)
+
+
+class TestDataAccessInfluxDB(unittest.TestCase):
+    def test_simple_condition(self):
+        Operator = da.influxdb_tools.Operator
+        field = da.influxdb_tools.ConditionField('field_name', Operator.Equal, 42)
+        tag = da.influxdb_tools.ConditionTag('tag_name', Operator.NotEqual, 0)
+        timestamp = da.influxdb_tools.ConditionTimestamp(Operator.GreaterThan, 123456789)
+        timestamp_from_now = da.influxdb_tools.ConditionTimestamp(Operator.Different, 12, 'h', True)
+
+        self.assertEqual(str(field), '"field_name" = 42')
+        self.assertEqual(str(tag), '"tag_name" <> \'0\'')
+        self.assertEqual(str(timestamp), '"time" > 123456789ms')
+        self.assertEqual(str(timestamp_from_now), '"time" != now() - 12h')
+
+    def test_compound_conditions(self):
+        Operator = da.influxdb_tools.Operator
+        condition = da.influxdb_tools.ConditionAnd(
+            da.influxdb_tools.ConditionOr(
+                da.influxdb_tools.ConditionField('field_name', Operator.GreaterThan, 'a_string'),
+                da.influxdb_tools.ConditionTag('tag_name', Operator.Different, 'a_string_too'),
+            ),
+            da.influxdb_tools.ConditionTimestamp(Operator.LessThan, 5, 'm', True),
+        )
+        self.assertEqual(
+                str(condition),
+                '(("field_name" > \'a_string\') OR ("tag_name" != \'a_string_too\'))'
+                ' AND ("time" < now() - 5m)')
+
+    def test_measurement_name_escaping(self):
+        escape = da.influxdb_tools.escape_names
+        for name in ['', 'a', 'a_a', 'a_a_a', '@test']:
+            self.assertEqual(escape(name, True), name)
+        self.assertEqual(escape('a a', True), r'a\ a')
+        self.assertEqual(escape('a,a', True), r'a\,a')
+        self.assertEqual(escape('a=a', True), r'a=a')
+
+    def test_tags_name_escaping(self):
+        escape = da.influxdb_tools.escape_names
+        for name in ['', 'a', 'a_a', 'a_a_a', '@test']:
+            self.assertEqual(escape(name, False), name)
+        self.assertEqual(escape('a a', False), r'a\ a')
+        self.assertEqual(escape('a,a', False), r'a\,a')
+        self.assertEqual(escape('a=a', False), r'a\=a')
+
+    def test_fields_escaping(self):
+        escape = da.influxdb_tools.escape_field
+        test_data = (
+            ('a', 'a', r'a="a"'),
+            ('a_a', 'a', r'a_a="a"'),
+            ('a_a', 'a_a', r'a_a="a_a"'),
+            ('a', 'a_a', r'a="a_a"'),
+            ('a a', 'a', r'a\ a="a"'),
+            ('a a', 'a a', r'a\ a="a a"'),
+            ('a', 'a a', r'a="a a"'),
+            ('a=a', 'a', r'a\=a="a"'),
+            ('a=a', 'a=a', r'a\=a="a=a"'),
+            ('a', 'a=a', r'a="a=a"'),
+            ('a,a', 'a', r'a\,a="a"'),
+            ('a,a', 'a,a', r'a\,a="a,a"'),
+            ('a', 'a,a', r'a="a,a"'),
+            ('a', 0, r'a=0'),
+            ('a_a', 0, r'a_a=0'),
+            ('a a', 0, r'a\ a=0'),
+            ('a=a', 0, r'a\=a=0'),
+            ('a,a', 0, r'a\,a=0'),
+            ('a', 42, r'a=42'),
+            ('a_a', 42, r'a_a=42'),
+            ('a a', 42, r'a\ a=42'),
+            ('a=a', 42, r'a\=a=42'),
+            ('a,a', 42, r'a\,a=42'),
+        )
+        for field_name, field_value, expected in test_data:
+            self.assertEqual(escape(field_name, field_value), expected)
+
+    def test_condition_builder(self):
+        # self.assertIsInstance()
+        pass
 
 
 if __name__ == '__main__':
