@@ -33,7 +33,11 @@ __version__ = 'v0.2'
 import unittest
 
 import scenario_builder as sb
-import data_access as da
+from data_access.influxdb_tools import (Operator,
+        ConditionAnd, ConditionOr, ConditionField, ConditionTag, ConditionTimestamp,
+        escape_names, escape_field, tags_to_condition,
+        select_query, measurement_query, delete_query, tag_query,
+        parse_influx, parse_statistics, parse_orphans, line_protocol)
 
 
 class TestScenarioBuilder(unittest.TestCase):
@@ -261,7 +265,7 @@ class TestScenarioBuilder(unittest.TestCase):
                             }
                         },
                         "openbach_functions_while": [2],
-                        "openbach_functions_end": [3] 
+                        "openbach_functions_end": [3]
                     },
                     "wait": {
                         "time": 0,
@@ -300,7 +304,7 @@ class TestScenarioBuilder(unittest.TestCase):
                 {
                     "id": 4,
                     "stop_job_instance": {
-                        "openbach_function_ids": [3] 
+                        "openbach_function_ids": [3]
                     },
                     "wait": {
                         "time": 10,
@@ -335,11 +339,10 @@ class TestScenarioBuilder(unittest.TestCase):
 
 class TestDataAccessInfluxDB(unittest.TestCase):
     def test_simple_condition(self):
-        Operator = da.influxdb_tools.Operator
-        field = da.influxdb_tools.ConditionField('field_name', Operator.Equal, 42)
-        tag = da.influxdb_tools.ConditionTag('tag_name', Operator.NotEqual, 0)
-        timestamp = da.influxdb_tools.ConditionTimestamp(Operator.GreaterThan, 123456789)
-        timestamp_from_now = da.influxdb_tools.ConditionTimestamp(Operator.Different, 12, 'h', True)
+        field = ConditionField('field_name', Operator.Equal, 42)
+        tag = ConditionTag('tag_name', Operator.NotEqual, 0)
+        timestamp = ConditionTimestamp(Operator.GreaterThan, 123456789)
+        timestamp_from_now = ConditionTimestamp(Operator.Different, 12, 'h', True)
 
         self.assertEqual(str(field), '"field_name" = 42')
         self.assertEqual(str(tag), '"tag_name" <> \'0\'')
@@ -347,13 +350,12 @@ class TestDataAccessInfluxDB(unittest.TestCase):
         self.assertEqual(str(timestamp_from_now), '"time" != now() - 12h')
 
     def test_compound_conditions(self):
-        Operator = da.influxdb_tools.Operator
-        condition = da.influxdb_tools.ConditionAnd(
-            da.influxdb_tools.ConditionOr(
-                da.influxdb_tools.ConditionField('field_name', Operator.GreaterThan, 'a_string'),
-                da.influxdb_tools.ConditionTag('tag_name', Operator.Different, 'a_string_too'),
+        condition = ConditionAnd(
+            ConditionOr(
+                ConditionField('field_name', Operator.GreaterThan, 'a_string'),
+                ConditionTag('tag_name', Operator.Different, 'a_string_too'),
             ),
-            da.influxdb_tools.ConditionTimestamp(Operator.LessThan, 5, 'm', True),
+            ConditionTimestamp(Operator.LessThan, 5, 'm', True),
         )
         self.assertEqual(
                 str(condition),
@@ -361,23 +363,20 @@ class TestDataAccessInfluxDB(unittest.TestCase):
                 ' AND ("time" < now() - 5m)')
 
     def test_measurement_name_escaping(self):
-        escape = da.influxdb_tools.escape_names
         for name in ['', 'a', 'a_a', 'a_a_a', '@test']:
-            self.assertEqual(escape(name, True), name)
-        self.assertEqual(escape('a a', True), r'a\ a')
-        self.assertEqual(escape('a,a', True), r'a\,a')
-        self.assertEqual(escape('a=a', True), r'a=a')
+            self.assertEqual(escape_names(name, True), name)
+        self.assertEqual(escape_names('a a', True), r'a\ a')
+        self.assertEqual(escape_names('a,a', True), r'a\,a')
+        self.assertEqual(escape_names('a=a', True), r'a=a')
 
     def test_tags_name_escaping(self):
-        escape = da.influxdb_tools.escape_names
         for name in ['', 'a', 'a_a', 'a_a_a', '@test']:
-            self.assertEqual(escape(name, False), name)
-        self.assertEqual(escape('a a', False), r'a\ a')
-        self.assertEqual(escape('a,a', False), r'a\,a')
-        self.assertEqual(escape('a=a', False), r'a\=a')
+            self.assertEqual(escape_names(name, False), name)
+        self.assertEqual(escape_names('a a', False), r'a\ a')
+        self.assertEqual(escape_names('a,a', False), r'a\,a')
+        self.assertEqual(escape_names('a=a', False), r'a\=a')
 
     def test_fields_escaping(self):
-        escape = da.influxdb_tools.escape_field
         test_data = (
             ('a', 'a', r'a="a"'),
             ('a_a', 'a', r'a_a="a"'),
@@ -404,11 +403,149 @@ class TestDataAccessInfluxDB(unittest.TestCase):
             ('a,a', 42, r'a\,a=42'),
         )
         for field_name, field_value, expected in test_data:
-            self.assertEqual(escape(field_name, field_value), expected)
+            self.assertEqual(escape_field(field_name, field_value), expected)
 
-    def test_condition_builder(self):
-        # self.assertIsInstance()
-        pass
+    def test_tags_to_condition(self):
+        condition_with_nones = tags_to_condition(1, 'toto', None, None)
+        self.assertEqual(
+                str(condition_with_nones),
+                '("@agent_name" = \'toto\') AND '
+                '("@scenario_instance_id" = \'1\')')
+        condition_all = tags_to_condition(2, 'lulu', 3, 'Test', condition_with_nones)
+        self.assertEqual(
+                str(condition_all),
+                '(("@agent_name" = \'toto\') AND ("@scenario_instance_id" = \'1\'))'
+                ' AND ("@agent_name" = \'lulu\') AND ("@scenario_instance_id" = \'2\')'
+                ' AND ("@job_instance_id" = \'3\') AND ("@suffix" = \'Test\')')
+
+    def test_queries(self):
+        simple_condition = ConditionField('field_name', Operator.Equal, 42)
+        select_all = select_query('job_name', [], simple_condition)
+        select_few = select_query('job_name', ['a', 'b', 'c'])
+        measurement = measurement_query('job', simple_condition)
+        with self.assertRaises(AssertionError):
+            delete_query(condition=simple_condition)
+        delete_all = delete_query(scenario=1, suffix='suffix')
+        # TODO: delete_few with a timestamp range as condition
+        tags = tag_query('tag_name', 'job_name', simple_condition)
+
+        self.assertEqual(select_all, 'SELECT * FROM "job_name" WHERE "field_name" = 42')
+        self.assertEqual(select_few, 'SELECT "a","b","c" FROM "job_name"')
+        self.assertEqual(measurement, 'SHOW MEASUREMENTS WITH MEASUREMENT = "job" WHERE "field_name" = 42')
+        self.assertEqual(delete_all, 'DROP SERIES FROM /.*/ WHERE ("@scenario_instance_id" = \'1\')'
+                                     ' AND ("@suffix" = \'suffix\')')
+        self.assertEqual(tags, 'SHOW TAG VALUES FROM "job_name" WITH '
+                               'KEY = "tag_name" WHERE "field_name" = 42')
+
+    def test_simple_parse(self):
+        data = {'results': [{'series': [{
+            'name': 'Debug',
+            'columns': [
+                'time',
+                '@agent_name',
+                '@job_instance_id',
+                '@owner_scenario_instance_id',
+                '@scenario_instance_id',
+                'field'],
+            'values': [
+                [1495094155683, 'Controller', '12', '1000', '100', 1],
+                [1495094163291, 'Controller', '12', '1000', '100', 2],
+                [1495094165203, 'Controller', '12', '1000', '100', 3],
+                [1495094166675, 'Controller', '12', '1000', '100', 4],
+                [1495094168131, 'Controller', '12', '1000', '100', 5],
+                [1495094169659, 'Controller', '12', '1000', '100', 6]]}]}]}
+
+        expected = [
+                ('Debug', {
+                    'time': 1495094155683,
+                    '@agent_name': 'Controller',
+                    '@job_instance_id': '12',
+                    '@owner_scenario_instance_id': '1000',
+                    '@scenario_instance_id': '100',
+                    'field': 1,
+                },),
+                ('Debug', {
+                    'time': 1495094163291,
+                    '@agent_name': 'Controller',
+                    '@job_instance_id': '12',
+                    '@owner_scenario_instance_id': '1000',
+                    '@scenario_instance_id': '100',
+                    'field': 2,
+                },),
+                ('Debug', {
+                    'time': 1495094165203,
+                    '@agent_name': 'Controller',
+                    '@job_instance_id': '12',
+                    '@owner_scenario_instance_id': '1000',
+                    '@scenario_instance_id': '100',
+                    'field': 3,
+                },),
+                ('Debug', {
+                    'time': 1495094166675,
+                    '@agent_name': 'Controller',
+                    '@job_instance_id': '12',
+                    '@owner_scenario_instance_id': '1000',
+                    '@scenario_instance_id': '100',
+                    'field': 4,
+                },),
+                ('Debug', {
+                    'time': 1495094168131,
+                    '@agent_name': 'Controller',
+                    '@job_instance_id': '12',
+                    '@owner_scenario_instance_id': '1000',
+                    '@scenario_instance_id': '100',
+                    'field': 5,
+                },),
+                ('Debug', {
+                    'time': 1495094169659,
+                    '@agent_name': 'Controller',
+                    '@job_instance_id': '12',
+                    '@owner_scenario_instance_id': '1000',
+                    '@scenario_instance_id': '100',
+                    'field': 6,
+                },),
+        ]
+        self.assertEqual(list(parse_influx(data)), expected)
+
+    def test_statistics_parse(self):
+        data = {'results': [{'series': [{
+            'name': 'Debug',
+            'columns': [
+                'time',
+                '@agent_name',
+                '@job_instance_id',
+                '@owner_scenario_instance_id',
+                '@scenario_instance_id',
+                'field'],
+            'values': [
+                [1495094155683, 'Controller', '12', '1000', '100', 1],
+                [1495094163291, 'Controller', '12', '1000', '100', 2],
+                [1495094165203, 'Controller', '12', '1000', '100', 3],
+                [1495094166675, 'Controller', '12', '1000', '100', 4],
+                [1495094168131, 'Controller', '12', '1000', '100', 5],
+                [1495094169659, 'Controller', '12', '1000', '100', 6]]}]}]}
+
+        scenario, owner = parse_statistics(data)
+        self.assertEqual(scenario.instance_id, '100')
+        self.assertEqual(scenario.owner_instance_id, '1000')
+        self.assertEqual(owner.instance_id, '1000')
+        self.assertEqual(list(owner.jobs), [])
+        job, = scenario.jobs
+        self.assertEqual(job.name, 'Debug')
+        self.assertEqual(job.agent, 'Controller')
+        self.assertEqual(job.instance_id, '12')
+        statistics = job.statistics_data[(None,)]
+        expected = [
+                {'time': 1495094155683, 'field': 1},
+                {'time': 1495094163291, 'field': 2},
+                {'time': 1495094165203, 'field': 3},
+                {'time': 1495094166675, 'field': 4},
+                {'time': 1495094168131, 'field': 5},
+                {'time': 1495094169659, 'field': 6},
+        ]
+        self.assertEqual(statistics.json, expected)
+
+    # TODO test_orphans_parse, test_line_protocol / test_f
 
 
 if __name__ == '__main__':

@@ -155,13 +155,11 @@ class Agent:
         self.job_instances = OrderedDict({})
 
     def get_or_create_job(self, name, instance_id):
-        key = (name, instance_id)
-        try:
-            job = self.job_instances[key]
-        except KeyError:
-            job = self._scenario.get_or_create_job(name, self.name, instance_id)
-            self.job_instancess[key] = job
-        return job
+        return _get_or_create(
+                self.job_instances,
+                self._scenario.get_or_create_job,
+                name, instance_id,
+                args=(name, self.name, instance_id))
 
     @property
     def json(self):
@@ -187,7 +185,7 @@ class Job:
         self.logs_data = Log()
 
     def get_or_create_statistics(self, suffix=None):
-        return _get_or_create(self.statistics_data, Statistic, suffix)
+        return _get_or_create(self.statistics_data, Statistic, suffix, args=())
 
     @property
     def statistics(self):
@@ -294,7 +292,7 @@ class Log:
         return log_instance
 
 
-def _get_or_create(container, constructor, *key):
+def _get_or_create(container, constructor, *key, args=None):
     """Custom implementation of a `setdefault`-like
     accessor on dictionaries; but allow for costy
     object creation on KeyError rather than upfront.
@@ -307,7 +305,9 @@ def _get_or_create(container, constructor, *key):
     try:
         return container[key]
     except KeyError:
-        container[key] = instance = constructor(*key)
+        if args is None:
+            args = key
+        container[key] = instance = constructor(*args)
         return instance
 
 

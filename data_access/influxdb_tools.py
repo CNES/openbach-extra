@@ -197,22 +197,23 @@ def escape_field(name, value):
     return '{}={}'.format(TAGS_AND_FIELDS_SPECIALS.sub(r'\\\g<0>', name), value)
 
 
-def condition_builder(tag_name, tag_value, origin_condition, builder=ConditionTag):
-    """Helper function to easily chain and filter several conditions"""
-    if tag_value is None:
-        return origin_condition
-    condition = builder(tag_name, Operator.Equal, tag_value)
-    if origin_condition is not None:
-        return ConditionAnd(origin_condition, condition)
-    return condition
-
-
 def tags_to_condition(scenario, agent, job_instance, suffix, extra_condition=None):
     """Concatenate the given tags values into a single condition"""
-    return condition_builder('@suffix', suffix,
-        condition_builder('@scenario_instance_id', scenario,
-        condition_builder('@job_instance_id', job_instance,
-        condition_builder('@agent_name', agent, extra_condition))))
+    tags = {
+        '@agent_name': agent,
+        '@scenario_instance_id': scenario,
+        '@job_instance_id': job_instance,
+        '@suffix': suffix,
+    }
+    conditions = [] if extra_condition is None else [extra_condition]
+    conditions.extend(
+            ConditionTag(name, Operator.Equal, value)
+            for name, value in tags.items()
+            if value is not None)
+
+    if not conditions:
+        return None
+    return ConditionAnd(*conditions)
 
 
 def select_query(job_name=None, field_names=None, condition=None):
@@ -241,7 +242,7 @@ def delete_query(job_name=None, scenario=None, agent=None, job_instance=None, su
     assert condition is None or condition.is_timestamp
     # Optimize query based on whether or not there is timestamps involved
     query = 'DROP SERIES' if condition is None else 'DELETE'
-    query = '{} FROM {}'.format('/.*/' if job_name is None else '"{}"'.format(job_name))
+    query += ' FROM {}'.format('/.*/' if job_name is None else '"{}"'.format(job_name))
     condition = tags_to_condition(scenario, agent, job_instance, suffix, condition)
     if condition is not None:
         query = '{} WHERE {}'.format(query, condition)
@@ -290,7 +291,7 @@ def parse_statistics(influx_result):
                 scenario.owner = owner
             job = scenario.get_or_create_job(job_name, job, agent)
             stats = job.get_or_create_statistics(suffix)
-            stats.add_statistics(timestamp, **statistics)
+            stats.add_statistic(timestamp, **statistics)
 
     yield from scenarios.values()
 
@@ -304,7 +305,7 @@ def parse_orphans(influx_result):
         timestamp = statistics.pop('time')
         job = scenario.get_or_create_job(job_name, None, None)
         stats = job.get_or_create_statistics(None)
-        stats.add_statistics(timestamp, **statistics)
+        stats.add_statistic(timestamp, **statistics)
     return scenario
 
 
