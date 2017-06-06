@@ -79,29 +79,30 @@ class Condition:
 
 
 class BooleanCondition(Condition):
-    """Matches as a result of a boolean comparison on the match of two other conditions"""
+    """Matches as the result of a boolean comparison
+    on the match of other conditions.
+    """
 
-    def __init__(self, left_condition, right_condition):
-        assert isinstance(left_condition, Condition)
-        assert isinstance(right_condition, Condition)
-        self.left_condition = left_condition
-        self.right_condition = right_condition
+    def __init__(self, *conditions):
+        assert all(isinstance(c, Condition) for c in conditions)
+        self.conditions = conditions
 
     @property
     def is_timestamp(self):
-        return self.left_condition.is_timestamp and self.right_condition.is_timestamp
+        return all(c.is_timestamp for c in self.conditions)
 
     def __format__(self, format_spec):
-        return '({}) {} ({})'.format(self.left_condition, self.KEYWORD, self.right_condition)
+        separator = ' {} '.format(self.KEYWORD)
+        return separator.join(map('({})'.format, self.conditions))
 
 
 class ConditionAnd(BooleanCondition):
-    """Matches when two other condition do as well"""
+    """Matches when other conditions do as well"""
     KEYWORD = 'AND'
 
 
 class ConditionOr(BooleanCondition):
-    """Matches when either one of two other condition do as well"""
+    """Matches when either one of other conditions do as well"""
     KEYWORD = 'OR'
 
 
@@ -295,6 +296,9 @@ def parse_statistics(influx_result):
 
 
 def parse_orphans(influx_result):
+    """Build a `Scenario` instance containing all
+    measurements from InfluxDB stored data.
+    """
     scenario = Scenario(None)
     for job_name, statistics in parse_influx(influx_result):
         timestamp = statistics.pop('time')

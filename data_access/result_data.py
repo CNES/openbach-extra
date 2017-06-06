@@ -38,6 +38,12 @@ from collections import OrderedDict
 
 
 class Scenario:
+    """Container of data for a whole scenario instance.
+
+    Hold informations about jobs and sub-scenario instances and
+    can generate informations about agents too.
+    """
+
     def __init__(self, instance_id, owner=None):
         self.instance_id = instance_id
         self.owner = owner
@@ -45,33 +51,10 @@ class Scenario:
         self.sub_scenarios = OrderedDict({})
 
     def get_or_create_subscenario(self, instance_id):
-        try:
-            scenario = self.sub_scenarios[instance_id]
-        except KeyError:
-            self.sub_scenarios[instance_id] = scenario = Scenario(instance_id, self)
-            if self.owner is not None:
-                self.owner._new_scenario(instance_id, scenario)
-        return scenario
-
-    def _new_scenario(self, instance_id, scenario):
-        self.sub_scenarios[instance_id] = scenario
-        if self.owner is not None:
-            self.owner._new_scenario(instance_id, scenario)
+        return _get_or_create(self.sub_scenarios, Scenario, instance_id)
 
     def get_or_create_job(self, name, instance_id, agent):
-        key = (name, instance_id, agent)
-        try:
-            job = self.job_instances[key]
-        except KeyError:
-            self.job_instances[key] = job = Job(*key)
-            if self.owner is not None:
-                self.owner._new_job(key, job)
-        return job
-
-    def _new_job(self, key, job):
-        self.job_instances[key] = job
-        if self.owner is not None:
-            self.owner._new_job(key, job)
+        return _get_or_create(self.job_instances, Job, name, instance_id, agent)
 
     @property
     def owner_instance_id(self):
@@ -80,37 +63,54 @@ class Scenario:
         return self.owner.instance_id
 
     @property
-    def jobs(self):
+    def own_jobs(self):
+        """Generator of `Job` instances associated to this scenario"""
         yield from self.job_instances.values()
 
     @property
-    def agents(self):
-        sub_jobs = set(scenario.jobs for scenario in self.scenarios)
-
-        agents = {}
-        for job in self.jobs:
-            if job in sub_jobs:
-                continue
-            key = (job.agent, self.instance_id)
-            try:
-                agent = agents[key]
-            except KeyError:
-                agents[key] = agent = Agent(job.agent, self)
-            agent.jobs[(job.name, job.instance_id)] = job
-
-        yield from agents.values()
+    def jobs(self):
+        """Generator of `Job` instances associated to this
+        scenario and all its subscenarios, recursively.
+        """
         for scenario in self.scenarios:
-            yield from scenario.agents
+            yield from scenario.own_jobs
 
     @property
-    def scenarios(self):
+    def own_scenarios(self):
+        """Generator of sub-`Scenario` instances associated to this scenario"""
         yield from self.sub_scenarios.values()
 
     @property
-    def recursive_scenarios(self):
+    def scenarios(self):
+        """Generator of sub-`Scenario` instances associated to this
+        scenario and all its subscenarios, recursively.
+
+        Guaranteed to generate at least this scenario as first element.
+        """
         yield self
-        for scenario in self.sub_scenarios.values():
-            yield from scenario.recursive_scenarios
+        for scenario in self.own_scenarios:
+            yield from scenario.scenarios
+
+    @property
+    def own_agents(self):
+        """Generator of `Agent` instances associated to this scenario"""
+        agents = {}
+        for job in self.own_jobs:
+            agent = _get_or_create(agents, Agent, job.agent, self)
+            agent.jobs[(job.name, job.instance_id)] = job
+        yield from agents.values()
+
+    @property
+    def agents(self):
+        """Generator of `Agent` instances associated to this
+        scenario and all its subscenarios, recursively.
+        """
+        agents = {}
+        for scenario in self.scenarios:
+            for job in scenario.own_jobs:
+                agent = _get_or_create(agents, Agent, job.agent, scenario)
+                agent.jobs[(job.name, job.instance_id)] = job
+        yield from agents.values()
 
     @property
     def json(self):
@@ -118,9 +118,9 @@ class Scenario:
         return {
             'scenario_instance_id': self.instance_id,
             'owner_scenario_instance_id': self.owner_instance_id,
-            'sub_scenario_instances': [scenario.json for scenario in self.scenarios],
-            'agents': [agent.json for agent in self.agents],
-            'jobs': [job.json for job in self.jobs],
+            'sub_scenario_instances': [scenario.json for scenario in self.own_scenarios],
+            'agents': [agent.json for agent in self.own_agents],
+            'jobs': [job.json for job in self.own_jobs],
         }
 
     @classmethod
@@ -141,6 +141,14 @@ class Scenario:
 
 
 class Agent:
+    """Container of data for job instances launched on a single
+    machine. An agent is tied to a `Scenario` instance at
+    construction time.
+
+    Any job added to this `Agent` will be added to the associated
+    `Scenario` too.
+    """
+
     def __init__(self, name, scenario):
         self._scenario = scenario
         self.name = name
@@ -166,6 +174,11 @@ class Agent:
 
 
 class Job:
+    """Container of data for job instances.
+
+    Hold informations about statistics associated to suffixes.
+    """
+
     def __init__(self, name, instance_id, agent):
         self.name = name
         self.instance_id = instance_id
@@ -174,14 +187,13 @@ class Job:
         self.logs_data = Log()
 
     def get_or_create_statistics(self, suffix=None):
-        try:
-            statistics = self.statistics_data[suffix]
-        except KeyError:
-            self.statistics_data[suffix] = statistics = Statistic()
-        return statistics
+        return _get_or_create(self.statistics_data, Statistic, suffix)
 
     @property
     def statistics(self):
+        """Build a JSON representation of statistics hold by
+        this Job instance.
+        """
         return [{
             'suffix': suffix,
             'data': statistics.json,
@@ -189,6 +201,9 @@ class Job:
 
     @property
     def logs(self):
+        """Build a JSON representation of logs hold by
+        this Job instance.
+        """
         return self.logs_data.json
 
     @property
@@ -279,6 +294,23 @@ class Log:
         return log_instance
 
 
+def _get_or_create(container, constructor, *key):
+    """Custom implementation of a `setdefault`-like
+    accessor on dictionaries; but allow for costy
+    object creation on KeyError rather than upfront.
+
+    Return the value associated to the given key in
+    the given container. If the key is no present,
+    create an instance of the required object, store
+    it in the container and return it.
+    """
+    try:
+        return container[key]
+    except KeyError:
+        container[key] = instance = constructor(*key)
+        return instance
+
+
 def read_scenario(filename):
     """Generate a `Scenario` instance from a file.
 
@@ -286,40 +318,22 @@ def read_scenario(filename):
     dump of the dictionary returned by the `json` property
     of the corresponding `Scenario` instance.
     """
-
     with open(filename) as f:
         scenario_json = json.load(f)
     return Scenario.load(scenario_json)
 
 
 def get_or_create_scenario(scenario_id, cache):
-    try:
-        return cache[scenario_id]
-    except KeyError:
-        cache[scenario_id] = scenario = Scenario(scenario_id)
-        return scenario
+    """Retrieve a `Scenario` instance from the cache or
+    create a new one if it doesn't already exists.
+    """
+    return _get_or_create(cache, Scenario, scenario_id)
 
 
-def extract_jobs(scenario, context=None):
+def extract_jobs(scenario):
     """Extract out `Job`s from a `Scenario` instance indexed by
     their sub-scenario instance.
-
-    This function is recursive and uses the `context` parameter
-    to keep track of already emitted jobs. You should not provide
-    any value unless you want to filter out some jobs.
     """
-    if context is None:
-        # Cache of already yielded jobs
-        context = set()
-
-    # Yield jobs for sub-scenarios first to populate the cache
     for subscenario in scenario.scenarios:
-        yield from extract_jobs(subscenario, context)
-
-    # Yield each remaining job of the current scenario
-    scenario_id = scenario.instance_id
-    owner_id = scenario.owner_instance_id
-    for job in scenario.jobs:
-        if job not in context:
-            context.add(job)  # Inform the caller we took care of it
-            yield scenario_id, owner_id, job
+        for job in subscenario.own_jobs:
+            yield subscenario.instance_id, subscenario.owner_instance_id, job

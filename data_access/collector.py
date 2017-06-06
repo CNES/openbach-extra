@@ -133,7 +133,7 @@ class CollectorConnection:
         scenarios = {
                 subscenario.instance_id: subscenario
                 for scenario in response
-                for subscenario in scenario.recursive_scenarios
+                for subscenario in scenario.scenarios
         }
 
         response = self.influxdb.statistics(
