@@ -138,22 +138,22 @@ def parse_logs(elasticsearch_result):
 
             _id = record['_id']
             index = record['_index']
+            kind = record['_type']
             timestamp = parse_timestamp_with_index(source['timestamp'], index)
             version = source['@version']
             facility = source['facility']
             facility_label = source['facility_label']
-            flag = source['flag']
             host = source['host']
+            logsource = source['logsource']
             message = source['message']
             pid = source['pid']
             priority = source['priority']
             severity = source['severity']
             severity_label = source['severity_label']
-            kind = source['type']
             job.logs_data.add_log(
-                    _id, index, timestamp, version, facility,
-                    facility_label, flag, host, message, pid,
-                    priority, severity, severity_label, kind)
+                    _id, kind, index, timestamp, version, facility,
+                    facility_label, host, message, pid, priority,
+                    severity, severity_label, logsource)
 
     # Filter top-level scenarios
     yield from (scenario for scenario in scenarios.values() if scenario.owner is None)
@@ -175,22 +175,22 @@ def parse_orphans(elasticsearch_result, log):
             with suppress(KeyError):
                 _id = record['_id']
                 index = record['_index']
+                kind = record['_type']
                 timestamp = parse_timestamp_with_index(source['timestamp'], index)
                 version = source['@version']
                 facility = source['facility']
                 facility_label = source['facility_label']
-                flag = source['flag']
                 host = source['host']
+                logsource = source['logsource']
                 message = source['message']
                 pid = source['pid']
                 priority = source['priority']
                 severity = source['severity']
                 severity_label = source['severity_label']
-                kind = source['type']
                 log.add_log(
-                    _id, index, timestamp, version, facility,
-                    facility_label, flag, host, message, pid,
-                    priority, severity, severity_label, kind)
+                    _id, kind, index, timestamp, version, facility,
+                    facility_label, host, message, pid, priority,
+                    severity, severity_label, logsource)
 
 
 def rest_protocol(job_name, scenario_id, owner_id, agent_name, job_id, logs):
@@ -199,30 +199,29 @@ def rest_protocol(job_name, scenario_id, owner_id, agent_name, job_id, logs):
         metadata = {'index': {
             '_id': _id,
             '_index': log._index,
-            '_type': 'logs',
+            '_type': log._type,
             '_routing': None,
         }}
         data = {
             'facility': log.facility,
             'facility_label': log.facility_label,
-            'flag': log.flag,
             'host': log.host,
             'job_instance_id': job_id,
             'scenario_instance_id': scenario_id,
             'owner_scenario_instance_id': owner_id,
-            'logsource': agent_name,
+            'agent_name': agent_name,
+            'logsource': log.logsource if log.logsource else agent_name,
             'program': job_name,
             'message': log.message,
             'pid': log.pid,
             'priority': log.priority,
             'severity': log.severity,
             'severity_label': log.severity_label,
-            '_type': log.type,
             'timestamp': timestamp.strftime('%b %d %H:%M:%S'),
             '@timestamp': timestamp.isoformat(timespec='milliseconds') + 'Z',
             '@version': log._version,
         }
-        return '{}\n{}\n'.format(json.dumps(metadata), json.dumps(data))
+        yield '{}\n{}\n'.format(json.dumps(metadata), json.dumps(data))
 
 
 ###############################

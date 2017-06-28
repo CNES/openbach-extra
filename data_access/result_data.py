@@ -97,7 +97,7 @@ class Scenario:
         agents = {}
         for job in self.own_jobs:
             agent = _get_or_create(agents, Agent, job.agent, self)
-            agent.jobs[(job.name, job.instance_id)] = job
+            agent.job_instances[(job.name, job.instance_id)] = job
         yield from agents.values()
 
     @property
@@ -133,10 +133,22 @@ class Scenario:
             sub_scenario = cls.load(sub_scenario_data)
             sub_scenario.owner = scenario_instance
             scenario_instance.sub_scenarios[sub_scenario.instance_id] = sub_scenario
-        for job_data in scenario_data['jobs']:
-            job_instance = Job.load(job_data)
-            key = (job_instance.name, job_instance.agent, job_instance.instance_id)
-            scenario_instance.job_instances[key] = job_instance
+        try:
+            jobs = scenario_data['jobs']
+        except KeyError:
+            # Maybe an old file format
+            for agent_data in scenario_data['agents']:
+                agent_name = agent_data['name']
+                for job_data in agent_data['job_instances']:
+                    job_data['agent_name'] = agent_name
+                    job = Job.load(job_data)
+                    key = (job.name, job.agent, job.instance_id)
+                    scenario_instance.job_instances[key] = job
+        else:
+            for job_data in jobs:
+                job = Job.load(job_data)
+                key = (job.name, job.agent, job.instance_id)
+                scenario_instance.job_instances[key] = job
         return scenario_instance
 
 
@@ -167,7 +179,7 @@ class Agent:
         return {
             'agent_name': self.name,
             'scenario_instance_id': self._scenario.instance_id,
-            'jobs': [job.json for job in self.jobs.values()],
+            'jobs': [job.json for job in self.job_instances.values()],
         }
 
 
@@ -221,12 +233,23 @@ class Job:
         name = job_data['job_name']
         agent = job_data['agent_name']
         instance_id = job_data['job_instance_id']
-        job_instance = cls(name, agent, instance_id)
+        job_instance = cls(name, instance_id, agent)
         job_instance.logs_data = Log.load(job_data['logs'])
-        for statistic in job_data['statistics']:
-            suffix = statistic['suffix']
-            stats_data = statistic['data']
-            job_instance[suffix] = Statistic.load(stats_data)
+        try:
+            statistics = job_data['statistics']
+        except KeyError:
+            # Maybe an old file format
+            for suffix_data in job_data['suffixes']:
+                suffix = suffix_data['name']
+                stats_data = suffix_data['statistics']
+                stats = Statistic.load(stats_data)
+                job_instance.statistics_data[(suffix,)] = stats
+        else:
+            for statistic in statistics:
+                suffix = statistic['suffix']
+                stats_data = statistic['data']
+                stats = Statistic.load(stats_data)
+                job_instance.statistics_data[(suffix,)] = stats
         return job_instance
 
 
@@ -250,45 +273,78 @@ class Statistic:
         """Generate a Statistic instance from a JSON representation"""
         statistic_instance = cls()
         for stats in statistics_data:
-            statistic_instance.dated_data[stats['time']] = stats
+            try:
+                timestamp = stats['time']
+            except KeyError:
+                # Maybe an old file format
+                timestamp = stats['timestamp']
+            stats_data = {k: v for k, v in stats.items() if k != 'time'}
+            stats_data['timestamp'] = timestamp
+            statistic_instance.add_statistic(**stats_data)
         return statistic_instance
+
+
+class _LogEntry:
+    def __init__(self, _id, _type, _index, _timestamp, _version,
+                 facility, facility_label, host, message, pid,
+                 priority, severity, severity_label, source):
+        self._id = _id
+        self._index = _index
+        self._type = _type
+        self._timestamp = _timestamp
+        self._version = _version
+        self.facility = facility
+        self.facility_label = facility_label
+        self.host = host
+        self.message = message
+        self.pid = pid
+        self.priority = priority
+        self.severity = severity
+        self.severity_label = severity_label
+        self.logsource = source
+
+    @property
+    def json(self):
+        return {
+                '_id': self._id, '_index': self._index, '_type': self._type,
+                '_timestamp': self._timestamp, '_version': self._version,
+                'facility': self.facility, 'severity': self.severity,
+                'facility_label': self.facility_label, 'pid': self.pid,
+                'message': self.message, 'priority': self.priority,
+                'host': self.host, 'severity_label': self.severity_label,
+                'source': self.logsource,
+        }
 
 
 class Log:
     def __init__(self):
         self.numbered_data = OrderedDict({})
 
-    def add_log(self, _id, _index, _timestamp, _version, facility,
-                facility_label, flag, host, message, pid, priority,
-                severity, severity_label, type):
-        self.numbered_data[_id] = {
-                '_id': _id,
-                '_index': _index,
-                '_timestamp': _timestamp,
-                '_version': _version,
-                'facility': facility,
-                'facility_label': facility_label,
-                'flag': flag,
-                'host': host,
-                'message': message,
-                'pid': pid,
-                'priority': priority,
-                'severity': severity,
-                'severity_label': severity_label,
-                'type': type,
-        }
+    def add_log(self, _id, _type, _index, _timestamp, _version,
+                facility, facility_label, host, message, pid,
+                priority, severity, severity_label, source):
+        self.numbered_data[_id] = _LogEntry(
+                _id, _type, _index, _timestamp, _version,
+                facility, facility_label, host, message, pid,
+                priority, severity, severity_label, source)
 
     @property
     def json(self):
         """Build a JSON representation of this Log instance"""
-        return [log for log in self.numbered_data.values()]
+        return [log.json for log in self.numbered_data.values()]
 
     @classmethod
     def load(cls, logs_data):
         """Generate a Log instance from a JSON representation"""
         log_instance = cls()
         for log in logs_data:
-            log_instance[log['_id']] = log
+            if 'type' in log:
+                # Maybe an old file format
+                log = log.copy()
+                log['source'] = ''
+                log['_type'] = log.pop('type')
+                del log['flag']
+            log_instance.add_log(**log)
         return log_instance
 
 

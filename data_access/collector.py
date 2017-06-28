@@ -131,7 +131,7 @@ class CollectorConnection:
                 agent_name, job_instance_id, timestamps)
         # Flatten scenarios instances from ElasticSearch
         scenarios = {
-                subscenario.instance_id: subscenario
+                (subscenario.instance_id,): subscenario
                 for scenario in response
                 for subscenario in scenario.scenarios
         }

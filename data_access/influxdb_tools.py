@@ -278,12 +278,12 @@ def parse_statistics(influx_result):
     """Generate `Scenario`s instances from InfluxDB stored data"""
     scenarios = {}  # Cache
     for job_name, statistics in parse_influx(influx_result):
-        with suppress(KeyError):
+        with suppress(KeyError, ValueError):
             timestamp = statistics.pop('time')
             agent = statistics.pop('@agent_name')
-            job = statistics.pop('@job_instance_id')
-            scenario = statistics.pop('@scenario_instance_id')
-            owner = statistics.pop('@owner_scenario_instance_id')
+            job = int(statistics.pop('@job_instance_id'))
+            scenario = int(statistics.pop('@scenario_instance_id'))
+            owner = int(statistics.pop('@owner_scenario_instance_id'))
             suffix = statistics.pop('@suffix', None)
             scenario = get_or_create_scenario(scenario, scenarios)
             owner = get_or_create_scenario(owner, scenarios)
