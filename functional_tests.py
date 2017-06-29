@@ -51,7 +51,7 @@ class TestDataImportExport(unittest.TestCase):
         self.collector.import_scenario(scenario)
         retrieved, = self.collector.scenarios(
                 scenario_instance_id=scenario.instance_id)
-        self.assertEqual(retrieved.json, scenario.json)
+        self.assertEqual(retrieved, scenario)
 
     def test_import_netcat(self):
         self._test_import('netcat.json')

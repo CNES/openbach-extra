@@ -47,8 +47,19 @@ class Scenario:
     def __init__(self, instance_id, owner=None):
         self.instance_id = instance_id
         self.owner = owner
-        self.job_instances = OrderedDict({})
-        self.sub_scenarios = OrderedDict({})
+        self.job_instances = {}
+        self.sub_scenarios = {}
+
+    def __eq__(self, other):
+        if not isinstance(other, Scenario):
+            raise NotImplementedError
+
+        return (
+                self.instance_id == other.instance_id and
+                self.owner == other.owner and
+                self.job_instances == other.job_instances and
+                self.sub_scenarios == other.sub_scenarios
+        )
 
     def get_or_create_subscenario(self, instance_id):
         return _get_or_create(self.sub_scenarios, Scenario, instance_id)
@@ -142,12 +153,12 @@ class Scenario:
                 for job_data in agent_data['job_instances']:
                     job_data['agent_name'] = agent_name
                     job = Job.load(job_data)
-                    key = (job.name, job.agent, job.instance_id)
+                    key = (job.name, job.instance_id, job.agent)
                     scenario_instance.job_instances[key] = job
         else:
             for job_data in jobs:
                 job = Job.load(job_data)
-                key = (job.name, job.agent, job.instance_id)
+                key = (job.name, job.instance_id, job.agent)
                 scenario_instance.job_instances[key] = job
         return scenario_instance
 
@@ -193,8 +204,20 @@ class Job:
         self.name = name
         self.instance_id = instance_id
         self.agent = agent
-        self.statistics_data = OrderedDict({})
+        self.statistics_data = {}
         self.logs_data = Log()
+
+    def __eq__(self, other):
+        if not isinstance(other, Job):
+            raise NotImplementedError
+
+        return (
+                self.name == other.name and
+                self.instance_id == other.instance_id and
+                self.agent == other.agent and
+                self.statistics_data == other.statistics_data and
+                self.logs_data == other.logs_data
+        )
 
     def get_or_create_statistics(self, suffix=None):
         return _get_or_create(self.statistics_data, Statistic, suffix, args=())
@@ -257,6 +280,12 @@ class Statistic:
     def __init__(self):
         self.dated_data = OrderedDict({})
 
+    def __eq__(self, other):
+        if not isinstance(other, Statistic):
+            raise NotImplementedError
+
+        return self.dated_data == other.dated_data
+
     def add_statistic(self, timestamp, **kwargs):
         self.dated_data[timestamp] = kwargs
 
@@ -303,6 +332,26 @@ class _LogEntry:
         self.severity_label = severity_label
         self.logsource = source
 
+    def __eq__(self, other):
+        if not isinstance(other, _LogEntry):
+            return NotImplementedError
+
+        return (
+                self._id == other._id and
+                self._index == other._index and
+                self._type == other._type and
+                self._timestamp == other._timestamp and
+                self._version == other._version and
+                self.facility == other.facility and
+                self.facility_label == other.facility_label and
+                self.host == other.host and
+                self.message == other.message and
+                self.pid == other.pid and
+                self.priority == other.priority and
+                self.severity == other.severity and
+                self.severity_label == other.severity_label
+        )
+
     @property
     def json(self):
         return {
@@ -318,7 +367,13 @@ class _LogEntry:
 
 class Log:
     def __init__(self):
-        self.numbered_data = OrderedDict({})
+        self.numbered_data = {}
+
+    def __eq__(self, other):
+        if not isinstance(other, Log):
+            raise NotImplementedError
+
+        return self.numbered_data == other.numbered_data
 
     def add_log(self, _id, _type, _index, _timestamp, _version,
                 facility, facility_label, host, message, pid,
