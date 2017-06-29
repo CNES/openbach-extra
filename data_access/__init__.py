@@ -36,40 +36,21 @@ well as means to filter them at will.
 """
 
 __author__ = 'Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>'
-__credits__ = 'contributions: Mathias ETTINGER'
-__version__ = 'v0.1'
+__credits__ = 'Maintainer: Mathias ETTINGER <mettinger@toulouse.viveris.com>'
+__version__ = 'v0.2'
 __all__ = [
     'read_scenario',
     'CollectorConnection',
     'AsyncCollectorConnection',
-    'OperandStatistic',
-    'OperandTimestamp',
-    'OperandValue',
+    'Operator',
     'ConditionAnd',
     'ConditionOr',
-    'ConditionEqual',
-    'ConditionUpperOrEqual',
-    'ConditionUpper',
-    'ConditionNotEqual',
-    'ConditionBelow',
-    'ConditionBelowOrEqual',
+    'ConditionTag',
+    'ConditionField',
+    'ConditionTimestamp',
 ]
 
-from .collector_connection import (
-    read_scenario,
-    CollectorConnection,
-    AsyncCollectorConnection,
-)
-from .result_filter import (
-    OperandStatistic,
-    OperandTimestamp,
-    OperandValue,
-    ConditionAnd,
-    ConditionOr,
-    ConditionEqual,
-    ConditionUpperOrEqual,
-    ConditionUpper,
-    ConditionNotEqual,
-    ConditionBelow,
-    ConditionBelowOrEqual,
-)
+from .result_data import read_scenario
+from .async_collector import AsyncCollectorConnection, CollectorConnection
+from .influxdb_tools import (Operator, ConditionAnd, ConditionOr, ConditionTag,
+                             ConditionField, ConditionTimestamp)
