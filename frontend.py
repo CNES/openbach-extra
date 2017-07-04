@@ -1,82 +1,101 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
-"""
-   OpenBACH is a generic testbed able to control/configure multiple
-   network/physical entities (under test) and collect data from them. It is
-   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
-   Agents (one for each network entity that wants to be tested).
-
-
-   Copyright © 2016 CNES
-
-
-   This file is part of the OpenBACH testbed.
-
-
-   OpenBACH is a free software : you can redistribute it and/or modify it under
-   the terms of the GNU General Public License as published by the Free
-   Software Foundation, either version 3 of the License, or (at your option)
-   any later version.
-
-   This program is distributed in the hope that it will be useful, but WITHOUT
-   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or
-   FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
-   more details.
-
-   You should have received a copy of the GNU General Public License along with
-   this program. If not, see http://www.gnu.org/licenses/.
+# OpenBACH is a generic testbed able to control/configure multiple
+# network/physical entities (under test) and collect data from them. It is
+# composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+# Agents (one for each network entity that wants to be tested).
+#
+#
+# Copyright © 2016 CNES
+#
+#
+# This file is part of the OpenBACH testbed.
+#
+#
+# OpenBACH is a free software : you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+# more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program. If not, see http://www.gnu.org/licenses/.
 
 
-
-   @file     frontend.py
-   @brief    The frontend script (aggregate all the function callable by the user)
-   @author   Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
-"""
+"""The frontend script (aggregate all the function callable by the user)"""
 
 
-import os.path
-import requests
-import datetime
+__author__ = 'Viveris Technologies'
+__credits__ = '''Contributors:
+ * Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
+ * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
+'''
+
 import pprint
+import os.path
+import datetime
+from sys import exit
 from time import sleep
 from urllib.parse import urlencode
 from functools import partial, wraps
-from sys import exit
+
 import yaml
-try:
-    import simplejson as json
-except ImportError:
-    import json
+import requests
 
 
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yml')) as stream:
-    content = yaml.load(stream)
-
-controller_ip = content.get('controller_ip')
-if controller_ip is None:
-    exit('Please, fill the controller_ip in the config file')
-
-_URL = "http://" + controller_ip + ":8000/{}/"
+PWD = os.path.dirname(os.path.abspath(__file__))
+CONTROLLER_IP = None
+WAITING_TIME_BETWEEN_STATES_POLL = 5  # seconds
+_URL = 'http://{}:8000/{}/'
 
 
-def wait_for_success(state_function, status=None, valid_statuses=(200, 204), **kwargs):
+def read_controller_ip(filename=os.path.join(PWD, 'config.yml')):
+    global CONTROLLER_IP
+    if CONTROLLER_IP is None:
+        try:
+            stream = open(filename)
+        except OSError as e:
+            exit('File {} cannot be opened: {}'.format(filename, e))
+
+        with stream:
+            try:
+                content = yaml.load(stream)
+            except yaml.error.YAMLError as e:
+                exit('Cannot parse file {}: {}'.format(filename, e))
+        try:
+            CONTROLLER_IP = content['controller_ip']
+        except KeyError:
+            exit('File {} does not contain the field '
+                 '\'controller_ip\''.format(filename))
+        if CONTROLLER_IP is None:
+            exit('The \'controller_ip\' field of the '
+                 'file {} is empty'.format(filename))
+    return CONTROLLER_IP
+
+
+def wait_for_success(state_function, status=None,
+                     valid_statuses=(200, 204), **kwargs):
     while True:
-        sleep(1)
+        sleep(WAITING_TIME_BETWEEN_STATES_POLL)
         response = state_function(**kwargs)
         try:
             content = response.json()
         except ValueError:
             pprint.pprint(response.text)
             code = response.status_code
-            exit('Server returned non-JSON response with status code {}'.format(code))
+            exit('Server returned non-JSON response with '
+                 'status code {}'.format(code))
 
         if status:
             content = content[status]
         returncode = content['returncode']
         if returncode != 202:
             print('Returncode:', returncode)
-            pprint.pprint(content['response'])
+            pprint.pprint(content['response'], width=200)
             exit(returncode not in valid_statuses)
 
 
@@ -85,14 +104,14 @@ def _request_message(entry_point, verb, **kwargs):
     the right URL.
     """
 
-    url = _URL.format(entry_point)
+    controller_ip = read_controller_ip()
+    url = _URL.format(controller_ip, entry_point)
     verb = verb.upper()
 
     if verb == 'GET':
         return requests.get(url, params=kwargs)
     else:
-        body = json.dumps(kwargs)
-        return requests.request(verb, url, data=body)
+        return requests.request(verb, url, json=kwargs)
 
 
 def pretty_print(function):
@@ -187,8 +206,9 @@ def install_jobs(job_names, agent_ips):
 
 
 def install_job(job_name, agent_ips):
-    return _request_message('job/{}'.format(job_name), 'POST', action='install',
-                            addresses=agent_ips)
+    return _request_message(
+            'job/{}'.format(job_name), 'POST',
+            action='install', addresses=agent_ips)
 
 
 def list_agents(update=None):
@@ -200,12 +220,14 @@ def list_agents(update=None):
 
 def list_jobs(string_to_search=None, ratio=None):
     if string_to_search:
-        print ("ratio:", ratio)
-        return _request_message('job', 'GET', string_to_search=string_to_search,
-                               ratio=ratio)
+        return _request_message(
+                'job', 'GET',
+                string_to_search=string_to_search,
+                ratio=ratio)
     else:
         return _request_message('job', 'GET')
-   
+
+
 def list_installed_jobs(agent_ip, update=None):
     action = _request_message
     if update:
@@ -419,11 +441,13 @@ def stop_scenario_instance(scenario_instance_id, date=None, scenario_name=None,
 def list_scenario_instances(scenario_name=None, project_name=None):
     if project_name is not None:
         if scenario_name is not None:
-            return _request_message('project/{}/scenario/{}/scenario_instance'.format(
-                project_name, scenario_name), 'GET')
+            return _request_message(
+                    'project/{}/scenario/{}/scenario_instance'
+                    .format(project_name, scenario_name), 'GET')
         else:
-            return _request_message('project/{}/scenario_instance'.format(
-                project_name), 'GET')
+            return _request_message(
+                    'project/{}/scenario_instance'
+                    .format(project_name), 'GET')
     else:
         return _request_message('scenario_instance', 'GET')
 
@@ -431,8 +455,10 @@ def list_scenario_instances(scenario_name=None, project_name=None):
 def status_scenario_instance(scenario_instance_id, scenario_name=None,
                              project_name=None):
     if project_name is not None and scenario_name is not None:
-        return _request_message('project/{}/scenario/{}/scenario_instance/{}'.format(
-            project_name, scenario_name, scenario_instance_id), 'GET')
+        return _request_message(
+                'project/{}/scenario/{}/scenario_instance/{}'
+                .format(project_name, scenario_name, scenario_instance_id),
+                'GET')
     else:
         return _request_message('scenario_instance/{}'.format(
             scenario_instance_id), 'GET')
@@ -451,8 +477,9 @@ def add_project(project_json):
 
 
 def modify_project(project_name, project_json):
-    return _request_message('project/{}'.format(project_name), 'PUT',
-                            **project_json)
+    return _request_message(
+            'project/{}'.format(project_name),
+            'PUT', **project_json)
 
 
 def del_project(project_name):
@@ -476,15 +503,19 @@ def state_agent(address):
 
 
 def state_job(address, name):
-    return _request_message('job/{}/state'.format(name), 'GET',
-                            address=address,)
+    return _request_message(
+            'job/{}/state'.format(name),
+            'GET', address=address,)
 
 
 def state_push_file(filename, path, agent_ip):
-    return _request_message('file/state', 'GET', filename=filename, path=path,
-                            agent_ip=agent_ip)
+    return _request_message(
+            'file/state', 'GET',
+            filename=filename, path=path,
+            agent_ip=agent_ip)
 
 
 def state_job_instance(job_instance_id):
-    return _request_message('job_instance/{}/state'.format(job_instance_id))
-
+    return _request_message(
+            'job_instance/{}/state'
+            .format(job_instance_id), 'GET')
