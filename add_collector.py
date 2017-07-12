@@ -37,6 +37,7 @@ __credits__ = '''Contributors:
 
 
 import argparse
+import getpass
 from frontend import add_collector, state_collector, wait_for_success
 
 
@@ -46,8 +47,6 @@ if __name__ == "__main__":
             description='OpenBach - Add Collector',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('collector_ip', help='IP Address of the Collector')
-    parser.add_argument('username', help='Username of the Collector')
-    parser.add_argument('password', help='Password of the Collector')
     parser.add_argument('name', help='Name of the Collector')
     parser.add_argument(
             '-l', '--logs-port', type=int,
@@ -55,15 +54,22 @@ if __name__ == "__main__":
     parser.add_argument(
             '-s', '--stats-port', type=int,
             help='Port for the Stats')
+    parser.add_argument(
+            '-u', '--username',
+            help='Username to connect as on the collector-to-be '
+            'if the SSH key of the controller cannot be used to '
+            'connect to the openbach-admin user on the machine.')
 
     # get args
     args = parser.parse_args()
     collector = args.collector_ip
-    username = args.username
-    password = args.password
     name = args.name
     logs_port = args.logs_port
     stats_port = args.stats_port
+    username = args.username
+    password = None
+    if username is not None:
+        password = getpass.getpass()
 
     add_collector(collector, username, password, name, logs_port, stats_port)
-    wait_for_success(state_collector, status='add',  address=collector_ip)
+    wait_for_success(state_collector, status='add',  address=collector)

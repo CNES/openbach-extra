@@ -37,6 +37,7 @@ __credits__ = '''Contributors:
 
 
 import argparse
+import getpass
 import pprint
 from frontend import install_agent, state_agent, wait_for_success
 
@@ -48,17 +49,22 @@ if __name__ == "__main__":
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('agent_ip', help='IP Address of the Agent')
     parser.add_argument('collector_ip', help='IP Address of the Collector')
-    parser.add_argument('username', help='Username of the Agent')
-    parser.add_argument('password', help='Password of the Agent')
     parser.add_argument('name', help='Name of the Agent')
+    parser.add_argument(
+            '-u', '--username',
+            help='Username to connect as on the agent-to-be '
+            'if the SSH key of the controller cannot be used to '
+            'connect to the openbach-admin user on the machine.')
 
     # get args
     args = parser.parse_args()
     agent_ip = args.agent_ip
     collector_ip = args.collector_ip
-    username = args.username
-    password = args.password
     name = args.name
+    username = args.username
+    password = None
+    if username is not None:
+        password = getpass.getpass()
 
     response = install_agent(agent_ip, collector_ip, username, password, name)
     if 400 <= response.status_code < 600:

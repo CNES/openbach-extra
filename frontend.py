@@ -192,7 +192,7 @@ def del_job(job_name):
 
 
 def get_job_stats(job_name):
-    return _request_message('job/{}'.format(job_name), 'GET', type='stats')
+    return _request_message('job/{}'.format(job_name), 'GET', type='statistics')
 
 
 def get_job_help(job_name):
