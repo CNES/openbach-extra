@@ -224,13 +224,21 @@ class Job:
 
     @property
     def statistics(self):
+        """Default statistics (without suffix)"""
+        try:
+            return self.statistics_data[(None,)]
+        except KeyError:
+            raise AttributeError('\'Job\' object has no attribute statistics') from None
+
+    @property
+    def stats(self):
         """Build a JSON representation of statistics hold by
         this Job instance.
         """
         return [{
             'suffix': suffix,
             'data': statistics.json,
-        } for suffix, statistics in self.statistics_data.items()]
+        } for (suffix,), statistics in self.statistics_data.items()]
 
     @property
     def logs(self):
@@ -247,7 +255,7 @@ class Job:
             'job_name': self.name,
             'agent_name': self.agent,
             'logs': self.logs,
-            'statistics': self.statistics,
+            'statistics': self.stats,
         }
 
     @classmethod
