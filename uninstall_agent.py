@@ -38,7 +38,7 @@ __credits__ = '''Contributors:
 
 import argparse
 import pprint
-from frontend import uninstall_agent, state_agent, wait_for_success
+from frontend import uninstall_agent, state_agent, pretty_wait
 
 
 if __name__ == "__main__":
@@ -57,4 +57,4 @@ if __name__ == "__main__":
         print(response)
         pprint.pprint(response.json())
         exit(1)
-    wait_for_success(state_agent, status='uninstall', address=agent_ip)
+    pretty_wait(state_agent, status='uninstall', address=agent_ip)

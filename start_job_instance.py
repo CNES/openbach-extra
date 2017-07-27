@@ -73,7 +73,7 @@ if __name__ == "__main__":
             '-s', '--status',
             help='Start a watch of the status with this interval')
     parser.add_argument(
-            '-a', '--argument', type=parse, nargs='+',
+            '-a', '--argument', type=parse, nargs='+', action='append',
             metavar='NAME[ VALUE[ VALUE...]]')
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument(
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     agent_ip = args.agent_ip
     job_name = args.job_name
     if type(args.argument) == list:
-        arguments = dict(args.argument)
+        arguments = dict(a[0] for a in args.argument)
     else:
         arguments = {}
     date = date_to_timestamp('{} {}'.format(*args.date)) if args.date else None

@@ -37,7 +37,7 @@ __credits__ = '''Contributors:
 
 
 import argparse
-from frontend import del_collector, state_collector, wait_for_success
+from frontend import del_collector, state_collector, pretty_wait
 
 
 if __name__ == "__main__":
@@ -52,6 +52,6 @@ if __name__ == "__main__":
     collector_ip = args.collector_ip
 
     del_collector(collector_ip)
-    wait_for_success(
+    pretty_wait(
             state_collector, status='del',
             valid_statuses=(200, 204), address=collector_ip)

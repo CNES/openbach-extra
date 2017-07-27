@@ -53,6 +53,12 @@ WAITING_TIME_BETWEEN_STATES_POLL = 5  # seconds
 _URL = 'http://{}:8000/{}/'
 
 
+class ConductorException(Exception):
+    def __init__(self, text, code):
+        super().__init__(text)
+        self.return_code = code
+        self.text = text
+                                    
 def read_controller_ip(filename=os.path.join(PWD, 'config.yml')):
     global CONTROLLER_IP
     if CONTROLLER_IP is None:
@@ -85,19 +91,29 @@ def wait_for_success(state_function, status=None,
         try:
             content = response.json()
         except ValueError:
-            pprint.pprint(response.text)
-            code = response.status_code
-            exit('Server returned non-JSON response with '
-                 'status code {}'.format(code))
+            raise ConductorException(response.text, response.status_code) from None
 
         if status:
             content = content[status]
         returncode = content['returncode']
         if returncode != 202:
-            print('Returncode:', returncode)
-            pprint.pprint(content['response'], width=200)
-            exit(returncode not in valid_statuses)
+            if returncode not in valid_statuses:
+                raise ConductorException(content['response'], returncode)
+            return content
 
+@wraps(wait_for_success)
+def pretty_wait(*args, **kwargs):
+    try:
+        result = wait_for_success(*args, **kwargs)
+    except ConductorException as err:
+        print('Server returned non-JSON response with status code {}'.format(result[returncode]))
+        print(err.text)
+        exit(1)
+    else:
+        print('Return code: {0[returncode]}'.format(result))
+        pprint.pprint(result['response'])
+        exit(0)
+ 
 
 def _request_message(entry_point, verb, **kwargs):
     """Helper function to format a request and send it to
@@ -418,10 +434,10 @@ def start_scenario_instance(name, args, date=None, project_name=None):
         action = partial(action, date=date)
     if project_name is None:
         return action('scenario_instance', 'POST', scenario_name=name,
-                      args=args)
+                      arguments=args)
     else:
         return action('project/{}/scenario/{}/scenario_instance'.format(
-            project_name, name), 'POST', args=args)
+            project_name, name), 'POST', arguments=args)
 
 
 def stop_scenario_instance(scenario_instance_id, date=None, scenario_name=None,

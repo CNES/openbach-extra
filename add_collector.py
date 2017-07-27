@@ -37,7 +37,7 @@ __credits__ = '''Contributors:
 
 
 import argparse
-from frontend import add_collector, state_collector, wait_for_success
+from frontend import add_collector, state_collector, pretty_wait
 
 
 if __name__ == "__main__":
@@ -66,4 +66,4 @@ if __name__ == "__main__":
     stats_port = args.stats_port
 
     add_collector(collector, username, password, name, logs_port, stats_port)
-    wait_for_success(state_collector, status='add',  address=collector_ip)
+    pretty_wait(state_collector, status='add',  address=collector_ip)
