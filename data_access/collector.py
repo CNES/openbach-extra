@@ -165,15 +165,14 @@ class CollectorConnection:
     def remove_statistics(
             self, job_name=None, scenario_instance_id=None,
             agent_name=None, job_instance_id=None,
-            suffix=None, condition=None):
-        # TODO: timestamps=None  # See note in elasticsearch_tools::ElasticSearchConnection::remove_logs
+            suffix=None, condition=None, timestamps=None):
         """Delete data in InfluxDB that matches the given constraints"""
         self.influxdb.remove_statistics(
                 job_name, scenario_instance_id, agent_name,
                 job_instance_id, suffix, condition)
-        # self.elasticsearch.remove_logs(
-        #        job_name, scenario_instance_id, agent_name,
-        #        job_instance_id, timestamps)
+        self.elasticsearch.remove_logs(
+                job_name, scenario_instance_id, agent_name,
+                job_instance_id, timestamps)
 
     def orphans(self, timestamps=None, condition=None):
         """Retrieve orphans logs from ElasticSearch and orphans

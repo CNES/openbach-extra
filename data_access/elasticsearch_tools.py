@@ -238,6 +238,7 @@ class ElasticSearchCommunicator:
         self.querying_URL = base_url + '/logstash-*/logs/_search'
         self.writing_URL = base_url + '/_bulk'
         self.scrolling_URL = base_url + '/_search/scroll'
+        self.deleting_URL = base_url + '/logstash-*/_delete_by_query'
 
     def search_query(self, body=None, **query):
         """Send a query to ElasticSearch and gather the results"""
@@ -255,6 +256,12 @@ class ElasticSearchCommunicator:
                 break
             body = {'scroll': '1m', 'scroll_id': scroll_id}
             response = requests.post(self.scrolling_URL, json=body).json()
+
+    def delete_query(self, query):
+        # TODO: Need elasticsearch 5.0+ for it to possibly work
+        # response = requests.post(self.deleting_URL, json=query)
+        # return response.json()
+        pass
 
     def data_write(self, body, first_time_request=False):
         """Send data to ElasticSearch so they are stored"""
@@ -327,10 +334,9 @@ class ElasticSearchConnection(ElasticSearchCommunicator):
         parse_orphans(response, result)
         return result
 
-    # def remove_logs(self, job=None, scenario=None, agent=None, job_instance=None, timestamps=None):
-        # TODO See how to delete logs in ElasticSearch
-        # For now, the API is new and may change
-        # See https://www.elastic.co/guide/en/elasticsearch/reference/5.0/docs-delete-by-query.html
+    def remove_logs(self, job=None, scenario=None, agent=None, job_instance=None, timestamps=None):
+        query = tags_to_query(scenario, job, agent, job_instance, timestamps)
+        self.delete_query(query)
 
     def import_job(self, scenario_id, owner_id, job):
         """Write the data of the given job into ElasticSearch"""
