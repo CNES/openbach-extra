@@ -61,18 +61,14 @@ def tags_to_query(scenario, job, agent, job_instance, timestamps):
             timestamp_lower, timestamp_upper = timestamps
         except (TypeError, ValueError):
             timestamp_lower = timestamp_upper = timestamps
-        filter_query['filter'] = {
-            'bool': {
-                'must': {
-                    'range': {
-                        '@timestamp': {
-                            'gte': timestamp_lower,
-                            'lte': timestamp_upper,
-                        },
-                    },
+        filter_query['filter'] = [{
+            'range': {
+                '@timestamp': {
+                    'gte': timestamp_lower,
+                    'lte': timestamp_upper,
                 },
             },
-        }
+        }]
 
     fields = {
         'scenario_instance_id:{0} || owner_scenario_instance_id:{0}': scenario,
@@ -85,11 +81,11 @@ def tags_to_query(scenario, job, agent, job_instance, timestamps):
             for pattern, value in fields.items()
             if value is not None)
     if query:
-        filter_query['query'] = {'query_string': {'query': query}}
+        filter_query['must'] = [{'query_string': {'query': query}}]
     else:
-        filter_query['query'] = {'match_all': {}}
+        filter_query['must'] = [{'match_all': {}}]
 
-    return {'query': {'filtered': filter_query}}
+    return {'query': {'bool': filter_query}}
 
 
 def extract_field_or_None(record, field_name, converter=str):

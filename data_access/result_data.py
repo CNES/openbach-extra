@@ -333,12 +333,12 @@ class _LogEntry:
         self.facility = facility
         self.facility_label = facility_label
         self.host = host
+        self.logsource = source
         self.message = message
         self.pid = pid
         self.priority = priority
         self.severity = severity
         self.severity_label = severity_label
-        self.logsource = source
 
     def __eq__(self, other):
         if not isinstance(other, _LogEntry):
@@ -353,6 +353,7 @@ class _LogEntry:
                 self.facility == other.facility and
                 self.facility_label == other.facility_label and
                 self.host == other.host and
+                self.logsource == other.logsource and
                 self.message == other.message and
                 self.pid == other.pid and
                 self.priority == other.priority and
