@@ -43,10 +43,11 @@ class StartJobInstance(OpenBachFunction):
         self.start_job_instance = {}
         self.job_name = None
 
-    def configure(self, job_name, agent_ip, offset=0, **job_arguments):
+    def configure(self, job_name, entity_name, offset=0, **job_arguments):
         """Define this openbach function with the mandatory values:
          - job_name: name of the job to start;
-         - agent_ip: address of the agent that should start the job;
+         - entity_name: name of the entity (hopefully with an agent
+                        installed on) that should start the job;
          - offset: delay for the scheduler on the agent before starting
                    the job;
          - job_arguments: key=value pairs of arguments provided to
@@ -55,7 +56,7 @@ class StartJobInstance(OpenBachFunction):
 
         arguments = self.start_job_instance
         arguments.clear()
-        arguments['agent_ip'] = agent_ip
+        arguments['entity_name'] = entity_name
         arguments['offset'] = offset
         arguments[job_name] = job_arguments
         self.job_name = job_name
@@ -75,7 +76,7 @@ class StartJobInstance(OpenBachFunction):
         job = self.job_name
         function = self.start_job_instance
         context['start_job_instance'] = {
-            'agent_ip': function['agent_ip'],
+            'entity_name': function['entity_name'],
             'offset': function['offset'],
             job: function[job].copy()
         }
