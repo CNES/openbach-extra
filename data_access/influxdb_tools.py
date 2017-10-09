@@ -219,7 +219,11 @@ def tags_to_condition(scenario, agent, job_instance, suffix, extra_condition=Non
 def select_query(job_name=None, field_names=None, condition=None):
     """Build a SELECT query"""
     quote_it = '"{}"'.format
-    fields = '*' if not field_names else ','.join(map(quote_it, field_names))
+    if isinstance(field_names, str):
+        # Assume user provided a valid string for the SELECT clause
+        fields = field_names
+    else:
+        fields = '*' if not field_names else ','.join(map(quote_it, field_names))
     measurement_name = '/.*/' if job_name is None else quote_it(job_name)
     query = 'SELECT {} FROM {}'.format(fields, measurement_name)
     if condition is not None:
