@@ -47,15 +47,9 @@ if __name__ == "__main__":
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
             'scenario_instance_id', help='Id of the scenario instance')
-    parser.add_argument('-s', '--scenario-name', help='Name of the Scenario')
-    parser.add_argument('-p', '--project-name', help='Name of the Project')
 
     # get args
     args = parser.parse_args()
     scenario_instance_id = args.scenario_instance_id
-    scenario_name = args.scenario_name
-    project_name = args.project_name
 
-    pretty_print(status_scenario_instance)(
-            scenario_instance_id,
-            scenario_name, project_name)
+    pretty_print(status_scenario_instance)(scenario_instance_id)

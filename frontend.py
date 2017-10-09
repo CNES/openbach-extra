@@ -418,10 +418,10 @@ def start_scenario_instance(name, args, date=None, project_name=None):
         action = partial(action, date=date)
     if project_name is None:
         return action('scenario_instance', 'POST', scenario_name=name,
-                      args=args)
+                      arguments=args)
     else:
         return action('project/{}/scenario/{}/scenario_instance'.format(
-            project_name, name), 'POST', args=args)
+            project_name, name), 'POST', arguments=args)
 
 
 def stop_scenario_instance(scenario_instance_id, date=None, scenario_name=None,
@@ -452,16 +452,9 @@ def list_scenario_instances(scenario_name=None, project_name=None):
         return _request_message('scenario_instance', 'GET')
 
 
-def status_scenario_instance(scenario_instance_id, scenario_name=None,
-                             project_name=None):
-    if project_name is not None and scenario_name is not None:
-        return _request_message(
-                'project/{}/scenario/{}/scenario_instance/{}'
-                .format(project_name, scenario_name, scenario_instance_id),
-                'GET')
-    else:
-        return _request_message('scenario_instance/{}'.format(
-            scenario_instance_id), 'GET')
+def status_scenario_instance(scenario_instance_id):
+    return _request_message(
+            'scenario_instance/{}'.format(scenario_instance_id), 'GET')
 
 
 def kill_all(date=None):
