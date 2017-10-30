@@ -325,9 +325,15 @@ def line_protocol(job_name, scenario_id, owner_id, agent_name, job_id, suffix, s
         '@agent_name': agent_name,
         '@suffix': suffix,
     }
+    for tag, value in tags.items():
+        if isinstance(value, str):
+            tags[tag] = escape_names(value)
+
     measurement = [escape_names(job_name, True)]
     measurement.extend(
-            '{}={}'.format(escape_names(tag), value)
+            # No need to call escape_names on tag as they
+            # already fullfil the rules for proper names.
+            '{}={}'.format(tag, value)
             for tag, value in tags.items() if value)
     header = ','.join(measurement)
 
@@ -476,8 +482,11 @@ class InfluxDBConnection(InfluxDBCommunicator):
         agent_name = job.agent
         job_id = job.instance_id
         for suffix, statistics in job.statistics_data.items():
+            # For simplicity, statistics names are stored as 1-tuples
+            # keys in statistics_data throughout this package. Extract
+            # them here to send them to influx as single strings.
             data_stream = line_protocol(
-                    job_name, scenario_id, owner_id,
-                    agent_name, job_id, suffix, statistics.dated_data)
+                    job_name, scenario_id, owner_id, agent_name,
+                    job_id, suffix[0], statistics.dated_data)
             for chunck in data_stream:
                 self.data_write(chunck)
