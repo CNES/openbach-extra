@@ -422,6 +422,17 @@ class InfluxDBConnection(InfluxDBCommunicator):
         response = self.sql_query(select_query(job, condition=condition))
         return {stat['time'] for _, stat in parse_influx(response)}
 
+    def origin(self, job=None, scenario=None, agent=None,
+               job_instance=None, suffix=None, condition=None):
+        """Retrieve the first timestamp in InfluxDB
+        that correspond to the given constraints.
+        """
+        condition = tags_to_condition(scenario, agent, job_instance, suffix)
+        query = '{} LIMIT 1'.format(select_query(job, condition=condition))
+        response = self.sql_query(query)
+        (_, origin_stat), = parse_influx(response)
+        return origin_stat['time']
+
     def suffixes(self, job=None, scenario=None, agent=None, job_instance=None):
         """List the available suffixes in InfluxDB
         that correspond to the given constraints.
