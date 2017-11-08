@@ -12,7 +12,7 @@ def read(fname):
 
 setup(
     name='openbach-api',
-    version='1.2.0',
+    version='1.2.1',
     author='OpenBACH Team',
     author_email='admin@openbach.org',
     description='OpenBACH API: build scenario JSONs and access Collector Data',

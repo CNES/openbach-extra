@@ -254,10 +254,9 @@ class ElasticSearchCommunicator:
             response = requests.post(self.scrolling_URL, json=body).json()
 
     def delete_query(self, query):
-        # TODO: Need elasticsearch 5.0+ for it to possibly work
-        # response = requests.post(self.deleting_URL, json=query)
-        # return response.json()
-        pass
+        """Send query to ElasticSearch so that matching logs are removed"""
+        response = requests.post(self.deleting_URL, json=query)
+        return response.json()
 
     def data_write(self, body, first_time_request=False):
         """Send data to ElasticSearch so they are stored"""
@@ -331,6 +330,9 @@ class ElasticSearchConnection(ElasticSearchCommunicator):
         return result
 
     def remove_logs(self, job=None, scenario=None, agent=None, job_instance=None, timestamps=None):
+        """Remove logs in ElasticSearch that
+        correspond to the given constraints.
+        """
         query = tags_to_query(scenario, job, agent, job_instance, timestamps)
         self.delete_query(query)
 
