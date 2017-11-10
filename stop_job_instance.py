@@ -36,25 +36,31 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import stop_job_instance, date_to_timestamp, pretty_print
+from functool import partial
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Stop Instance',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            'job_instance_ids', nargs='+',
-            type=int, help='Id of the instance')
-    parser.add_argument(
-            '-d', '--date', metavar=('DATE', 'TIME'),
-            nargs=2, help='Date of the execution')
+class StopJobInstance(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Stop Job Instances')
+        self.parser.add_argument(
+                'job_instance_id', nargs='+', type=int,
+                help='ids of the jobs to stop')
+        self.parser.add_argument(
+                '-d', '--date', metavar=('DATE', 'TIME'),
+                nargs=2, help='date of the execution')
 
-    # get args
-    args = parser.parse_args()
-    job_instance_ids = args.job_instance_ids
-    date = date_to_timestamp('{} {}'.format(*args.date)) if args.date else None
+    def execute(self):
+        instance_ids = self.args.job_instance_id
+        date = self.date_to_timestamp()
 
-    pretty_print(stop_job_instance)(job_instance_ids, date)
+        action = self.request
+        if date is not None:
+            action = partial(action, date=date)
+
+        action('POST', 'job_instance', action='stop', job_instance_ids=instance_ids)
+
+
+if __name__ == '__main__':
+    StopJobInstance.autorun()

@@ -26,7 +26,7 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function retrieve_status_jobs"""
+"""Call the openbach-function install_jobs"""
 
 
 __author__ = 'Viveris Technologies'
@@ -36,19 +36,26 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import retrieve_status_jobs, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Status Jobs',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            'agents_ip', nargs='+', help='IP Address of the Agents')
+class UninstallJob(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Uninstall Job')
+        self.parser.add_argument('name', help='name of the job to uninstall')
+        self.parser.add_argument(
+                '-a', '--agent', metavar='ADDRESS', action='append',
+                required=True, help='IP address of the agent from where '
+                'the job should be uninstalled. May be specified several '
+                'times to uninstall the job on different agents.')
 
-    # get args
-    args = parser.parse_args()
+    def execute(self):
+        job = self.args.name
+        agents = self.args.agent
+        self.request(
+                'POST', 'job/{}/'.format(job),
+                action='uninstall', addresses=agents)
 
-    pretty_print(retrieve_status_jobs)(args.agents_ip)
+
+if __name__ == '__main__':
+    UninstallJob.autorun()

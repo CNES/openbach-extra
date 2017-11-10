@@ -36,23 +36,26 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import status_job_instance, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Status Instance',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('job_instance_id', help='Id of the Instance')
-    parser.add_argument(
-            '-u', '--update', action='store_true',
-            help='Use only the last status present on the collector')
+class StatusJobInstance(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Status Job Instance')
+        self.parser.add_argument('job_instance_id', help='id of the instance')
+        self.parser.add_argument(
+                '-u', '--update', action='store_true',
+                help='contact the agent to retrieve the last status')
 
-    # get args
-    args = parser.parse_args()
-    job_instance_id = args.job_instance_id
-    update = args.update
+    def execute(self):
+        instance_id = self.args.job_instance_id
+        update = self.args.update
 
-    pretty_print(status_job_instance)(job_instance_id, update)
+        if update:
+            self.request('GET', 'job_instance/{}/'.format(instance_id), update='')
+        else:
+            self.request('GET', 'job_instance/{}/'.format(instance_id))
+
+
+if __name__ == '__main__':
+    StatusJobInstance.autorun()

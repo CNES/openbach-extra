@@ -36,39 +36,58 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
 import getpass
-import pprint
-from frontend import install_agent, state_agent, wait_for_success
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Add Agent',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('agent_ip', help='IP Address of the Agent')
-    parser.add_argument('collector_ip', help='IP Address of the Collector')
-    parser.add_argument('name', help='Name of the Agent')
-    parser.add_argument(
-            '-u', '--username',
-            help='Username to connect as on the agent-to-be '
-            'if the SSH key of the controller cannot be used to '
-            'connect to the openbach-admin user on the machine.')
+class InstallAgent(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Install Agent')
+        self.parser.add_argument(
+                'agent',
+                help='IP address of the agent')
+        self.parser.add_argument(
+                'collector',
+                help='IP address of the collector')
+        self.parser.add_argument(
+                'name',
+                help='name of the agent')
+        self.parser.add_argument(
+                '-u', '--user',
+                help='username to connect as on the agent-to-be '
+                'if the SSH key of the controller cannot be used to '
+                'connect to the openbach user on the machine.')
 
-    # get args
-    args = parser.parse_args()
-    agent_ip = args.agent_ip
-    collector_ip = args.collector_ip
-    name = args.name
-    username = args.username
-    password = None
-    if username is not None:
-        password = getpass.getpass()
+    def parse(self):
+        super().parse()
+        username = self.args.user
+        password = None
+        if username is not None:
+            address = self.args.agent
+            prompt = 'Password for {} on {}: '.format(username, address)
+            password = getpass.getpass(prompt)
+        self.args.password = password
 
-    response = install_agent(agent_ip, collector_ip, username, password, name)
-    if 400 <= response.status_code < 600:
-        print(response)
-        pprint.pprint(response.json())
-        exit(1)
-    wait_for_success(state_agent, status='install', address=agent_ip)
+    def execute(self):
+        agent = self.args.agent
+        collector = self.args.collector
+        name = self.args.name
+        username = self.args.user
+        password = self.args.password
+
+        self.request(
+                'POST', 'agent', show_response_content=False,
+                address=agent, name=name, username=username,
+                password=password, collector_ip=collector)
+        self.wait_for_success('install')
+
+    def query_state(self):
+        address = self.args.agent
+        self.request(
+                'GET', 'agent/{}/state/'.format(address),
+                show_response_content=False)
+
+
+if __name__ == '__main__':
+    InstallAgent.autorun()

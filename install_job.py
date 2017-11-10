@@ -26,32 +26,35 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function retrieve_status_agents"""
+"""Call the openbach-function install_jobs"""
 
 
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
- * Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
 
-import argparse
-from frontend import retrieve_status_agents, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Status Agent',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            'agents_ip', help='IP address of the Agents', nargs='+')
-    parser.add_argument(
-            '-u', '--update', action='store_true',
-            help='Use only the last status present on the collector')
+class InstallJob(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Install Job')
+        self.parser.add_argument('name', help='name of the job to install')
+        self.parser.add_argument(
+                '-a', '--agent', metavar='ADDRESS', action='append',
+                required=True, help='IP address of the agent where the '
+                'job should be installed. May be specified several '
+                'times to install the job on different agents.')
 
-    # get args
-    args = parser.parse_args()
+    def execute(self):
+        job = self.args.name
+        agents = self.args.agent
+        self.request(
+                'POST', 'job/{}/'.format(job),
+                action='install', addresses=agents)
 
-    pretty_print(retrieve_status_agents)(args.agents_ip, args.update)
+
+if __name__ == '__main__':
+    InstallJob.autorun()

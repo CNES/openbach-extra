@@ -36,21 +36,23 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import assign_collector, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Assign Collector',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('address', help='IP Address of the Agent')
-    parser.add_argument('collector_ip', help='IP Address of the Collector')
+class AssignCollector(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Assign Collector')
+        self.parser.add_argument('agent', help='IP address of the agent')
+        self.parser.add_argument(
+                'collector',
+                help='IP address of the new collector to assign')
 
-    # get args
-    args = parser.parse_args()
-    address = args.address
-    collector_ip = args.collector_ip
+    def execute(self):
+        agent = self.args.agent
+        collector = self.args.collector
 
-    pretty_print(assign_collector)(address, collector_ip)
+        self.request('POST', 'agent/{}/'.format(agent), collector_ip=collector)
+
+
+if __name__ == '__main__':
+    AssignCollector.autorun()

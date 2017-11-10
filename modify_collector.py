@@ -36,27 +36,36 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import modify_collector, pretty_print
+from functools import partial
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Modify Collector',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('collector_ip', help='IP Address of the Collector')
-    parser.add_argument(
-            '-l', '--logs-port', type=int,
-            help='Port for the logs')
-    parser.add_argument(
-            '-s', '--stats-port', type=int,
-            help='Port for the Stats')
+class ModifyCollector(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Modify Collector')
+        self.parser.add_argument(
+                'collector',
+                help='IP address of the collector')
+        self.parser.add_argument(
+                '-l', '--logs-port', type=int,
+                help='port for the logs')
+        self.parser.add_argument(
+                '-s', '--stats-port', type=int,
+                help='port for the stats')
 
-    # get args
-    args = parser.parse_args()
-    collector_ip = args.collector_ip
-    logs_port = args.logs_port
-    stats_port = args.stats_port
+    def execute(self):
+        collector = self.args.collector
+        logs_port = self.args.logs_port
+        stats_port = self.args.stats_port
 
-    pretty_print(modify_collector)(collector_ip, logs_port, stats_port)
+        action = self.request
+        if logs_port is not None:
+            action = partial(action, logs_port=logs_port)
+        if stats_port is not None:
+            action = partial(action, stats_port=stats_port)
+        action('PUT', 'collector/{}'.format(collector))
+
+
+if __name__ == '__main__':
+    ModifyCollector.autorun()

@@ -36,19 +36,18 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import get_job_stats, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Display Job Stats',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('job_name', help='Name of the Job')
+class GetJobStats(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Display Job Statistics')
+        self.parser.add_argument('name', help='name of the job to query')
 
-    # get args
-    args = parser.parse_args()
-    job_name = args.job_name
+    def execute(self):
+        job = self.args.name
+        self.request('GET', 'job/{}/'.format(job), type='statistics')
 
-    pretty_print(get_job_stats)(job_name)
+
+if __name__ == '__main__':
+    GetJobStats.autorun()

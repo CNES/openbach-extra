@@ -36,22 +36,33 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
 import json
-from frontend import add_project, pretty_print
+from argparse import FileType
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Add Project',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('path', help='Path of the Project')
+class AddProject(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Add a new Project')
+        self.parser.add_argument(
+                'project', type=FileType('r'),
+                help='path to the definition file of the project')
 
-    # get args
-    args = parser.parse_args()
-    path = args.path
-    with open(path, 'r') as f:
-        project_json = json.loads(f.read())
+    def parse(self):
+        super().parse()
+        project = self.args.project
+        with project:
+            try:
+                self.args.project = json.loads(project)
+            except ValueError:
+                self.parser.error('invalid JSON data in {}'.format(project.name))
 
-    pretty_print(add_project)(project_json)
+    def execute(self):
+        project = self.args.project
+
+        self.request('POST', 'project', **project)
+
+
+if __name__ == '__main__':
+    AddProject.autorun()

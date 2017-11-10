@@ -36,19 +36,18 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import get_collector, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Get Collector',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('collector_ip', help='IP Address of the Collector')
+class GetCollector(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Get Collector')
+        self.parser.add_argument('collector', help='IP address of the collector')
 
-    # get args
-    args = parser.parse_args()
-    collector_ip = args.collector_ip
+    def execute(self):
+        address = self.args.collector
+        self.request('GET', 'collector/{}/'.format(address))
 
-    pretty_print(get_collector)(collector_ip)
+
+if __name__ == '__main__':
+    GetCollector.autorun()

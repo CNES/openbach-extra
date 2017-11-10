@@ -36,20 +36,29 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import state_push_file, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - State Push File',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('filename', help='Name of the file')
-    parser.add_argument('path', help='Path where the file is')
-    parser.add_argument('agent_ip', help='IP address of the Agent')
+class StatePushFile(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — State of a Push File request')
+        self.parser.add_argument(
+                'agent',
+                help='IP address of the agent the file has been pushed to')
+        self.parser.add_argument(
+                'path',
+                help='path on the agent the file has been pushed to')
+        self.parser.add_argument('name', help='name of the file')
 
-    # get args
-    args = parser.parse_args()
+    def execute(self):
+        address = self.args.agent
+        filename = self.args.name
+        path = self.args.path
 
-    pretty_print(state_push_file)(args.filename, args.path, args.agent_ip)
+        self.request(
+                'GET', 'file/state/',
+                agent_ip=address, path=path, filename=filename)
+
+
+if __name__ == '__main__':
+    StatePushFile.autorun()

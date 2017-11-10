@@ -36,21 +36,26 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import del_scenario, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Delete a Scenario',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('scenario_name', help='Name of the Scenario')
-    parser.add_argument('-p', '--project-name', help='Name of the Project')
+class DeleteScenario(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Delete a Scenario')
+        self.parser.add_argument('name', help='name of the scenario to delete')
+        self.parser.add_argument(
+                '-p', '--project',
+                help='name of the project the scenario is associated with')
 
-    # get args
-    args = parser.parse_args()
-    scenario_name = args.scenario_name
-    project_name = args.project_name
+    def execute(self):
+        scenario = self.args.name
+        project = self.args.project
 
-    pretty_print(del_scenario)(scenario_name, project_name)
+        if project is None:
+            self.request('DELETE', 'scenario/{}/'.format(scenario))
+        else:
+            self.request('DELETE', 'project/{}/scenario/{}/'.format(project, scenario))
+
+
+if __name__ == '__main__':
+    DeleteScenario.autorun()

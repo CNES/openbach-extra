@@ -36,18 +36,19 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import state_agent, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - State Agent',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('address', help='IP address of the Agent')
+class StateAgent(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — State of an Agent')
+        self.parser.add_argument('agent', help='IP address of the agent')
 
-    # get args
-    args = parser.parse_args()
+    def execute(self):
+        address = self.args.agent
 
-    pretty_print(state_agent)(args.address)
+        self.request('GET', 'agent/{}/state/'.format(address))
+
+
+if __name__ == '__main__':
+    StateAgent.autorun()

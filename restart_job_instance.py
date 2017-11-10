@@ -36,38 +36,51 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
 import shlex
-from frontend import restart_job_instance, date_to_timestamp, pretty_print
+from functools import partial
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    def parse(value):
-        name, *values = shlex.split(value, posix=True)
-        return name, values
+def parse(value):
+    name, *values = shlex.split(value, posix=True)
+    return name, values
 
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Restart Instance',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('job_instance_id', help='Id of the instance')
-    group = parser.add_mutually_exclusive_group(required=False)
-    group.add_argument(
-            '-d', '--date', metavar=('DATE', 'TIME'),
-            nargs=2, help='Date of the execution')
-    group.add_argument('-i', '--interval', help='Interval of the execution')
-    parser.add_argument(
-            '-a', '--argument', type=parse, nargs='+',
-            metavar='NAME[ VALUE[ VALUE...]]')
 
-    # get args
-    args = parser.parse_args()
-    instance_id = args.job_instance_id
-    if type(args.argument) == list:
-        arguments = dict(args.argument)
-    else:
-        arguments = {}
-    date = date_to_timestamp('{} {}'.format(*args.date)) if args.date else None
-    interval = args.interval
+class RestartJobInstance(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Restart Job Instance')
+        self.parser.add_argument(
+                'job_instance_id', type=int,
+                help='id of the job instance to restart')
+        self.parser.add_argument(
+                '-a', '--argument', type=parse, nargs='+', default={},
+                metavar='NAME[ VALUE[ VALUE...]]',
+                help='')
+        group = self.parser.add_mutually_exclusive_group(required=False)
+        group.add_argument(
+                '-d', '--date', metavar=('DATE', 'TIME'),
+                nargs=2, help='date of the execution')
+        group.add_argument(
+                '-i', '--interval', type=int,
+                help='interval of the execution')
 
-    pretty_print(restart_job_instance)(instance_id, arguments, date, interval)
+    def execute(self):
+        instance_id = self.args.job_instance_id
+        arguments = dict(self.args.argument)
+        date = self.date_to_timestamp()
+        interval = self.args.interval
+
+        action = self.request
+        if interval is not None:
+            action = partial(action, interval=interval)
+        if date is not None:
+            action = partial(action, date=date)
+
+        action(
+                'POST', 'job_instance/{}/'.format(instance_id),
+                action='restart', instance_args=arguments)
+
+
+if __name__ == '__main__':
+    RestartJobInstance.autorun()

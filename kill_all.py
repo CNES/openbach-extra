@@ -36,21 +36,24 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import kill_all, date_to_timestamp, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Stop all Job Instances',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            '-d', '--date', metavar=('DATE', 'TIME'),
-            nargs=2, help='Date of the execution')
+class KillAll(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Stop all Jobs and Scenarios Instances')
+        self.parser.add_argument(
+                '-d', '--date', nargs=2, metavar=('DATE', 'TIME'),
+                help='date of the execution')
 
-    # get args
-    args = parser.parse_args()
-    date = date_to_timestamp('{} {}'.format(*args.date)) if args.date else None
+    def execute(self):
+        date = self.date_to_timestamp()
 
-    pretty_print(kill_all)(date)
+        if date is None:
+            self.request('POST', 'job_instance', action='kill')
+        else:
+            self.request('POST', 'job_instance', action='kill', date=date)
+
+
+if __name__ == '__main__':
+    KillAll.autorun()

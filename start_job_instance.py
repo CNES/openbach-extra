@@ -36,61 +36,51 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-import pprint
 import shlex
-from frontend import (
-        start_job_instance, status_job_instance,
-        date_to_timestamp, pretty_print
-)
+from functools import partial
+
+from frontend import FrontendBase
 
 
-def main(agent_ip, job_name, arguments, date, interval, status=None):
-    response = start_job_instance(agent_ip, job_name, arguments, date, interval)
-    print('Start Instance:')
-    print(response)
-    infos = response.json()
-    pprint.pprint(infos)
-
-    if status is not None:
-        instance_id = int(infos['instance_id'])
-        print('Start watch of the status:')
-        pretty_print(status_job_instance)(instance_id, interval=status)
+def parse(value):
+    name, *values = shlex.split(value, posix=True)
+    return name, values
 
 
-if __name__ == "__main__":
-    def parse(value):
-        name, *values = shlex.split(value, posix=True)
-        return name, values
+class StartJobInstance(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Start Job Instance')
+        self.parser.add_argument('agent', help='IP address of the agent')
+        self.parser.add_argument('name', help='name of the job to start')
+        self.parser.add_argument(
+                '-a', '--argument', type=parse, nargs='+', default={},
+                metavar='NAME[ VALUE[ VALUE...]]',
+                help='')
+        group = self.parser.add_mutually_exclusive_group(required=False)
+        group.add_argument(
+                '-d', '--date', metavar=('DATE', 'TIME'),
+                nargs=2, help='date of the execution')
+        group.add_argument(
+                '-i', '--interval', type=int,
+                help='interval of the execution')
 
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Start and Status Instance',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('agent_ip', help='IP address of the Agent')
-    parser.add_argument('job_name', help='Name of the Job')
-    parser.add_argument(
-            '-s', '--status',
-            help='Start a watch of the status with this interval')
-    parser.add_argument(
-            '-a', '--argument', type=parse, nargs='+',
-            metavar='NAME[ VALUE[ VALUE...]]')
-    group = parser.add_mutually_exclusive_group(required=False)
-    group.add_argument(
-            '-d', '--date', metavar=('DATE', 'TIME'),
-            nargs=2, help='Date of the execution')
-    group.add_argument('-i', '--interval', help='Interval of the execution')
+    def execute(self):
+        agent = self.args.agent
+        job_name = self.args.name
+        arguments = dict(self.args.argument)
+        date = self.date_to_timestamp()
+        interval = self.args.interval
 
-    # get args
-    args = parser.parse_args()
-    agent_ip = args.agent_ip
-    job_name = args.job_name
-    if type(args.argument) == list:
-        arguments = dict(args.argument)
-    else:
-        arguments = {}
-    date = date_to_timestamp('{} {}'.format(*args.date)) if args.date else None
-    interval = args.interval
-    status = args.status
+        action = self.request
+        if interval is not None:
+            action = partial(action, interval=interval)
+        if date is not None:
+            action = partial(action, date=date)
 
-    main(agent_ip, job_name, arguments, date, interval, status)
+        action(
+                'POST', 'job_instance', action='start',
+                agent_ip=agent, job_name=job_name, instance_args=arguments)
+
+
+if __name__ == '__main__':
+    StartJobInstance.autorun()

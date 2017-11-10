@@ -36,19 +36,23 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import state_job, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - State Job',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('address', help='IP address of the Agent')
-    parser.add_argument('name', help='Name of the Job')
+class StateJob(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — State of an Installed Job')
+        self.parser.add_argument('name', help='name of the job to query')
+        self.parser.add_argument(
+                'agent',
+                help='IP address of the agent the job is installed on')
 
-    # get args
-    args = parser.parse_args()
+    def execute(self):
+        job = self.args.name
+        address = self.args.agent
 
-    pretty_print(state_job)(args.address, args.name)
+        self.request('GET', 'job/{}/state/'.format(job), address=address)
+
+
+if __name__ == '__main__':
+    StateJob.autorun()

@@ -36,20 +36,21 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import status_scenario_instance, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Status Scenario Instance',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            'scenario_instance_id', help='Id of the scenario instance')
+class StatusScenarioInstance(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Status of an Instance of a Scenario')
+        self.parser.add_argument(
+                'instance_id',
+                help='ID of the scenario instance to query')
 
-    # get args
-    args = parser.parse_args()
-    scenario_instance_id = args.scenario_instance_id
+    def execute(self):
+        scenario = self.args.instance_id
 
-    pretty_print(status_scenario_instance)(scenario_instance_id)
+        self.request('GET', 'scenario_instance/{}/'.format(scenario))
+
+
+if __name__ == '__main__':
+    StatusScenarioInstance.autorun()

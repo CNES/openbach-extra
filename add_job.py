@@ -36,21 +36,22 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import add_job, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Add Job',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('job_name', help='Name of the Job')
-    parser.add_argument('path', help='Path of the sources')
+class AddJob(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Add Job')
+        self.parser.add_argument('name', help='name of the job')
+        self.parser.add_argument(
+                'path', help='path to the folder (on the controller) '
+                'containing the install and uninstall playbooks of the job')
 
-    # get args
-    args = parser.parse_args()
-    job_name = args.job_name
-    path = args.path
+    def execute(self):
+        job_name = self.args.name
+        path = self.args.path
+        self.request('POST', 'job', name=job_name, path=path)
 
-    pretty_print(add_job)(job_name, path)
+
+if __name__ == '__main__':
+    AddJob.autorun()

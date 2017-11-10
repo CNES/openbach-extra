@@ -26,7 +26,15 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""The frontend script (aggregate all the function callable by the user)"""
+"""Frontend scripts base tools
+
+Define a structure able to specify a parser and an
+action to send to the OpenBACH backend.
+
+This module provides the boilerplate around managing
+users authentication and pretty-printing the response
+from the backend.
+"""
 
 
 __author__ = 'Viveris Technologies'
@@ -35,480 +43,160 @@ __credits__ = '''Contributors:
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
+import os
+import fcntl
+import socket
+import struct
 import pprint
-import os.path
+import getpass
 import datetime
+import argparse
+import warnings
 from sys import exit
 from time import sleep
-from urllib.parse import urlencode
-from functools import partial, wraps
 
-import yaml
 import requests
 
 
 PWD = os.path.dirname(os.path.abspath(__file__))
-CONTROLLER_IP = None
-WAITING_TIME_BETWEEN_STATES_POLL = 5  # seconds
-_URL = 'http://{}:8000/{}/'
 
 
-def read_controller_ip(filename=os.path.join(PWD, 'config.yml')):
-    global CONTROLLER_IP
-    if CONTROLLER_IP is None:
-        try:
-            stream = open(filename)
-        except OSError as e:
-            exit('File {} cannot be opened: {}'.format(filename, e))
-
-        with stream:
-            try:
-                content = yaml.load(stream)
-            except yaml.error.YAMLError as e:
-                exit('Cannot parse file {}: {}'.format(filename, e))
-        try:
-            CONTROLLER_IP = content['controller_ip']
-        except KeyError:
-            exit('File {} does not contain the field '
-                 '\'controller_ip\''.format(filename))
-        if CONTROLLER_IP is None:
-            exit('The \'controller_ip\' field of the '
-                 'file {} is empty'.format(filename))
-    return CONTROLLER_IP
+def get_interface():
+    """Return the name of the first network interface found"""
+    return next(filter('lo'.__ne__, os.listdir('/sys/class/net/')), 'lo')
 
 
-def wait_for_success(state_function, status=None,
-                     valid_statuses=(200, 204), **kwargs):
-    while True:
-        sleep(WAITING_TIME_BETWEEN_STATES_POLL)
-        response = state_function(**kwargs)
+def get_ip_address(ifname):
+    """Return the IP address associated to the given interface"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15].encode())
+    )[20:24])
+
+
+def read_controller_ip(filename=os.path.join(PWD, 'controller')):
+    default_ip = get_ip_address(get_interface())
+    try:
+        stream = open(filename)
+    except OSError as e:
+        message = (
+                'File not found: \'{}\'. Using one of your '
+                'IP address instead as the default: \'{}\'.'
+                .format(filename, default_ip))
+        warnings.warn(message, RuntimeWarning)
+        return default_ip
+
+    with stream:
+        controller_ip = stream.readline().strip()
+
+    if not controller_ip:
+        message = (
+                'Empty file: \'{}\'. Using one of your '
+                'IP address instead as the default: \'{}\'.'
+                .format(filename, default_ip))
+        warnings.warn(message, RuntimeWarning)
+        return default_ip
+
+    return controller_ip
+
+
+def pretty_print(response):
+    """Helper function to nicely format the response
+    from the server.
+    """
+
+    if response.status_code != 204:
         try:
             content = response.json()
         except ValueError:
-            pprint.pprint(response.text)
-            code = response.status_code
-            exit('Server returned non-JSON response with '
-                 'status code {}'.format(code))
+            content = response.text
+        pprint.pprint(content, width=120)
 
-        if status:
-            content = content[status]
-        returncode = content['returncode']
-        if returncode != 202:
-            print('Returncode:', returncode)
-            pprint.pprint(content['response'], width=200)
-            exit(returncode not in valid_statuses)
+    response.raise_for_status()
 
 
-def _request_message(entry_point, verb, **kwargs):
-    """Helper function to format a request and send it to
-    the right URL.
-    """
+class FrontendBase:
+    WAITING_TIME_BETWEEN_STATES_POLL = 5  # seconds
 
-    controller_ip = read_controller_ip()
-    url = _URL.format(controller_ip, entry_point)
-    verb = verb.upper()
+    @classmethod
+    def autorun(cls):
+        self = cls()
+        self.parse()
+        self.execute()
 
-    if verb == 'GET':
-        return requests.get(url, params=kwargs)
-    else:
-        return requests.request(verb, url, json=kwargs)
+    def __init__(self, description):
+        self.parser = argparse.ArgumentParser(
+                description=description,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        backend = self.parser.add_argument_group('backend')
+        backend.add_argument(
+                '--controller-ip', default=read_controller_ip(),
+                help='address at which the collector is listening')
+        backend.add_argument(
+                '--login', '--username',
+                help='username used to authenticate as')
 
+        self.session = requests.Session()
 
-def pretty_print(function):
-    """Helper function to nicely format the response
-    from the server.
+    def parse(self):
+        self.args = args = self.parser.parse_args()
+        self.base_url = url = 'http://{}/openbach/'.format(args.controller_ip)
+        login = args.login
+        if login:
+            credentials = {
+                    'login': login,
+                    'password': getpass.getpass('OpenBACH password: '),
+            }
+            response = self.session.post(url + 'login/', json=credentials)
+            response.raise_for_status()
 
-    Terminate the program on error from the server.
-    """
+    def date_to_timestamp(self, fmt='%Y-%m-%d %H:%M:%S.%f'):
+        date = getattr(self.args, 'date', None)
+        if date is not None:
+            try:
+                date = datetime.datetime.strptime(date, fmt)
+            except ValueError:
+                self.parser.error(
+                        'date and time does not respect '
+                        'the {} format'.format(fmt))
+            else:
+                return int(date.timestamp() * 1000)
 
-    @wraps(function)
-    def wrapper(*args, **kwargs):
-        response = function(*args, **kwargs)
-        print(response)
-        if response.status_code != 204:
+    def execute(self):
+        pass
+
+    def request(self, verb, route, show_response_content=True, **kwargs):
+        verb = verb.upper()
+        url = self.base_url + route
+        if verb == 'GET':
+            response = self.session.get(url, params=kwargs)
+        else:
+            response = self.session.request(verb, url, json=kwargs)
+        if show_response_content:
+            pretty_print(response)
+        return response
+
+    def wait_for_success(self, status=None, valid_statuses=(200, 204)):
+        while True:
+            sleep(self.WAITING_TIME_BETWEEN_STATES_POLL)
+            response = self.query_state()
+            response.raise_for_status()
             try:
                 content = response.json()
             except ValueError:
-                content = response.text
-            pprint.pprint(content, width=120)
-        if 400 <= response.status_code < 600:
-            exit(1)
-    return wrapper
-
-
-def date_to_timestamp(date, fmt='%Y-%m-%d %H:%M:%S.%f'):
-    timestamp = datetime.datetime.strptime(date, fmt).timestamp()
-    return int(timestamp * 1000)
-
-
-def add_collector(collector_ip, username, password, name, logs_port=None,
-                  stats_port=None):
-    action = _request_message
-    if logs_port is not None:
-        action = partial(action, logs_port=logs_port)
-    if stats_port is not None:
-        action = partial(action, stats_port=stats_port)
-    return action('collector', 'POST', username=username, password=password,
-                  address=collector_ip, name=name)
-
-
-def modify_collector(collector_ip, logs_port=None, stats_port=None):
-    action = _request_message
-    if logs_port is not None:
-        action = partial(action, logs_port=logs_port)
-    if stats_port is not None:
-        action = partial(action, stats_port=stats_port)
-    return action('collector/{}'.format(collector_ip), 'PUT')
-
-
-def del_collector(collector_ip):
-    return _request_message('collector/{}'.format(collector_ip), 'DELETE')
-
-
-def get_collector(collector_ip):
-    return _request_message('collector/{}'.format(collector_ip), 'GET')
-
-
-def list_collectors():
-    return _request_message('collector', 'GET')
-
-
-def install_agent(agent_ip, collector_ip, username, password, name):
-    return _request_message('agent', 'POST', address=agent_ip,
-                            username=username, password=password,
-                            collector_ip=collector_ip, name=name)
-
-
-def add_job(job_name, path):
-    return _request_message('job', 'POST', name=job_name, path=path)
-
-
-def uninstall_agent(agent_ip):
-    return _request_message('agent/{}'.format(agent_ip), 'DELETE')
-
-
-def del_job(job_name):
-    return _request_message('job/{}'.format(job_name), 'DELETE')
-
-
-def get_job_stats(job_name):
-    return _request_message('job/{}'.format(job_name), 'GET', type='statistics')
-
-
-def get_job_help(job_name):
-    return _request_message('job/{}'.format(job_name), 'GET', type='help')
-
-
-def install_jobs(job_names, agent_ips):
-    return _request_message(
-            'job', 'POST', action='install',
-            names=job_names, addresses=agent_ips)
-
-
-def install_job(job_name, agent_ips):
-    return _request_message(
-            'job/{}'.format(job_name), 'POST',
-            action='install', addresses=agent_ips)
-
-
-def list_agents(update=None):
-    action = _request_message
-    if update:
-        action = partial(action, update='')
-    return action('agent', 'GET')
-
-
-def list_jobs(string_to_search=None, ratio=None):
-    if string_to_search:
-        return _request_message(
-                'job', 'GET',
-                string_to_search=string_to_search,
-                ratio=ratio)
-    else:
-        return _request_message('job', 'GET')
-
-
-def list_installed_jobs(agent_ip, update=None):
-    action = _request_message
-    if update:
-        action = partial(action, update='')
-    return action('job', 'GET', address=agent_ip)
-
-
-def list_job_instances(agent_ips, update=None):
-    query_string = [('address', ip) for ip in agent_ips]
-    if update:
-        query_string.append(('update', ''))
-    return requests.get(_URL.format('job_instance'),
-                        params=urlencode(query_string))
-
-
-def status_job_instance(job_instance_id, update=None):
-    action = _request_message
-    if update:
-        action = partial(action, update='')
-    return action('job_instance/{}'.format(job_instance_id), 'GET')
-
-
-def push_file(local_path, remote_path, agent_ip):
-    with open(local_path) as file_to_send:
-        return requests.post(
-                _URL.format('file'),
-                data={'path': remote_path, 'agent_ip': agent_ip},
-                files={'file': file_to_send})
-
-
-def restart_job_instance(job_instance_id, arguments=None, date=None,
-                         interval=None):
-    action = _request_message
-    if interval is not None:
-        action = partial(action, interval=interval)
-    if date is not None:
-        action = partial(action, date=date)
-
-    return action(
-            'job_instance/{}'.format(job_instance_id),
-            'POST', action='restart',
-            instance_args={} if arguments is None else arguments)
-
-
-def start_job_instance(agent_ip, job_name, arguments=None, date=None,
-                       interval=None):
-    action = _request_message
-    if interval is not None:
-        action = partial(action, interval=interval)
-    if date is not None:
-        action = partial(action, date=date)
-
-    return action(
-            'job_instance', 'POST', action='start',
-            agent_ip=agent_ip, job_name=job_name,
-            instance_args={} if arguments is None else arguments)
-
-
-def retrieve_status_agents(agent_ips, update=False):
-    action = _request_message
-    if update:
-        action = partial(action, update='')
-    return action('agent', 'POST', action='retrieve_status',
-                  addresses=agent_ips)
-
-
-def assign_collector(address, collector_ip):
-    return _request_message('agent/{}'.format(address), 'POST',
-                            collector_ip=collector_ip)
-
-
-def watch_job_instance(job_instance_id, date=None, interval=None, stop=None):
-    action = _request_message
-    if interval is not None:
-        action = partial(action, interval=interval)
-    if date is not None:
-        action = partial(action, date=date)
-    if stop is not None:
-        action = partial(action, stop=stop)
-
-    return action('job_instance/{}'.format(job_instance_id), 'POST',
-                  action='watch')
-
-
-def retrieve_status_jobs(agent_ips):
-    return _request_message('job', 'POST', action='retrieve_status',
-                            addresses=agent_ips)
-
-
-def stop_job_instance(job_instance_ids, date=None):
-    action = _request_message
-    if date is not None:
-        action = partial(action, date=date)
-
-    return action('job_instance', 'POST', action='stop',
-                  job_instance_ids=job_instance_ids)
-
-
-def uninstall_jobs(job_names, agent_ips):
-    return _request_message(
-            'job', 'POST', action='uninstall',
-            names=job_names, addresses=agent_ips)
-
-
-def uninstall_job(job_name, agent_ips):
-    return _request_message('job/{}'.format(job_name), 'POST',
-                            action='uninstall', addresses=agent_ips)
-
-
-def set_job_log_severity(
-        agent_ip, job_name, severity,
-        local_severity=None, date=None):
-    action = _request_message
-    if local_severity is not None:
-        action = partial(action, local_severity=local_severity)
-    if date is not None:
-        action = partial(action, date=date)
-
-    return action(
-            'job/{}'.format(job_name), 'POST',
-            action='log_severity', addresses=[agent_ip], severity=severity)
-
-
-def set_job_stat_policy(
-        agent_ip, job_name, stat_name='default',
-        storage=None, broadcast=None, date=None):
-    action = _request_message
-    if storage is not None:
-        action = partial(action, storage=storage)
-    if broadcast is not None:
-        action = partial(action, broadcast=broadcast)
-    if date is not None:
-        action = partial(action, date=date)
-
-    return action(
-            'job/{}'.format(job_name), 'POST',
-            action='stat_policy',
-            stat_name=stat_name, addresses=[agent_ip])
-
-
-def create_scenario(scenario_json, project_name=None):
-    if project_name is not None:
-        return _request_message('project/{}/scenario'.format(project_name),
-                                'POST', **scenario_json)
-    else:
-        return _request_message('scenario', 'POST', **scenario_json)
-
-
-def del_scenario(scenario_name, project_name=None):
-    if project_name is not None:
-        return _request_message('project/{}/scenario/{}'.format(project_name,
-                                                                scenario_name),
-                                'DELETE')
-    else:
-        return _request_message('scenario/{}'.format(scenario_name), 'DELETE')
-
-
-def modify_scenario(scenario_name, scenario_json, project_name=None):
-    if project_name is not None:
-        return _request_message('project/{}/scenario/{}'.format(project_name,
-                                                                scenario_name),
-                                'PUT', **scenario_json)
-    else:
-        return _request_message('scenario/{}'.format(scenario_name), 'PUT',
-                                **scenario_json)
-
-
-def get_scenario(scenario_name, project_name=None):
-    if project_name is not None:
-        return _request_message('project/{}/scenario/{}'.format(project_name,
-                                                                scenario_name),
-                                'GET')
-    else:
-        return _request_message('scenario/{}'.format(scenario_name), 'GET')
-
-
-def list_scenarios(project_name=None):
-    if project_name is not None:
-        return _request_message('project/{}/scenario'.format(project_name),
-                                'GET')
-    else:
-        return _request_message('scenario', 'GET')
-
-
-def start_scenario_instance(name, args, date=None, project_name=None):
-    action = _request_message
-    if date is not None:
-        action = partial(action, date=date)
-    if project_name is None:
-        return action('scenario_instance', 'POST', scenario_name=name,
-                      arguments=args)
-    else:
-        return action('project/{}/scenario/{}/scenario_instance'.format(
-            project_name, name), 'POST', arguments=args)
-
-
-def stop_scenario_instance(scenario_instance_id, date=None, scenario_name=None,
-                           project_name=None):
-    action = _request_message
-    if date is not None:
-        action = partial(action, date=date)
-
-    if project_name is not None and scenario_name is not None:
-        return action('project/{}/scenario/{}/scenario_instance/{}'.format(
-            project_name, scenario_name, scenario_instance_id), 'POST')
-    else:
-        return action('scenario_instance/{}'.format(scenario_instance_id),
-                      'POST')
-
-
-def list_scenario_instances(scenario_name=None, project_name=None):
-    if project_name is not None:
-        if scenario_name is not None:
-            return _request_message(
-                    'project/{}/scenario/{}/scenario_instance'
-                    .format(project_name, scenario_name), 'GET')
-        else:
-            return _request_message(
-                    'project/{}/scenario_instance'
-                    .format(project_name), 'GET')
-    else:
-        return _request_message('scenario_instance', 'GET')
-
-
-def status_scenario_instance(scenario_instance_id):
-    return _request_message(
-            'scenario_instance/{}'.format(scenario_instance_id), 'GET')
-
-
-def kill_all(date=None):
-    action = _request_message
-    if date is not None:
-        action = partial(action, date=date)
-
-    return action('job_instance', 'POST', action='kill')
-
-
-def add_project(project_json):
-    return _request_message('project', 'POST', **project_json)
-
-
-def modify_project(project_name, project_json):
-    return _request_message(
-            'project/{}'.format(project_name),
-            'PUT', **project_json)
-
-
-def del_project(project_name):
-    return _request_message('project/{}'.format(project_name), 'DELETE')
-
-
-def get_project(project_name):
-    return _request_message('project/{}'.format(project_name), 'GET')
-
-
-def list_projects():
-    return _request_message('project', 'GET')
-
-
-def state_collector(address):
-    return _request_message('collector/{}/state'.format(address), 'GET')
-
-
-def state_agent(address):
-    return _request_message('agent/{}/state'.format(address), 'GET')
-
-
-def state_job(address, name):
-    return _request_message(
-            'job/{}/state'.format(name),
-            'GET', address=address,)
-
-
-def state_push_file(filename, path, agent_ip):
-    return _request_message(
-            'file/state', 'GET',
-            filename=filename, path=path,
-            agent_ip=agent_ip)
-
-
-def state_job_instance(job_instance_id):
-    return _request_message(
-            'job_instance/{}/state'
-            .format(job_instance_id), 'GET')
+                text = response.text
+                code = response.status_code
+                exit('Server returned non-JSON response with '
+                     'status code {}: {}'.format(code, text))
+
+            if status:
+                content = content[status]
+            returncode = content['returncode']
+            if returncode != 202:
+                pprint.pprint(content['response'], width=200)
+                exit(returncode in valid_statuses)
+
+    def query_state(self):
+        return self.session.get(self.base_url)

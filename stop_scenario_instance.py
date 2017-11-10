@@ -36,31 +36,29 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import stop_scenario_instance, pretty_print, date_to_timestamp
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Start a Scenario',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            'scenario_instance_id',
-            help='Id of the scenario instance to stop')
-    parser.add_argument(
-            '-d', '--date', metavar=('DATE', 'TIME'),
-            nargs=2, help='Date of the execution')
-    parser.add_argument('-s', '--scenario-name', help='Name of the Scenario')
-    parser.add_argument('-p', '--project-name', help='Name of the Project')
+class StopScenarioInstance(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Stop a Scenario Instance')
+        self.parser.add_argument(
+                'instance_id',
+                help='ID of the scenario instance to stop')
+        self.parser.add_argument(
+                '-d', '--date', nargs=2, metavar=('DATE', 'TIME'),
+                help='date of the execution')
 
-    # get args
-    args = parser.parse_args()
-    scenario_instance_id = args.scenario_instance_id
-    date = date_to_timestamp('{} {}'.format(*args.date)) if args.date else None
-    scenario_name = args.scenario_name
-    project_name = args.project_name
+    def execute(self):
+        scenario = self.args.instance_id
+        date = self.date_to_timestamp()
 
-    pretty_print(stop_scenario_instance)(
-            scenario_instance_id, date,
-            scenario_name, project_name)
+        route = 'scenario_instance/{}/'.format(scenario)
+        if date is None:
+            self.request('POST', route)
+        else:
+            self.requset('POST', route, date=date)
+
+
+if __name__ == '__main__':
+    StopScenarioInstance.autorun()

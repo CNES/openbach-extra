@@ -36,38 +36,55 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import set_job_stat_policy, date_to_timestamp, pretty_print
+from functools import partial
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Update Job\'s stats Policy',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('agent_ip', help='IP Address of the Agent')
-    parser.add_argument('job_name', help='Name of the Job')
-    parser.add_argument('-n', '--stat-name', default=None, help='')
-    parser.add_argument('-s', '--storage', action='store_true', help='')
-    parser.add_argument('-b', '--broadcast', action='store_true', help='')
-    parser.add_argument('-de', '--delete', action='store_true', help='')
-    parser.add_argument(
-            '-d', '--date', metavar=('DATE', 'TIME'),
-            nargs=2, help='Date of the execution')
+class SetJobStatisticsPolicy(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Update Statistic Policy of a Job')
+        self.parser.add_argument('agent', help='IP address of the agent')
+        self.parser.add_argument('name', help='name of the job to update')
+        self.parser.add_argument(
+                '-n', '--stat-name',
+                help='set the policy only for this specify statistic')
+        self.parser.add_argument(
+                '-s', '--storage', action='store_true',
+                help='allow storage of statistics in the collector')
+        self.parser.add_argument(
+                '-b', '--broadcast', action='store_true',
+                help='allow broadcast of statistics from the collector')
+        self.parser.add_argument(
+                '-r', '--delete', '--remove', action='store_true',
+                help='revert to the default policy')
+        self.parser.add_argument(
+                '-d', '--date', metavar=('DATE', 'TIME'),
+                nargs=2, help='date of the execution')
 
-    # get args
-    args = parser.parse_args()
-    agent_ip = args.agent_ip
-    job_name = args.job_name
-    stat_name = args.stat_name
-    storage = args.storage
-    broadcast = args.broadcast
-    delete = args.delete
-    if delete:
-        storage = None
-        broadcast = None
-    date = date_to_timestamp('{} {}'.format(*args.date)) if args.date else None
+    def execute(self):
+        agent = self.args.agent
+        job = self.args.name
+        statistic = self.args.stat_name
+        storage = self.args.storage
+        broadcast = self.args.broadcast
+        if self.args.delete:
+            storage = None
+            broadcast = None
+        date = self.date_to_timestamp()
 
-    pretty_print(set_job_stat_policy)(
-            agent_ip, job_name, stat_name,
-            storage, broadcast, date)
+        action = self.request
+        if storage is not None:
+            action = partial(action, storage=storage)
+        if broadcast is not None:
+            action = partial(action, broadcast=broadcast)
+        if date is not None:
+            action = partial(action, date=date)
+
+        action(
+                'POST', 'job/{}'.format(job), action='stat_policy',
+                stat_name=statistic, addresses=[agent])
+
+
+if __name__ == '__main__':
+    SetJobStatisticsPolicy.autorun()

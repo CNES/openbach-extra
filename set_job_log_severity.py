@@ -36,35 +36,43 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import set_job_log_severity, date_to_timestamp, pretty_print
+from functools import partial
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Update Job\'s log Severity',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('agent_ip', help='IP Address of the Agent')
-    parser.add_argument('job_name', help='Name of the Job')
-    parser.add_argument(
-            'severity',
-            help='Log severity we want to send to the Collector')
-    parser.add_argument(
-            '-l', '--local-severity', type=int, default=None,
-            help='Log severity we want to save in local')
-    parser.add_argument(
-            '-d', '--date', metavar=('DATE', 'TIME'),
-            nargs=2, help='Date of the execution')
+class SetJobLogSeverity(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Update Log Severity of a Job')
+        self.parser.add_argument('agent', help='IP address of the agent')
+        self.parser.add_argument('name', help='name of the job to update')
+        self.parser.add_argument(
+                'severity', choices=range(8), type=int,
+                help='severity up to which logs are sent to the collector')
+        self.parser.add_argument(
+                '-l', '--local-severity', choices=range(8), type=int,
+                help='severity up to which logs are saved on the agent')
+        self.parser.add_argument(
+                '-d', '--date', metavar=('DATE', 'TIME'),
+                nargs=2, help='date of the execution')
 
-    # get args
-    args = parser.parse_args()
-    agent_ip = args.agent_ip
-    job_name = args.job_name
-    severity = args.severity
-    local_severity = args.local_severity
-    date = date_to_timestamp('{} {}'.format(*args.date)) if args.date else None
+    def execute(self):
+        agent = self.args.agent
+        job = self.args.name
+        severity = self.args.severity
+        local_severity = self.args.local_severity
+        date = self.date_to_timestamp()
 
-    pretty_print(set_job_log_severity)(
-            agent_ip, job_name, severity,
-            local_severity, date)
+        action = self.request
+        if local_severity is not None:
+            action = partial(action, local_severity=local_severity)
+        if date is not None:
+            action = partial(action, date=date)
+
+        action(
+                'POST', 'job/{}/'.format(job), action='log_severity',
+                addresses=[agent], severity=severity)
+
+
+if __name__ == '__main__':
+    SetJobLogSeverity.autorun()

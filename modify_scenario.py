@@ -36,26 +36,43 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
 import json
-from frontend import modify_scenario, pretty_print
+from argparse import FileType
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Modify a Scenario',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('scenario_name', help='Name of the scenario')
-    parser.add_argument('path', help='Path of the scenario')
-    parser.add_argument('-p', '--project-name', help='Name of the Project')
+class ModifyScenario(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Modify a Scenario')
+        self.parser.add_argument('name', help='name of the scenario to modify')
+        self.parser.add_argument(
+                'scenario', type=FileType('r'),
+                help='path to the definition file of the scenario')
+        self.parser.add_argument(
+                '-p', '--project',
+                help='name of the project the scenario is associated with')
 
-    # get args
-    args = parser.parse_args()
-    scenario_name = args.scenario_name
-    path = args.path
-    project_name = args.project_name
-    with open(path, 'r') as f:
-        scenario_json = json.loads(f.read())
+    def parse(self):
+        super().parse()
+        scenario = self.args.scenario
+        with scenario:
+            try:
+                self.args.scenario = json.loads(scenario)
+            except ValueError:
+                self.parser.error('invalid JSON data in {}'.format(scenario.name))
 
-    pretty_print(modify_scenario)(scenario_name, scenario_json, project_name)
+    def execute(self):
+        scenario = self.args.scenario
+        name = self.args.name
+        project = self.args.project
+
+        if project is None:
+            self.request('PUT', 'scenario/{}/'.format(name), **scenario)
+        else:
+            route = 'project/{}/scenario/{}/'.format(project, name)
+            self.request('PUT', route, **scenario)
+
+
+if __name__ == '__main__':
+    ModifyScenario.autorun()

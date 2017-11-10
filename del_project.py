@@ -36,19 +36,19 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import del_project, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Del Project',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('project_name', help='Name of the project')
+class DeleteProject(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Delete a Project')
+        self.parser.add_argument('name', help='name of the project to delete')
 
-    # get args
-    args = parser.parse_args()
-    project_name = args.project_name
+    def execute(self):
+        project = self.args.name
 
-    pretty_print(del_project)(project_name)
+        self.request('DELETE', 'project/{}/'.format(project))
+
+
+if __name__ == '__main__':
+    DeleteProject.autorun()
