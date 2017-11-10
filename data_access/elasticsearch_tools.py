@@ -240,7 +240,8 @@ class ElasticSearchCommunicator:
         """Send a query to ElasticSearch and gather the results"""
 
         query['scroll'] = '1m'
-        response = requests.post(self.querying_URL, params=query, json=body).json()
+        session = requests.Session()
+        response = session.post(self.querying_URL, params=query, json=body).json()
         while True:
             hits = response.get('hits', {}).get('hits', [])
             if not hits:
@@ -251,7 +252,7 @@ class ElasticSearchCommunicator:
             except KeyError:
                 break
             body = {'scroll': '1m', 'scroll_id': scroll_id}
-            response = requests.post(self.scrolling_URL, json=body).json()
+            response = session.post(self.scrolling_URL, json=body).json()
 
     def delete_query(self, query):
         """Send query to ElasticSearch so that matching logs are removed"""
