@@ -50,6 +50,7 @@ __all__ = [
 import re
 import enum
 import itertools
+from collections import defaultdict
 from contextlib import suppress
 
 import requests
@@ -441,6 +442,15 @@ class InfluxDBConnection(InfluxDBCommunicator):
         response = self.sql_query(tag_query('@suffix', job, condition))
         return {tag['value'] for _, tag in parse_influx(response)}
 
+    def raw_statistics(self, job=None, scenario=None, agent=None, job_instance=None,
+                   suffix=None, fields=None, condition=None):
+        """Fetch data from InfluxDB that correspond to the given constraints
+        and generate values in series.
+        """
+        condition = tags_to_condition(scenario, agent, job_instance, suffix, condition)
+        response = self.sql_query(select_query(job, fields, condition))
+        yield from parse_influx(response)
+
     def statistics(self, job=None, scenario=None, agent=None, job_instance=None,
                    suffix=None, fields=None, condition=None):
         """Fetch data from InfluxDB that correspond to the given constraints
@@ -501,3 +511,16 @@ class InfluxDBConnection(InfluxDBCommunicator):
                     job_id, suffix[0], statistics.dated_data)
             for chunck in data_stream:
                 self.data_write(chunck)
+
+    def get_field_keys(self):
+        """Get the names of the fields from InfluxDB"""
+        response = self.sql_query("SHOW FIELD KEYS")
+        stats_names = defaultdict(set)
+        with suppress(LookupError):
+            for result in response['results']:
+                for serie in result['series']:
+                    job_name = serie['name']
+                    stats = (value[0] for value in serie['values'])
+                    stats_names[job_name].update(stats)
+
+        return stats_names
