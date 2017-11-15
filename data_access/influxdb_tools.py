@@ -223,8 +223,20 @@ def select_query(job_name=None, field_names=None, condition=None):
     if isinstance(field_names, str):
         # Assume user provided a valid string for the SELECT clause
         fields = field_names
+    elif field_names:
+        # Also retrieve the tags necessary to construct
+        # the associated Scenario objects
+        mandatory_field_names = {
+            '@agent_name',
+            '@job_instance_id',
+            '@scenario_instance_id',
+            '@owner_scenario_instance_id',
+            '@suffix'
+        }
+        mandatory_field_names.update(field_names)
+        fields = ','.join(map(quote_it, mandatory_field_names))
     else:
-        fields = '*' if not field_names else ','.join(map(quote_it, field_names))
+        fields = '*'
     measurement_name = '/.*/' if job_name is None else quote_it(job_name)
     query = 'SELECT {} FROM {}'.format(fields, measurement_name)
     if condition is not None:
