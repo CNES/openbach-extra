@@ -132,8 +132,8 @@ class FrontendBase:
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         backend = self.parser.add_argument_group('backend')
         backend.add_argument(
-                '--controller-ip', default=read_controller_ip(),
-                help='address at which the collector is listening')
+                '--controller', default=read_controller_ip(),
+                help='address at which the contoller is listening')
         backend.add_argument(
                 '--login', '--username',
                 help='username used to authenticate as')
@@ -142,7 +142,7 @@ class FrontendBase:
 
     def parse(self):
         self.args = args = self.parser.parse_args()
-        self.base_url = url = 'http://{}/openbach/'.format(args.controller_ip)
+        self.base_url = url = 'http://{}:8000/'.format(args.controller)
         login = args.login
         if login:
             credentials = {
