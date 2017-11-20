@@ -1,0 +1,14 @@
+This Job launch a web browsing of the specified url.
+
+Required Arguments:
+  	url : the webpage that will be open by the browser.
+
+Optionnal Arguments:
+	None
+
+Statistics:
+	Launch : in order to know when the job is actually launch.
+
+Example:
+  - Generate web browsing : -url "https://www.python.org/"
+  - Generate youtube streaming : -url "https://www.youtube.com/watch?v=9bZkp7q19f0"

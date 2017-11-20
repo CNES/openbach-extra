@@ -1,0 +1,32 @@
+Before to begin, you have to enter the command :"xhost +" in a terminal on the agents in order to disable the access control.
+
+This Job open the application skype. It launches a call to the paired user (end of this doc).
+
+The first time skype is opened on an agent you should 
+
+
+Required Arguments:
+	None
+
+Optionnal Arguments:
+  sim_t : The duration of the call.
+  id : The id of the pair of users. You can't emulate 2 calls with the same id on the same agents.
+
+Statistics: it provides the statistic *Launch*, which indicate exactly when the call is launch.
+
+Example:
+  - Launch a call during 30 sec between the two users corresponding to id = 1 : -sim_t "30"
+  - Launch a call during 90 sec between two different users : -sim_t "90" -id "2" 
+  	+ set the sim_t of the call receiver greater than 90 because otherwise the call will end after 60 sec (the receiver will stop it by default).
+  
+Pairs of users :  
+id = 1
+Caller : h714221@mvrht.net
+Receiver : h359085@mvrht.net
+id = 2
+Caller : j310562@mvrht.net
+Receiver : j311582@mvrht.net
+id = 3
+Caller : j311846@mvrht.net
+Receiver : j312817@mvrht.net
+

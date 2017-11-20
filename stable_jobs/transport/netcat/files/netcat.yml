@@ -1,0 +1,68 @@
+---
+
+general:
+  name:            netcat
+  description: >
+      This Job only launch the netcat command
+  job_version:     0.1
+  keywords:        [netcat]
+  persistent:      True
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/netcat/netcat.py'
+    command_stop:
+
+arguments:
+  required:
+  optional:
+    - name:        server_mode
+      type:        'None'
+      count:       '0'
+      flag:        '-l'
+      description: >
+          Start netcat in server mode on specified port
+    - name:        client_mode
+      type:        'str'
+      count:       '1'
+      flag:        '-c'
+      description: >
+          The IP address of the server
+    - name:        port
+      type:        'int'
+      count:       '1'
+      flag:        '-p'
+      description: >
+          The port number
+    - name:        multiple_connections
+      type:        'None'
+      count:       0
+      flag:        '-k'
+      description: >
+          Forces server to keep listening after current connection is completed.
+    - name:        measure_time
+      type:        'None'
+      count:       0
+      flag:        '-t'
+      description: >
+          Measure the duration of the connection (for the client)
+    - name:        n_times
+      type:        'int'
+      count:       1
+      flag:        '-n'
+      description: >
+          The number of times to repeat connection (one after another). Default = 1
+    - name:        in_file
+      type:        'str'
+      count:       1
+      flag:        '-f'
+      description: >
+          Path of a file to send via netcat
+
+statistics:
+    - name:        duration
+      description: >
+          The measured connection time
+      frequency:   'each time the connection ends'

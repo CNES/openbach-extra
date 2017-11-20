@@ -1,0 +1,63 @@
+---
+
+general:
+  name:           squid
+  description: >
+      This Job executes the squid command to start proxy server.
+  job_version:     0.1
+  keywords:        [squid, proxy, server, caching]
+  persistent:      true
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/squid/squid.py'
+    command_stop: '/usr/bin/env python3 /opt/openbach/agent/jobs/squid/squid_stop.py'
+
+arguments:
+  required:
+    - name:       non_transp_proxy
+      type:       'int'
+      count:       1
+      description: >
+          no transparent proxy port
+
+  optional:
+    - name:        trans_proxy
+      type:        'int'
+      count:       1
+      flag:        '-t'
+      description: >
+          Port to forward traffic.
+          Warning - If path_conf_file not specified.
+          Warning - If trans_proxy set, source_addr & input_iface must be set too.
+
+    - name:        source_addr
+      type:        'str'
+      count:       1
+      flag:        '-s'
+      description: >
+          Ip addr to forward traffic.
+          Warning - If path_conf_file not specified.
+          Warning - If source_addr set, trans_proxy & input_iface must be set too.
+
+    - name:        input_iface
+      type:        'str'
+      count:       1
+      flag:        '-i'
+      description: >
+          Ethernet interface name to forward traffic.
+          Warning - If path_conf_file not specified.
+          Warning - If input_iface set, trans_proxy & source_addr must be set too.
+
+    - name:        path_conf_file
+      type:        'str'
+      count:       1
+      flag:        '-p'
+      description: >
+          Path to squid conf file.
+          Warning - If path_conf_file set, others optionals option are not usefuls.
+
+statistics:
+

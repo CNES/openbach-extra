@@ -1,0 +1,41 @@
+---
+
+general:
+  name:            skype_call
+  description: >
+      This Job generates HTTP1.1 requests to a destination server and computes the page load time.
+  job_version:     0.1
+  keywords:        [skype, call]
+  persistent:      False
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python2 /opt/openbach/agent/jobs/skype_call/skype_call.py'
+    command_stop:
+
+arguments:
+  required:
+
+  optional:
+    - name:        sim_t
+      type:        'int'
+      count:       1
+      flag:        '-t'
+      description: >
+          Time of the conversation in seconds. After that time the caller will end the call. Both will disconnect from Skype (Default = 60 sec).
+          
+    - name:        id
+      type:        'int'
+      count:       1
+      flag:        '-id'
+      description: >
+          The id of the skype pair. Knowing that we can't have 2 same id call instances on the same computer.Values can be 1,2,3 ... (Default = 1).
+
+statistics:
+  - name:          launch 
+    description: >
+        To know exactly when the call is launched.
+    frequency:     'each time a call is launched'
+

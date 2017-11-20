@@ -1,0 +1,69 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#
+#
+#   Copyright © 2016 CNES
+#
+#
+#   This file is part of the OpenBACH testbed.
+#
+#
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+#
+#
+#
+#   @file     install_mptcp.yml
+#   @brief    Playbook that install the Job mptcp
+#   @author   David PRADAS <david.pradas@toulouse.viveris.com>
+
+
+---
+
+- name: Add mptcp Apt Repository
+  apt_repository: repo="deb https://dl.bintray.com/cpaasch/deb jessie main" state=present update_cache=yes
+  ignore_errors: yes
+  become: yes
+
+- name: Install Packages Dependencies
+  apt: name={{ item }} state=present force=yes
+  with_items:
+    - iputils-ping
+    - linux-mptcp
+    - bison
+    - pkg-config
+    - flex
+    - libdb-dev
+  become: yes
+
+- name: Download iproute-mptcp extension
+  git: repo=https://github.com/multipath-tcp/iproute-mptcp dest=/tmp/iproute-mptcp
+
+- name: Compile iproute-mptcp extension
+  shell: make chdir=/tmp/iproute-mptcp/
+
+- name: Install iproute-mptcp extension
+  shell: make install chdir=/tmp/iproute-mptcp/
+  become: yes
+
+- name: Create the Mptcp Job Repository
+  file: path=/opt/openbach/agent/jobs/mptcp state=directory
+
+- name: Install the mptcp Job
+  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/mptcp/ mode={{ item.mode }}
+  with_items:
+    - { file: 'mptcp.py', mode: '0755' }
+    - { file: 'mptcp.help', mode: '0644' }
+    - { file: 'mptcp_rstats_filter.conf', mode: '0644' }

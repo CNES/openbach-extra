@@ -1,0 +1,62 @@
+---
+
+general:
+  name:            stack_create
+  description: >
+      This Job enables you to create a stack with specific propreties.
+
+  job_version:     0.1
+  keywords:        [stack_create, admin]
+  persistent:      false
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/stack_create/stack_create.py'
+    command_stop:
+
+arguments:
+
+  required:
+
+  optional:
+    - name:        stack_name
+      type:        'str'
+      count:       1
+      flag:        '-s' 
+      description: >
+          The stack name
+    - name:        flavor
+      type:        'str'
+      count:       1
+      flag:        '-f'
+      description: >
+          Capacity for computing, memory and stack storage
+    - name:        image_id
+      type:        'str'
+      count:       1
+      flag:        '-i'
+      description: >
+          Image to be used for the instance
+    - name:        network
+      type:        'str'
+      count:       '+'
+      flag:        '-n'
+      description: >
+          The networks to which the instance will be connected
+    - name:        password
+      type:        'str'
+      count:       1
+      flag:        '-p'
+      description: >
+          The password required to source the RC file
+           / NB = The lines related to the password should be commented in the RCfile
+    - name:        RCfile
+      type:        'str'
+      count:       1
+      flag:        '-r'
+      description: >
+          The Path to the RC OpenStack file 
+ 
+statistics:

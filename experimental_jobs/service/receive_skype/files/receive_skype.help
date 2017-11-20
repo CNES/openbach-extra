@@ -1,0 +1,31 @@
+Before to begin, you have to enter the command :"xhost +" in a terminal on the agents in order to disable the access control.
+When skype is opened for the first time on the agent, you should select to answer automatically answer incoming calls.
+Skype->Options->Privacy->Automatically answer incoming calls.
+
+This Job open the application skype. It connects to the chosen user (id=1 by default, see at the end of this doc).
+
+
+
+Required Arguments:
+	None
+
+Optionnal Arguments:
+  sim_t : Time after which the window skype will be closed. Should be bigger than the sim_t of the skype call (Default = 120 sec).
+  id : The id of the pair of users. You can't emulate 2 calls with the same id on the same agents.
+
+
+Example:
+  - Ready to receive a call and shut it down after 200 sec if there is one between the two users corresponding to id = 1 : -sim_t "200"
+  
+Pairs of users :  
+id = 1
+Caller : h714221@mvrht.net
+Receiver : h359085@mvrht.net
+id = 2
+Caller : j310562@mvrht.net
+Receiver : j311582@mvrht.net
+id = 3
+Caller : j311846@mvrht.net
+Receiver : j312817@mvrht.net
+
+

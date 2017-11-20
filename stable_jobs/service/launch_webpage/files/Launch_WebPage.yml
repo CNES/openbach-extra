@@ -1,0 +1,27 @@
+---
+
+general:
+  name:            Launch_WebPage
+  description: >
+      This Job is in charge to launch a web browsing.
+  job_version:     0.1
+  keywords:        [web,browsing,url,webpage]
+  persistent:      true
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python2 /opt/openbach/agent/jobs/Launch_WebPage/Launch_WebPage.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        url
+      type:        'str'
+      count:       1
+      description: >
+          The web page that we request.
+  optional:
+
+statistics:

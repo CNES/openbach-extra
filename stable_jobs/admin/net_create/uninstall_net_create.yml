@@ -1,0 +1,4 @@
+---
+
+- name: Remove the Net_Create Job Repository
+  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent

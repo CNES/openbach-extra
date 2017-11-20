@@ -1,0 +1,55 @@
+---
+
+general:
+  name:            postprocess_stats
+  description: >
+      This job computes the mean, the cdf, the confidence interval and the variance of a statistic generated for one or several job instances
+  job_version:     0.1
+  keywords:        [post-processing, mean, cdf, confidence, interval, variance]
+  persistent:      False
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/postprocess_stats/postprocess_stats.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        scenario_instance_id
+      type:        'int'
+      count:       1
+      description: >
+          The ID of the scenario instance where the stat can be found
+    - name:        agent_name
+      type:        'str'
+      count:       1
+      description: >
+          The agent name where the stat has been generated
+    - name:        job_name
+      type:        'str'
+      count:       1
+      description: >
+          The job name that has generated the stat
+    - name:        stat_name
+      type:        'str'
+      count:       1
+      description: >
+          The name of the stat that shall be postprocessed
+    - name:        job_instance_ids
+      type:        'str'
+      count:       1 
+      description: >
+          The IDs of the job instances that have generated the stat
+
+  optional:
+    - name:        export_mode
+      type:        'int'
+      count:       1
+      flag:       '-m'
+      description: >
+          The way to export (if 0 png ou, if 1 csv)
+
+statistics:
+

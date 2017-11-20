@@ -1,0 +1,74 @@
+# 
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2017 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under the
+#   terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+#   
+#   
+#   
+#   @file     install_twinkle_voip.yml
+#   @brief    Playbook that install the Job Twinkle VoIP
+#   @author   Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
+
+
+---
+
+- name: Get kernel version
+  shell: "uname -r"
+  register: kernel
+
+- name: Install package dependencies
+  apt: name={{ item }} state=present
+  with_items:
+    - twinkle
+    - alsa-utils
+    - linux-image-extra-{{ kernel.stdout }}
+  become: yes
+    
+- name: Create twinkle_voip repository
+  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  
+- name: Create twinkle conf dir
+  file: path=/root/.twinkle state=directory
+  become: yes
+
+- name: Install twinkle conf files
+  copy: src={{ item.file }} dest=/root/.twinkle/ mode={{ item.mode }}
+  with_items:
+    - { file: 'twinkle.sys', mode: '0644' }
+    - { file: 'openbach.cfg', mode: '0664' }
+  become: yes
+  
+- name: Install alsa conf file
+  copy: src={{ item.file }} dest=/root/{{ item.dest }} mode={{ item.mode }}
+  with_items:
+    - { file: 'asoundrc', dest: '.asoundrc', mode: '0644' }
+  become: yes
+  
+- name: Install twinkle_voip
+  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/twinkle_voip/ mode={{ item.mode }}
+  with_items:
+    - { file: 'twinkle_voip.help', mode: '0644' }
+    - { file: 'twinkle_voip.py', mode: '0755' }
+    - { file: 'twinkle_voip_rstats_filter.conf', mode: '0644' }
+    - { file: 'audio.wav', mode: '0644' }

@@ -1,0 +1,4 @@
+Example:
+  - Launch an netcat server that listens on port 5000: -a "-l 5000"
+  - Launch an netcat client that will connect with the server in 172.20.0.83 : -a "172.20.0.83 5000" 
+

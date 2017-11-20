@@ -1,0 +1,43 @@
+---
+
+general:
+  name:            tcp_buffer
+  description: >
+      This Job set up the Tcp buffer
+  job_version:     0.1
+  keywords:        [tcp, buffer]
+  persistent:      False
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/tcp_buffer/tcp_buffer.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        name
+      type:        'str'
+      count:       1
+      description: >
+          The name of the tcp buffer to set
+    - name:        min_size
+      type:        'int'
+      count:       1
+      description: >
+          The minial size of the buffer
+    - name:        size
+      type:        'int'
+      count:       1
+      description: >
+          The size of the buffer
+    - name:        max_size
+      type:        'int'
+      count:       1
+      description: >
+          The maximum size of the buffer
+  optional:
+          
+statistics:
+

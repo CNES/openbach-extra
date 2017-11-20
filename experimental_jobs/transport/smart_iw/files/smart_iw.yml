@@ -1,0 +1,34 @@
+---
+
+general:
+  name:            smart_iw
+  description: >
+      This job set up smart initial window
+  job_version:     0.1
+  keywords:        [smart, iw, initial, window]
+  persistent:      False
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/smart_iw/smart_iw.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        size
+      type:        'int'
+      count:       1
+      description: >
+          The size of the smart initial window
+  optional:
+    - name:        disable_pacing
+      type:        'None'
+      count:       0
+      flag:        '-d'
+      description: >
+          Disable pacing
+
+statistics:
+

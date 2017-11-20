@@ -1,0 +1,56 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+#   
+#   
+#   
+#   @file     install_pep.yml
+#   @brief    Playbook that install the Job pep
+#   @author   Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
+
+
+---
+
+- name: Add net4sat repository
+  apt_repository: repo="deb http://packages.net4sat.org/opensand xenial stable" state=present update_cache=yes
+  ignore_errors: yes
+  become: yes 
+
+- name: Install package pepsal
+  apt: name=pepsal state=present allow_unauthenticated=yes
+  become: yes
+
+- name: Install python dependencies
+  pip: name=python-iptables executable=pip3 version=0.12.0
+  become: yes
+
+- name: Create the Pep Job Repository
+  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory
+
+- name: Install the Pep Job
+  copy: src={{ item.name }} dest=/opt/openbach/agent/jobs/{{ job_name }}/{{ item.name }} mode={{ item.mode }}
+  with_items:
+    - { name: 'pep.py', mode: '0755' }
+    - { name: 'pep.help', mode: '0644' }
+    - { name: 'pep_rstats_filter.conf', mode: '0644' }

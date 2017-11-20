@@ -1,0 +1,15 @@
+---
+
+- name: Install heatclient
+  apt: name=python-heatclient state=present
+  become: yes
+
+- name: Create the Stack_Create Job Repository
+  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+
+- name: Install stack_create Job
+  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  with_items:
+    - { file: 'stack_create.py', mode: '0755' }
+    - { file: 'stack_create.help', mode: '0644' }
+    - { file: 'stack_create_rstats_filter.conf', mode: '0644' }

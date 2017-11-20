@@ -1,0 +1,51 @@
+---
+
+general:
+  name:            initial_windows
+  description: >
+      This Job set up the initial windows
+  job_version:     0.1
+  keywords:        [initial, windows, congestion, tcp]
+  persistent:      False
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/initial_windows/initial_windows.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        network
+      type:        'str'
+      count:       1
+      description: >
+          The destination network
+    - name:        interface
+      type:        'str'
+      count:       1
+      description: >
+          Interface where to set the initial windows
+  optional:
+    - name:        gw
+      type:        'ip'
+      count:       1
+      flag:        '-g'
+      description: >
+          The next hop of the route
+    - name:        initcwnd
+      type:        'int'
+      count:       1
+      flag:        '-i'
+      description: >
+          Initial congestion window
+    - name:        initrwnd
+      type:        'int'
+      count:       1
+      flag:        '-r'
+      description: >
+          Initial congestion receive window
+
+statistics:
+

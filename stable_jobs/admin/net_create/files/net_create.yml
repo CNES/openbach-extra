@@ -1,0 +1,50 @@
+---
+
+general:
+  name:            net_create
+  description: >
+      This Job enables you to create a network with specific propreties.
+
+  job_version:     0.1
+  keywords:        [net_create, admin]
+  persistent:      false
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/net_create/net_create.py'
+    command_stop:
+
+arguments:
+
+  required:
+
+  optional:
+    - name:        net_name
+      type:        'str'
+      count:       1
+      flag:        '-n' 
+      description: >
+          The network name
+    - name:        address
+      type:        'ip'
+      count:       1
+      flag:        '-a'
+      description: >
+          The ip address of the network
+    - name:        password
+      type:        'str'
+      count:       1
+      flag:        '-p'
+      description: >
+          The OpenStack Password required to source RC file 
+           / NB = The lines related to the password should be commented in the RCfile 
+    - name:        RCfile
+      type:        'str'
+      count:       1
+      flag:        '-f'
+      description: >
+          The Path to the RC OpenStack file 
+          
+statistics:

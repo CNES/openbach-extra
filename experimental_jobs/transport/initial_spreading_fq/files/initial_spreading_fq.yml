@@ -1,0 +1,39 @@
+---
+
+general:
+  name:            initial_spreading_fq
+  description: >
+      This Job set up the initial spreading fq
+  job_version:     0.1
+  keywords:        [initial, spreading, fq, pacing]
+  persistent:      False
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/initial_spreading_fq/initial_spreading_fq.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        rate
+      type:        'int'
+      count:       1
+      description: >
+          Tcp initial spreading minimal rate
+    - name:        interfaces
+      type:        'str'
+      count:       '+'
+      description: >
+          The interfaces where the initial spreading fq is set
+  optional:
+    - name:        disable_pacing
+      type:        'None'
+      count:       0
+      flag:        '-d'
+      description: >
+          Disable pacing
+
+statistics:
+
