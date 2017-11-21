@@ -1,0 +1,23 @@
+---
+
+general:
+  name:            pimd
+  description: >
+      This Job set up the pimd
+  job_version:     0.1
+  keywords:        [pimd, multicast]
+  persistent:      true
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: 'sudo /usr/sbin/pimd -f'
+    command_stop:
+
+arguments:
+  required:
+  optional:
+          
+statistics:
+
