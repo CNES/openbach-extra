@@ -100,30 +100,30 @@ def main(scenario_id, agent_name, job_ids, job_name, stat_name):
                     'ERROR sending stats {}'.format(ex))
 
         # Compute, plot and save figure of CDF
-        # try:
-        #     plt.figure(figsize=(12, 8), dpi=80, facecolor='w', edgecolor='k')
-        # except Exception as ex:
-        #     collect_agent.send_log(
-        #             syslog.LOG_ERR,
-        #             'Matplotlib problem: {}'.format(ex))
+        try:
+            plt.figure(figsize=(12, 8), dpi=80, facecolor='w', edgecolor='k')
+        except Exception as ex:
+            collect_agent.send_log(
+                    syslog.LOG_ERR,
+                    'Matplotlib problem: {}'.format(ex))
 
-        # plt.ylabel('CDF')
-        # plt.xlabel('Page load time (s)')
-        # plt.title('CDF of web page load time')
-        # n, bins, patches = plt.hist(statistics, 1000, normed=1, cumulative=True)
+        plt.ylabel('CDF')
+        plt.xlabel('Page load time (s)')
+        plt.title('CDF of web page load time')
+        n, bins, patches = plt.hist(statistics, 1000, normed=1, cumulative=True)
 
-        # path = '/tmp/cdf_{}_{}_{}_{}.png'.format(
-        #         scenario_id, job_instance_id,
-        #         job_name, stat_name)
-        # try:
-        #     plt.savefig(path)
-        #     collect_agent.send_log(
-        #             syslog.LOG_DEBUG,
-        #             'Plot file saved in {}'.format(path))
-        # except Exception as ex:
-        #     collect_agent.send_log(
-        #             syslog.LOG_ERR,
-        #             'Error saving plot files {}'.format(ex))
+        path = '/tmp/cdf_{}_{}_{}_{}.png'.format(
+                scenario_id, job_instance_id,
+                job_name, stat_name)
+        try:
+            plt.savefig(path)
+            collect_agent.send_log(
+                    syslog.LOG_DEBUG,
+                    'Plot file saved in {}'.format(path))
+        except Exception as ex:
+            collect_agent.send_log(
+                    syslog.LOG_ERR,
+                    'Error saving plot files {}'.format(ex))
 
 
 if __name__ == '__main__':
