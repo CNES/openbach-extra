@@ -4,7 +4,7 @@ general:
   name:            pep
   description: >
       This Job set up the pep
-  job_version:     0.1
+  job_version:     '1.0'
   keywords:        [pep, tcp]
   persistent:      False
 
@@ -12,8 +12,8 @@ platform_configuration:
   - ansible_system: 'Linux'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '16.04'
-    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/pep/pep.py'
-    command_stop: '/usr/bin/env python3 /opt/openbach/agent/jobs/pep/pep.py -x'
+    command: 'sudo python3 /opt/openbach/agent/jobs/pep/pep.py'
+    command_stop: 'sudo python3 /opt/openbach/agent/jobs/pep/pep.py -x'
 
 arguments:
   required:

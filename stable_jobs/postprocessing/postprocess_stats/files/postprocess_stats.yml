@@ -4,7 +4,7 @@ general:
   name:            postprocess_stats
   description: >
       This job computes the mean, the cdf, the confidence interval and the variance of a statistic generated for one or several job instances
-  job_version:     '0.1'
+  job_version:     '1.0'
   keywords:        [post-processing, mean, cdf, confidence, interval, variance]
   persistent:      False
 

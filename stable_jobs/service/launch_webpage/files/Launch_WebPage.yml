@@ -4,7 +4,7 @@ general:
   name:            Launch_WebPage
   description: >
       This Job is in charge to launch a web browsing.
-  job_version:     0.1
+  job_version:     '1.0'
   keywords:        [web,browsing,url,webpage]
   persistent:      true
 
