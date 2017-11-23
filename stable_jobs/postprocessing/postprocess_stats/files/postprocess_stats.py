@@ -41,10 +41,10 @@ import syslog
 import argparse
 from sys import exit
 
-# import matplotlib
+import matplotlib
 # Force matplotlib to not use any Xwindows backend.
-# matplotlib.use('Agg')
-# import matplotlib.pyplot as plt
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 from scipy import stats
 
 import collect_agent
@@ -76,7 +76,7 @@ def main(scenario_id, agent_name, job_ids, job_name, stat_name):
 
         job_key = (job_name, job_instance_id, agent_name)
         job_data = scenario.job_instances[job_key]
-        statistics = [stat[stat_name] for stat in job_data.statistics.json()]
+        statistics = [stat[stat_name] for stat in job_data.statistics.json]
 
         # Compute mean statistics values (mean/std/etc)
         n, min_max, mean, var, skew, kurt = stats.describe(statistics)
