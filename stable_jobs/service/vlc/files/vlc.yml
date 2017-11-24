@@ -4,7 +4,7 @@ general:
   name:            vlc
   description: >
       Launchs a VLC video streaming.
-  job_version:     0.1
+  job_version:     '1.0'
   keywords:        [vlc, video, streaming]
   persistent:      False
 

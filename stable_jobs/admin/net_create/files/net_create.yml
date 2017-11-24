@@ -5,7 +5,7 @@ general:
   description: >
       This Job enables you to create a network with specific propreties.
 
-  job_version:     0.1
+  job_version:     '1.0'
   keywords:        [net_create, admin]
   persistent:      false
 

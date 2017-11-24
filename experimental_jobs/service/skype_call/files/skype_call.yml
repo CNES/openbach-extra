@@ -4,7 +4,7 @@ general:
   name:            skype_call
   description: >
       This Job generates HTTP1.1 requests to a destination server and computes the page load time.
-  job_version:     0.1
+  job_version:     '0.1'
   keywords:        [skype, call]
   persistent:      False
 

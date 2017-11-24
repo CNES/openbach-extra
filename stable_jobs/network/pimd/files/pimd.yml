@@ -4,7 +4,7 @@ general:
   name:            pimd
   description: >
       This Job set up the pimd
-  job_version:     0.1
+  job_version:     '1.0'
   keywords:        [pimd, multicast]
   persistent:      true
 

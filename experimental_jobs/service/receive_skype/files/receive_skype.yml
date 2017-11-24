@@ -4,7 +4,7 @@ general:
   name:            receive_skype
   description: >
       This Job open a skype account which can be called from the job skype_call
-  job_version:     0.1
+  job_version:     '0.1'
   keywords:        [skype, call, receive]
   persistent:      False
 
