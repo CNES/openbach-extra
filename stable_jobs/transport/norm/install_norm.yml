@@ -42,18 +42,25 @@
     - { file: 'norm_rstats_filter.conf', mode: '0644' }
     - { file: 'norm.py', mode: '0755' }
 
-- name: Create the NORM Job Repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }}/files/ state=directory mode=0755
-
 - name: Copy the source files
   unarchive: src=src-norm-1.5r6-python3.tar.gz dest=/tmp/
+
+- name: Check if NORM is already installed
+  stat: path=/usr/local/lib/libnorm.so
+  register: is_installed
 
 - name: Compile and install NORM
   command: chdir=/tmp/norm-1.5r6/ {{ item }}
   with_items:
     - python3 waf configure
     - python3 waf
+  when: is_installed.stat.exists == False
+
+- name: Compile and install NORM
+  command: chdir=/tmp/norm-1.5r6/ {{ item }}
+  with_items:
     - python3 waf install
     - python3 setup.py install
     - ldconfig
   become: yes
+  when: is_installed.stat.exists == False
