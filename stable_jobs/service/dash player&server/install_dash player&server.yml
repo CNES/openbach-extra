@@ -32,7 +32,6 @@
 
 ---
 
-# TODO
 
 - name: Create the Dash Job Repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
@@ -49,11 +48,15 @@
     - { file: 'dash.py', mode: '0755' }
     - { file: 'download_video.sh', mode: '0755' }
 
-- name: Create the Dash Job Repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }}/files/ state=directory mode=0755
-
 - name: Install web files
-  openbach_synchronize: src=www/ dest=/opt/openbach/agent/jobs/{{ job_name }}/www/ recursive=yes delete=yes
+  openbach_synchronize:
+    src: www/
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/www/
+    recursive: yes
+    delete: yes
+    rsync_opts:
+      - --filter
+      - P vod-dash 
 
 - name: Download sample videos
   command: ../../download_video.sh {{ item }} chdir=/opt/openbach/agent/jobs/{{ job_name }}/www/vod-dash/

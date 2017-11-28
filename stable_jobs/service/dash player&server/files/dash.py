@@ -70,7 +70,7 @@ def main(address, port):
     application = web.Application([
         (r"/websocket/", CustomWebSocket),
         (r"/(.*)", web.StaticFileHandler, {
-            'path': '/opt/openbach/agent/jobs/dash player&server/files/',
+            'path': '/opt/openbach/agent/jobs/dash player&server/www/',
             'default_filename': 'index.html',
             }),
     ])
