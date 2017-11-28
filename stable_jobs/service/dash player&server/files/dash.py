@@ -35,18 +35,15 @@ __credits__ = '''Contributors:
 '''
 
 
-import re
 import sys
 import json
 import time
 import syslog
 import argparse
-import subprocess
 
 import collect_agent
 
 from tornado import ioloop, web, websocket
-from tornado.options import parse_command_line
 
 
 class CustomWebSocket(websocket.WebSocketHandler):

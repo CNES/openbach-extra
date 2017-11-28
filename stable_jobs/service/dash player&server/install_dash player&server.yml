@@ -53,10 +53,10 @@
   file: path=/opt/openbach/agent/jobs/{{ job_name }}/files/ state=directory mode=0755
 
 - name: Install web files
-  unarchive: src=files.tar.gz dest=/opt/openbach/agent/jobs/{{ job_name }}/files/ mode=0755
+  openbach_synchronize: src=www/ dest=/opt/openbach/agent/jobs/{{ job_name }}/www/ recursive=yes delete=yes
 
 - name: Download sample videos
-  command: ../../download_video.sh {{ item }} chdir=/opt/openbach/agent/jobs/{{ job_name }}/files/vod-dash/
+  command: ../../download_video.sh {{ item }} chdir=/opt/openbach/agent/jobs/{{ job_name }}/www/vod-dash/
   with_items:
     - "BigBuckBunny 2sec bunny_45652bps"
     - "BigBuckBunny 2sec bunny_334349bps"
