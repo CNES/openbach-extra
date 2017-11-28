@@ -34,151 +34,145 @@ __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
  * David FERNANDES <david.fernandes@toulouse.viveris.com>
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
+ * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
+import os
 import re
-import sys
 import time
-import psutil
 import syslog
-import os.path
 import argparse
-import subprocess
 from random import randint
-from contextlib import suppress
+from functools import total_ordering
 
 import pynorm
 import collect_agent
 
+
+END_OF_TRANSMISSION_EVENTS = {'NORM_TX_QUEUE_EMPTY', 'NORM_TX_FLUSH_COMPLETED'}
+
+
+@total_ordering
 class Element:
-    """
-        An element is defined by :
-        - The file name (the filename is the segment number)
-        - A flag which indicates if it has been sent or not
-    """
-
-    def __init__(self, filename, sent):
+    def __init__(self, file_number, filepath, filename):
+        self.file_number = file_number
+        self.filepath = filepath
         self.filename = filename
-        self.sent = sent
-
-    def _get_file_name(self):
-        return self.filename
-
-    def _get_sent_flag(self):
-        return self.sent
-
-    def _set_file_name(self, filename):
-        self.filename = filename
-
-    def _set_sent_flag(self, sent):
-        self.sent = sent
+        self.sent = False
 
     def __lt__(self, other):
-        if hasattr(other, 'filename'):
-            return self.filename < other.filename
-        return False
+        try:
+            return self.file_number < other.file_number
+        except AttributeError:
+            return False
 
     def __eq__(self, other):
-        if hasattr(other, 'filename'):
-            return self.filename == other.filename
-        return False
+        try:
+            return self.file_number == other.file_number
+        except AttributeError:
+            return False
+
+    def __hash__(self):
+        return hash(self.file_number)
 
 
-def main(mode=None, directory=None, iface=None, address=None,
-        port=None, name=None, max_rate=None, first_seg=None):
-    # Connect to the collect-agent
+def connect_to_collect_agent():
     collect_agent.register_collect(
             '/opt/openbach/agent/jobs/norm/norm_rstats_filter.conf')
 
     collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job NORM')
 
-    if (mode == 'tx'):
-        if first_seg is None:
-            first_seg = 1
 
-        collect_agent.send_log(syslog.LOG_DEBUG,
-                'NORM will send {} from segment number {}'.format(address, first_seg))
+def send_mode(address, port, iface, directory, max_rate, first_segment, last_segment):
+    connect_to_collect_agent()
 
-        instance = pynorm.Instance()
-        session = instance.createSession(address, port)
-        if iface:
-            session.setMulticastInterface(iface)
+    collect_agent.send_log(
+            syslog.LOG_DEBUG,
+            'NORM will send {} from segment '
+            'number {}'.format(address, first_segment))
 
-        session.setCongestionControl(True,True)
-        session.setTxRateBounds(10000, max_rate)
-        session.startSender(randint(0, 1000), 1024**2, 1400, 64, 16)
+    instance = pynorm.Instance()
+    session = instance.createSession(address, port)
+    session.setMulticastInterface(iface)
 
-        ordered_list = list()
-        while True:
-            news = False
-            for root, dirs, files in os.walk(directory, topdown=True):
-                if len(files)<5:  
-                    time.sleep(1)
+    session.setCongestionControl(True, True)
+    session.setTxRateBounds(10000, max_rate)
+    session.startSender(randint(0, 1000), 1024**2, 1400, 64, 16)
+
+    number_pattern = re.compile(r'2s([0-9]+)\.m4s$')
+    files_found = set()
+    while True:
+        for root, dirs, files in os.walk(directory, topdown=True):
+            for filename in files:
+                filepath = os.path.join(root, filename)
+                file_name = filepath[len(directory):].lstrip('/')
+                number_groups = number_pattern.search(filename)
+                if number_groups is None:
+                    _, extension = os.path.splitext(filename)
+                    if extension == '.mpd':
+                        files_found.add(Element(-1, filepath, file_name))
+                    elif extension == '.mp4':
+                        files_found.add(Element(0, filepath, file_name))
+                else:
+                    file_number = int(number_groups.group(1))
+                    if last_segment is None or file_number <= last_segment:
+                        files_found.add(Element(file_number, filepath, file_name))
+
+        first_element = Element(first_segment)
+        if first_element not in files_found:
+            time.sleep(1)
+            continue
+
+        for element in sorted(filter(first_element.__le__, files_found)):
+            if element.sent:
+                first_segment += 1
+                continue
+            if element.file_number != first_segment:
+                break
+
+            collect_agent.send_log(
+                    syslog.LOG_DEBUG,
+                    'NORM to {}: Sending file: {}'
+                    .format(address, element.filename))
+            session.fileEnqueue(element.filepath, element.filename)
+            element.sent = True
+
+            first_segment += 1
+
+            for event in instance:
+                if event in END_OF_TRANSMISSION_EVENTS:
                     break
 
-                for filename in files:
-                    with suppress(AttributeError):
-                        file_number = int(re.search('2s[0-9]+', filename).group(0)[2:])
-                        if (file_number < first_seg):
-                            continue
-                        if not any({ 
-                                elem.filename == file_number
-                                for elem in ordered_list }):
-                            ordered_list.append(Element(file_number, False))
-                            news = True
-            if not news:
-                continue
 
-            ordered_list.sort()
+def receive_mode(address, port, iface, directory):
+    connect_to_collect_agent()
 
-            for elt in ordered_list:
-                if elt.sent == True:
-                    continue
-                collect_agent.send_log(syslog.LOG_DEBUG,
-                        'NORM to {}: Sending segment number {}'.format(address, elt.filename))
-                session.fileEnqueue(
-                        '{}{}_2s{}.m4s'.format(directory, name, elt.filename),
-                        '{}_2s{}.m4s'.format(name, elt.filename))
-                elt.sent = True
+    os.nice(-10)
+    path = os.path.abspath(directory)
+    instance = pynorm.Instance()
+    instance.setCacheDirectory(path)
+    session = instance.createSession(address, port)
+    session.setMulticastInterface(iface)
+    session.startReceiver(1024 * 1024)
 
-                try:
-                    for event in instance:
-                        if event == 'NORM_TX_QUEUE_EMPTY':
-                            break
-                        elif event == 'NORM_TX_FLUSH_COMPLETED':
-                            break
-                        else:
-                            pass
-                except KeyboardInterrupt:
-                    return 0
+    for event in instance:
+        if event == 'NORM_RX_OBJECT_INFO':
+            filename = event.object.info.decode()
+            event.object.filename = os.path.join(path, filename)
+            collect_agent.send_log(
+                    syslog.LOG_DEBUG,
+                    'Receiving file {}'.format(event.object.filename))
 
-    elif (mode == 'rx'):
-        prio = psutil.Process(os.getpid())
-        prio.nice(-10)
-        path = os.path.abspath(directory)
-        instance = pynorm.Instance()
-        instance.setCacheDirectory(path)
-        session = instance.createSession(address, port)
-        if iface:
-            session.setMulticastInterface(iface)
-        session.startReceiver(1024*1024)
+        elif event == 'NORM_RX_OBJECT_COMPLETED':
+            os.chmod(event.object.filename, 0o644)
+            collect_agent.send_log(
+                    syslog.LOG_DEBUG,
+                    'File {} completed'.format(event.object.filename))
 
-        with suppress(KeyboardInterrupt):
-            for event in instance:
-                if event == 'NORM_RX_OBJECT_INFO':
-                    event.object.filename = os.path.join(path, event.object.info.decode())
-                    collect_agent.send_log(syslog.LOG_DEBUG,
-                            'Receiving file {}'.format(event.object.filename))
-
-                elif event == 'NORM_RX_OBJECT_COMPLETED':
-                    cmd = ['chmod', '644', event.object.filename]
-                    subprocess.run(cmd)
-                    collect_agent.send_log(syslog.LOG_DEBUG,
-                            'File {} completed'.format(event.object.filename))
-
-                elif event == 'NORM_RX_OBJECT_ABORTED':
-                    collect_agent.send_log(syslog.LOG_DEBUG,
-                            'File {} aborted'.format(event.object.filename))
+        elif event == 'NORM_RX_OBJECT_ABORTED':
+            collect_agent.send_log(
+                    syslog.LOG_DEBUG,
+                    'File {} aborted'.format(event.object.filename))
 
 
 if __name__ == '__main__':
@@ -186,33 +180,40 @@ if __name__ == '__main__':
             description=__doc__,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-a', '--address', default='224.1.2.3',
-                      help='The IP address to bind to')
-    parser.add_argument('-p', '--port', type=int, default=6003,
-                      help='The port number to listen on')
+    parser.add_argument(
+            'iface', help='The inteface to transmit multicast on.')
+    parser.add_argument(
+            'directory', help='Directory list to transmit.')
+    parser.add_argument(
+            '-a', '--address', default='224.1.2.3',
+            help='The IP address to bind to')
+    parser.add_argument(
+            '-p', '--port', type=int, default=6003,
+            help='The port number to listen on')
     subparsers = parser.add_subparsers(
             dest='mode', metavar='mode',
             help='the mode to operate')
     subparsers.required = True
-    parser_rx = subparsers.add_parser(
-            'rx', help='operate on mode reception')
-    parser_rx.add_argument('iface', type=str,
-                      help='The inteface to transmit multicast on.')
-    parser_rx.add_argument('directory', type=str,
-                      help='Directory list to transmit.')
+
+    subparsers.add_parser('rx', help='operate on mode reception')
 
     parser_tx = subparsers.add_parser(
             'tx', help='operate on mode transmission')
-    parser_tx.add_argument('iface', type=str,
-                      help='The inteface to transmit multicast on.')
-    parser_tx.add_argument('directory', type=str,
-                      help='Directory list to transmit.')
-    parser_tx.add_argument('max_rate', type=int,
-                      help='Maximal rate in bytes.')
-    parser_tx.add_argument('name', type=str,
-                      help='Name of the content without spaces. Ex: BigBuckBunny.')
-    parser_tx.add_argument('-f', '--first-seg', type=int,
-                      help='First segment number to send.')
-    
+    parser_tx.add_argument(
+            '-m', '--max-rate', type=int, required=True,
+            help='Maximal rate in bytes.')
+    parser_tx.add_argument(
+            '-f', '--first-seg', type=int, default=-1,
+            help='First segment number to send.')
+    parser_tx.add_argument(
+            '-l', '--last-seg', type=int,
+            help='Last segment number to send.')
+
     args = parser.parse_args()
-    main(**vars(args))
+    if args.mode == 'tx':
+        send_mode(
+                args.address, args.port, args.iface,
+                args.directory, args.max_rate,
+                args.first_seg, args.last_seg)
+    else:
+        receive_mode(args.address, args.port, args.iface, args.directory)
