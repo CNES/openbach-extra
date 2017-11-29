@@ -118,7 +118,7 @@ def send_mode(address, port, iface, directory, max_rate, first_segment, last_seg
                     if last_segment is None or file_number <= last_segment:
                         files_found.add(Element(file_number, filepath, file_name))
 
-        first_element = Element(first_segment)
+        first_element = Element(first_segment, None, None)
         if first_element not in files_found:
             time.sleep(1)
             continue
@@ -140,7 +140,7 @@ def send_mode(address, port, iface, directory, max_rate, first_segment, last_seg
             first_segment += 1
 
             for event in instance:
-                if event in END_OF_TRANSMISSION_EVENTS:
+                if str(event) in END_OF_TRANSMISSION_EVENTS:
                     break
 
 
