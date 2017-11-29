@@ -102,7 +102,7 @@ def send_mode(address, port, iface, directory, max_rate, first_segment, last_seg
     number_pattern = re.compile(r'2s([0-9]+)\.m4s$')
     files_found = set()
     while True:
-        for root, dirs, files in os.walk(directory, topdown=True):
+        for root, dirs, files in os.walk(os.path.expanduser(directory), topdown=True):
             for filename in files:
                 filepath = os.path.join(root, filename)
                 file_name = filepath[len(directory):].lstrip('/')
@@ -148,7 +148,7 @@ def receive_mode(address, port, iface, directory):
     connect_to_collect_agent()
 
     os.nice(-10)
-    path = os.path.abspath(directory)
+    path = os.path.abspath(os.path.expanduser(directory))
     instance = pynorm.Instance()
     instance.setCacheDirectory(path)
     session = instance.createSession(address, port)
@@ -181,24 +181,30 @@ if __name__ == '__main__':
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
-            'iface', help='The inteface to transmit multicast on.')
+            'iface', help='The interface to transmit multicast on.')
     parser.add_argument(
             'directory', help='Directory list to transmit.')
-    parser.add_argument(
-            '-a', '--address', default='224.1.2.3',
-            help='The IP address to bind to')
-    parser.add_argument(
-            '-p', '--port', type=int, default=6003,
-            help='The port number to listen on')
     subparsers = parser.add_subparsers(
             dest='mode', metavar='mode',
             help='the mode to operate')
     subparsers.required = True
 
-    subparsers.add_parser('rx', help='operate on mode reception')
+    parser_rx = subparsers.add_parser('rx', help='operate on mode reception')
+    parser_rx.add_argument(
+            '-a', '--address', default='224.1.2.3',
+            help='The IP address to bind to')
+    parser_rx.add_argument(
+            '-p', '--port', type=int, default=6003,
+            help='The port number to listen on')
 
     parser_tx = subparsers.add_parser(
             'tx', help='operate on mode transmission')
+    parser_tx.add_argument(
+            '-a', '--address', default='224.1.2.3',
+            help='The IP address to bind to')
+    parser_tx.add_argument(
+            '-p', '--port', type=int, default=6003,
+            help='The port number to listen on')
     parser_tx.add_argument(
             '-m', '--max-rate', type=int, required=True,
             help='Maximal rate in bytes.')
