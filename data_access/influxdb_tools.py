@@ -279,16 +279,13 @@ def tag_query(tag_name, job=None, condition=None):
 
 def parse_influx(response):
     """Extract out relevant informations from an InfluxDB's response"""
-    for result in response['results']:
-        if not result:
-            continue
-        for serie in result['series']:
-            if not serie:
-                continue
-            name = serie['name']
-            fields = serie['columns']
-            for values in serie['values']:
-                yield name, {f: v for f, v in zip(fields, values) if v is not None}
+    for result in response.get('results', []):
+        for serie in result.get('series', []):
+            with suppress(KeyError):
+                name = serie['name']
+                fields = serie['columns']
+                for values in serie['values']:
+                    yield name, {f: v for f, v in zip(fields, values) if v is not None}
 
 
 def parse_statistics(influx_result):
