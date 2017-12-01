@@ -39,11 +39,17 @@ __credits__ = '''Contributors:
 
 import os
 import re
+import ast
 import time
 import syslog
 import argparse
+import threading
+import socketserver
 from random import randint
+from contextlib import suppress
+from collections import defaultdict
 from functools import total_ordering
+from tempfile import NamedTemporaryFile
 
 import pynorm
 import collect_agent
@@ -76,25 +82,84 @@ class Element:
         return hash(self.file_number)
 
 
+class CustomUnixDatagramServer(socketserver.UnixDatagramServer):
+    def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):
+        self.report = None
+        self.current_suffix = None
+        super().__init__(server_address, RequestHandlerClass, bind_and_activate)
+
+    def server_close(self):
+        """ Remove Unix socket on exit """
+        fn = self.socket.getsockname()
+        super().server_close()
+        with suppress(FileNotFoundError):
+            os.remove(fn)
+
+
+class UDPUnixRequestHandler(socketserver.DatagramRequestHandler):
+    def handle(self):
+        def load(line):
+            for statistic in msg.split(' '):
+                with suppress(ValueError):
+                    key, value = statistic.split('>')
+                    if key == 'suffix':
+                        self.server.current_suffix = int(value)
+                    else:
+                        self.server.report[self.server.current_suffix].update(
+                                {key: float(value)})
+
+        msg = self.rfile.read().decode()[:-2]
+        # Start of new message
+        if not self.server.report and msg.startswith('Proto Info: REPORT'):
+            self.server.report = defaultdict(dict)
+            self.server.current_suffix = None
+            load(msg)
+        # End of message
+        elif self.server.report and msg.startswith('Proto Info: ******'):
+            if len(self.server.report) == 1:
+                # Only None  to report. Report it
+                stats = self.server.report[None]
+                timestamp = int(stats['time'] * 1000)
+                del(stats['time'])
+                collect_agent.send_stat(timestamp, **stats)
+            else:
+                for suffix in filter(None, self.server.report):
+                    stats = self.server.report[suffix]
+                    stats.update(self.server.report[None])
+                    timestamp = int(stats['time'] * 1000)
+                    del(stats['time'])
+                    collect_agent.send_stat(timestamp, suffix=suffix, **stats)
+            self.server.report = None
+        # Just another line under the sunshine
+        elif self.server.report and msg.startswith('Proto Info:'):
+            load(msg)
+
+
+    def finish(self):
+        pass
+
+
 def connect_to_collect_agent():
-    collect_agent.register_collect(
+    success = collect_agent.register_collect(
             '/opt/openbach/agent/jobs/norm/norm_rstats_filter.conf')
+    if not success:
+        collect_agent.send_log(syslog.LOG_ERR, "Error connecting to collect-agent")
+        sys.exit(1)
 
     collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job NORM')
 
-
-def send_mode(address, port, iface, directory, max_rate, first_segment, last_segment):
-    connect_to_collect_agent()
-
+def send_mode(address, port, iface, directory, max_rate, first_segment, last_segment, pipe):
     collect_agent.send_log(
             syslog.LOG_DEBUG,
             'NORM will send {} from segment '
             'number {}'.format(address, first_segment))
 
     instance = pynorm.Instance()
+    instance.openDebugPipe(pipe)
+    instance.setDebugLevel(3)
     session = instance.createSession(address, port)
+    session.setReportInterval(1)
     session.setMulticastInterface(iface)
-
     session.setCongestionControl(True, True)
     session.setTxRateBounds(10000, max_rate)
     session.startSender(randint(0, 1000), 1024**2, 1400, 64, 16)
@@ -144,14 +209,15 @@ def send_mode(address, port, iface, directory, max_rate, first_segment, last_seg
                     break
 
 
-def receive_mode(address, port, iface, directory):
-    connect_to_collect_agent()
-
+def receive_mode(address, port, iface, directory, pipe):
     os.nice(-10)
     path = os.path.abspath(os.path.expanduser(directory))
     instance = pynorm.Instance()
+    instance.openDebugPipe(pipe)
+    instance.setDebugLevel(3)
     instance.setCacheDirectory(path)
     session = instance.createSession(address, port)
+    session.setReportInterval(1)
     session.setMulticastInterface(iface)
     session.startReceiver(1024 * 1024)
 
@@ -174,6 +240,27 @@ def receive_mode(address, port, iface, directory):
                     syslog.LOG_DEBUG,
                     'File {} aborted'.format(event.object.filename))
 
+def main(args):
+    connect_to_collect_agent()
+    with NamedTemporaryFile(prefix='normSocket', dir='/tmp/') as tempfn:
+        pass
+    server = CustomUnixDatagramServer(tempfn.name, UDPUnixRequestHandler)
+    server_thread = threading.Thread(target=server.serve_forever)
+    server_thread.start()
+    try:
+        if args.mode == 'tx':
+            send_mode(
+                    args.address, args.port, args.iface,
+                    args.directory, args.max_rate,
+                    args.first_seg, args.last_seg, tempfn.name)
+        else:
+            receive_mode(
+                    args.address, args.port, args.iface,
+                    args.directory, tempfn.name)
+    finally:
+        server.shutdown()
+        server.server_close()
+        server_thread.join()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -216,10 +303,4 @@ if __name__ == '__main__':
             help='Last segment number to send.')
 
     args = parser.parse_args()
-    if args.mode == 'tx':
-        send_mode(
-                args.address, args.port, args.iface,
-                args.directory, args.max_rate,
-                args.first_seg, args.last_seg)
-    else:
-        receive_mode(args.address, args.port, args.iface, args.directory)
+    main(args)

@@ -52,7 +52,7 @@
 - name: Compile and install NORM
   command: chdir=/tmp/norm-1.5r6/ {{ item }}
   with_items:
-    - python3 waf configure
+    - python3 waf configure --debug
     - python3 waf
   when: is_installed.stat.exists == False
 
