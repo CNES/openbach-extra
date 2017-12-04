@@ -440,8 +440,9 @@ class InfluxDBConnection(InfluxDBCommunicator):
         condition = tags_to_condition(scenario, agent, job_instance, suffix)
         query = '{} LIMIT 1'.format(select_query(job, condition=condition))
         response = self.sql_query(query)
-        (_, origin_stat), = parse_influx(response)
-        return origin_stat['time']
+        with suppress(ValueError, KeyError):
+            (_, origin_stat), = parse_influx(response)
+            return origin_stat['time']
 
     def suffixes(self, job=None, scenario=None, agent=None, job_instance=None):
         """List the available suffixes in InfluxDB
