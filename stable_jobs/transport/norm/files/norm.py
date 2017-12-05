@@ -39,7 +39,7 @@ __credits__ = '''Contributors:
 
 import os
 import re
-import ast
+import sys
 import time
 import syslog
 import argparse
@@ -83,70 +83,73 @@ class Element:
 
 
 class CustomUnixDatagramServer(socketserver.UnixDatagramServer):
-    def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):
-        self.report = None
+    def __init__(self, server_address, handler_class, bind_and_activate=True):
+        super().__init__(server_address, handler_class, bind_and_activate)
         self.current_suffix = None
-        super().__init__(server_address, RequestHandlerClass, bind_and_activate)
+        self.report = None
 
     def server_close(self):
-        """ Remove Unix socket on exit """
-        fn = self.socket.getsockname()
+        """Remove Unix socket on exit"""
+        socket_file = self.socket.getsockname()
         super().server_close()
         with suppress(FileNotFoundError):
-            os.remove(fn)
+            os.remove(socket_file)
+
+    def parse_statistic(self, line):
+        for statistic in line.split():
+            with suppress(ValueError):
+                key, value = statistic.split('>')
+                if key == 'suffix':
+                    self.current_suffix = int(value)
+                else:
+                    self.report[self.current_suffix][key] = float(value)
+
+    def new_report(self):
+        assert self.report is None
+        self.current_suffix = None
+        self.report = defaultdict(dict)
+
+    def end_report(self):
+        assert self.report is not None
+
+        common_stats = self.report.get(None, {})
+        for suffix in filter(None, self.report):
+            stats = self.report[suffix]
+            stats.update(common_stats)
+            timestamp = int(stats.pop('time') * 1000)
+            collect_agent.send_stat(timestamp, suffix=suffix, **stats)
+
+        # Send common stats without suffix
+        timestamp = int(common_stats.pop('time') * 1000)
+        collect_agent.send_stat(timestamp, **stats)
+        self.server.report = None
 
 
 class UDPUnixRequestHandler(socketserver.DatagramRequestHandler):
     def handle(self):
-        def load(line):
-            for statistic in msg.split(' '):
-                with suppress(ValueError):
-                    key, value = statistic.split('>')
-                    if key == 'suffix':
-                        self.server.current_suffix = int(value)
-                    else:
-                        self.server.report[self.server.current_suffix].update(
-                                {key: float(value)})
-
         msg = self.rfile.read().decode()[:-2]
-        # Start of new message
-        if not self.server.report and msg.startswith('Proto Info: REPORT'):
-            self.server.report = defaultdict(dict)
-            self.server.current_suffix = None
-            load(msg)
-        # End of message
-        elif self.server.report and msg.startswith('Proto Info: ******'):
-            if len(self.server.report) == 1:
-                # Only None  to report. Report it
-                stats = self.server.report[None]
-                timestamp = int(stats['time'] * 1000)
-                del(stats['time'])
-                collect_agent.send_stat(timestamp, **stats)
-            else:
-                for suffix in filter(None, self.server.report):
-                    stats = self.server.report[suffix]
-                    stats.update(self.server.report[None])
-                    timestamp = int(stats['time'] * 1000)
-                    del(stats['time'])
-                    collect_agent.send_stat(timestamp, suffix=suffix, **stats)
-            self.server.report = None
-        # Just another line under the sunshine
-        elif self.server.report and msg.startswith('Proto Info:'):
-            load(msg)
-
-
-    def finish(self):
-        pass
+        if msg.startswith('Proto Info: REPORT'):
+            # Start of new message
+            self.server.new_report()
+            self.server.parse_statistic(msg)
+        elif msg.startswith('Proto Info: ******'):
+            # End of message
+            self.server.end_report()
+        elif msg.startswith('Proto Info:'):
+            # Just another line under the sunshine
+            self.server.parse_statistic(msg)
 
 
 def connect_to_collect_agent():
     success = collect_agent.register_collect(
             '/opt/openbach/agent/jobs/norm/norm_rstats_filter.conf')
     if not success:
-        collect_agent.send_log(syslog.LOG_ERR, "Error connecting to collect-agent")
+        message = 'Error connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(1)
 
     collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job NORM')
+
 
 def send_mode(address, port, iface, directory, max_rate, first_segment, last_segment, pipe):
     collect_agent.send_log(
@@ -167,7 +170,7 @@ def send_mode(address, port, iface, directory, max_rate, first_segment, last_seg
     number_pattern = re.compile(r'2s([0-9]+)\.m4s$')
     files_found = set()
     while True:
-        for root, dirs, files in os.walk(os.path.expanduser(directory), topdown=True):
+        for root, dirs, files in os.walk(os.path.expanduser(directory)):
             for filename in files:
                 filepath = os.path.join(root, filename)
                 file_name = filepath[len(directory):].lstrip('/')
@@ -240,11 +243,13 @@ def receive_mode(address, port, iface, directory, pipe):
                     syslog.LOG_DEBUG,
                     'File {} aborted'.format(event.object.filename))
 
+
 def main(args):
     connect_to_collect_agent()
-    with NamedTemporaryFile(prefix='normSocket', dir='/tmp/') as tempfn:
-        pass
-    server = CustomUnixDatagramServer(tempfn.name, UDPUnixRequestHandler)
+    with NamedTemporaryFile(prefix='normSocket', dir='/tmp/') as temp_file:
+        filename = temp_file.name
+
+    server = CustomUnixDatagramServer(filename, UDPUnixRequestHandler)
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.start()
     try:
@@ -252,15 +257,16 @@ def main(args):
             send_mode(
                     args.address, args.port, args.iface,
                     args.directory, args.max_rate,
-                    args.first_seg, args.last_seg, tempfn.name)
+                    args.first_seg, args.last_seg, filename)
         else:
             receive_mode(
                     args.address, args.port, args.iface,
-                    args.directory, tempfn.name)
+                    args.directory, filename)
     finally:
         server.shutdown()
         server.server_close()
         server_thread.join()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
