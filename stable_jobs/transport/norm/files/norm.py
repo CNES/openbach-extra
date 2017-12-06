@@ -121,8 +121,8 @@ class CustomUnixDatagramServer(socketserver.UnixDatagramServer):
 
         # Send common stats without suffix
         timestamp = int(common_stats.pop('time') * 1000)
-        collect_agent.send_stat(timestamp, **stats)
-        self.server.report = None
+        collect_agent.send_stat(timestamp, **common_stats)
+        self.report = None
 
 
 class UDPUnixRequestHandler(socketserver.DatagramRequestHandler):
