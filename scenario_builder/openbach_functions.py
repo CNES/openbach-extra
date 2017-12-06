@@ -111,7 +111,7 @@ class StopJobInstance(OpenBachFunction):
         """
 
         context = super().build(functions)
-        context['stop_job_instance'] = {
+        context['stop_job_instances'] = {
             'openbach_function_ids': list(
                 safe_indexor(functions, self.openbach_function_indexes))}
         return context
