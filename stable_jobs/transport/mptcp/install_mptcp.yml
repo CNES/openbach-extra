@@ -81,6 +81,7 @@
 - name: Update grub
   shell: update-grub
   become: yes
+  when: grub_conf.changed
 
 - name: Restart machine
   shell: sleep 5 && shutdown -r now
