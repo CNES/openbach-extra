@@ -123,12 +123,12 @@ def main(ifaces, enable, checksum, syn_retries, path_manager, scheduler):
                              "on"])
         except Exception as ex:
             collect_agent.send_log(
-                    syslog.LOG_ERROR,
+                    syslog.LOG_ERR,
                     'Error when setting  multipath on interface {}: {}'
                     .format(iface, ex))
         else:
             collect_agent.send_log(
-                    syslog.LOG_ERROR,
+                    syslog.LOG_ERR,
                     'Enabled multipath on interface {}'
                     .format(iface))
     # Disable the rest of the interfaces
@@ -138,12 +138,12 @@ def main(ifaces, enable, checksum, syn_retries, path_manager, scheduler):
                              "off"])
         except Exception as ex:
             collect_agent.send_log(
-                    syslog.LOG_ERROR,
+                    syslog.LOG_ERR,
                     'Error when disabling  multipath on interface {}: {}'
                     .format(iface, ex))
         else:
             collect_agent.send_log(
-                    syslog.LOG_ERROR,
+                    syslog.LOG_ERR,
                     'Disabled multipath on interface {}'
                     .format(iface))
             
