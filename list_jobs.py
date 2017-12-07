@@ -51,14 +51,15 @@ class ListJobs(FrontendBase):
                 help='the threshold to decide if a string '
                 'matches the job name or keywords')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         search = self.args.string_to_search
         ratio = self.args.match_ratio
 
+        action = self.request
         if search:
-            self.request('GET', 'job', ratio=ratio, string_to_search=search)
-        else:
-            self.request('GET', 'job')
+            action = partial(action, ratio=ratio, string_to_search=search)
+
+        return action('GET', 'job', show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

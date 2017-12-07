@@ -36,6 +36,8 @@ __credits__ = '''Contributors:
 '''
 
 
+from functools import partial
+
 from frontend import FrontendBase
 
 
@@ -46,13 +48,16 @@ class KillAll(FrontendBase):
                 '-d', '--date', nargs=2, metavar=('DATE', 'TIME'),
                 help='date of the execution')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         date = self.date_to_timestamp()
 
-        if date is None:
-            self.request('POST', 'job_instance', action='kill')
-        else:
-            self.request('POST', 'job_instance', action='kill', date=date)
+        action = self.request
+        if date is not None:
+            action = partial(action, date=date)
+
+        return action(
+                'POST', 'job_instance', action='kill',
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

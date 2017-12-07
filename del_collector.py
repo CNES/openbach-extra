@@ -44,12 +44,12 @@ class DeleteCollector(FrontendBase):
         super().__init__('OpenBACH — Delete Collector')
         self.parser.add_argument('collector', help='IP address of the collector')
 
-    def execute(self, collector):
+    def execute(self, show_response_content=True):
         address = self.args.collector
         self.request(
                 'DELETE', 'collector/{}'.format(address),
                 show_response_content=False)
-        self.wait_for_success('del')
+        self.wait_for_success('del', show_response_content=show_response_content)
 
     def query_state(self):
         address = self.args.collector

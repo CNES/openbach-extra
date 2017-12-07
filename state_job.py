@@ -47,11 +47,13 @@ class StateJob(FrontendBase):
                 'agent',
                 help='IP address of the agent the job is installed on')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         job = self.args.name
         address = self.args.agent
 
-        self.request('GET', 'job/{}/state/'.format(job), address=address)
+        return self.request(
+                'GET', 'job/{}/state/'.format(job), address=address,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

@@ -49,18 +49,18 @@ class ListScenarioInstances(FrontendBase):
                 '-p', '--project',
                 help='name of the project the scenario is associated with')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         scenario = self.args.scenario
         project = self.args.project
 
-        if project is None:
-            self.request('GET', 'scenario_instance')
-        else:
-            if scenario is None:
-                self.request('GET', 'project/{}/scenario_instance/'.format(project))
-            else:
-                route = 'project/{}/scenario/{}/scenario_instance/'.format(project, scenario)
-                self.requset('GET', route)
+        route = 'scenario_instance/'
+        if project is not None:
+            prepend = 'project/{}/'.format(project)
+            if scenario is not None:
+                prepend = '{}scenario/{}/'.format(prepend, scenario)
+            route = prepend + route
+
+        return self.request('GET', route, show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

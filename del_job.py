@@ -44,9 +44,11 @@ class DeleteJob(FrontendBase):
         super().__init__('OpenBACH — DeleteJob')
         self.parser.add_argument('name', help='name of the job')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         job_name = self.args.name
-        self.request('DELETE', 'job/{}/'.format(job_name))
+        return self.request(
+                'DELETE', 'job/{}/'.format(job_name),
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

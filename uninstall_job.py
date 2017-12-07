@@ -49,12 +49,13 @@ class UninstallJob(FrontendBase):
                 'the job should be uninstalled. May be specified several '
                 'times to uninstall the job on different agents.')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         job = self.args.name
         agents = self.args.agent
-        self.request(
+        return self.request(
                 'POST', 'job/{}/'.format(job),
-                action='uninstall', addresses=agents)
+                action='uninstall', addresses=agents,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

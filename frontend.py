@@ -164,7 +164,7 @@ class FrontendBase:
             else:
                 return int(date.timestamp() * 1000)
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         pass
 
     def request(self, verb, route, show_response_content=True, **kwargs):
@@ -178,7 +178,7 @@ class FrontendBase:
             pretty_print(response)
         return response
 
-    def wait_for_success(self, status=None, valid_statuses=(200, 204)):
+    def wait_for_success(self, status=None, valid_statuses=(200, 204), show_response_content=True):
         while True:
             sleep(self.WAITING_TIME_BETWEEN_STATES_POLL)
             response = self.query_state()
@@ -195,8 +195,15 @@ class FrontendBase:
                 content = content[status]
             returncode = content['returncode']
             if returncode != 202:
-                pprint.pprint(content['response'], width=200)
-                exit(returncode in valid_statuses)
+                if show_response_content:
+                    pprint.pprint(content['response'], width=200)
+                    exit(returncode in valid_statuses)
+                elif returncode not in valid_statuses:
+                    raise ActionFailedError(content)
 
     def query_state(self):
         return self.session.get(self.base_url)
+
+
+class ActionFailedError(Exception):
+    pass

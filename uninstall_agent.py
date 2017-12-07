@@ -44,12 +44,12 @@ class UninstallAgent(FrontendBase):
         super().__init__('OpenBACH — Uninstall Agent')
         self.parser.add_argument('agent', help='IP address of the agent')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         address = self.args.agent
         self.request(
                 'DELETE', 'agent/{}/'.format(address),
                 show_response_content=False)
-        self.wait_for_success('uninstall')
+        self.wait_for_success('uninstall', show_response_content=show_response_content)
 
     def query_state(self):
         address = self.args.agent

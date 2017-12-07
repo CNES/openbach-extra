@@ -46,10 +46,12 @@ class StatusScenarioInstance(FrontendBase):
                 'instance_id',
                 help='ID of the scenario instance to query')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         scenario = self.args.instance_id
 
-        self.request('GET', 'scenario_instance/{}/'.format(scenario))
+        return self.request(
+                'GET', 'scenario_instance/{}/'.format(scenario),
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

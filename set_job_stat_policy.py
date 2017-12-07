@@ -62,7 +62,7 @@ class SetJobStatisticsPolicy(FrontendBase):
                 '-d', '--date', metavar=('DATE', 'TIME'),
                 nargs=2, help='date of the execution')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         agent = self.args.agent
         job = self.args.name
         statistic = self.args.stat_name
@@ -81,9 +81,10 @@ class SetJobStatisticsPolicy(FrontendBase):
         if date is not None:
             action = partial(action, date=date)
 
-        action(
+        return action(
                 'POST', 'job/{}'.format(job), action='stat_policy',
-                stat_name=statistic, addresses=[agent])
+                stat_name=statistic, addresses=[agent],
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

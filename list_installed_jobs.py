@@ -36,6 +36,8 @@ __credits__ = '''Contributors:
 '''
 
 
+from functools import partial
+
 from frontend import FrontendBase
 
 
@@ -47,14 +49,17 @@ class ListInstalledJobs(FrontendBase):
                 '-u', '--update', action='store_true',
                 help='contact the agent to refresh the jobs list')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         agent = self.args.agent
         update = self.args.update
 
+        action = self.request
         if update:
-            self.request('GET', 'job', address=agent, update='')
-        else:
-            self.request('GET', 'job', address=agent)
+            action = partial(action, update='')
+
+        return action(
+                'GET', 'job', address=agent,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

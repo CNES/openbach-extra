@@ -46,13 +46,13 @@ class ListScenarios(FrontendBase):
                 '-p', '--project',
                 help='name of the project whose scenarios should be listed')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         project = self.args.project
+        route = 'scenario/'
+        if project is not None:
+            route = 'project/{}/{}'.format(project, route)
 
-        if project is None:
-            self.request('GET', 'scenario')
-        else:
-            self.request('GET', 'project/{}/scenario/'.format(project))
+        return self.request('GET', route, show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

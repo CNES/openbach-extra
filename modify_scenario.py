@@ -62,16 +62,17 @@ class ModifyScenario(FrontendBase):
             except ValueError:
                 self.parser.error('invalid JSON data in {}'.format(scenario.name))
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         scenario = self.args.scenario
         name = self.args.name
         project = self.args.project
+        route = 'scenario/{}/'.format(name)
+        if project is not None:
+            route = 'project/{}/{}'.format(project, route)
 
-        if project is None:
-            self.request('PUT', 'scenario/{}/'.format(name), **scenario)
-        else:
-            route = 'project/{}/scenario/{}/'.format(project, name)
-            self.request('PUT', route, **scenario)
+        return self.request(
+                'PUT', route, **scenario,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

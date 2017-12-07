@@ -59,11 +59,13 @@ class ModifyProject(FrontendBase):
             except ValueError:
                 self.parser.error('invalid JSON data in {}'.format(project.name))
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         name = self.args.name
         project = self.args.project
 
-        self.request('PUT', 'project/{}/'.format(name), **project)
+        return self.request(
+                'PUT', 'project/{}/'.format(name), **project,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

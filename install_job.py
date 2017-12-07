@@ -48,12 +48,13 @@ class InstallJob(FrontendBase):
                 'job should be installed. May be specified several '
                 'times to install the job on different agents.')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         job = self.args.name
         agents = self.args.agent
-        self.request(
+        return self.request(
                 'POST', 'job/{}/'.format(job),
-                action='install', addresses=agents)
+                action='install', addresses=agents,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

@@ -69,7 +69,7 @@ class InstallAgent(FrontendBase):
             password = getpass.getpass(prompt)
         self.args.password = password
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         agent = self.args.agent
         collector = self.args.collector
         name = self.args.name
@@ -80,7 +80,7 @@ class InstallAgent(FrontendBase):
                 'POST', 'agent', show_response_content=False,
                 address=agent, name=name, username=username,
                 password=password, collector_ip=collector)
-        self.wait_for_success('install')
+        self.wait_for_success('install', show_response_content=show_response_content)
 
     def query_state(self):
         address = self.args.agent

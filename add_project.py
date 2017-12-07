@@ -58,10 +58,12 @@ class AddProject(FrontendBase):
             except ValueError:
                 self.parser.error('invalid JSON data in {}'.format(project.name))
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         project = self.args.project
 
-        self.request('POST', 'project', **project)
+        return self.request(
+                'POST', 'project', **project,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

@@ -65,7 +65,7 @@ class RestartJobInstance(FrontendBase):
                 '-i', '--interval', type=int,
                 help='interval of the execution')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         instance_id = self.args.job_instance_id
         arguments = dict(self.args.argument)
         date = self.date_to_timestamp()
@@ -77,9 +77,10 @@ class RestartJobInstance(FrontendBase):
         if date is not None:
             action = partial(action, date=date)
 
-        action(
+        return action(
                 'POST', 'job_instance/{}/'.format(instance_id),
-                action='restart', instance_args=arguments)
+                action='restart', instance_args=arguments,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

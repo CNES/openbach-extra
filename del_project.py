@@ -44,10 +44,12 @@ class DeleteProject(FrontendBase):
         super().__init__('OpenBACH — Delete a Project')
         self.parser.add_argument('name', help='name of the project to delete')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         project = self.args.name
 
-        self.request('DELETE', 'project/{}/'.format(project))
+        return self.request(
+                'DELETE', 'project/{}/'.format(project),
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

@@ -56,7 +56,7 @@ class SetJobLogSeverity(FrontendBase):
                 '-d', '--date', metavar=('DATE', 'TIME'),
                 nargs=2, help='date of the execution')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         agent = self.args.agent
         job = self.args.name
         severity = self.args.severity
@@ -69,9 +69,10 @@ class SetJobLogSeverity(FrontendBase):
         if date is not None:
             action = partial(action, date=date)
 
-        action(
+        return action(
                 'POST', 'job/{}/'.format(job), action='log_severity',
-                addresses=[agent], severity=severity)
+                addresses=[agent], severity=severity,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

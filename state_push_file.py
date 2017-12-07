@@ -50,14 +50,15 @@ class StatePushFile(FrontendBase):
                 help='path on the agent the file has been pushed to')
         self.parser.add_argument('name', help='name of the file')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         address = self.args.agent
         filename = self.args.name
         path = self.args.path
 
-        self.request(
+        return self.request(
                 'GET', 'file/state/',
-                agent_ip=address, path=path, filename=filename)
+                agent_ip=address, path=path, filename=filename,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

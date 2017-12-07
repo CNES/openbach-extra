@@ -44,9 +44,11 @@ class GetJobStats(FrontendBase):
         super().__init__('OpenBACH — Display Job Statistics')
         self.parser.add_argument('name', help='name of the job to query')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         job = self.args.name
-        self.request('GET', 'job/{}/'.format(job), type='statistics')
+        return self.request(
+                'GET', 'job/{}/'.format(job), type='statistics',
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

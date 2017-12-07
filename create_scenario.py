@@ -61,14 +61,14 @@ class CreateScenario(FrontendBase):
             except ValueError:
                 self.parser.error('invalid JSON data in {}'.format(scenario.name))
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         scenario = self.args.scenario
         project = self.args.project
+        route = 'scenario' if project is None else 'project/{}/scenario/'.format(project)
 
-        if project is None:
-            self.request('POST', 'scenario', **scenario)
-        else:
-            self.request('POST', 'project/{}/scenario/'.format(project), **scenario)
+        return self.request(
+                'POST', route, **scenario,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

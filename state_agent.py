@@ -44,10 +44,12 @@ class StateAgent(FrontendBase):
         super().__init__('OpenBACH — State of an Agent')
         self.parser.add_argument('agent', help='IP address of the agent')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         address = self.args.agent
 
-        self.request('GET', 'agent/{}/state/'.format(address))
+        return self.request(
+                'GET', 'agent/{}/state/'.format(address),
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

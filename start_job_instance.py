@@ -64,7 +64,7 @@ class StartJobInstance(FrontendBase):
                 '-i', '--interval', type=int,
                 help='interval of the execution')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         agent = self.args.agent
         job_name = self.args.name
         arguments = dict(self.args.argument)
@@ -77,9 +77,10 @@ class StartJobInstance(FrontendBase):
         if date is not None:
             action = partial(action, date=date)
 
-        action(
+        return action(
                 'POST', 'job_instance', action='start',
-                agent_ip=agent, job_name=job_name, instance_args=arguments)
+                agent_ip=agent, job_name=job_name, instance_args=arguments,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

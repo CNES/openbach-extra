@@ -47,11 +47,13 @@ class AssignCollector(FrontendBase):
                 'collector',
                 help='IP address of the new collector to assign')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         agent = self.args.agent
         collector = self.args.collector
 
-        self.request('POST', 'agent/{}/'.format(agent), collector_ip=collector)
+        return self.request(
+                'POST', 'agent/{}/'.format(agent), collector_ip=collector,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

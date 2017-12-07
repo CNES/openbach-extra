@@ -38,7 +38,7 @@ __credits__ = '''Contributors:
 
 from argparse import FileType
 
-from frontend import FrontendBase
+from frontend import FrontendBase, pretty_print
 
 
 class PushFile(FrontendBase):
@@ -55,7 +55,7 @@ class PushFile(FrontendBase):
                 help='path of a file on the current '
                 'computer to be sent to the agent')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         agent = self.args.agent
         remote_path = self.args.remote_path
         local_path = self.args.path
@@ -67,14 +67,18 @@ class PushFile(FrontendBase):
 
         if local_path is not None:
             form_data['local_path'] = local_path
-            self.session.post(self.base_url + 'file', data=form_data)
+            response = self.session.post(self.base_url + 'file', data=form_data)
         else:
             local_file = self.args.local_file
             with local_file:
-                self.session.post(
+                response = self.session.post(
                         self.base_url + 'file',
                         data=form_data,
                         files={'file': local_file})
+
+        if show_response_content:
+            pretty_print(response)
+        return response
 
 
 if __name__ == '__main__':

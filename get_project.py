@@ -44,10 +44,12 @@ class GetProject(FrontendBase):
         super().__init__('OpenBACH — Get the Content of a Project')
         self.parser.add_argument('name', help='name of the project to query')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         project = self.args.name
 
-        self.request('GET', 'project/{}/'.format(project))
+        return self.request(
+                'GET', 'project/{}/'.format(project),
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

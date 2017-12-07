@@ -52,7 +52,7 @@ class ListJobInstances(FrontendBase):
                 help='contact the agent to get the last '
                 'status of the jobs instances')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         agents = self.args.agent
         update = self.args.update
 
@@ -63,7 +63,9 @@ class ListJobInstances(FrontendBase):
         response = self.session.get(
                 self.base_url + 'job_instance',
                 params=urlencode(query_string))
-        pretty_print(response)
+        if show_response_content:
+            pretty_print(response)
+        return response
 
 
 if __name__ == '__main__':

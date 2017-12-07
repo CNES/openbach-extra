@@ -73,7 +73,7 @@ class AddCollector(FrontendBase):
             password = getpass.getpass(prompt)
         self.args.password = password
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         collector = self.args.collector
         name = self.args.name
         logs_port = self.args.logs_port
@@ -89,7 +89,7 @@ class AddCollector(FrontendBase):
         action('POST', 'collector', show_response_content=False,
                username=username, password=password,
                address=collector, name=name)
-        self.wait_for_success('add')
+        self.wait_for_success('add', show_response_content)
 
     def query_state(self):
         address = self.args.collector

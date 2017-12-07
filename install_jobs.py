@@ -61,14 +61,17 @@ class InstallJob(FrontendBase):
         if len(jobs) != len(agents):
             self.parser.error('-j and -a arguments should appear by pairs')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         jobs_names = self.args.job_name
         agents_ips = self.args.agent
 
-        for agents, jobs in zip(agents_ips, jobs_names):
-            self.request(
+        return [
+                self.request(
                     'POST', 'job', action='install',
-                    names=jobs, addresses=agents)
+                    names=jobs, addresses=agents,
+                    show_response_content=show_response_content)
+                for agents, jobs in zip(agents_ips, jobs_names)
+        ]
 
 
 if __name__ == '__main__':

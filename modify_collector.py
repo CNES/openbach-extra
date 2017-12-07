@@ -54,7 +54,7 @@ class ModifyCollector(FrontendBase):
                 '-s', '--stats-port', type=int,
                 help='port for the stats')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         collector = self.args.collector
         logs_port = self.args.logs_port
         stats_port = self.args.stats_port
@@ -64,7 +64,9 @@ class ModifyCollector(FrontendBase):
             action = partial(action, logs_port=logs_port)
         if stats_port is not None:
             action = partial(action, stats_port=stats_port)
-        action('PUT', 'collector/{}'.format(collector))
+        return action(
+                'PUT', 'collector/{}'.format(collector),
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

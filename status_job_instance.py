@@ -36,6 +36,8 @@ __credits__ = '''Contributors:
 '''
 
 
+from functools import partial
+
 from frontend import FrontendBase
 
 
@@ -47,14 +49,17 @@ class StatusJobInstance(FrontendBase):
                 '-u', '--update', action='store_true',
                 help='contact the agent to retrieve the last status')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         instance_id = self.args.job_instance_id
         update = self.args.update
 
+        action = self.request
         if update:
-            self.request('GET', 'job_instance/{}/'.format(instance_id), update='')
-        else:
-            self.request('GET', 'job_instance/{}/'.format(instance_id))
+            action = partial(action, update='')
+
+        return action(
+                'GET', 'job_instance/{}/'.format(instance_id),
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

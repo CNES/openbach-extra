@@ -56,7 +56,7 @@ class StartScenarioInstance(FrontendBase):
                 '-d', '--date', nargs=2, metavar=('DATE', 'TIME'),
                 help='date of the execution')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         scenario = self.args.name
         project = self.args.project
         arguments = dict(self.args.argument)
@@ -67,9 +67,14 @@ class StartScenarioInstance(FrontendBase):
             action = partial(action, date=date)
 
         if project is None:
-            action('POST', 'scenario_instance', scenario_name=scenario)
+            response = action(
+                    'POST', 'scenario_instance', scenario_name=scenario,
+                    show_response_content=show_response_content)
         else:
-            action('POST', 'project/{}/scenario/{}/scenario_instance/'.format(project, scenario))
+            response = action(
+                    'POST', 'project/{}/scenario/{}/scenario_instance/'.format(project, scenario)
+                    show_response_content=show_response_content)
+        return response
 
 
 if __name__ == '__main__':

@@ -46,10 +46,12 @@ class StateJobInstance(FrontendBase):
                 'instance_id', type=int,
                 help='ID of the job instance to query')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         job = self.args.instance_id
 
-        self.request('GET', 'job_instance/{}/state/'.format(job))
+        return self.request(
+                'GET', 'job_instance/{}/state/'.format(job),
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

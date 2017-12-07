@@ -36,6 +36,8 @@ __credits__ = '''Contributors:
 '''
 
 
+from functools import partial
+
 from frontend import FrontendBase
 
 
@@ -49,15 +51,17 @@ class StopScenarioInstance(FrontendBase):
                 '-d', '--date', nargs=2, metavar=('DATE', 'TIME'),
                 help='date of the execution')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         scenario = self.args.instance_id
         date = self.date_to_timestamp()
 
-        route = 'scenario_instance/{}/'.format(scenario)
-        if date is None:
-            self.request('POST', route)
-        else:
-            self.requset('POST', route, date=date)
+        action = self.request
+        if date is not None:
+            action = partial(action, date=date)
+
+        return action(
+                'POST', 'scenario_instance/{}/'.format(scenario),
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

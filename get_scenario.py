@@ -47,14 +47,14 @@ class GetScenario(FrontendBase):
                 '-p', '--project',
                 help='name of the project the scenario is associated with')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         scenario = self.args.name
         project = self.args.project
+        route = 'scenario/{}/'.format(scenario)
+        if project is not None:
+            route = 'project/{}/{}'.format(project, route)
 
-        if project is None:
-            self.request('GET', 'scenario/{}/'.format(scenario))
-        else:
-            self.request('GET', 'project/{}/scenario/{}/'.format(project, scenario))
+        return self.request('GET', route, show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

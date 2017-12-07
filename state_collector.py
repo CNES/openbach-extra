@@ -44,9 +44,12 @@ class StateCollector(FrontendBase):
         super().__init__('OpenBACH — State of a Collector')
         self.parser.add_argument('collector', help='IP address of the collector')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         address = self.args.collector
-        self.request('GET', 'collector/{}/state/'.format(address))
+
+        return self.request(
+                'GET', 'collector/{}/state/'.format(address),
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

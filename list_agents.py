@@ -36,6 +36,8 @@ __credits__ = '''Contributors:
 '''
 
 
+from functools import partial
+
 from frontend import FrontendBase
 
 
@@ -46,12 +48,14 @@ class ListAgents(FrontendBase):
                 '-u', '--update', action='store_true',
                 help='retrieve the status by contacting the agent')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         update = self.args.update
+
+        action = self.request
         if update:
-            self.request('GET', 'agent', update='')
-        else:
-            self.request('GET', 'agent')
+            action = partial(action, update='')
+
+        return action('GET', 'agent', show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

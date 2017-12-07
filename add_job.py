@@ -47,10 +47,12 @@ class AddJob(FrontendBase):
                 'path', help='path to the folder (on the controller) '
                 'containing the install and uninstall playbooks of the job')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         job_name = self.args.name
         path = self.args.path
-        self.request('POST', 'job', name=job_name, path=path)
+        return self.request(
+                'POST', 'job', name=job_name, path=path,
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

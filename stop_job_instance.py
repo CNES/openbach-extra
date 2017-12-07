@@ -51,7 +51,7 @@ class StopJobInstance(FrontendBase):
                 '-d', '--date', metavar=('DATE', 'TIME'),
                 nargs=2, help='date of the execution')
 
-    def execute(self):
+    def execute(self, show_response_content=True):
         instance_ids = self.args.job_instance_id
         date = self.date_to_timestamp()
 
@@ -59,7 +59,9 @@ class StopJobInstance(FrontendBase):
         if date is not None:
             action = partial(action, date=date)
 
-        action('POST', 'job_instance', action='stop', job_instance_ids=instance_ids)
+        return action(
+                'POST', 'job_instance', job_instance_ids=instance_ids,
+                action='stop', show_response_content=show_response_content)
 
 
 if __name__ == '__main__':
