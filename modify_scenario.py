@@ -53,8 +53,8 @@ class ModifyScenario(FrontendBase):
                 '-p', '--project',
                 help='name of the project the scenario is associated with')
 
-    def parse(self):
-        super().parse()
+    def parse(self, args=None):
+        super().parse(args)
         scenario = self.args.scenario
         with scenario:
             try:

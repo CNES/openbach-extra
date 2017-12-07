@@ -49,8 +49,8 @@ class AddProject(FrontendBase):
                 'project', type=FileType('r'),
                 help='path to the definition file of the project')
 
-    def parse(self):
-        super().parse()
+    def parse(self, args=None):
+        super().parse(args)
         project = self.args.project
         with project:
             try:

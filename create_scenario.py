@@ -52,8 +52,8 @@ class CreateScenario(FrontendBase):
                 '-p', '--project',
                 help='name of the project to associate the scenario with')
 
-    def parse(self):
-        super().parse()
+    def parse(self, args=None):
+        super().parse(args)
         scenario = self.args.scenario
         with scenario:
             try:

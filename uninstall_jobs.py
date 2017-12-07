@@ -53,8 +53,8 @@ class UninstallJob(FrontendBase):
                 'set of jobs should be installed. May be specified several '
                 'times to install different sets of jobs on different agents.')
 
-    def parse(self):
-        super().parse()
+    def parse(self, args=None):
+        super().parse(args)
         jobs = self.args.job_name
         agents = self.args.agent
         if len(jobs) != len(agents):

@@ -59,8 +59,8 @@ class InstallAgent(FrontendBase):
                 'if the SSH key of the controller cannot be used to '
                 'connect to the openbach user on the machine.')
 
-    def parse(self):
-        super().parse()
+    def parse(self, args=None):
+        super().parse(args)
         username = self.args.user
         password = None
         if username is not None:

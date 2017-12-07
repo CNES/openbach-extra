@@ -140,8 +140,8 @@ class FrontendBase:
 
         self.session = requests.Session()
 
-    def parse(self):
-        self.args = args = self.parser.parse_args()
+    def parse(self, args=None):
+        self.args = args = self.parser.parse_args(args)
         self.base_url = url = 'http://{}:8000/'.format(args.controller)
         login = args.login
         if login:
