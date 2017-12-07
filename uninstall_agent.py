@@ -53,7 +53,7 @@ class UninstallAgent(FrontendBase):
 
     def query_state(self):
         address = self.args.agent
-        self.request(
+        return self.request(
                 'GET', 'agent/{}/state/'.format(address),
                 show_response_content=False)
 
