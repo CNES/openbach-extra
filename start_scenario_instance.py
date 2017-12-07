@@ -49,7 +49,7 @@ class StartScenarioInstance(FrontendBase):
                 '-p', '--project',
                 help='name of the project the scenario is associated with')
         self.parser.add_argument(
-                '-a', '--argument', nargs=2,
+                '-a', '--argument', nargs=2, default={},
                 action='append', metavar=('NAME', 'VALUE'),
                 help='value of an argument of the scenario')
         self.parser.add_argument(
@@ -72,7 +72,7 @@ class StartScenarioInstance(FrontendBase):
                     show_response_content=show_response_content)
         else:
             response = action(
-                    'POST', 'project/{}/scenario/{}/scenario_instance/'.format(project, scenario)
+                    'POST', 'project/{}/scenario/{}/scenario_instance/'.format(project, scenario),
                     show_response_content=show_response_content)
         return response
 
