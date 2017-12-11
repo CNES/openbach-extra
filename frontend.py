@@ -52,8 +52,8 @@ import getpass
 import datetime
 import argparse
 import warnings
-from sys import exit
 from time import sleep
+from contextlib import suppress
 
 import requests
 
@@ -61,7 +61,7 @@ import requests
 PWD = os.path.dirname(os.path.abspath(__file__))
 
 
-def get_interface():
+def get_interfaces():
     """Return the name of the first network interface found"""
     return next(filter('lo'.__ne__, os.listdir('/sys/class/net/')), 'lo')
 
@@ -76,8 +76,15 @@ def get_ip_address(ifname):
     )[20:24])
 
 
+def get_default_ip_address():
+    """Return the first public IP address found"""
+    for iface in get_interfaces():
+        with suppress(OSError):
+            return get_ip_address(iface)
+
+
 def read_controller_ip(filename=os.path.join(PWD, 'controller')):
-    default_ip = get_ip_address(get_interface())
+    default_ip = get_default_ip_address()
     try:
         stream = open(filename)
     except OSError as e:
@@ -123,8 +130,13 @@ class FrontendBase:
     @classmethod
     def autorun(cls):
         self = cls()
-        self.parse()
-        self.execute()
+        try:
+            self.parse()
+            self.execute()
+        except requests.RequestException as error:
+            self.parser.error(str(error))
+        except ActionFailedError as error:
+            self.parser.error(error.message)
 
     def __init__(self, description):
         self.parser = argparse.ArgumentParser(
@@ -142,6 +154,10 @@ class FrontendBase:
 
     def parse(self, args=None):
         self.args = args = self.parser.parse_args(args)
+        if args.controller is None:
+            self.parser.error(
+                    'error: no controller was specified '
+                    'and the default cannot be found')
         self.base_url = url = 'http://{}:8000/'.format(args.controller)
         login = args.login
         if login:
@@ -186,10 +202,9 @@ class FrontendBase:
             try:
                 content = response.json()
             except ValueError:
-                text = response.text
-                code = response.status_code
-                exit('Server returned non-JSON response with '
-                     'status code {}: {}'.format(code, text))
+                raise ActionFailedError(
+                        'Server returned non-JSON response: {}'.format(response.text),
+                        response.status_code)
 
             if status:
                 content = content[status]
@@ -197,13 +212,14 @@ class FrontendBase:
             if returncode != 202:
                 if show_response_content:
                     pprint.pprint(content['response'], width=200)
-                    exit(returncode in valid_statuses)
-                elif returncode not in valid_statuses:
-                    raise ActionFailedError(content)
+                if returncode not in valid_statuses:
+                    raise ActionFailedError(**content)
 
     def query_state(self):
         return self.session.get(self.base_url)
 
 
 class ActionFailedError(Exception):
-    pass
+    def __init__(self, response, returncode, **kwargs):
+        super().__init__(response)
+        self.message = response
