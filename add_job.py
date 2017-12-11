@@ -36,6 +36,10 @@ __credits__ = '''Contributors:
 '''
 
 
+import os
+import tarfile
+import tempfile
+
 from frontend import FrontendBase
 
 
@@ -43,16 +47,42 @@ class AddJob(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Add Job')
         self.parser.add_argument('name', help='name of the job')
-        self.parser.add_argument(
-                'path', help='path to the folder (on the controller) '
+        job_options = self.parser.add_mutually_exclusive_group(required=True)
+        job_options.add_argument(
+                '-p', '--path', help='path to the folder (on the controller) '
                 'containing the install and uninstall playbooks of the job')
+        job_options.add_argument(
+                '-f', '--files', help='path to the folder (on the local machine) '
+                'containing the install and uninstall playbooks of the job')
+        job_options.add_argument(
+                '-t', '--tarball', help='path to a .tar.gz file containing '
+                'the install and uninstall playbooks of the job')
 
     def execute(self, show_response_content=True):
         job_name = self.args.name
         path = self.args.path
-        return self.request(
-                'POST', 'job', name=job_name, path=path,
-                show_response_content=show_response_content)
+        files = self.args.files
+        tarball = self.args.tarball
+
+        if path is not None:
+            return self.request(
+                    'POST', 'job', name=job_name, path=path,
+                    show_response_content=show_response_content)
+
+        if files is not None:
+            os.chdir(os.path.expanduser(files))
+            with tempfile.NamedTemporaryFile(suffix='.tar.gz') as tar_path:
+                tarball = tar_path.name
+            with tarfile.open(tarball, mode='w:gz') as tar:
+                for filename in os.listdir('.'):
+                    tar.add(filename)
+
+        if tarball is not None:
+            with open(os.path.expanduser(tarball), 'rb') as tarball_file:
+                return self.request(
+                        'POST', 'job', name=job_name,
+                        files={'file': tarball_file},
+                        show_response_content=show_response_content)
 
 
 if __name__ == '__main__':
