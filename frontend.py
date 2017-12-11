@@ -44,6 +44,7 @@ __credits__ = '''Contributors:
 '''
 
 import os
+import json
 import fcntl
 import socket
 import struct
@@ -63,7 +64,8 @@ PWD = os.path.dirname(os.path.abspath(__file__))
 
 def get_interfaces():
     """Return the name of the first network interface found"""
-    return next(filter('lo'.__ne__, os.listdir('/sys/class/net/')), 'lo')
+    yield from filter('lo'.__ne__, os.listdir('/sys/class/net/'))
+    yield 'lo'
 
 
 def get_ip_address(ifname):
@@ -83,7 +85,7 @@ def get_default_ip_address():
             return get_ip_address(iface)
 
 
-def read_controller_ip(filename=os.path.join(PWD, 'controller')):
+def read_controller_configuration(filename=os.path.join(PWD, 'controller')):
     default_ip = get_default_ip_address()
     try:
         stream = open(filename)
@@ -93,20 +95,39 @@ def read_controller_ip(filename=os.path.join(PWD, 'controller')):
                 'IP address instead as the default: \'{}\'.'
                 .format(filename, default_ip))
         warnings.warn(message, RuntimeWarning)
-        return default_ip
+        return default_ip, None, None
 
     with stream:
-        controller_ip = stream.readline().strip()
+        try:
+            content = json.load(stream)
+        except json.JSONDecodeError:
+            stream.seek(0)
+            controller = stream.readline().strip()
+            password = None
+            login = None
+        else:
+            if isinstance(content, str):
+                content = {'controller': content}
+            if not isinstance(content, dict):
+                message = (
+                        'Content of the \'controller\' file '
+                        'is not a JSON string or dictionnary: '
+                        'will consider it as an empty file.')
+                warnings.warn(message, RuntimeWarning)
+                content = {}
+            controller = content.get('controller')
+            password = content.get('password')
+            login = content.get('login')
 
-    if not controller_ip:
+    if not controller:
         message = (
                 'Empty file: \'{}\'. Using one of your '
                 'IP address instead as the default: \'{}\'.'
                 .format(filename, default_ip))
         warnings.warn(message, RuntimeWarning)
-        return default_ip
+        controller = default_ip
 
-    return controller_ip
+    return controller, login, password
 
 
 def pretty_print(response):
@@ -139,16 +160,18 @@ class FrontendBase:
             self.parser.error(error.message)
 
     def __init__(self, description):
+        controller, login, password = read_controller_configuration()
         self.parser = argparse.ArgumentParser(
                 description=description,
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         backend = self.parser.add_argument_group('backend')
         backend.add_argument(
-                '--controller', default=read_controller_ip(),
+                '--controller', default=controller,
                 help='address at which the contoller is listening')
         backend.add_argument(
-                '--login', '--username',
+                '--login', '--username', default=login,
                 help='username used to authenticate as')
+        self._default_password = password
 
         self.session = requests.Session()
 
@@ -161,10 +184,10 @@ class FrontendBase:
         self.base_url = url = 'http://{}:8000/'.format(args.controller)
         login = args.login
         if login:
-            credentials = {
-                    'login': login,
-                    'password': getpass.getpass('OpenBACH password: '),
-            }
+            password = self._default_password
+            if password is None:
+                password = getpass.getpass('OpenBACH password: ')
+            credentials = {'login': login, 'password': password}
             response = self.session.post(url + 'login/', json=credentials)
             response.raise_for_status()
 
