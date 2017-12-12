@@ -49,6 +49,8 @@ def main(dst_ip, port, filename, vb, ab, duration):
     # Connect to collect agent
     conffile = '/opt/openbach/agent/jobs/vlc/vlc.conf'
     collect_agent.register_collect(conffile)
+ 
+    collect_agent.send_log(syslog.LOG_DEBUG, "About to launch VLC job")
 
     # Launch VLC
     if vb or ab:
@@ -59,14 +61,19 @@ def main(dst_ip, port, filename, vb, ab, duration):
     else:
         sout = "#rtp{{dst={0},port={1},sdp=sap}}".format(dst_ip, port)
     
-    cmd = ["vlc", "-q", filename, "-Idummy", "--sout", sout, "--sout-keep", "--loop"]
-    p = subprocess.Popen(cmd)
+    cmd = ["vlc-wrapper", "-q", filename, "-Idummy", "--sout", sout, "--sout-keep", "--loop"]
+    try:
+        p = subprocess.Popen(cmd, stderr=subprocess.PIPE)
+    except (IndexError, ValueError) as ex:
+        collect_agent.send_log(syslog.LOG_ERR, "Problem when launching VLC: {}".format(ex))
+
     if duration == 0:
         p.wait()
     else:
         time.sleep(duration)
         p.kill()
- 
+    if p.returncode == 1:
+        collect_agent.send_log(syslog.LOG_ERR, "VLC has unexpectedly exited because: {}".format(p.stderr.read().decode()))
 
 if __name__ == "__main__":
     # Define usage

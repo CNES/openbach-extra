@@ -37,10 +37,6 @@
   apt: name=vlc state=present
   become: yes
 
-- name: Allow root to run vlc
-  replace: destfile=/usr/bin/vlc regexp=geteuid replace=getppid
-  become: yes
-   
 - name: Create vlc repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
   
