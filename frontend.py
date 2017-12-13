@@ -237,6 +237,7 @@ class FrontendBase:
                     pprint.pprint(content['response'], width=200)
                 if returncode not in valid_statuses:
                     raise ActionFailedError(**content)
+                return
 
     def query_state(self):
         return self.session.get(self.base_url)
