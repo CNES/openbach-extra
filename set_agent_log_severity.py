@@ -26,12 +26,11 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function set_job_log_severity"""
+"""Call the openbach-function set_agent_log_severity"""
 
 
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
- * Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
@@ -41,39 +40,31 @@ from functools import partial
 from frontend import FrontendBase
 
 
-class SetJobLogSeverity(FrontendBase):
+class SetAgentLogSeverity(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Update Log Severity of a Job')
+        super().__init__('OpenBACH — Update Log Severity of an Agent')
         self.parser.add_argument('agent', help='IP address of the agent')
-        self.parser.add_argument('name', help='name of the job to update')
         self.parser.add_argument(
                 'severity', choices=range(1, 5), type=int,
                 help='severity up to which logs are sent to the collector')
         self.parser.add_argument(
                 '-l', '--local-severity', choices=range(1, 5), type=int,
                 help='severity up to which logs are saved on the agent')
-        self.parser.add_argument(
-                '-d', '--date', metavar=('DATE', 'TIME'),
-                nargs=2, help='date of the execution')
 
     def execute(self, show_response_content=True):
         agent = self.args.agent
-        job = self.args.name
         severity = self.args.severity
         local_severity = self.args.local_severity
-        date = self.date_to_timestamp()
 
         action = self.request
         if local_severity is not None:
             action = partial(action, local_severity=local_severity)
-        if date is not None:
-            action = partial(action, date=date)
 
         return action(
-                'POST', 'job/{}/'.format(job), action='log_severity',
-                addresses=[agent], severity=severity,
+                'POST', 'agent/{}/'.format(agent),
+                action='log_severity', severity=severity,
                 show_response_content=show_response_content)
 
 
 if __name__ == '__main__':
-    SetJobLogSeverity.autorun()
+    SetAgentLogSeverity.autorun()
