@@ -1,0 +1,1 @@
+{"description": "", "name": "start opensand", "openbach_functions": [{"label": "start emu", "start_job_instance": {"offset": 0, "opensand_emulation": {"platform-id": "obach_recette"}, "entity_name": "SAT"}, "id": 27124625}], "arguments": {}, "constants": {}}
