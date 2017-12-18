@@ -55,5 +55,6 @@
   copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
   with_items:
     - { file: 'squid.py', mode: '0755' }
+    - { file: 'squid_stop.py', mode: '0755' }
     - { file: 'squid_rstats_filter.conf', mode: '0644' }
     - { file: 'squid.conf', mode: '0644' }
