@@ -55,19 +55,6 @@ class Platform(enum.Enum):
     SATELLITE_TERMINAL = 'st'
 
 
-def command_line_flag_for_argument(argument, flag):
-    if argument is not None:
-        yield flag
-        yield str(argument)
-
-
-def handle_exception(exception, timestamp):
-    message = 'ERROR: {}'.format(exception)
-    collect_agent.send_stat(timestamp, status=message)
-    collect_agent.send_log(syslog.LOG_ERR, message)
-    sys.exit(message)
-
-
 def configure_platform(trans_proxy, non_transp_proxy):
     hostname=socket.gethostname()
     with open("/etc/squid/squid.conf", "a") as squid_file:
@@ -78,11 +65,9 @@ def configure_platform(trans_proxy, non_transp_proxy):
     
 
 def main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file):
-    success = collect_agent.register_collect(
+    collect_agent.register_collect(
             '/opt/openbach/agent/jobs/squid/'
             'squid_rstats_filter.conf')
-    if not success:
-        sys.exit("Cannot connect to rstats")
     
     if path_conf_file is not None:
     # copy squid configuration file from other dir
@@ -124,22 +109,14 @@ def main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file
         configure_platform(trans_proxy, non_transp_proxy)
 
     # launch squid for params
-    cmd = ['squid', '-C', '-N', 'd1']
-    # persitent jobs that only finishes when it is stopped by OpenBACH
-    while True:
-        timestamp = int(time.time() * 1000)
-        try:
-            output = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-        except subprocess.CalledProcessError as ex:
-            if ex.returncode in (-15, -9):
-                continue
-            handle_exception(ex, timestamp)
-        try:
-            output = output.stdout.read()
-        except IndexError as ex:
-            handle_exception(ex, timestamp)
-        collect_agent.send_stat(timestamp, rtt=output)
-
+    try:
+        subprocess.run(['squid', '-N', '-C', '-d1'], check=True, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as error:
+        if error.returncode not in (-15, -9):
+            message = 'ERROR ({}):\n{}'.format(error.returncode, error.stderr.decode(errors='replace'))
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            sys.exit(message)
+        
 
 def parse_command_line():
     parser = argparse.ArgumentParser(
@@ -167,13 +144,5 @@ if __name__ == "__main__":
     input_iface = args.input_iface
     non_transp_proxy = args.non_transp_proxy
     path_conf_file = args.path_conf_file
-
-    print ('Argument List:', str(sys.argv))
-
-    print (trans_proxy)
-    print (source_addr)
-    print (input_iface)
-    print (non_transp_proxy)
-    print (path_conf_file)
 
     main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file)
