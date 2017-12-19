@@ -59,5 +59,12 @@ arguments:
           Path to squid conf file.
           Warning - If path_conf_file set, others optionals option are not usefuls.
 
+    - name:        clean_cache
+      type:        'None'
+      count:       0
+      flag:        '-c'
+      description: >
+          Remove squid cache dir.
+
 statistics:
 
