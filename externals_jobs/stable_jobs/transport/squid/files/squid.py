@@ -62,9 +62,32 @@ def configure_platform(trans_proxy, non_transp_proxy):
         squid_file.write("\nhttp_port {}".format(non_transp_proxy))
         squid_file.write("\nhttp_port {} intercept".format(trans_proxy))
         squid_file.write("\nhttp_port 80 vhost")
-    
 
-def main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file):
+
+def remove_squid_cache():
+    shutil.rmtree('/etc/squid/cache', ignore_errors=False)
+    try:
+        os.makedirs('/etc/squid/cache')
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+    try:
+        subprocess.run(['chmod', '777', '/etc/squid/cache'], check=True, stderr=subprocess.PIPE) 
+    except subprocess.CalledProcessError as error:
+        if error.returncode not in (-15, -9):
+            message = 'ERROR ({}):\n{}'.format(error.returncode, error.stderr.decode(errors='replace'))
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            sys.exit(message)
+    try:
+        subprocess.run(['squid', '-z'], check=True, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as error:
+        if error.returncode not in (-15, -9):
+            message = 'ERROR ({}):\n{}'.format(error.returncode, error.stderr.decode(errors='replace'))
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            sys.exit(message)
+
+
+def main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file, clean_cache):
     collect_agent.register_collect(
             '/opt/openbach/agent/jobs/squid/'
             'squid_rstats_filter.conf')
@@ -108,6 +131,8 @@ def main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file
 
         configure_platform(trans_proxy, non_transp_proxy)
 
+    if clean_cache:
+        remove_squid_cache()
     # launch squid for params
     try:
         subprocess.run(['squid', '-N', '-C', '-d1'], check=True, stderr=subprocess.PIPE)
@@ -130,6 +155,7 @@ def parse_command_line():
                         help='')
     parser.add_argument('-i', '--input_iface', type=str,
                         help='')
+    parser.add_argument('-c', '--clean_cache', action='store_true', help='Remove cache dir')
     parser.add_argument('-p', '--path-conf-file', type=Platform,
                         help='')
 
@@ -144,5 +170,5 @@ if __name__ == "__main__":
     input_iface = args.input_iface
     non_transp_proxy = args.non_transp_proxy
     path_conf_file = args.path_conf_file
-
-    main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file)
+    clean_cache = args.clean_cache
+    main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file, clean_cache)
