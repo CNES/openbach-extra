@@ -3,7 +3,7 @@
 general:
   name:           squid
   description: >
-      This Job executes the squid command to start proxy server.
+      This Job launches the Squid caching proxy (in transparent or non transparent modes) and redirects traffic in transparent mode.
   job_version:     '1.0'
   keywords:        [squid, proxy, server, caching]
   persistent:      true
