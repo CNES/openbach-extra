@@ -3,7 +3,7 @@
 general:
   name:            tcp_buffer
   description: >
-      This Job set up the Tcp buffer
+      This Job sets up the TCP buffer sizes
   job_version:     '1.0'
   keywords:        [tcp, buffer]
   persistent:      False
