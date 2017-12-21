@@ -3,7 +3,7 @@
 general:
   name:            'norm'
   description: >
-      This Job launches a norm server/client
+      This Job launches and configures a NORM server/client
   job_version:     '1.0'
   keywords:        [norm]
   persistent:      True
