@@ -3,7 +3,7 @@
 general:
   name:            vlc
   description: >
-      Launchs a VLC video streaming.
+      Launches a VLC video streaming from a server to an IP address.
   job_version:     '1.0'
   keywords:        [vlc, video, streaming]
   persistent:      False
