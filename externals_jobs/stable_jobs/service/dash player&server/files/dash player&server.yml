@@ -3,9 +3,9 @@
 general:
   name:            'dash player&server'
   description: >
-      This Job launches the dash tool
+      Deploys a Tornado server with a DASH video in 4 different qualities and a web integrated DASH JS player (can be played via Chrome/Firefox). It collects metrics from the player (video quality, bandwidth, rtt, buffer size, etc.)
   job_version:     '1.0'
-  keywords:        [dash]
+  keywords:        [dash, dashjs, server, tornado, player, QoE]
   persistent:      True
 
 platform_configuration:
