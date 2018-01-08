@@ -41,7 +41,7 @@ from frontend import FrontendBase
 
 class InstallJob(FrontendBase):
     def __init__(self):
-        super().__init__(self)
+        super().__init__('OpenBACH — Install Jobs')
         self.parser.add_argument(
                 '-j', '--job-name', metavar='NAME', action='append',
                 nargs='+', required=True, help='Name of the Jobs to install '
