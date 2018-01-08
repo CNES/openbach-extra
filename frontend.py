@@ -206,13 +206,16 @@ class FrontendBase:
     def execute(self, show_response_content=True):
         pass
 
-    def request(self, verb, route, show_response_content=True, **kwargs):
+    def request(self, verb, route, show_response_content=True, files=None, **kwargs):
         verb = verb.upper()
         url = self.base_url + route
         if verb == 'GET':
             response = self.session.get(url, params=kwargs)
         else:
-            response = self.session.request(verb, url, json=kwargs)
+            if files is None:
+                response = self.session.request(verb, url, json=kwargs)
+            else:
+                response = self.session.request(verb, url, data=kwargs, files=files)
         if show_response_content:
             pretty_print(response)
         return response
