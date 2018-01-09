@@ -7,12 +7,13 @@ general:
   job_version:     '1.0'
   keywords:        [dash, dashjs, server, tornado, player, QoE]
   persistent:      True
+  need_privileges: True
 
 platform_configuration:
   - ansible_system: 'Linux'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '16.04'
-    command: 'sudo /usr/bin/env python3 "/opt/openbach/agent/jobs/dash player&server/dash.py"'
+    command: '/usr/bin/env python3 "/opt/openbach/agent/jobs/dash player&server/dash.py"'
     command_stop:
 
 arguments:
