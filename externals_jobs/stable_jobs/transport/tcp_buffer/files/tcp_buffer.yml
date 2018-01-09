@@ -3,7 +3,7 @@
 general:
   name:            tcp_buffer
   description: >
-      This Job sets up the TCP buffer sizes
+      This Job sets up the TCP buffer sizes in the Ubuntu kernel
   job_version:     '1.0'
   keywords:        [tcp, buffer]
   persistent:      False
@@ -26,7 +26,7 @@ arguments:
       type:        'int'
       count:       1
       description: >
-          The minial size of the buffer
+          The minimal size of the buffer
     - name:        size
       type:        'int'
       count:       1
