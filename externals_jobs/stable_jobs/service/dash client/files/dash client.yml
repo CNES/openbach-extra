@@ -1,0 +1,45 @@
+---
+
+general:
+  name:            'dash client'
+  description: >
+      Launches a DASH client on the machine, and plays video.
+  job_version:     '1.0'
+  keywords:        [dash, client, video, streaming]
+  persistent:      False
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 "/opt/openbach/agent/jobs/dash client/dash client.py"'
+    command_stop:
+
+arguments:
+  required:
+    - name:        dst_ip
+      type:        'str'
+      count:        1
+      description: >
+          The destination IP address
+  optional:
+    - name:        port
+      type:        'int'
+      count:       1
+      flag:        '-p'
+      description: >
+          The dst port number (Default: 80)
+    - name:        duration
+      type:        'int'
+      count:       1
+      flag:        '-t'
+      description: >
+          The duration of the playback, or 0 for unlimited (Default: 0)
+    - name:        path
+      type:        'str'
+      count:       1
+      flag:        '-d'
+      description: >
+          The path of the video on the server (Default: /vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd).
+
+statistics:
