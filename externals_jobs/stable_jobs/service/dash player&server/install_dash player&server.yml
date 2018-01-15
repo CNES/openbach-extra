@@ -36,8 +36,12 @@
 - name: Create the Dash Job Repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
 
-- name: Install dependencies
+- name: Install tornado
   pip: name=tornado executable=pip3
+  become: yes
+
+- name: Install curl
+  apt: name=curl state=present
   become: yes
 
 - name: Install Dash
