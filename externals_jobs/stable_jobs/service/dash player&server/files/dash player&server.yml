@@ -21,7 +21,7 @@ arguments:
   optional:
     - name:        local_address
       type:        'str'
-      count:       0
+      count:       1
       flag:        '-a'
       description: >
           Local address to bind the server (default: 0.0.0.0)
