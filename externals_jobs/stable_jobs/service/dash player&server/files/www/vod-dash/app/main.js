@@ -686,7 +686,7 @@ app.controller('DashController', function($scope, sources, contributors) {
             if (websocket.readyState === 1) {
                 var statistics = {
                     timestamp: Number(new Date()),
-                    buffer_length: bufferLevel,
+                    buffer_length: bufferLevel.toFixed(2),
                     bitrate: bitrate,
                     dropped_frames: droppedFPS,
                     latency_min: httpMetrics.latency[type].low.toFixed(2),

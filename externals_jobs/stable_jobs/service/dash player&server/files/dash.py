@@ -32,6 +32,7 @@
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
+ * Mathias ETTTINGER <mettinger@toulouse.viveris.com>
 '''
 
 
@@ -40,6 +41,7 @@ import json
 import time
 import syslog
 import argparse
+from contextlib import suppress
 
 import collect_agent
 
@@ -49,11 +51,19 @@ from tornado import ioloop, web, websocket
 class CustomWebSocket(websocket.WebSocketHandler):
     def open(self):
         self.set_nodelay(True)
-        collect_agent.send_log(syslog.LOG_DEBUG, "Opened websocket")
+        collect_agent.send_log(syslog.LOG_DEBUG, 'Opened websocket')
 
     def on_message(self, message):
-        collect_agent.send_stat(**json.loads(message))
-        collect_agent.send_log(syslog.LOG_DEBUG, "Message received")
+        data = json.loads(message)
+
+        for stat in ('latency_max', 'download_max', 'ratio_max'):
+            with suppress(KeyError):
+                if data[stat] == 'Infinity':
+                    del data[stat]
+
+        collect_agent.send_stat(**data)
+        collect_agent.send_log(syslog.LOG_DEBUG, 'Message received')
+
 
 def main(address, port):
     # Connect to collect_agent
@@ -65,21 +75,24 @@ def main(address, port):
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
 
-    collect_agent.send_log(syslog.LOG_DEBUG, "Starting job dash")
-    # Start tornado
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job dash')
+
     application = web.Application([
-        (r"/websocket/", CustomWebSocket),
-        (r"/(.*)", web.StaticFileHandler, {
+        (r'/websocket/', CustomWebSocket),
+        (r'/(.*)', web.StaticFileHandler, {
             'path': '/opt/openbach/agent/jobs/dash player&server/www/',
             'default_filename': 'index.html',
-            }),
+        }),
     ])
-    collect_agent.send_log(syslog.LOG_DEBUG, "Starting tornado on {}:{}".format(address, port))
+
+    listen_message = 'Starting tornado on {}:{}'.format(address, port)
+    print(listen_message)
+    collect_agent.send_log(syslog.LOG_DEBUG, listen_message)
     application.listen(port, address)
     ioloop.IOLoop.current().start()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # Define Usage
     parser = argparse.ArgumentParser(
             description=__doc__,
