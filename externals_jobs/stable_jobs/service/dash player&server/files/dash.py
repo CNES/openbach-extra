@@ -68,7 +68,7 @@ class CustomWebSocket(websocket.WebSocketHandler):
 def main(address, port):
     # Connect to collect_agent
     success = collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/dash player&server/'
+            '/opt/openbach/agent/jobs/dash_player_server/'
             'dash player&server_rstats_filter.conf')
     if not success:
         message = 'ERROR connecting to collect-agent'
@@ -80,7 +80,7 @@ def main(address, port):
     application = web.Application([
         (r'/websocket/', CustomWebSocket),
         (r'/(.*)', web.StaticFileHandler, {
-            'path': '/opt/openbach/agent/jobs/dash player&server/www/',
+            'path': '/opt/openbach/agent/jobs/dash_player_server/www/',
             'default_filename': 'index.html',
         }),
     ])

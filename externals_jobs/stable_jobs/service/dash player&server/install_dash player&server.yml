@@ -34,7 +34,7 @@
 
 
 - name: Create the Dash Job Repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file: path=/opt/openbach/agent/jobs/dash_player_server state=directory mode=0755
 
 - name: Install tornado
   pip: name=tornado executable=pip3
@@ -45,7 +45,7 @@
   become: yes
 
 - name: Install Dash
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/dash_player_server/ mode={{ item.mode }}
   with_items:
     - { file: 'dash player&server.help', mode: '0644' }
     - { file: 'dash player&server_rstats_filter.conf', mode: '0644' }
@@ -53,12 +53,12 @@
     - { file: 'download_video.sh', mode: '0755' }
 
 - name: Create the Dash Job Repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }}/www/ state=directory mode=0755
+  file: path=/opt/openbach/agent/jobs/dash_player_server/www/ state=directory mode=0755
 
 - name: Install web files
   openbach_synchronize:
     src: "www/"
-    dest: "/opt/openbach/agent/jobs/dash\\ player\\&server/www/"
+    dest: "/opt/openbach/agent/jobs/dash_player_server/www/"
     recursive: yes
     delete: yes
     rsync_opts:
@@ -66,7 +66,7 @@
       - P vod-dash 
 
 - name: Download sample videos
-  command: ../../download_video.sh {{ item }} chdir=/opt/openbach/agent/jobs/{{ job_name }}/www/vod-dash/
+  command: ../../download_video.sh {{ item }} chdir=/opt/openbach/agent/jobs/dash_player_server/www/vod-dash/
   with_items:
     - "BigBuckBunny 2sec bunny_45652bps"
     - "BigBuckBunny 2sec bunny_334349bps"
