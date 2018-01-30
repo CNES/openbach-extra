@@ -33,6 +33,7 @@ __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
  * Mathias ETTTINGER <mettinger@toulouse.viveris.com>
+ * David PRADAS <david.pradas@toulouse.viveris.com>
 '''
 
 
@@ -49,9 +50,12 @@ from tornado import ioloop, web, websocket
 
 
 class CustomWebSocket(websocket.WebSocketHandler):
+    def check_origin(self, origin):
+        return True
+        
     def open(self):
         self.set_nodelay(True)
-        collect_agent.send_log(syslog.LOG_DEBUG, 'Opened websocket')
+        collect_agent.send_log(syslog.LOG_DEBUG, 'Opened websocket with IP {}'.format(self.request.remote_ip))
 
     def on_message(self, message):
         data = json.loads(message)
@@ -60,7 +64,10 @@ class CustomWebSocket(websocket.WebSocketHandler):
             with suppress(KeyError):
                 if data[stat] == 'Infinity':
                     del data[stat]
-
+        
+        data['suffix'] = self.request.remote_ip
+        print(data["bitrate"])
+        print(self.request.remote_ip)
         collect_agent.send_stat(**data)
         collect_agent.send_log(syslog.LOG_DEBUG, 'Message received')
 

@@ -2,29 +2,29 @@
 #   network/physical entities (under test) and collect data from them. It is
 #   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
 #   Agents (one for each network entity that wants to be tested).
-#   
-#   
+#
+#
 #   Copyright © 2016 CNES
-#   
-#   
+#
+#
 #   This file is part of the OpenBACH testbed.
-#   
-#   
+#
+#
 #   OpenBACH is a free software : you can redistribute it and/or modify it under
 #   the terms of the GNU General Public License as published by the Free Software
 #   Foundation, either version 3 of the License, or (at your option) any later
 #   version.
-#   
+#
 #   This program is distributed in the hope that it will be useful, but WITHOUT
 #   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
 #   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 #   details.
-#   
+#
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
-#   
-#   
-#   
+#
+#
+#
 #   @file     install_dash.yml
 #   @brief    Playbook that install the Job dash
 #   @author   Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
@@ -63,7 +63,9 @@
     delete: yes
     rsync_opts:
       - --filter
-      - P vod-dash 
+      - P vod-dash
+- name: Configure main.js
+  template: src=main.js.j2 dest=/opt/openbach/agent/jobs/dash_player_server/www/vod-dash/app/main.js
 
 - name: Download sample videos
   command: ../../download_video.sh {{ item }} chdir=/opt/openbach/agent/jobs/dash_player_server/www/vod-dash/
