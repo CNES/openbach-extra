@@ -13,7 +13,7 @@ platform_configuration:
   - ansible_system: 'Linux'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '16.04'
-    command: 'sudo python3 /opt/openbach/agent/jobs/twinkle_voip/twinkle_voip.py'
+    command: 'python3 /opt/openbach/agent/jobs/twinkle_voip/twinkle_voip.py'
     command_stop:
 
 arguments:
