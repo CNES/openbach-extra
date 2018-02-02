@@ -51,7 +51,7 @@ def main(command_line):
         collect_agent.send_log(syslog.LOG_ERR,
                                "ERROR launching command line {}:{}".format(command_line, ex))
     if p.returncode == 0:
-        collect_agent.send_log(syslog.LOG_ERR,
+        collect_agent.send_log(syslog.LOG_DEBUG,
                                "Command line launched: {}".format(command_line))
     else:
         collect_agent.send_log(syslog.LOG_ERR, "ERROR on command line: {}".format(p.stderr))
