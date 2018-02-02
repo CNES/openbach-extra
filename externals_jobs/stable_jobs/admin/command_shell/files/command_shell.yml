@@ -21,7 +21,7 @@ arguments:
       type:        'str'
       count:       1
       description: >
-          The command line to execute in shell.
+          The command line to execute in shell (do not add -sudo-) .
   optional:
 
 statistics:
