@@ -36,21 +36,26 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import get_scenario, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Get a Scenario',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('scenario_name', help='Name of the scenario')
-    parser.add_argument('-p', '--project-name', help='Name of the Project')
+class GetScenario(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Get the Content of a Scenario')
+        self.parser.add_argument('name', help='name of the scenario to fetch')
+        self.parser.add_argument(
+                '-p', '--project',
+                help='name of the project the scenario is associated with')
 
-    # get args
-    args = parser.parse_args()
-    scenario_name = args.scenario_name
-    project_name = args.project_name
+    def execute(self, show_response_content=True):
+        scenario = self.args.name
+        project = self.args.project
+        route = 'scenario/{}/'.format(scenario)
+        if project is not None:
+            route = 'project/{}/{}'.format(project, route)
 
-    pretty_print(get_scenario)(scenario_name, project_name)
+        return self.request('GET', route, show_response_content=show_response_content)
+
+
+if __name__ == '__main__':
+    GetScenario.autorun()

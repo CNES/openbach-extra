@@ -36,17 +36,16 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import list_projects, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - List Projects',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+class ListProjects(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — List all Projects')
 
-    # get args
-    args = parser.parse_args()
+    def execute(self, show_response_content=True):
+        return self.request('GET', 'project', show_response_content=show_response_content)
 
-    pretty_print(list_projects)()
+
+if __name__ == '__main__':
+    ListProjects.autorun()

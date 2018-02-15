@@ -36,24 +36,40 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
 import json
-from frontend import create_scenario, pretty_print
+from argparse import FileType
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Create a Scenario',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('path', help='Path of the scenario')
-    parser.add_argument('-p', '--project-name', help='Name of the Project')
+class CreateScenario(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Create a new Scenario')
+        self.parser.add_argument(
+                'scenario', type=FileType('r'),
+                help='path to the definition file of the scenario')
+        self.parser.add_argument(
+                '-p', '--project',
+                help='name of the project to associate the scenario with')
 
-    # get args
-    args = parser.parse_args()
-    path = args.path
-    project_name = args.project_name
-    with open(path, 'r') as f:
-        scenario_json = json.loads(f.read())
+    def parse(self, args=None):
+        super().parse(args)
+        scenario = self.args.scenario
+        with scenario:
+            try:
+                self.args.scenario = json.loads(scenario)
+            except ValueError:
+                self.parser.error('invalid JSON data in {}'.format(scenario.name))
 
-    pretty_print(create_scenario)(scenario_json, project_name)
+    def execute(self, show_response_content=True):
+        scenario = self.args.scenario
+        project = self.args.project
+        route = 'scenario' if project is None else 'project/{}/scenario/'.format(project)
+
+        return self.request(
+                'POST', route, **scenario,
+                show_response_content=show_response_content)
+
+
+if __name__ == '__main__':
+    CreateScenario.autorun()

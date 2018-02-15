@@ -36,25 +36,37 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import list_job_instances, pretty_print
+from urllib.parse import urlencode
+
+from frontend import FrontendBase, pretty_print
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - List Instances',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            'agents_ip', nargs='+',
-            help='IP addresses of the Agents')
-    parser.add_argument(
-            '-u', '--update', action='store_true',
-            help='Use only the last status present on the collector')
+class ListJobInstances(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — List Instances')
+        self.parser.add_argument(
+                'agent', nargs='+',
+                help='IP addresses of the agents')
+        self.parser.add_argument(
+                '-u', '--update', action='store_true',
+                help='contact the agent to get the last '
+                'status of the jobs instances')
 
-    # get args
-    args = parser.parse_args()
-    agents_ip = args.agents_ip
-    update = args.update
+    def execute(self, show_response_content=True):
+        agents = self.args.agent
+        update = self.args.update
 
-    pretty_print(list_job_instances)(agents_ip, update)
+        query_string = [('address', ip) for ip in agents]
+        if update:
+            query_string.append(('update', ''))
+
+        response = self.session.get(
+                self.base_url + 'job_instance',
+                params=urlencode(query_string))
+        if show_response_content:
+            pretty_print(response)
+        return response
+
+
+if __name__ == '__main__':
+    ListJobInstances.autorun()

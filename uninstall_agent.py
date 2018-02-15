@@ -36,25 +36,27 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-import pprint
-from frontend import uninstall_agent, state_agent, pretty_wait
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Delete Agent',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('agent_ip', help='IP Address of the Agent')
+class UninstallAgent(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Uninstall Agent')
+        self.parser.add_argument('agent', help='IP address of the agent')
 
-    # get args
-    args = parser.parse_args()
-    agent_ip = args.agent_ip
+    def execute(self, show_response_content=True):
+        address = self.args.agent
+        self.request(
+                'DELETE', 'agent/{}/'.format(address),
+                show_response_content=False)
+        self.wait_for_success('uninstall', show_response_content=show_response_content)
 
-    response = uninstall_agent(agent_ip)
-    if 400 <= response.status_code < 600:
-        print(response)
-        pprint.pprint(response.json())
-        exit(1)
-    pretty_wait(state_agent, status='uninstall', address=agent_ip)
+    def query_state(self):
+        address = self.args.agent
+        return self.request(
+                'GET', 'agent/{}/state/'.format(address),
+                show_response_content=False)
+
+
+if __name__ == '__main__':
+    UninstallAgent.autorun()

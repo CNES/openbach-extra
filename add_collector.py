@@ -36,34 +36,67 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import add_collector, state_collector, pretty_wait
+import getpass
+from functools import partial
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Add Collector',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('collector_ip', help='IP Address of the Collector')
-    parser.add_argument('username', help='Username of the Collector')
-    parser.add_argument('password', help='Password of the Collector')
-    parser.add_argument('name', help='Name of the Collector')
-    parser.add_argument(
-            '-l', '--logs-port', type=int,
-            help='Port for the logs')
-    parser.add_argument(
-            '-s', '--stats-port', type=int,
-            help='Port for the Stats')
+class AddCollector(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Add Collector')
+        self.parser.add_argument(
+                'collector',
+                help='IP address of the collector')
+        self.parser.add_argument(
+                'name',
+                help='name of the agent installed on the collector')
+        self.parser.add_argument(
+                '-l', '--logs-port', type=int,
+                help='port for the logs')
+        self.parser.add_argument(
+                '-s', '--stats-port', type=int,
+                help='port for the stats')
+        self.parser.add_argument(
+                '-u', '--user',
+                help='username to connect as on the collector-to-be '
+                'if the SSH key of the controller cannot be used to '
+                'connect to the openbach user on the machine.')
 
-    # get args
-    args = parser.parse_args()
-    collector = args.collector_ip
-    username = args.username
-    password = args.password
-    name = args.name
-    logs_port = args.logs_port
-    stats_port = args.stats_port
+    def parse(self, args=None):
+        super().parse(args)
+        username = self.args.user
+        password = None
+        if username is not None:
+            address = self.args.collector
+            prompt = 'Password for {} on {}: '.format(username, address)
+            password = getpass.getpass(prompt)
+        self.args.password = password
 
-    add_collector(collector, username, password, name, logs_port, stats_port)
-    pretty_wait(state_collector, status='add',  address=collector_ip)
+    def execute(self, show_response_content=True):
+        collector = self.args.collector
+        name = self.args.name
+        logs_port = self.args.logs_port
+        stats_port = self.args.stats_port
+        username = self.args.user
+        password = self.args.password
+
+        action = self.request
+        if logs_port is not None:
+            action = partial(action, logs_port=logs_port)
+        if stats_port is not None:
+            action = partial(action, stats_port=stats_port)
+        action('POST', 'collector', show_response_content=False,
+               username=username, password=password,
+               address=collector, name=name)
+        self.wait_for_success('add', show_response_content)
+
+    def query_state(self):
+        address = self.args.collector
+        return self.request(
+                'GET', 'collector/{}/state/'.format(address),
+                show_response_content=False)
+
+
+if __name__ == '__main__':
+    AddCollector.autorun()

@@ -36,24 +36,37 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
 import json
-from frontend import modify_project, pretty_print
+from argparse import FileType
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Modify Project',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('project_name', help='Name of the Project')
-    parser.add_argument('path', help='Path of the Project')
+class ModifyProject(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Modify a Project')
+        self.parser.add_argument('name', help='name of the project to modify')
+        self.parser.add_argument(
+                'project', type=FileType('r'),
+                help='path to the definition file of the project')
 
-    # get args
-    args = parser.parse_args()
-    project_name = args.project_name
-    path = args.path
-    with open(path, 'r') as f:
-        project_json = json.loads(f.read())
+    def parse(self, args=None):
+        super().parse(args)
+        project = self.args.project
+        with project:
+            try:
+                self.args.project = json.loads(project)
+            except ValueError:
+                self.parser.error('invalid JSON data in {}'.format(project.name))
 
-    pretty_print(modify_project)(project_name, project_json)
+    def execute(self, show_response_content=True):
+        name = self.args.name
+        project = self.args.project
+
+        return self.request(
+                'PUT', 'project/{}/'.format(name), **project,
+                show_response_content=show_response_content)
+
+
+if __name__ == '__main__':
+    ModifyProject.autorun()

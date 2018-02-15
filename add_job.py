@@ -36,21 +36,54 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import add_job, pretty_print
+import os
+import tarfile
+import tempfile
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Add Job',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('job_name', help='Name of the Job')
-    parser.add_argument('path', help='Path of the sources')
+class AddJob(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Add Job')
+        self.parser.add_argument('name', help='name of the job')
+        job_options = self.parser.add_mutually_exclusive_group(required=True)
+        job_options.add_argument(
+                '-p', '--path', help='path to the folder (on the controller) '
+                'containing the install and uninstall playbooks of the job')
+        job_options.add_argument(
+                '-f', '--files', help='path to the folder (on the local machine) '
+                'containing the install and uninstall playbooks of the job')
+        job_options.add_argument(
+                '-t', '--tarball', help='path to a .tar.gz file containing '
+                'the install and uninstall playbooks of the job')
 
-    # get args
-    args = parser.parse_args()
-    job_name = args.job_name
-    path = args.path
+    def execute(self, show_response_content=True):
+        job_name = self.args.name
+        path = self.args.path
+        files = self.args.files
+        tarball = self.args.tarball
 
-    pretty_print(add_job)(job_name, path)
+        if path is not None:
+            return self.request(
+                    'POST', 'job', name=job_name, path=path,
+                    show_response_content=show_response_content)
+
+        if files is not None:
+            os.chdir(os.path.expanduser(files))
+            with tempfile.NamedTemporaryFile(suffix='.tar.gz') as tar_path:
+                tarball = tar_path.name
+            with tarfile.open(tarball, mode='w:gz') as tar:
+                for filename in os.listdir('.'):
+                    tar.add(filename)
+
+        if tarball is not None:
+            with open(os.path.expanduser(tarball), 'rb') as tarball_file:
+                return self.request(
+                        'POST', 'job', name=job_name,
+                        files={'file': tarball_file},
+                        show_response_content=show_response_content)
+
+
+if __name__ == '__main__':
+    AddJob.autorun()

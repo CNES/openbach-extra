@@ -36,20 +36,27 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import list_agents, pretty_print
+from functools import partial
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - List Agents',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            '-u', '--update', action='store_true',
-            help='Use only the last status present on the collector')
+class ListAgents(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — List Agents')
+        self.parser.add_argument(
+                '-u', '--update', action='store_true',
+                help='retrieve the status by contacting the agent')
 
-    # get args
-    args = parser.parse_args()
+    def execute(self, show_response_content=True):
+        update = self.args.update
 
-    pretty_print(list_agents)(args.update)
+        action = self.request
+        if update:
+            action = partial(action, update='')
+
+        return action('GET', 'agent', show_response_content=show_response_content)
+
+
+if __name__ == '__main__':
+    ListAgents.autorun()

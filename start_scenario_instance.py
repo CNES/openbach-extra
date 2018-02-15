@@ -36,31 +36,46 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-import json
-from frontend import start_scenario_instance, pretty_print, date_to_timestamp
+from functools import partial
+
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Start a Scenario',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('name', help='Name of the scenario to start')
-    parser.add_argument(
-            'path', help='Path to the args of the scenario instance')
-    parser.add_argument(
-            '-d', '--date', metavar=('DATE', 'TIME'),
-            nargs=2, help='Date of the execution')
-    parser.add_argument('-p', '--project-name', help='Name of the Project')
+class StartScenarioInstance(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Start a Scenario')
+        self.parser.add_argument('name', help='name of the scenario to start')
+        self.parser.add_argument(
+                '-p', '--project',
+                help='name of the project the scenario is associated with')
+        self.parser.add_argument(
+                '-a', '--argument', nargs=2, default={},
+                action='append', metavar=('NAME', 'VALUE'),
+                help='value of an argument of the scenario')
+        self.parser.add_argument(
+                '-d', '--date', nargs=2, metavar=('DATE', 'TIME'),
+                help='date of the execution')
 
-    # get args
-    args = parser.parse_args()
-    name = args.name
-    path = args.path
-    date = date_to_timestamp('{} {}'.format(*args.date)) if args.date else None
-    with open(path, 'r') as f:
-        args_json = json.loads(f.read())
-    project_name = args.project_name
+    def execute(self, show_response_content=True):
+        scenario = self.args.name
+        project = self.args.project
+        arguments = dict(self.args.argument)
+        date = self.date_to_timestamp()
 
-    pretty_print(start_scenario_instance)(name, args_json, date, project_name)
+        action = partial(self.request, arguments=arguments)
+        if date is not None:
+            action = partial(action, date=date)
+
+        if project is None:
+            response = action(
+                    'POST', 'scenario_instance', scenario_name=scenario,
+                    show_response_content=show_response_content)
+        else:
+            response = action(
+                    'POST', 'project/{}/scenario/{}/scenario_instance/'.format(project, scenario),
+                    show_response_content=show_response_content)
+        return response
+
+
+if __name__ == '__main__':
+    StartScenarioInstance.autorun()

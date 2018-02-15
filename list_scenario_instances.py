@@ -36,21 +36,32 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import list_scenario_instances, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Start a Scenario',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-s', '--scenario-name', help='Name of the Scenario')
-    parser.add_argument('-p', '--project-name', help='Name of the Project')
+class ListScenarioInstances(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — List Instances of a Scenario')
+        self.parser.add_argument(
+                '-s', '--scenario',
+                help='name of the scenario whose instances should be listed')
+        self.parser.add_argument(
+                '-p', '--project',
+                help='name of the project the scenario is associated with')
 
-    # get args
-    args = parser.parse_args()
-    scenario_name = args.scenario_name
-    project_name = args.project_name
+    def execute(self, show_response_content=True):
+        scenario = self.args.scenario
+        project = self.args.project
 
-    pretty_print(list_scenario_instances)(scenario_name, project_name)
+        route = 'scenario_instance/'
+        if project is not None:
+            prepend = 'project/{}/'.format(project)
+            if scenario is not None:
+                prepend = '{}scenario/{}/'.format(prepend, scenario)
+            route = prepend + route
+
+        return self.request('GET', route, show_response_content=show_response_content)
+
+
+if __name__ == '__main__':
+    ListScenarioInstances.autorun()

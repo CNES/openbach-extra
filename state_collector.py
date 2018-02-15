@@ -36,18 +36,21 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import state_collector, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - State Collector',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('collector_ip', help='IP address of the Collector')
+class StateCollector(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — State of a Collector')
+        self.parser.add_argument('collector', help='IP address of the collector')
 
-    # get args
-    args = parser.parse_args()
+    def execute(self, show_response_content=True):
+        address = self.args.collector
 
-    pretty_print(state_collector)(args.collector_ip)
+        return self.request(
+                'GET', 'collector/{}/state/'.format(address),
+                show_response_content=show_response_content)
+
+
+if __name__ == '__main__':
+    StateCollector.autorun()

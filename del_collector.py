@@ -36,22 +36,27 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import del_collector, state_collector, pretty_wait
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Del Collector',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('collector_ip', help='IP Address of the Collector')
+class DeleteCollector(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Delete Collector')
+        self.parser.add_argument('collector', help='IP address of the collector')
 
-    # get args
-    args = parser.parse_args()
-    collector_ip = args.collector_ip
+    def execute(self, show_response_content=True):
+        address = self.args.collector
+        self.request(
+                'DELETE', 'collector/{}'.format(address),
+                show_response_content=False)
+        self.wait_for_success('del', show_response_content=show_response_content)
 
-    del_collector(collector_ip)
-    pretty_wait(
-            state_collector, status='del',
-            valid_statuses=(200, 204), address=collector_ip)
+    def query_state(self):
+        address = self.args.collector
+        return self.request(
+                'GET', 'collector/{}/state/'.format(address),
+                show_response_content=False)
+
+
+if __name__ == '__main__':
+    DeleteCollector.autorun()

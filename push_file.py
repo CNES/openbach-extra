@@ -36,25 +36,50 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import push_file, pretty_print
+from argparse import FileType
+
+from frontend import FrontendBase, pretty_print
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Push File',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            'local_path', help='Path of the file in the Controller')
-    parser.add_argument(
-            'remote_path', help='Path where the file should be pushed')
-    parser.add_argument('agent_ip', help='IP address of the Agent')
+class PushFile(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Push File')
+        self.parser.add_argument('agent', help='IP address of the agent')
+        self.parser.add_argument(
+                'remote_path',
+                help='path where the file should be pushed')
+        group = self.parser.add_mutually_exclusive_group(required=True)
+        group.add_argument('--path', help='path of the file on the controller')
+        group.add_argument(
+                '--local-file', type=FileType('r'),
+                help='path of a file on the current '
+                'computer to be sent to the agent')
 
-    # get args
-    args = parser.parse_args()
-    local_path = args.local_path
-    remote_path = args.remote_path
-    agent_ip = args.agent_ip
+    def execute(self, show_response_content=True):
+        agent = self.args.agent
+        remote_path = self.args.remote_path
+        local_path = self.args.path
 
-    pretty_print(push_file)(local_path, remote_path, agent_ip)
+        form_data = {
+                'path': remote_path,
+                'agent_ip': agent,
+        }
+
+        if local_path is not None:
+            form_data['local_path'] = local_path
+            response = self.session.post(self.base_url + 'file', data=form_data)
+        else:
+            local_file = self.args.local_file
+            with local_file:
+                response = self.session.post(
+                        self.base_url + 'file',
+                        data=form_data,
+                        files={'file': local_file})
+
+        if show_response_content:
+            pretty_print(response)
+        return response
+
+
+if __name__ == '__main__':
+    PushFile.autorun()

@@ -36,35 +36,42 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import uninstall_jobs, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Uninstall Jobs',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            '-j', '--job_name', metavar='NAME', action='append', nargs='+',
-            required=True, help='Name of the Jobs to install on the next '
-            'agent. May be specified several times to install different '
-            'sets of jobs on different agents.')
-    parser.add_argument(
-            '-a', '--agent_ip', metavar='ADDRESS', action='append', nargs='+',
-            required=True, help='IP address of the agent where the next set '
-            'of jobs should be installed. May be specified several times to '
-            'install different sets of jobs on different agents.')
+class UninstallJob(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — Uninstall Jobs')
+        self.parser.add_argument(
+                '-j', '--job-name', metavar='NAME', action='append', nargs='+',
+                required=True, help='Name of the Jobs to install on the next '
+                'agent. May be specified several times to install different '
+                'sets of jobs on different agents.')
+        self.parser.add_argument(
+                '-a', '--agent', metavar='ADDRESS', action='append', nargs='+',
+                required=True, help='IP address of the agent where the next '
+                'set of jobs should be installed. May be specified several '
+                'times to install different sets of jobs on different agents.')
 
-    # get args
-    args = parser.parse_args()
-    jobs_names = args.job_name
-    agents_ips = args.agent_ip
+    def parse(self, args=None):
+        super().parse(args)
+        jobs = self.args.job_name
+        agents = self.args.agent
+        if len(jobs) != len(agents):
+            self.parser.error('-j and -a arguments should appear by pairs')
 
-    # If user specified more set of jobs than agent ips
-    # we can't figure it out
-    if len(jobs_names) != len(agents_ips):
-        parser.error('-j and -a arguments should appear by pairs')
+    def execute(self, show_response_content=True):
+        jobs_names = self.args.job_name
+        agents_ips = self.args.agent
 
-    for agents, jobs in zip(agents_ips, jobs_names):
-        pretty_print(uninstall_jobs)(jobs, agents)
+        return [
+                self.request(
+                    'POST', 'job', action='uninstall',
+                    names=jobs, addresses=agents,
+                    show_response_content=show_response_content)
+                for agents, jobs in zip(agents_ips, jobs_names)
+        ]
+
+
+if __name__ == '__main__':
+    UninstallJob.autorun()

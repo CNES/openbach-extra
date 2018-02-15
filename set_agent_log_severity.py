@@ -26,31 +26,45 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function del_project"""
+"""Call the openbach-function set_agent_log_severity"""
 
 
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
- * Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
 
+from functools import partial
+
 from frontend import FrontendBase
 
 
-class DeleteProject(FrontendBase):
+class SetAgentLogSeverity(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Delete a Project')
-        self.parser.add_argument('name', help='name of the project to delete')
+        super().__init__('OpenBACH — Update Log Severity of an Agent')
+        self.parser.add_argument('agent', help='IP address of the agent')
+        self.parser.add_argument(
+                'severity', choices=range(1, 5), type=int,
+                help='severity up to which logs are sent to the collector')
+        self.parser.add_argument(
+                '-l', '--local-severity', choices=range(1, 5), type=int,
+                help='severity up to which logs are saved on the agent')
 
     def execute(self, show_response_content=True):
-        project = self.args.name
+        agent = self.args.agent
+        severity = self.args.severity
+        local_severity = self.args.local_severity
 
-        return self.request(
-                'DELETE', 'project/{}/'.format(project),
+        action = self.request
+        if local_severity is not None:
+            action = partial(action, local_severity=local_severity)
+
+        return action(
+                'POST', 'agent/{}/'.format(agent),
+                action='log_severity', severity=severity,
                 show_response_content=show_response_content)
 
 
 if __name__ == '__main__':
-    DeleteProject.autorun()
+    SetAgentLogSeverity.autorun()

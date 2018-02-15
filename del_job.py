@@ -36,19 +36,20 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import del_job, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - Delete Job',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('job_name', help='Name of the Job')
+class DeleteJob(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — DeleteJob')
+        self.parser.add_argument('name', help='name of the job')
 
-    # get args
-    args = parser.parse_args()
-    job_name = args.job_name
+    def execute(self, show_response_content=True):
+        job_name = self.args.name
+        return self.request(
+                'DELETE', 'job/{}/'.format(job_name),
+                show_response_content=show_response_content)
 
-    pretty_print(del_job)(job_name)
+
+if __name__ == '__main__':
+    DeleteJob.autorun()

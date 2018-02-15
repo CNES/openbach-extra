@@ -36,18 +36,24 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
-from frontend import list_scenarios, pretty_print
+from frontend import FrontendBase
 
 
-if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description='OpenBach - List all Scenarios',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-p', '--project-name', help='Name of the Project')
+class ListScenarios(FrontendBase):
+    def __init__(self):
+        super().__init__('OpenBACH — List all Scenarios of a Project')
+        self.parser.add_argument(
+                '-p', '--project',
+                help='name of the project whose scenarios should be listed')
 
-    # get args
-    args = parser.parse_args()
+    def execute(self, show_response_content=True):
+        project = self.args.project
+        route = 'scenario/'
+        if project is not None:
+            route = 'project/{}/{}'.format(project, route)
 
-    pretty_print(list_scenarios)(args.project_name)
+        return self.request('GET', route, show_response_content=show_response_content)
+
+
+if __name__ == '__main__':
+    ListScenarios.autorun()
