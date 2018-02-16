@@ -1,0 +1,5 @@
+if $programname == 'opensand' and $syslogseverity <= '{{ syslogseverity }}' then {
+	action(type="omfwd" Target="{{ collector_ip }}" Port="{{ logstash_logs_port }}" Protocol="udp")
+	action(type="omfile" file="/var/log/opensand/core.log")
+	stop
+}

@@ -1,0 +1,74 @@
+# 
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under the
+#   terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+#   
+#   
+#   
+#   @file     uninstall_opensand_run.yml
+#   @brief    Playbook that uninstall the Job opensand-emulation
+#   @author   Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
+#   @author   Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
+#   @author   Aurelien DELRIEU <adelrieu@toulouse.viveris.com>
+#
+
+---
+
+- name: Set OpenSAND repository variables
+  set_fact:
+    opensand_repository_url: "{{ opensand_repository_url | default('http://packages.net4sat.org/opensand/') }}"
+    opensand_repository_distribution: "{{ opensand_repository_distribution | default('xenial') }}"
+    opensand_repository_component: "{{ opensand_repository_component | default('stable') }}"
+
+- name: Delete OpenSAND Entity Job repository
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: absent
+
+- name: Uninstall OpenSAND
+  environment: 
+   DEBIAN_FRONTEND : noninteractive
+  apt:
+    name: "{{ item }}"
+    state: absent
+    purge: yes
+  with_items:
+    - opensand-manager
+    - opensand-manager-gui
+    - opensand-manager-core
+    - opensand-core-conf
+    - libopensand-gse-encap-plugin-conf
+    - libopensand-gse-encap-plugin-manager
+    - libopensand-rle-encap-plugin-conf
+    - libopensand-rle-encap-plugin-manager
+    - libopensand-rohc-lan-adapt-plugin-conf
+    - libopensand-rohc-lan-adapt-plugin-manager
+  become: yes
+
+- name: Remove OpenSAND {{ opensand_repository_component }} repository for {{ opensand_repository_distribution }} distribution
+  apt_repository:
+    repo: "deb {{ opensand_repository_url }} {{ opensand_repository_distribution }} {{ opensand_repository_component }}"
+    state: absent
+    update_cache: yes
+  become: yes

@@ -1,0 +1,99 @@
+# 
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under the
+#   terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+#   
+#   
+#   
+#   @file     install_opensand_conf.yml
+#   @brief    Playbook that install the Job opensand-conf
+#   @author   Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
+#   @author   Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
+#   @author   Aurelien DELRIEU <adelrieu@toulouse.viveris.com>
+#
+
+---
+
+
+- name: Set OpenSAND repository variables
+  set_fact:
+    opensand_repository_url: "{{ opensand_repository_url | default('http://packages.net4sat.org/opensand/') }}"
+    opensand_repository_distribution: "{{ opensand_repository_distribution | default('xenial') }}"
+    opensand_repository_component: "{{ opensand_repository_component | default('stable') }}"
+
+- name: Create OpenSAND Conf Job directory
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
+
+- name: Install OpenSAND Conf Job requirements
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: no
+  register: install
+  become: yes
+  with_items :
+    - python3-netifaces
+    - debconf
+
+- name: Install OpenSAND conf Job
+  copy:
+    src: files/{{ item.file }}
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
+  with_items:
+    - { file: 'opensand_conf.py', mode: '0755' }
+    - { file: 'opensand_conf.help', mode: '0644' }
+    - { file: 'opensand_conf_rstats_filter.conf', mode: '0644' }
+
+- name: Add OpenSAND {{ opensand_repository_component }} repository for {{ opensand_repository_distribution }} distribution
+  apt_repository:
+    repo: "deb {{ opensand_repository_url }} {{ opensand_repository_distribution }} {{ opensand_repository_component }}"
+    state: present
+    update_cache: yes
+  become: yes
+
+- name: Install OpenSAND
+  environment: 
+    DEBIAN_FRONTEND : noninteractive
+  apt:
+    name: '{{ item }}'
+    state: installed
+    force: yes
+    update_cache: no
+  with_items:
+    - opensand
+    - libopensand-rohc-lan-adapt-plugin
+    - libopensand-output-openbach
+  register: install
+  become: yes
+
+- name: Set rsyslog configuration
+  template: src=rsyslog.j2 dest=/etc/rsyslog.d/10-{{ job_name }}.conf
+  become: yes
+  vars:
+    - syslogseverity: 4
+    - collector_ip: "{{ openbach_collector }}"

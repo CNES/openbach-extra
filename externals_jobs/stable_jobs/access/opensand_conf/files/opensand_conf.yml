@@ -1,0 +1,82 @@
+---
+
+general:
+  name:            opensand-conf
+  description: >
+      This job configures an OpenSAND entity.
+      It can be a gateway ("gw"), a satellite terminal ("st"), satellite emulator ("sat") or none ("none").
+  job_version:     '1.0'
+  keywords:        [opensand, configuration, conf, gw, gateway, sat, satellite, st, terminal]
+  persistent:      false
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/opensand_conf/opensand_conf.py'
+    command_stop:
+
+# maybe 'ip' as ipv4 and ipv6 type
+
+arguments:
+  required:
+    - name:        entity-type
+      type:        str
+      count:       1
+      description: The type of the entity ("gw", "st", sat" or "none")
+    - name:        ctrl-iface
+      type:        str
+      count:       1
+      description: The interface used to control the OpenSAND Daemon
+    - name:        emu-iface
+      type:        str
+      count:       1
+      description: The interface used to emulate the satellite network
+    - name:        emu-ipv4
+      type:        str
+      count:       1
+      description: The IPv4 address to set to the "emu-iface" interface (format X.X.X.X/X)
+  optional:
+    - name:        platform-id
+      type:        str
+      flag:        '--platform-id'
+      count:       1
+      description: The plateform id (default is none)
+    - name:        entity-id
+      type:        int
+      flag:        '--entity-id'
+      count:       1
+      description: The entity id (0 or 6 for "gw", 1-5 or 7-10 for "st", none otherwise)
+    - name:        lan-iface
+      type:        str
+      flag:        '--lan-iface'
+      count:       1
+      description: The interface used to receive/send traffic
+    - name:        lan-ipv4
+      type:        str
+      flag:        '--lan-ipv4'
+      count:       1
+      description: The IPv4 address to set to the "lan-iface" interface (format X.X.X.X/X)
+    - name:        lan-ipv6
+      type:        str
+      flag:        '--lan-ipv6'
+      count:       1
+      description: The IPv6 address to set to the "lan-iface" interface (format X::X/X)
+    - name:        service-port
+      type:        int
+      flag:        '--service-port'
+      count:       1
+      description: 'The port to receive information about other entitites (default: 3141)'
+    - name:        command-port
+      type:        int
+      flag:        '--command-port'
+      count:       1
+      description: 'The port to receive command from the manager (default: 5926)'
+    - name:        status-port
+      type:        int
+      flag:        '--status-port'
+      count:       1
+      description: 'The port to receive status requestes from the manager (default: 5358)'
+
+statistics:
+
