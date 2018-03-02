@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 
 # OpenBACH is a generic testbed able to control/configure multiple
 # network/physical entities (under test) and collect data from them. It is
@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016 CNES
+# Copyright ▒ 2016 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -40,7 +40,9 @@ __credits__ = '''Contributors:
 import os
 import re
 import sys
+import glob
 import time
+import signal
 import syslog
 import argparse
 import threading
@@ -128,6 +130,7 @@ class CustomUnixDatagramServer(socketserver.UnixDatagramServer):
 class UDPUnixRequestHandler(socketserver.DatagramRequestHandler):
     def handle(self):
         msg = self.rfile.read().decode()[:-2]
+        print(msg)
         if msg.startswith('Proto Info: REPORT'):
             # Start of new message
             self.server.new_report()
@@ -151,24 +154,68 @@ def connect_to_collect_agent():
     collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job NORM')
 
 
-def send_mode(address, port, iface, directory, max_rate, first_segment, last_segment, pipe):
+def enqueue_file (session,element,address,queue):
+    collect_agent.send_log(
+            syslog.LOG_DEBUG,
+            'NORM to {}: Sending file: {}'
+            .format(address, element.filename))
+    session.fileEnqueue(element.filepath, element.filename)
+    print('NORM to {}: Sending file: {}'.format(address,element.filename))
+    if queue:
+        queue.put(element.file_number)
+    element.sent = True
+
+
+def send_mode(address, port, iface, directory, repeat, cc, rate, first_segment, last_segment, pipe, queue=None):
     collect_agent.send_log(
             syslog.LOG_DEBUG,
             'NORM will send {} from segment '
             'number {}'.format(address, first_segment))
 
+    os.nice(-10)
     instance = pynorm.Instance()
     instance.openDebugPipe(pipe)
     instance.setDebugLevel(3)
     session = instance.createSession(address, port)
     session.setReportInterval(1)
     session.setMulticastInterface(iface)
-    session.setCongestionControl(True, True)
-    session.setTxRateBounds(10000, max_rate)
+    if (cc == "on"):
+        session.setCongestionControl(True, True)
+        session.setTxRateBounds(1000000, rate)
+    else:
+        session.setTxRate(rate)
     session.startSender(randint(0, 1000), 1024**2, 1400, 64, 16)
+
+    #Proactive FEC
+    #session.setAutoParity(16)
+
+    if repeat == 'on':
+        filepath = os.path.abspath(directory)
+        filename = directory[directory.rfind('/')+1:]
+        while True :
+            session.fileEnqueue(filepath, filename)
+            collect_agent.send_log(
+                    syslog.LOG_DEBUG,
+                    'NORM to {}: Sending file: {}'
+                    .format(address,filename))
+            print('NORM to {}: Sending file: {}'.format(address,filename))
+            for event in instance:
+                if str(event) in END_OF_TRANSMISSION_EVENTS:
+                    break
+            time.sleep(1)
 
     number_pattern = re.compile(r'2s([0-9]+)\.m4s$')
     files_found = set()
+
+    if first_segment > 0 :
+        while True:
+             mp4_filepath = glob.glob('{}*.mp4'.format(os.path.expanduser(directory)))
+             if len(mp4_filepath) != 0:
+                 mp4_filename = mp4_filepath[0][len(directory):].lstrip('/')
+                 element = (Element(0, mp4_filepath[0],mp4_filename))
+                 enqueue_file(session,element,address,queue)
+                 break
+
     while True:
         for root, dirs, files in os.walk(os.path.expanduser(directory)):
             for filename in files:
@@ -198,18 +245,29 @@ def send_mode(address, port, iface, directory, max_rate, first_segment, last_seg
             if element.file_number != first_segment:
                 break
 
-            collect_agent.send_log(
-                    syslog.LOG_DEBUG,
-                    'NORM to {}: Sending file: {}'
-                    .format(address, element.filename))
-            session.fileEnqueue(element.filepath, element.filename)
-            element.sent = True
-
+            enqueue_file (session,element,address,queue)
             first_segment += 1
 
+            sent = False
             for event in instance:
-                if str(event) in END_OF_TRANSMISSION_EVENTS:
-                    break
+                print("event : {}".format(event))
+                if event == 'NORM_TX_OBJECT_SENT':
+                    sent = True
+
+                if str(event) in END_OF_TRANSMISSION_EVENTS and not sent:
+                    enqueue_file (session,element,address,queue)
+                    continue
+                elif str(event) in END_OF_TRANSMISSION_EVENTS and sent:
+                    print("{} sent".format(element.filename))
+                    if element.file_number == last_segment:
+                        return
+                    else:
+                        break
+
+
+def handler_timeout(signum,frame):
+    print("TIMEOUT ! Exiting first chunk Rx")
+    sys.exit()
 
 
 def receive_mode(address, port, iface, directory, pipe):
@@ -223,6 +281,15 @@ def receive_mode(address, port, iface, directory, pipe):
     session.setReportInterval(1)
     session.setMulticastInterface(iface)
     session.startReceiver(1024 * 1024)
+    session.setMessageTrace(True)
+
+    #Disable NACK
+    #session.setSilentReceiver(True)
+
+    if first_only == "on":
+        signal.signal(signal.SIGALRM, handler_timeout)
+        signal.alarm(20)
+
 
     for event in instance:
         if event == 'NORM_RX_OBJECT_INFO':
@@ -231,12 +298,22 @@ def receive_mode(address, port, iface, directory, pipe):
             collect_agent.send_log(
                     syslog.LOG_DEBUG,
                     'Receiving file {}'.format(event.object.filename))
+            if (filename != "multicast_contents"):
+                print('Receiving file {}'.format(filename))
 
         elif event == 'NORM_RX_OBJECT_COMPLETED':
-            os.chmod(event.object.filename, 0o644)
+            filename = event.object.filename.decode()
+            if first_only == "on":
+                if '.mp4' not in filename and '.mpd' not in filename:
+                    os.remove(filename)
+                    continue
+            ## Rights are modified by the M-ABR manager of the ST
+            #os.chmod(event.object.filename, 0o644)
             collect_agent.send_log(
                     syslog.LOG_DEBUG,
                     'File {} completed'.format(event.object.filename))
+            if '.mp4' in filename and first_only == "on":
+                break
 
         elif event == 'NORM_RX_OBJECT_ABORTED':
             collect_agent.send_log(
@@ -256,7 +333,7 @@ def main(args):
         if args.mode == 'tx':
             send_mode(
                     args.address, args.port, args.iface,
-                    args.directory, args.max_rate,
+                    args.directory, args.repeat, args.cc, args.rate,
                     args.first_seg, args.last_seg, filename)
         else:
             receive_mode(
@@ -276,7 +353,7 @@ if __name__ == '__main__':
     parser.add_argument(
             'iface', help='The interface to transmit multicast on.')
     parser.add_argument(
-            'directory', help='Directory list to transmit.')
+            'directory', help='Directory list to transmit or receive. If Rx repeat mode is enabled, it must be a file')
     subparsers = parser.add_subparsers(
             dest='mode', metavar='mode',
             help='the mode to operate')
@@ -289,6 +366,9 @@ if __name__ == '__main__':
     parser_rx.add_argument(
             '-p', '--port', type=int, default=6003,
             help='The port number to listen on')
+    parser_rx.add_argument(
+            '-f', '--first-only', default='off',
+            help='If enabled, only receives the first chunk')
 
     parser_tx = subparsers.add_parser(
             'tx', help='operate on mode transmission')
@@ -299,8 +379,14 @@ if __name__ == '__main__':
             '-p', '--port', type=int, default=6003,
             help='The port number to listen on')
     parser_tx.add_argument(
-            '-m', '--max-rate', type=int, required=True,
-            help='Maximal rate in bytes.')
+            '--repeat', default='off',
+            help='If enabled, Norm repeat the files list Tx')
+    parser_tx.add_argument(
+            '-c', '--cc', default='off',
+            help='Enable or disable congestion control')
+    parser_tx.add_argument(
+            '-r', '--rate', type=int, required=True,
+            help='Maximal rate if CC enabled, constant rate if CC disabled. In bytes.')
     parser_tx.add_argument(
             '-f', '--first-seg', type=int, default=-1,
             help='First segment number to send.')
