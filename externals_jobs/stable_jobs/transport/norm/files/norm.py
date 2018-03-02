@@ -130,7 +130,7 @@ class CustomUnixDatagramServer(socketserver.UnixDatagramServer):
 class UDPUnixRequestHandler(socketserver.DatagramRequestHandler):
     def handle(self):
         msg = self.rfile.read().decode()[:-2]
-        print(msg)
+        collect_agent.send_log(syslog.LOG_DEBUG, msg)
         if msg.startswith('Proto Info: REPORT'):
             # Start of new message
             self.server.new_report()
@@ -160,7 +160,6 @@ def enqueue_file (session,element,address,queue):
             'NORM to {}: Sending file: {}'
             .format(address, element.filename))
     session.fileEnqueue(element.filepath, element.filename)
-    print('NORM to {}: Sending file: {}'.format(address,element.filename))
     if queue:
         queue.put(element.file_number)
     element.sent = True
@@ -198,7 +197,6 @@ def send_mode(address, port, iface, directory, repeat, cc, rate, first_segment, 
                     syslog.LOG_DEBUG,
                     'NORM to {}: Sending file: {}'
                     .format(address,filename))
-            print('NORM to {}: Sending file: {}'.format(address,filename))
             for event in instance:
                 if str(event) in END_OF_TRANSMISSION_EVENTS:
                     break
@@ -250,7 +248,7 @@ def send_mode(address, port, iface, directory, repeat, cc, rate, first_segment, 
 
             sent = False
             for event in instance:
-                print("event : {}".format(event))
+                collect_agent.send_log(syslog.LOG_DEBUG, "Event : {}".format(event))
                 if event == 'NORM_TX_OBJECT_SENT':
                     sent = True
 
@@ -258,7 +256,7 @@ def send_mode(address, port, iface, directory, repeat, cc, rate, first_segment, 
                     enqueue_file (session,element,address,queue)
                     continue
                 elif str(event) in END_OF_TRANSMISSION_EVENTS and sent:
-                    print("{} sent".format(element.filename))
+                    collect_agent.send_log(syslog.LOG_DEBUG, "{} sent".format(element.filename))
                     if element.file_number == last_segment:
                         return
                     else:
@@ -266,7 +264,7 @@ def send_mode(address, port, iface, directory, repeat, cc, rate, first_segment, 
 
 
 def handler_timeout(signum,frame):
-    print("TIMEOUT ! Exiting first chunk Rx")
+    collect_agent.send_log(syslog.LOG_DEBUG, "TIMEOUT ! Exiting first chunk Rx")
     sys.exit()
 
 
@@ -298,8 +296,6 @@ def receive_mode(address, port, iface, directory, pipe):
             collect_agent.send_log(
                     syslog.LOG_DEBUG,
                     'Receiving file {}'.format(event.object.filename))
-            if (filename != "multicast_contents"):
-                print('Receiving file {}'.format(filename))
 
         elif event == 'NORM_RX_OBJECT_COMPLETED':
             filename = event.object.filename.decode()
