@@ -124,7 +124,7 @@ class StartScenarioInstance(OpenBachFunction):
         super().__init__(launched, finished, delay)
         self.scenario_name = None
 
-    def configure(self, scenario_name, date='now', **scenario_arguments):
+    def configure(self, scenario_name, **scenario_arguments):
         """Define this openbach function with the mandatory values:
          - scenario_name: name of the sub-scenario to start.
          - scenario_arguments: dictionary of arguments to use in
@@ -135,7 +135,6 @@ class StartScenarioInstance(OpenBachFunction):
 
         self.scenario_name = scenario_name
         self.scenario_arguments = scenario_arguments
-        self.scenario_start_date = date
 
     def build(self, functions):
         """Construct a dictionary representing this function.
@@ -151,7 +150,6 @@ class StartScenarioInstance(OpenBachFunction):
         context['start_scenario_instance'] = {
             'scenario_name': self.scenario_name,
             'arguments': self.scenario_arguments,
-            'date': self.scenario_start_date,
         }
         return context
 
