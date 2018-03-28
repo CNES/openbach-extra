@@ -53,14 +53,14 @@
   become: yes
 
 - name: Install twinkle conf files
-  copy: src={{ item.file }} dest=/home/openbach/.twinkle/ mode={{ item.mode }}
+  copy: src={{ item.file }} dest=/root/.twinkle/ mode={{ item.mode }}
   with_items:
     - { file: 'twinkle.sys', mode: '0644' }
     - { file: 'openbach.cfg', mode: '0664' }
   become: yes
   
 - name: Install alsa conf file
-  copy: src={{ item.file }} dest=/home/openbach/{{ item.dest }} mode={{ item.mode }}
+  copy: src={{ item.file }} dest=/root/{{ item.dest }} mode={{ item.mode }}
   with_items:
     - { file: 'asoundrc', dest: '.asoundrc', mode: '0644' }
   become: yes
