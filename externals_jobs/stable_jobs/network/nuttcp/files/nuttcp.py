@@ -32,6 +32,7 @@
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
  * Alban FRICOT <africot@toulouse.viveris.com>
+ * Joaquin MUGUERZA <jmuguerza@toulouse.viveris.com>
 '''
 
 
@@ -46,44 +47,23 @@ from collections import defaultdict
 
 import collect_agent
 
-
-BRACKETS = re.compile(r'[\[\]]')
-
-
-class AutoIncrementFlowNumber:
-    def __init__(self):
-        self.count = 0
-
-    def __call__(self):
-        self.count += 1
-        return 'Flow{0.count}'.format(self)
-
-
-def multiplier(unit, base):
-    if unit == base:
-        return 1
-    if unit.startswith('M'):
-        return 1024 * 1024
-    if unit.startswith('K'):
-        return 1024
-    if unit.startswith('m'):
-        return 0.001
-    return 1
-
+TCP_STAT = re.compile(r'megabytes=(?P<data_sent>[0-9\.]+) real_sec=(?P<time>[0-9\.]+) rate_Mbps=(?P<rate>[0-9\.]+) retrans=(?P<retransmissions>[0-9]+) total_megabytes=(?P<total_data_sent>[0-9\.]+) total_real_sec=(?P<total_time>[0-9\.]+) total_rate_Mbps=(?P<mean_rate>[0-9\.]+) retrans=(?P<total_retransmissions>[0-9]+)')
+TCP_END_STAT = re.compile(r'megabytes=[0-9\.]+ real_seconds=[0-9\.]+ rate_Mbps=[0-9\.]+')
+UDP_STAT = re.compile(r'megabytes=(?P<data_sent>[0-9\.]+) real_sec=(?P<time>[0-9\.]+) rate_Mbps=(?P<rate>[0-9\.]+) drop=(?P<lost_pkts>[0-9]+) pkt=(?P<sent_pkts>[0-9]+) data_loss=(?P<data_loss>[0-9\.]+) total_megabytes=(?P<total_data_sent>[0-9\.]+) total_real_sec=(?P<total_time>[0-9\.]+) total_rate_Mbps=(?P<total_rate>[0-9\.]+) drop=(?P<total_lost_pkts>[0-9]+) pkt=(?P<total_sent_pkts>[0-9]+) data_loss=(?P<total_data_loss>[0-9\.]+)')
+UDP_END_STAT = re.compile(r'megabytes=[0-9\.]+ real_seconds=[0-9\.]+ rate_Mbps=[0-9\.]+')
 
 def _command_build_helper(flag, value):
     if value is not None:
         yield flag
         yield str(value)
 
-
-def server(port):
-    cmd = ['nuttcp', '-S']
-    cmd.extend(_command_build_helper('-p', port))
+def server(args):
+    cmd = ['nuttcp', '-S', '--nofork']
+    cmd.extend(_command_build_helper('-P', args.get('command_port')))
     p = subprocess.run(cmd)
     sys.exit(p.returncode)
 
-def client(udp, port):
+def client(args):
     # Connect to collect_agent
     success = collect_agent.register_collect(
             '/opt/openbach/agent/jobs/nuttcp/'
@@ -93,62 +73,58 @@ def client(udp, port):
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
 
-    cmd = ['stdbuf', '-oL', 'nuttcp']
-    cmd.extend(_command_build_helper('-p', port))
+    cmd = ['stdbuf', '-oL', 'nuttcp', '-fparse', '-frunningtotal']
+    cmd.extend(('-r', ) if args.get('receiver') else '')
+    cmd.extend(('-u', ) if args.get('udp') else '')
+    cmd.extend(_command_build_helper('-P', args.get('command_port')))
+    cmd.extend(_command_build_helper('-p', args.get('port')))
+    cmd.extend(_command_build_helper('-w', args.get('buffer_size')))
+    cmd.extend(_command_build_helper('-M', args.get('mss')))
+    cmd.extend(_command_build_helper('-c', args.get('dscp')))
+    cmd.extend(_command_build_helper('-N', args.get('n_streams')))
+    cmd.extend(_command_build_helper('-T', args.get('duration')))
+    cmd.extend(_command_build_helper('-R', args.get('rate_limit')))
+    cmd.extend(_command_build_helper('-i', args.get('stats_interval')))
+    cmd.extend((args.get('server_ip'), ))
 
     # Read output, and send stats
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
-    flow_map = defaultdict(AutoIncrementFlowNumber())
+    if args.get('udp'):
+        STAT = UDP_STAT
+        END_STAT = UDP_END_STAT
+    else:
+        STAT = TCP_STAT
+        END_STAT = TCP_END_STAT
 
-    for flow_number in repeat(None):
-        line = p.stdout.readline().decode()
-        tokens = BRACKETS.sub('', line).split()
-        if not tokens:
-            if p.poll() is not None:
-                break
-            continue
+    while True:
+        # Iterate while process is running
+        if p.poll() is not None:
+            break
 
         timestamp = int(time.time() * 1000)
 
+        line = p.stdout.readline().decode()
+        # Check for last line
+        if END_STAT.search(line):
+            break
+
+        # Else, get stats and send them
         try:
-            try:
-                flow, duration, _, transfer, transfer_units, bandwidth, bandwidth_units, jitter, jitter_units, packets_stats, datagrams = tokens
-                jitter = float(jitter)
-                datagrams = float(datagrams[1:-2])
-                lost, total = map(int, packets_stats.split('/'))
-            except ValueError:
-                udp = False
-                flow, duration, _, transfer, transfer_units, bandwidth, bandwidth_units = tokens
-            else:
-                udp = True
-            transfer = float(transfer)
-            bandwidth = float(bandwidth)
-            interval_begin, interval_end = map(float, duration.split('-'))
-        except ValueError:
-            # filter out non-stats lines
+            statistics = STAT.search(line).groupdict()
+        except AttributeError:
             continue
 
-        if not transfer or interval_end - interval_begin > interval:
-            # filter out lines covering the whole duration
-            continue
-
-        try:
-            flow_number = flow_map[int(flow)]
-        except ValueError:
-            if flow.upper() != "SUM":
-                continue
-
+        # Convert units and cast to float
         statistics = {
-                'sent_data': transfer * multiplier(transfer_units, 'Bytes'),
-                'throughput': bandwidth * multiplier(bandwidth_units, 'bits/sec'),
+                k: ( 
+                    float(v)*1024*1024 if k in 
+                    {'data_sent', 'rate', 'mean_rate', 'total_data_sent'}
+                    else float(v))
+                for k, v in statistics.items()
         }
-        if udp:
-            statistics['jitter'] = jitter * multiplier(jitter_units, 's')
-            statistics['lost_pkts'] = lost
-            statistics['sent_pkts'] = total
-            statistics['plr'] = datagrams
-        collect_agent.send_stat(timestamp, suffix=flow_number, **statistics)
+
+        collect_agent.send_stat(timestamp, **statistics)
 
 
 if __name__ == "__main__":
@@ -156,24 +132,56 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
             description=__doc__,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-            '-S', '--server', action='store_true',
+    parser.add_argument(
+            '-s', '--server', action='store_true',
             help='Run in server mode')
     parser.add_argument(
-            '-p', '--port', type=int,
+            '-i', '--server-ip', type=str,
+            help='Server IP address (client only)')
+    parser.add_argument(
+            '-P', '--command-port', type=int,
             help='Set server port to listen on/connect to '
-            'n (default 5201)')
+            'n (default 5000)')
+    parser.add_argument(
+            '-p', '--port', type=int,
+            help='Set server port for the data transmission'
+            '(default 5001)')
+    parser.add_argument(
+            '-R', '--receiver', action='store_true',
+            help='Launch client as receiver (else, transmitter). Only in client.')
     parser.add_argument(
             '-u', '--udp', action='store_true',
             help='Use UDP rather than TCP')
+    parser.add_argument(
+            '-b', '--buffer-size', type=int,
+            help='The receive buffer size')
+    parser.add_argument(
+            '-m', '--mss', type=int,
+            help='The MSS for data connection')
+    parser.add_argument(
+            '-c', '--dscp', type=str,
+            help='The DSP value on data streams (t|T suffix for full TOS field)')
+    parser.add_argument(
+            '-n', '--n-streams', type=int,
+            help='The number of streams')
+    parser.add_argument(
+            '-d', '--duration', type=int,
+            help='The duration of the transmission')
+    parser.add_argument(
+            '-r', '--rate-limit', type=int,
+            help='The transmit rate limit in Kbps')
+    parser.add_argument(
+            '-I', '--stats-interval', type=int, default=1,
+            help='The stats interval')
+
 
     # get args
     args = parser.parse_args()
-    port = args.port
-    udp = args.udp
+    args = vars(args)
 
-    if args.server:
-        server(port)
+    server_mode = args.pop('server')
+
+    if server_mode:
+        server(args)
     else:
-        client(port, udp)
+        client(args)

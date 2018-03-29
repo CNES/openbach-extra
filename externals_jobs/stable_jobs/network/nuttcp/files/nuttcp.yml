@@ -22,19 +22,79 @@ arguments:
     - name:        server_mode
       type:        'None'
       count:       0
-      flag:        '-S'
+      flag:        '-s'
       description: >
           Start the nuttcp in server mode
+    - name:        server_ip
+      type:        'str'
+      count:       1
+      flag:        '-i'
+      description: >
+          Server IP address (Client only)
+    - name:        command_port
+      type:        'int'
+      count:       1
+      flag:        '-P'
+      description: >
+          Set server port to listen on/connect to (default 5000)
     - name:        port
       type:        'int'
       count:       1
       flag:        '-p'
       description: >
-          Set server port to listen on/connect to (default 5201)
+          Set server port for the data transmission (default 5001)
+    - name:        receiver
+      type:        'None'
+      count:       0
+      flag:        '-R'
+      description: >
+          Launch client as receiver (else, transmitter)
     - name:        udp
       type:        'None'
       count:       0
       flag:        '-u'
       description: >
           Use UDP rather than TCP (client mode only)
+    - name:        buffer_size
+      type:        'int'
+      count:       1
+      flag:        '-b'
+      description: >
+          The receive buffer size.
+    - name:        mss
+      type:        'int'
+      count:       1
+      flag:        '-m'
+      description: >
+          The MSS for data connection.
+    - name:        dscp
+      type:        'str'
+      count:       1
+      flag:        '-c'
+      description: >
+          The DSCP value on data streams (t|T suffix for full TOS field).
+    - name:        n_streams
+      type:        'int'
+      count:       1
+      flag:        '-n'
+      description: >
+          The number of streams.
+    - name:        duration
+      type:        'int'
+      count:       1
+      flag:        '-d'
+      description: >
+          The duration of the transmission (default: 10).
+    - name:        rate_limit
+      type:        'int'
+      count:       1
+      flag:        '-r'
+      description: >
+          The transmit rate limit in Kbps.
+    - name:        stats_interval
+      type:        'int'
+      count:       1
+      flag:        '-I'
+      description: >
+          The statistics interval (default: 1 second).
 statistics:
