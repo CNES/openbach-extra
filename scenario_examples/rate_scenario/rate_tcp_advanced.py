@@ -15,7 +15,7 @@ import scenario_builder as sb
 Scenario:
 """
 
-SCENARIO_NAME = "rate_scenario"
+SCENARIO_NAME = "rate_scenario_advanced"
 
 def main(server, client, jobs, parallel_flows, mtu_sizes, tos_values, window_sizes):
     # Create the scenario
