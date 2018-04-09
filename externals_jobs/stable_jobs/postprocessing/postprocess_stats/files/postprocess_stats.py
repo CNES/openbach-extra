@@ -86,14 +86,14 @@ def main(scenario_id, agent_name, job_ids, job_name, stat_name):
 
         # Send stats mean/var/and ci to Collector
         timestamp = round(time.time() * 1000)
-        statistics = {
+        statistics_send = {
                 'mean_value_of_' + stat_name: mean,
                 'variance_value_of_' + stat_name: var,
                 'down_ci_value_of_' + stat_name: confidence_interval[0],
                 'up_ci_value_of_' + stat_name: confidence_interval[1],
         }
         try:
-            collect_agent.send_stat(timestamp, **statistics)
+            collect_agent.send_stat(timestamp, **statistics_send)
         except Exception as ex:
             collect_agent.send_log(
                     syslog.LOG_ERR,
@@ -110,7 +110,7 @@ def main(scenario_id, agent_name, job_ids, job_name, stat_name):
         plt.ylabel('CDF')
         plt.xlabel('Page load time (s)')
         plt.title('CDF of web page load time')
-        n, bins, patches = plt.hist(statistics, 1000, normed=1, cumulative=True)
+        n, bins, patches = plt.hist(statistics, 1000, density=1, cumulative=True)
 
         path = '/tmp/cdf_{}_{}_{}_{}.png'.format(
                 scenario_id, job_instance_id,
