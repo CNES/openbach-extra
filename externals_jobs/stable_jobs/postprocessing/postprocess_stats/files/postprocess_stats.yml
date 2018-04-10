@@ -3,7 +3,7 @@
 general:
   name:            postprocess_stats
   description: >
-      This job computes the mean, the cdf (figure saved in /tmp/), the confidence interval and the variance of a statistic generated for one or several job instances. Must be launched only from the controller Agent.
+      This job computes the mean, the cdf (figure saved in /tmp/), the confidence interval and the variance of a statistic generated for one or several job instances. Must be launched from the Agent of the Collector.
   job_version:     '1.0'
   keywords:        [post-processing, mean, cdf, confidence, interval, variance]
   persistent:      False
