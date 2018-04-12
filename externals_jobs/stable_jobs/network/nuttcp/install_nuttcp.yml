@@ -33,7 +33,7 @@
 ---
 
 - name: Install package nuttcp
-  apt: name=nuttcp state=present
+  apt: name="nuttcp=6.1.2-4+b1" state=present force=yes allow_unauthenticated=yes
   become: yes
 
 - name: Create the nuttcp Job Repository
