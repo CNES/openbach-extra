@@ -46,8 +46,7 @@ from collections import defaultdict
 
 import collect_agent
 
-TCP_STAT = re.compile(r'megabytes=(?P<data_sent>[0-9\.]+) real_sec=(?P<time>[0-9\.]+) rate_Mbps=(?P<rate>[0-9\.]+) retrans=(?P<retransmissions>[0-9]+) total_megabytes=(?P<total_data_sent>[0-9\.]+) total_real_sec=(?P<total_time>[0-9\.]+) total_rate_Mbps=(?P<mean_rate>[0-9\.]+) retrans=(?P<total_retransmissions>[0-9]+)')
-TCP_STAT_N = re.compile(r'megabytes=(?P<data_sent>[0-9\.]+) real_sec=(?P<time>[0-9\.]+) rate_Mbps=(?P<rate>[0-9\.]+) total_megabytes=(?P<total_data_sent>[0-9\.]+) total_real_sec=(?P<total_time>[0-9\.]+) total_rate_Mbps=(?P<mean_rate>[0-9\.]+)')
+TCP_STAT = re.compile(r'megabytes=(?P<data_sent>[0-9\.]+) real_sec=(?P<time>[0-9\.]+) rate_Mbps=(?P<rate>[0-9\.]+)( retrans=(?P<retransmissions>[0-9]+))? total_megabytes=(?P<total_data_sent>[0-9\.]+) total_real_sec=(?P<total_time>[0-9\.]+) total_rate_Mbps=(?P<mean_rate>[0-9\.]+)( retrans=(?P<total_retransmissions>[0-9]+))?')
 TCP_END_STAT = re.compile(r'megabytes=[0-9\.]+ real_seconds=[0-9\.]+ rate_Mbps=[0-9\.]+')
 UDP_STAT = re.compile(r'megabytes=(?P<data_sent>[0-9\.]+) real_sec=(?P<time>[0-9\.]+) rate_Mbps=(?P<rate>[0-9\.]+) drop=(?P<lost_pkts>[0-9]+) pkt=(?P<sent_pkts>[0-9]+) data_loss=(?P<data_loss>[0-9\.]+) total_megabytes=(?P<total_data_sent>[0-9\.]+) total_real_sec=(?P<total_time>[0-9\.]+) total_rate_Mbps=(?P<total_rate>[0-9\.]+) drop=(?P<total_lost_pkts>[0-9]+) pkt=(?P<total_sent_pkts>[0-9]+) data_loss=(?P<total_data_loss>[0-9\.]+)')
 UDP_END_STAT = re.compile(r'megabytes=[0-9\.]+ real_seconds=[0-9\.]+ rate_Mbps=[0-9\.]+')
@@ -63,7 +62,7 @@ def server(args):
     p = subprocess.run(cmd)
     sys.exit(p.returncode)
 
-def client(args, n_streams, iterations, rate_compute_time):
+def client(args):
     # Connect to collect_agent
     success = collect_agent.register_collect(
             '/opt/openbach/agent/jobs/nuttcp/'
@@ -91,39 +90,36 @@ def client(args, n_streams, iterations, rate_compute_time):
         STAT = UDP_STAT
         END_STAT = UDP_END_STAT
     else:
-        if n_streams > 1:
-            STAT = TCP_STAT_N
-            END_STAT = TCP_END_STAT
-        else:
-            STAT = TCP_STAT
-            END_STAT = TCP_END_STAT
-    total_rate=[]
-    total_duration=[]
+        STAT = TCP_STAT
+        END_STAT = TCP_END_STAT
 
-    # Read output, and send stats
-    for i in range(iterations):
+    # Launch client iteration times
+    for i in range(args.get('iterations')):
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+
+        total_rate = []
+        total_duration = []
+
         while True:
             # Iterate while process is running
             if p.poll() is not None:
                 break
-    
+
             timestamp = int(time.time() * 1000)
-    
+
             line = p.stdout.readline().decode()
             # Check for last line
             if END_STAT.search(line):
-                statistics = {}
-                statistics['mean_total_rate'] = sum(total_rate)/len(total_rate)
-                statistics['max_total_rate'] = max(total_rate)
-                collect_agent.send_stat(timestamp, **statistics)
                 break
-    
+
             # Else, get stats and send them
             try:
                 statistics = STAT.search(line).groupdict()
             except AttributeError:
                 continue
+            # Filter None values
+            statistics = { k:v for k, v in statistics.items() if v is not None }
+
             # Convert units and cast to float
             statistics = {
                     k: ( 
@@ -132,12 +128,18 @@ def client(args, n_streams, iterations, rate_compute_time):
                         else float(v))
                     for k, v in statistics.items()
             }
-            if (statistics["total_time"]) > rate_compute_time:
+            if (statistics["total_time"]) > args['rate_compute_time']:
                 total_rate.append((statistics["rate"]))
                 total_duration.append((statistics["total_time"]))
             collect_agent.send_stat(timestamp, **statistics)
+
+        # Send mean and max statistics for this iteration
+        statistics = {}
+        statistics['mean_total_rate'] = sum(total_rate)/len(total_rate)
+        statistics['max_total_rate'] = max(total_rate)
+        collect_agent.send_stat(timestamp, **statistics)
         
-        time.sleep(10)
+        time.sleep(5)
 
 if __name__ == "__main__":
     # Define Usage
@@ -194,9 +196,6 @@ if __name__ == "__main__":
 
     # get args
     args = parser.parse_args()
-    n_streams = args.n_streams
-    iterations = args.iterations
-    rate_compute_time = args.rate_compute_time
     args = vars(args)
 
     server_mode = args.pop('server')
@@ -204,4 +203,4 @@ if __name__ == "__main__":
     if server_mode:
         server(args)
     else:
-        client(args, n_streams, iterations, rate_compute_time)
+        client(args)
