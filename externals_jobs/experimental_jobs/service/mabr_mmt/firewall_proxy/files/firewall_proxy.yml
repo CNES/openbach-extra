@@ -1,0 +1,66 @@
+---
+
+general:
+  name:            'firewall_proxy'
+  description: >
+      A firewall proxy for MMT.
+  job_version:     '1.0'
+  keywords:        [proxy, firewall]
+  persistent:      True
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 "/opt/openbach/agent/jobs/firewall_proxy/firewall_proxy.py"'
+    command_stop:
+
+arguments:
+  required:
+    - name:        port
+      type:        'int'
+      count:        1
+      description: >
+          The port the proxy is bound to
+    - name:        multicast_contents
+      type:        'str'
+      count:        1
+      description: >
+          The path of the multicast contents file
+    - name:        addr_proxy_bb
+      type:        'str'
+      count:        1
+      description: >
+          The BB proxy IP address
+    - name:        addr_proxy
+      type:        'str'
+      count:        1
+      description: >
+          The proxy IP address
+    - name:        port_a_proxy_bb
+      type:        'int'
+      count:        1
+      description: >
+          The BB proxy A port
+    - name:        port_b_proxy_bb
+      type:        'int'
+      count:        1
+      description: >
+          The BB proxy B port
+    - name:        server_ip
+      type:        'str'
+      count:        1
+      description: >
+          The server IP address
+    - name:        content_name
+      type:        'str'
+      count:        1
+      description: >
+          The name of the content
+    - name:        segment_duration
+      type:        'int'
+      count:        1
+      description: >
+          The duration of a segment
+
+statistics:

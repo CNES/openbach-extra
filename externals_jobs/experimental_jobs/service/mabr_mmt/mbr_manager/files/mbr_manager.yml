@@ -1,0 +1,130 @@
+---
+
+general:
+  name:            'mbr_client'
+  description: >
+      The MBR client. Needs job norm installed!
+  job_version:     '1.0'
+  keywords:        [proxy, firewall]
+  persistent:      True
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 "/opt/openbach/agent/jobs/mbr_client/controller.py"'
+    command_stop:
+
+arguments:
+  required:
+    - name:        tx_norm_iface
+      type:        'str'
+      count:        1
+      description: >
+          Nrom Tx interface
+    - name:        server_ip
+      type:        'str'
+      count:        1
+      description: >
+          The server IP
+    - name:        content_dir
+      type:        'str'
+      count:        1
+      description: >
+          Content directory
+    - name:        squid_cache_dir
+      type:        'str'
+      count:        1
+      description: >
+          Squid cache directory
+    - name:        formatted_files_dir
+      type:        'str'
+      count:        1
+      description: >
+          Formatted files dir
+    - name:        multicast_contents
+      type:        'str'
+      count:        1
+      description: >
+          Path of the multicast_contents file
+    - name:        quality
+      type:        'str'
+      count:        1
+      description: >
+          The quality to use (max, min or average)
+    - name:        resolutions
+      type:        'str'
+      count:        1
+      description: >
+          Comma separated list of resolutions (Default: 1546902,334349,4219897,45652)
+    - name:        content_name
+      type:        'str'
+      count:        1
+      description: >
+          The name of the content
+    - name:        content_name_short
+      type:        'str'
+      count:        1
+      description: >
+          The short name of the content
+    - name:        segment_duration
+      type:        'int'
+      count:        1
+      description: >
+          The duration of a segment
+    - name:        proxy_url
+      type:        'str'
+      count:        1
+      description: >
+          The URL of the proxy
+    - name:        mpd_date
+      type:        'str'
+      count:        1
+      description: >
+          The date on the mpd file name
+
+  optional:
+    - name:        MM
+      flag:        '-m'
+      type:        'None'
+      count:        0
+      description: >
+          Use MM
+    - name:        multicast_a_address
+      flag:        '--multicast-a-address'
+      type:        'str'
+      count:        1
+      description: >
+          Multicast A address (Default: 224.1.2.3)
+    - name:        multicast_a_port
+      flag:        '--multicast-a-port'
+      type:        'int'
+      count:        1
+      description: >
+          Multicast A port (Default: 6143)
+    - name:        multicast_b_address
+      flag:        '--multicast-b-address'
+      type:        'str'
+      count:        1
+      description: >
+          Multicast B address (Default: 224.1.2.4)
+    - name:        multicast_b_port
+      flag:        '--multicast-b-port'
+      type:        'int'
+      count:        1
+      description: >
+          Multicast B port (Default: 6142)
+    - name:        norm_maxrate
+      flag:        '--norm-maxrate'
+      type:        'int'
+      count:        1
+      description: >
+          Norm max transmission rate (Default: 17000000)
+    - name:        resolution
+      flag:        '--resolution'
+      type:        'int'
+      count:        1
+      description: >
+          The resolution of the content (Default: 4219897)
+
+statistics:
