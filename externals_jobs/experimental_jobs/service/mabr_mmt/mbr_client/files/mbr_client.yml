@@ -1,0 +1,95 @@
+---
+
+general:
+  name:            'mbr_client'
+  description: >
+      The MBR client. Needs job norm installed!
+  job_version:     '1.0'
+  keywords:        [proxy, firewall]
+  persistent:      True
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 "/opt/openbach/agent/jobs/mbr_client/controller.py"'
+    command_stop:
+
+arguments:
+  required:
+    - name:        rx_norm_iface
+      type:        'str'
+      count:        1
+      description: >
+          Nrom Rx interface
+    - name:        rx_norm_dir
+      type:        'str'
+      count:        1
+      description: >
+          Norm Rx directory
+    - name:        contents_descriptor_file
+      type:        'str'
+      count:        1
+      description: >
+          Path of the contents_descriptor_file
+    - name:        segment_duration
+      type:        'int'
+      count:        1
+      description: >
+          The duration of a segment
+    - name:        mpd_dir
+      type:        'str'
+      count:        1
+      description: >
+          The dir of the mpd file
+    - name:        proxy_url
+      type:        'str'
+      count:        1
+      description: >
+          The URL of the proxy
+    - name:        content_name
+      type:        'str'
+      count:        1
+      description: >
+          The name of the content
+    - name:        content_name_short
+      type:        'str'
+      count:        1
+      description: >
+          The short name of the content
+    - name:        server_ip
+      type:        'str'
+      count:        1
+      description: >
+          The server IP
+    - name:        addr_proxy_bb
+      type:        'str'
+      count:        1
+      description: >
+          The Proxy BB addr
+    - name:        port_a_proxy_bb
+      type:        'int'
+      count:        1
+      description: >
+          The Proxy BB port A
+    - name:        port_b_proxy_bb
+      type:        'int'
+      count:        1
+      description: >
+          The Proxy BB port B
+
+  optional:
+    - name:        MM
+      flag:        '-m'
+      type:        'None'
+      count:        0
+      description: >
+          Use MM
+    - name:        resolutions
+      type:        'str'
+      flag:        '--resolutions'
+      count:        1
+      description: >
+          Comma separated list of resolutions (Default: 1546902,334349,4219897,45652)
+
+statistics:
