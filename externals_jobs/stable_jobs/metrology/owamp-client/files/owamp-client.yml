@@ -1,0 +1,47 @@
+---
+
+general:
+  name: owamp-client
+  description: >
+    This Job executes the owping (owamp-client) command to measure the one-way delay of a group of UDP packets. Must be used with owamp-server.
+  job_version: '1.0'
+  keywords: [owping, owdelay, client]
+  persistent: no
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/owamp-client/owamp-client.py'
+    command_stop:
+
+arguments:
+  required:
+    - name: destination_ip
+      type: 'str'
+      count: 1
+      description: >
+        Destination IP of the owping
+  optional:
+    - name: count
+      type: 'int'
+      count: 1
+      flag: '-c'
+      description: >
+        The number of test packets to send (default=100)
+    - name: interval
+      type: 'str'
+      count: 1
+      flag: '-i'
+      description: >
+        The mean average time between packets (seconds). If e: random exponential distribution. If f: constant distribution (default=0.1e)
+
+statistics:
+  - name: owd_sent
+    description: >
+      The One-Way delay of UDP packets (link to test host).
+    frequency: 'every sample'
+  - name: owd_received
+    description: >
+      The One-Way delay of UDP packets (link from test host).
+    frequency: 'every sample'

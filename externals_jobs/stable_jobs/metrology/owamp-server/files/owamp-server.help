@@ -1,0 +1,16 @@
+This Job starts a daemon on the server machine to compute one-way delay. Must be used with owamp-client.
+
+To measure one-way delay: a TCP control connection is opened before the packets sending and requires a client who launch the command and a server on which a daemon (owamp-server) is running.
+
+Only one instance of the same job at the same time with the same IP address required.
+Be aware to stop the job instance when all the tests are finished
+
+Server Job (owamp-server): starts the daemon.
+Client Job (owamp-client): executes owping command. Requires to be launched after server mode (with time guard).
+
+This Job doesn't return any statistics. It only switches on the appropriate daemon and switches it off when job instance has finished.
+
+NTP must be running. If not: synchronization issue.
+
+
+

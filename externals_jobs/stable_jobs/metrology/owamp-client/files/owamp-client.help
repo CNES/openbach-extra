@@ -1,0 +1,21 @@
+This Job measures the owe-way delay of a group of UDP packets between two hosts. A TCP control connection is open before the packets sending and requires a client who launch the command and a server on which a daemon (owamp-server) is running.
+When the connection is ready, both client and server independently send test packets on each side, following independent schedules.
+
+This job can be launched several times while there is only one server instance as long as the server listens to the right interface.
+
+Server mode Job: starts the daemon.
+Client mode Job: executes owping command. Requires to be launched after server mode.
+
+This Job returns separately one-way delay between client and server. The data generated are:
+- owd_sent: from client point of view, it is the delay from client to server. In satcom networks, it corresponds to the delay on return link.
+- owd_received: from client point of view, it is the delay from server to client. In satcom networks, it corresponds to the delay on up link.
+
+NTP must be running on both server and client machines.
+
+Interval between packets option: two distribution functions can be used (exponential e or constant f, see example below)
+If sum of owd is required, be aware of using constant interval. If not, packets on both links (from/to testhost) may not be sent using the same timestamps: sum would have no meaning.
+
+Command line examples:
+ - owping "destination_ip"
+ - owping "destination_ip" -c "packets_number_to_send" (default = 100)
+ - owping "destination_ip" -i 0.01f -> sends test packets with constant distribution every 10ms (default = 0.1e)
