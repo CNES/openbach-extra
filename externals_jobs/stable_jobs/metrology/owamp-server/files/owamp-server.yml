@@ -18,9 +18,9 @@ platform_configuration:
 arguments:
   required:
   optional:
-    - name: server_ip
+    - name: server_ip:port
       type: 'str'
       count: 1
       flag: '-S'
       description: >
-        IP address on which server listens. Default: server listens to all the ports.
+        Address on which server listens. Default: server listens to all IP (port 861). Port is not necessary required.
