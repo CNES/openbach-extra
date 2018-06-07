@@ -17,11 +17,11 @@ platform_configuration:
 
 arguments:
   required:
-    - name: destination_ip
+    - name: destination_ip:port
       type: 'str'
       count: 1
       description: >
-        Destination IP of the owping
+        Destination IP of the owping. Port may be neglected if default port is used on server.
   optional:
     - name: count
       type: 'int'
