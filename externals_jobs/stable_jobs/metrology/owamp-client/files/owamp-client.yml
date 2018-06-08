@@ -3,7 +3,7 @@
 general:
   name: owamp-client
   description: >
-    This Job executes the owping (owamp-client) command to measure the one-way delay of a group of UDP packets. Must be used with owamp-server.
+    This Job executes the owping (owamp-client) command to open TCP connection with server and measure the one-way delay of a group of UDP packets. Must be used with owamp-server.
   job_version: '1.0'
   keywords: [owping, owdelay, client]
   persistent: no
@@ -21,7 +21,7 @@ arguments:
       type: 'str'
       count: 1
       description: >
-        Destination IP of the owping. Port may be neglected if default port is used on server.
+        Destination IP of the owping. If default port used: port argument may be neglected.
   optional:
     - name: count
       type: 'int'
@@ -40,8 +40,8 @@ statistics:
   - name: owd_sent
     description: >
       The One-Way delay of UDP packets (link to test host).
-    frequency: 'every sample'
+    frequency: 'each interval'
   - name: owd_received
     description: >
       The One-Way delay of UDP packets (link from test host).
-    frequency: 'every sample'
+    frequency: 'each interval'

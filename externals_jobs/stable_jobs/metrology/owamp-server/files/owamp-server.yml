@@ -3,7 +3,7 @@
 general:
   name: owamp-server
   description: >
-    This Job launches the owamp-server daemon used to open connection with client launching owping command. Must be launched with owamp-client.
+    This Job launches the owamp-server daemon used to open TCP connection with client launching owping command. Must be launched with owamp-client.
   job_version: '1.0'
   keywords: [owping, owdelay, daemon, server]
   persistent: yes
@@ -23,4 +23,4 @@ arguments:
       count: 1
       flag: '-S'
       description: >
-        Address on which server listens. Default: server listens to all IP (port 861). Port is not necessary required.
+        IP on which server listens. Default: server listens to all IP (port 861). Port not mandatory.

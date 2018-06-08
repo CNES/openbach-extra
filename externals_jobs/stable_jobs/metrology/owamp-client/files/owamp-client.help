@@ -1,6 +1,8 @@
 This Job measures the owe-way delay of a group of UDP packets between two hosts. A TCP control connection is open before the packets sending and requires a client who launch the command and a server on which a daemon (owamp-server) is running.
 When the connection is ready, both client and server independently send test packets on each side, following independent schedules.
 
+When launching owamp-client, default port used to open TCP connection is 861. It is possible to change this port in accordance with owamp-server job parameters. This port is not the port used to send UDP packets. By default, the ports used are in range 8760-9960. Not possible to change them for now.
+
 This job can be launched several times while there is only one server instance as long as the server listens to the right interface.
 
 Server mode Job: starts the daemon.
