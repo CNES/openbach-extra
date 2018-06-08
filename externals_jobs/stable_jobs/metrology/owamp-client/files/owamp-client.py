@@ -81,7 +81,13 @@ def client(destination_ip, count, interval):
     collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job opwing')
 
     # launch command
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    # if something wrong happens
+    error_log = p.stderr.readline()
+    if error_log:
+        collect_agent.send_log(syslog.LOG_ERR, 'Errror when launching owping: {}'.format(error_log))
+        exit(1)
 
     # read the first lines and do nothing with (useless --> no information)
     useless_data = p.stdout.readline().decode()
@@ -102,8 +108,14 @@ def client(destination_ip, count, interval):
                 break
                 continue
 
+        # src and dst are not sync
+        if 'unsync' in output_sent.split()[3]:
+            message = 'Error: No synchronization between client and server. Results not available.'
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            exit(message)
+
         # extract delay value in ms
-        delay_sent = output_sent.split()[1] .split("=")[1]
+        delay_sent = output_sent.split()[1].split("=")[1]
 
         # get current timestamp corresponding to delay value of interest
         sent_timestamp = output_sent.split()[7].split("=")[1]  # raw data
