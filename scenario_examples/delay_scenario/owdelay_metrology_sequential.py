@@ -39,14 +39,14 @@ def main(client, server):
     owamp_server = scenario.add_function('start_job_instance',
                                          wait_finished=[fping])
     owamp_server.configure('owamp-server', server, offset=0,
-                           server_ip='$ip_dst')
+                           server_address='$ip_dst')
 
     # Job 'owamp-client'
     owamp_client = scenario.add_function('start_job_instance',
                                          wait_launched=[owamp_server],
                                          wait_delay=5)
     owamp_client.configure('owamp-client', client, offset=0,
-                           destination_ip='$ip_dst')
+                           destination_address='$ip_dst')
 
     # Stop owamp server
     stop_owamp = scenario.add_function('stop_job_instance',

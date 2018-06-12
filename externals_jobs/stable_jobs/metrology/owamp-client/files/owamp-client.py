@@ -41,7 +41,7 @@ import collect_agent
 
 def build_parser():
     parser = argparse.ArgumentParser(description='', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('destination_ip', type=str, help='IP address of destination')
+    parser.add_argument('destination_address', type=str, help='Address of destination')
     parser.add_argument('-c', type=int, dest='count', default=100, help='number of test packets to send '
                                                                         'Default = 100 packets')
 
@@ -60,11 +60,11 @@ def timestamp(data):
     return int((float(data) * 1000))
 
 
-def client(destination_ip, count, interval):
+def client(destination_address, count, interval):
     conffile = "/opt/openbach/agent/jobs/owamp-client/owamp-client_rstats_filter.conf"
 
     # case of output == raw data (singleton metric)
-    cmd = ['owping', '-U', '-v', destination_ip]
+    cmd = ['owping', '-U', '-v', destination_address]
 
     if count:
         cmd += ['-c', str(count)]
@@ -161,7 +161,7 @@ def client(destination_ip, count, interval):
 
 if __name__ == '__main__':
     args = build_parser().parse_args()
-    client(args.destination_ip, args.count, args.interval)
+    client(args.destination_address, args.count, args.interval)
 
 
 
