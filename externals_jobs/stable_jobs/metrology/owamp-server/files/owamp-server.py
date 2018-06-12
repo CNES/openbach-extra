@@ -39,7 +39,7 @@ from time import sleep
 
 def build_parser():
     parser = argparse.ArgumentParser(description='', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-S', type=str, dest='server_ip', help='IP address of the server')
+    parser.add_argument('-S', type=str, dest='server_address', help='IP address of the server')
 
     return parser
 
@@ -52,13 +52,13 @@ def stop_server(sig, frame):
     exit(0)
 
 
-def server(server_ip):
+def server(server_address):
     # launch daemon using sudo /usr/sbin/owampd -c /etc/owamp-server -U owamp
     launch_cmd = ['sudo', '/usr/sbin/owampd', '-c', '/etc/owamp-server', '-U', 'owamp']
 
-    if server_ip:
+    if server_address:
         # use option -S @server_ip
-        launch_cmd += ['-S', server_ip]
+        launch_cmd += ['-S', server_address]
 
     subprocess.run(launch_cmd)
 
@@ -74,7 +74,7 @@ def server(server_ip):
 
 if __name__ == '__main__':
     args = build_parser().parse_args()
-    server(args.server_ip)
+    server(args.server_address)
 
 
 
