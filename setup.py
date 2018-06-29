@@ -20,5 +20,6 @@ setup(
     license='GPL',
     url='http://openbach.org',
 
-    packages=find_packages()
+    packages=find_packages(),
+    install_requires=['requests'],
 )
