@@ -107,7 +107,10 @@ class Scenario:
         """Generator of `Agent` instances associated to this scenario"""
         agents = {}
         for job in self.own_jobs:
-            agent = _get_or_create(agents, Agent, job.agent, self)
+            agent = _get_or_create(
+                    agents, Agent,
+                    job.agent, self.instance_id,
+                    args=(job.agent, self))
             agent.job_instances[(job.name, job.instance_id)] = job
         yield from agents.values()
 
@@ -119,7 +122,10 @@ class Scenario:
         agents = {}
         for scenario in self.scenarios:
             for job in scenario.own_jobs:
-                agent = _get_or_create(agents, Agent, job.agent, scenario)
+                agent = _get_or_create(
+                        agents, Agent,
+                        job.agent, scenario.instance_id,
+                        args=(job.agent, scenario))
                 agent.jobs[(job.name, job.instance_id)] = job
         yield from agents.values()
 
@@ -182,7 +188,7 @@ class Agent:
                 self.job_instances,
                 self._scenario.get_or_create_job,
                 name, instance_id,
-                args=(name, self.name, instance_id))
+                args=(name, instance_id, self.name))
 
     @property
     def json(self):
