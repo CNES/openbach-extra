@@ -54,7 +54,7 @@ class AddProject(FrontendBase):
         project = self.args.project
         with project:
             try:
-                self.args.project = json.loads(project)
+                self.args.project = json.load(project)
             except ValueError:
                 self.parser.error('invalid JSON data in {}'.format(project.name))
 

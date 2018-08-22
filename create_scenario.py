@@ -57,7 +57,7 @@ class CreateScenario(FrontendBase):
         scenario = self.args.scenario
         with scenario:
             try:
-                self.args.scenario = json.loads(scenario)
+                self.args.scenario = json.load(scenario)
             except ValueError:
                 self.parser.error('invalid JSON data in {}'.format(scenario.name))
 
