@@ -93,53 +93,38 @@ def client(args):
         STAT = TCP_STAT
         END_STAT = TCP_END_STAT
 
-    # Launch client iteration times
-    for i in range(args.get('iterations')):
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    # Launch client
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
-        total_rate = []
-        total_duration = []
-
-        while True:
-            # Iterate while process is running
-            if p.poll() is not None:
+    while True:
+        # Iterate while process is running
+        if p.poll() is not None:
                 break
 
-            timestamp = int(time.time() * 1000)
+        timestamp = int(time.time() * 1000)
+        line = p.stdout.readline().decode()
+        # Check for last line
+        if END_STAT.search(line):
+            break
 
-            line = p.stdout.readline().decode()
-            # Check for last line
-            if END_STAT.search(line):
-                break
+        # Else, get stats and send them
+        try:
+            statistics = STAT.search(line).groupdict()
+        except AttributeError:
+            continue
+        # Filter None values
+        statistics = { k:v for k, v in statistics.items() if v is not None }
 
-            # Else, get stats and send them
-            try:
-                statistics = STAT.search(line).groupdict()
-            except AttributeError:
-                continue
-            # Filter None values
-            statistics = { k:v for k, v in statistics.items() if v is not None }
-
-            # Convert units and cast to float
-            statistics = {
-                    k: ( 
-                        float(v)*1024*1024 if k in 
-                        {'data_sent', 'rate', 'mean_rate', 'total_data_sent'}
-                        else float(v))
-                    for k, v in statistics.items()
-            }
-            if (statistics["total_time"]) > args['rate_compute_time']:
-                total_rate.append((statistics["rate"]))
-                total_duration.append((statistics["total_time"]))
-            collect_agent.send_stat(timestamp, **statistics)
-
-        # Send mean and max statistics for this iteration
-        statistics = {}
-        statistics['mean_total_rate'] = sum(total_rate)/len(total_rate)
-        statistics['max_total_rate'] = max(total_rate)
+        # Convert units and cast to float
+        statistics = {
+                k: (
+                    float(v)*1024*1024 if k in
+                    {'data_sent', 'rate', 'mean_rate', 'total_data_sent'}
+                    else float(v))
+                for k, v in statistics.items()
+        }
         collect_agent.send_stat(timestamp, **statistics)
-        
-        time.sleep(5)
+
 
 if __name__ == "__main__":
     # Define Usage
@@ -185,14 +170,8 @@ if __name__ == "__main__":
             '-r', '--rate-limit', type=int,
             help='The transmit rate limit in Kbps')
     parser.add_argument(
-            '-I', '--stats-interval', type=int, default=1,
+            '-I', '--stats-interval', type=float, default=1,
             help='The stats interval')
-    parser.add_argument(
-            '-k', '--iterations', type=int, default=1,
-            help='Number of test repetitions')
-    parser.add_argument(
-            '-e', '--rate_compute_time', type=int, default=0,
-            help='The elasped time after which we begin to consider the rate measures for TCP mean calculation')
 
     # get args
     args = parser.parse_args()

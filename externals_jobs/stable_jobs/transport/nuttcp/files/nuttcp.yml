@@ -92,22 +92,10 @@ arguments:
       description: >
           The transmit rate limit in Kbps.
     - name:        stats_interval
-      type:        'int'
+      type:        'float'
       count:       1
       flag:        '-I'
       description: >
           The statistics interval (default: 1 second).
-    - name:        iterations
-      type:        'int'
-      count:       1
-      flag:        '-k'
-      description: >
-          Number of test repetitions (default: 1).
-    - name:        rate_compute_time
-      type:        'int'
-      count:       1
-      flag:        '-e'
-      description: >
-           The elasped time after which we begin to consider the rate measures for TCP mean calculation (default: 0*stats_interval second).
 
 statistics:
