@@ -50,7 +50,7 @@ class Scenario:
         except KeyError:
             pass
 
-    def add_function(self, name, wait_delay=0, wait_launched=None, wait_finished=None):
+    def add_function(self, name, wait_delay=0, wait_launched=None, wait_finished=None, label=None):
         """Add an openbach function to this scenario.
 
         The function will be started after all other functions in
@@ -64,7 +64,7 @@ class Scenario:
         wait_finished = check_and_build_waiting_list(wait_finished)
 
         factory = get_function_factory(name)
-        function = factory(wait_launched, wait_finished, wait_delay)
+        function = factory(wait_launched, wait_finished, wait_delay, label)
         self.openbach_functions.append(function)
         return function
 
@@ -91,6 +91,7 @@ class Scenario:
         functions = [f.build(openbach_functions) for f in openbach_functions]
         for index, function in enumerate(functions):
             function['id'] = index
+            function.setdefault('label', '#{}'.format(index))
 
         return {
             'name': self.name,

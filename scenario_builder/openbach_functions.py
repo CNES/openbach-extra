@@ -17,10 +17,11 @@ class OpenBachFunction:
     representation.
     """
 
-    def __init__(self, launched, finished, delay):
+    def __init__(self, launched, finished, delay, label=None):
         self.time = delay
         self.wait_launched = launched
         self.wait_finished = finished
+        self.label = label
 
     def build(self, functions):
         """Construct a dictionary representing this function.
@@ -32,14 +33,16 @@ class OpenBachFunction:
         context = {'wait': {'time': self.time}}
         context['wait']['launched_ids'] = list(safe_indexor(functions, self.wait_launched))
         context['wait']['finished_ids'] = list(safe_indexor(functions, self.wait_finished))
+        if self.label is not None:
+            context['label'] = self.label
         return context
 
 
 class StartJobInstance(OpenBachFunction):
     """Representation of the start_job_instance openbach function."""
 
-    def __init__(self, launched, finished, delay):
-        super().__init__(launched, finished, delay)
+    def __init__(self, launched, finished, delay, label):
+        super().__init__(launched, finished, delay, label)
         self.start_job_instance = {}
         self.job_name = None
 
@@ -87,8 +90,8 @@ class StartJobInstance(OpenBachFunction):
 class StopJobInstance(OpenBachFunction):
     """Representation of the stop_job_instance openbach function."""
 
-    def __init__(self, launched, finished, delay):
-        super().__init__(launched, finished, delay)
+    def __init__(self, launched, finished, delay, label):
+        super().__init__(launched, finished, delay, label)
         self.openbach_function_indexes = ()
 
     def configure(self, *openbach_functions):
@@ -120,8 +123,8 @@ class StopJobInstance(OpenBachFunction):
 class StartScenarioInstance(OpenBachFunction):
     """Representation of the start_scenario_instance openbach function."""
 
-    def __init__(self, launched, finished, delay):
-        super().__init__(launched, finished, delay)
+    def __init__(self, launched, finished, delay, label):
+        super().__init__(launched, finished, delay, label)
         self.scenario_name = None
 
     def configure(self, scenario_name, **scenario_arguments):
@@ -157,8 +160,8 @@ class StartScenarioInstance(OpenBachFunction):
 class StopScenarioInstance(OpenBachFunction):
     """Representation of the stop_scenario_instance openbach functio."""
 
-    def __init__(self, launched, finished, delay):
-        super().__init__(launched, finished, delay)
+    def __init__(self, launched, finished, delay, label):
+        super().__init__(launched, finished, delay, label)
         self.openbach_function_id = None
 
     def configure(self, openbach_function):
@@ -203,8 +206,8 @@ class StopScenarioInstance(OpenBachFunction):
 class RetrieveStatusAgents(OpenBachFunction):
     """Representation of the retrieve_status_agents openbach function."""
 
-    def __init__(self, launched, finished, delay):
-        super().__init__(launched, finished, delay)
+    def __init__(self, launched, finished, delay, label):
+        super().__init__(launched, finished, delay, label)
         self.agents_addresses = ()
         self.update = False
 
@@ -241,8 +244,8 @@ class _Condition(OpenBachFunction):
     that makes use of conditions.
     """
 
-    def __init__(self, launched, finished, delay):
-        super().__init__(launched, finished, delay)
+    def __init__(self, launched, finished, delay, label):
+        super().__init__(launched, finished, delay, label)
         self.condition = None
         self.branch_true = ()
         self.branch_false = ()
