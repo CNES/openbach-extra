@@ -147,13 +147,17 @@ class CollectorConnection:
                 owner = get_or_create_scenario(owner_id, scenarios)
                 if owner is not scenario:
                     scenario.owner = owner
+                    owner.sub_scenarios[(scenario.instance_id,)] = scenario
                 # And set the statistics in the (existing) job instance
                 existing_job = scenario.get_or_create_job(
                         job.name, job.instance_id, job.agent)
                 existing_job.statistics_data = job.statistics_data
 
         # Filter top-level scenarios
-        yield from (scenario for scenario in scenarios.values() if scenario.owner is None)
+        if scenario_instance_id is None:
+            yield from (scenario for scenario in scenarios.values() if scenario.owner is None)
+        else:
+            yield scenarios[(scenario_instance_id,)]
 
     def import_scenario(self, scenario_instance):
         """Import the results of the `Scenario` instance in

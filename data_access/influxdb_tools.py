@@ -198,19 +198,22 @@ def escape_field(name, value):
     return '{}={}'.format(TAGS_AND_FIELDS_SPECIALS.sub(r'\\\g<0>', name), value)
 
 
-def tags_to_condition(scenario, agent, job_instance, suffix, extra_condition=None):
+def tags_to_condition(scenario, agent, job_instance, suffix, extra_condition=None, *, subscenarios=False):
     """Concatenate the given tags values into a single condition"""
+    scenario_tag = '@owner_scenario_instance_id' if subscenarios else '@scenario_instance_id'
     tags = {
         '@agent_name': agent,
-        '@scenario_instance_id': scenario,
+        scenario_tag: scenario,
         '@job_instance_id': job_instance,
         '@suffix': suffix,
     }
-    conditions = [] if extra_condition is None else [extra_condition]
-    conditions.extend(
+    conditions = [
             ConditionTag(name, Operator.Equal, value)
             for name, value in tags.items()
-            if value is not None)
+            if value is not None
+    ]
+    if extra_condition is not None:
+        conditions.append(extra_condition)
 
     if not conditions:
         return None
@@ -299,13 +302,14 @@ def parse_statistics(influx_result):
             scenario = int(statistics.pop('@scenario_instance_id'))
             owner = int(statistics.pop('@owner_scenario_instance_id'))
             suffix = statistics.pop('@suffix', None)
-            scenario = get_or_create_scenario(scenario, scenarios)
-            owner = get_or_create_scenario(owner, scenarios)
-            if owner is not scenario:
-                scenario.owner = owner
-            job = scenario.get_or_create_job(job_name, job, agent)
-            stats = job.get_or_create_statistics(suffix)
-            stats.add_statistic(timestamp, **statistics)
+        scenario = get_or_create_scenario(scenario, scenarios)
+        owner = get_or_create_scenario(owner, scenarios)
+        if owner is not scenario:
+            scenario.owner = owner
+            owner.sub_scenarios[(scenario.instance_id,)] = scenario
+        job = scenario.get_or_create_job(job_name, job, agent)
+        stats = job.get_or_create_statistics(suffix)
+        stats.add_statistic(timestamp, **statistics)
 
     yield from scenarios.values()
 
@@ -466,8 +470,15 @@ class InfluxDBConnection(InfluxDBCommunicator):
         """Fetch data from InfluxDB that correspond to the given constraints
         and generate according `Scenario`s instances.
         """
-        condition = tags_to_condition(scenario, agent, job_instance, suffix, condition)
-        response = self.sql_query(select_query(job, fields, condition))
+        _condition = tags_to_condition(scenario, agent, job_instance, suffix, condition)
+        response = self.sql_query(select_query(job, fields, _condition))
+        if scenario is not None:
+            for scenario_instance in parse_statistics(response):
+                if scenario_instance.instance_id == scenario:
+                    owner = scenario_instance.owner_instance_id
+                    _condition = tags_to_condition(owner, agent, job_instance, suffix, condition, subscenarios=True)
+                    response = self.sql_query(select_query(job, fields, _condition))
+                    break
         yield from parse_statistics(response)
 
     def orphans(self, condition=None, timestamps=None):
