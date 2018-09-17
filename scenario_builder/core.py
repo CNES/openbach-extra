@@ -109,6 +109,19 @@ class Scenario:
         with open(filename, 'w') as fp:
             json.dump(self.build(), fp)
 
+    def __str__(self):
+        return self.name
+
+    @property
+    def subscenarios(self):
+        for function in self.openbach_functions:
+            if isinstance(function, openbach_functions.StartScenarioInstance):
+                scenario = function.scenario_name
+                if isinstance(scenario, Scenario):
+                    yield from scenario.subscenarios
+                    yield scenario
+        yield self
+
 
 def check_and_build_waiting_list(wait_on=None):
     """Check that each element container in the `wait_on` iterable

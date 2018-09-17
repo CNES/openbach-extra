@@ -151,7 +151,7 @@ class StartScenarioInstance(OpenBachFunction):
 
         context = super().build(functions)
         context['start_scenario_instance'] = {
-            'scenario_name': self.scenario_name,
+            'scenario_name': str(self.scenario_name),
             'arguments': self.scenario_arguments,
         }
         return context
