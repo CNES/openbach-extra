@@ -36,6 +36,7 @@ __credits__ = '''Contributors:
 
 import time
 import json
+from contextlib import suppress
 
 import requests
 from data_access import CollectorConnection
@@ -83,28 +84,30 @@ class ScenarioObserver(FrontendBase):
         if self.args.collector is None:
             self.args.collector = self.args.controller
 
-        if builder is not None:
-            self.args.scenario = builder.build()
-
+        self._scenarios = {}
         scenario_getter = self._share_state(GetScenario)
-        try:
+        if builder is None:
             scenario = scenario_getter.execute(False)
             scenario.raise_for_status()
-        except Exception:
-            scenario_setter = self._share_state(CreateScenario)
-            scenario = scenario_setter.execute(False)
+            self._extract_scenario_json(scenario)
         else:
-            if self.args.override:
-                scenario_modifier = self._share_state(ModifyScenario)
-                scenario = scenario_modifier.execute(False)
+            scenario_setter = self._share_state(CreateScenario)
+            scenario_modifier = self._share_state(ModifyScenario)
+            for scenario in builder.subscenarios:
+                self.args.name = str(scenario)
+                self.args.scenario = scenario.build()
 
-        scenario.raise_for_status()
-        self.scenario = scenario.json()
-        self._scenario = {
-                function['label']: function['id']
-                for function in self.scenario['openbach_functions']
-                if 'start_job_instance' in function and function['label']
-        }
+                try:
+                    scenario = scenario_getter.execute(False)
+                    scenario.raise_for_status()
+                except Exception:
+                    scenario = scenario_setter.execute(False)
+                else:
+                    if self.args.override:
+                        scenario = scenario_modifier.execute(False)
+                scenario.raise_for_status()
+                self._extract_scenario_json(scenario)
+
         self._post_processing = {}
 
     def _share_state(self, script_cls):
@@ -114,14 +117,33 @@ class ScenarioObserver(FrontendBase):
         instance.args = self.args
         return instance
 
-    def post_processing(self, label, callback, *, ignore_missing_label=False):
+    def _extract_scenario_json(self, scenario):
+        self._scenarios[self.args.name] = {
+                function['label']: function['id']
+                for function in scenario.json()['openbach_functions']
+                if 'start_job_instance' in function and function['label']
+        }
+
+    def post_processing(self, label, callback, *, subscenario=None, ignore_missing_label=False):
+        if subscenario is None:
+            subscenario = self.args.name
+
         try:
-            function_id = self._scenario[label]
+            function_id = self._scenarios[subscenario][label]
         except KeyError:
             if not ignore_missing_label:
-                self.parser.error('missing openbach function labeled \'{}\''.format(label))
+                self.parser.error('missing openbach function labeled \'{}\' in scenario \'{}\''.format(label, subscenario))
         else:
-            self._post_processing[function_id] = (label, callback)
+            self._post_processing[(subscenario, function_id)] = (label, callback)
+
+    def _extract_callback(self, scenario_instance):
+        name = scenario_instance['scenario_name']
+        for function in scenario_instance['openbach_functions']:
+            with suppress(KeyError):
+                yield from self._extract_callback(function['scenario'])
+            with suppress(KeyError):
+                callback = self._post_processing[(name, function['id'])]
+                yield function['job']['id'], callback
 
     def launch_and_wait(self):
         scenario_starter = self._share_state(StartScenarioInstance)
@@ -143,12 +165,7 @@ class ScenarioObserver(FrontendBase):
             if status in ('Finished', 'Finished OK'):
                 break
 
-        callbacks = {
-                function['job']['id']: self._post_processing[function['id']]
-                for function in response['openbach_functions']
-                if function['id'] in self._post_processing
-        }
-
+        callbacks = dict(self._extract_callback(response))
         collector = CollectorConnection(
                 self.args.collector,
                 self.args.elasticsearch_port,
