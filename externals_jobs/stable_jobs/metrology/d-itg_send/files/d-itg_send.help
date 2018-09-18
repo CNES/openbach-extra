@@ -1,0 +1,17 @@
+This job launches the Sender Component (ITGSend) from the D-ITG platform.
+ITGSend generates traffic towards multiple ITGRecv instances (one-way flow). Multiple traffic can be generated
+by ITGSend.
+
+This job requires to target a destination which have the job d-itg_recv running.
+
+Traffic generated at transport level: TCP, UDP, SCTP, DCCP, ICMP...
+
+Multiple stats providing the most common QoS metrics are generated (throughput, one-way delay, round-trip time, jitter, packet loss).
+
+Careful when choosing dest_path, the generated stats may overwrite any existing stats in the directory.
+
+NB: we do not guarantee the accuracy of the measured stats. Only some metrics have been tested and validated during our test campaign.
+
+The validated metrics are the following:
+- jitter_receiver
+- owd_receiver
