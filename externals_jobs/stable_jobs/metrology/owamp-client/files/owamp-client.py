@@ -33,6 +33,7 @@ __credits__ = '''Contributor: Marlene MOST <mmost@silicom.fr>'''
 import syslog
 import argparse
 import subprocess
+import numpy as np
 from sys import exit
 from time import sleep
 
@@ -61,6 +62,10 @@ def timestamp(data):
 
 
 def client(destination_address, count, interval):
+
+    # the length of the sample used to compute jitter mean
+    granularity = 5
+
     conffile = "/opt/openbach/agent/jobs/owamp-client/owamp-client_rstats_filter.conf"
 
     # case of output == raw data (singleton metric)
@@ -94,6 +99,13 @@ def client(destination_address, count, interval):
     while not useless_data.startswith('SID:'):
         useless_data = p.stdout.readline().decode()
 
+    # delay tab
+    delay_tab = []
+
+    # jitter tab
+    ipdv_tab = []
+    time_tab = []
+
     n = 0
     # get data from up link
     while n < count:
@@ -108,6 +120,12 @@ def client(destination_address, count, interval):
                 break
                 continue
 
+        # packet lost
+        if 'LOST' in output_sent.split()[1]:
+            message = 'Warning: Packet lost.'
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            continue
+
         # src and dst are not sync
         if 'unsync' in output_sent.split()[3]:
             message = 'Error: No synchronization between client and server. Results not available.'
@@ -115,13 +133,43 @@ def client(destination_address, count, interval):
             exit(message)
 
         # extract delay value in ms
-        delay_sent = output_sent.split()[1].split("=")[1]
+        delay_sent = float(output_sent.split()[1].split("=")[1])
 
         # get current timestamp corresponding to delay value of interest
         sent_timestamp = output_sent.split()[7].split("=")[1]  # raw data
 
         collect_agent.send_stat(timestamp(sent_timestamp),
                                 owd_sent=delay_sent)
+
+        delay_tab.append(delay_sent)
+
+        # compute inter-packet delay variation (in ms)
+        if n > 1:
+            ipdv_sent = abs(delay_sent - delay_sent_old)
+            ipdv_tab.append(ipdv_sent)
+            time_tab.append(timestamp(sent_timestamp))
+
+            if n % granularity == 0:
+                statistics = {'inter-packet delay variation sent (ms)': np.mean(ipdv_tab)}
+                collect_agent.send_stat(timestamp(sent_timestamp), **statistics)
+
+                # clear ipdv_tab and time_tab
+                ipdv_tab.clear()
+                time_tab.clear()
+
+                # compute packet delay variation (95th percentile - 50th percentile)
+                pdv = np.percentile(delay_tab, 95) - np.percentile(delay_tab, 50)
+                statistics = {'packet delay variation P95-P50 sent (ms)': pdv}
+                collect_agent.send_stat(timestamp(sent_timestamp), **statistics)
+
+                # clear delay_tab
+                delay_tab.clear()
+
+        delay_sent_old = delay_sent
+
+    delay_tab.clear()
+    ipdv_tab.clear()
+    time_tab.clear()
 
     # get data from return link and throw away the 14 following lines
     # (overhead between up and return data)
@@ -148,8 +196,14 @@ def client(destination_address, count, interval):
                 break
                 continue
 
+        # packet lost
+        if 'LOST' in output_received.split()[1]:
+            message = 'Warning: Packet lost.'
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            continue
+
         # extract delay value in ms
-        delay_received = output_received.split()[1].split("=")[1]
+        delay_received = float(output_received.split()[1].split("=")[1])
 
         # get current timestamp corresponding to delay value of interest
         received_timestamp = output_received.split()[7].split("=")[1]  # raw data
@@ -157,6 +211,36 @@ def client(destination_address, count, interval):
         # send received delay stats
         collect_agent.send_stat(timestamp(received_timestamp),
                                 owd_received=delay_received)
+
+        delay_tab.append(delay_received)
+
+        # compute inter-packet delay variation (in ms)
+        if m > 1:
+            ipdv_received = abs(delay_received - delay_received_old)
+            ipdv_tab.append(ipdv_received)
+            time_tab.append(timestamp(received_timestamp))
+
+            if m % granularity == 0:
+                statistics = {'inter-packet delay variation received (ms)': np.mean(ipdv_tab)}
+                collect_agent.send_stat(timestamp(received_timestamp), **statistics)
+
+                # clear ipdv_tab and time_tab
+                ipdv_tab.clear()
+                time_tab.clear()
+
+                # compute packet delay variation (95th percentile - 50th percentile)
+                pdv = np.percentile(delay_tab, 95) - np.percentile(delay_tab, 50)
+                statistics = {'packet delay variation P95-P50 received (ms)': pdv}
+                collect_agent.send_stat(timestamp(received_timestamp), **statistics)
+
+                # clear delay_tab
+                delay_tab.clear()
+
+        delay_received_old = delay_received
+
+    ipdv_tab.clear()
+    time_tab.clear()
+    delay_tab.clear()
 
 
 if __name__ == '__main__':

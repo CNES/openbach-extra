@@ -11,6 +11,10 @@ Client mode Job: executes owping command. Requires to be launched after server m
 This Job returns separately one-way delay between client and server. The data generated are:
 - owd_sent: from client point of view, it is the delay from client to server. In satcom networks, it corresponds to the delay on return link.
 - owd_received: from client point of view, it is the delay from server to client. In satcom networks, it corresponds to the delay on up link.
+- ipdv_sent: the inter-packet delay variation (jitter) from the link client --> server. It is the delay variation between two consecutive packets.
+- ipdv_received: the inter-packet delay variation (jitter) from the link server --> client. It is the delay variation between two consecutive packets.
+- pdv_sent: the packet delay variation from the link client --> server. It is defined as 95th-percentile - 50th percentile of the assessed OWD during the granularity interval.
+- pdv_received: the packet delay variation from the link server --> client. It is defined as 95th-percentile - 50th percentile of the assessed OWD during the granularity interval.
 
 NTP must be running on both server and client machines.
 

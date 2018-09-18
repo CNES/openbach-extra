@@ -40,8 +40,24 @@ statistics:
   - name: owd_sent
     description: >
       The One-Way delay of UDP packets (link to test host).
-    frequency: 'each interval'
+    frequency: 'each packet generation'
   - name: owd_received
     description: >
       The One-Way delay of UDP packets (link from test host).
-    frequency: 'each interval'
+    frequency: 'each packet generation'
+  - name: ipdv_sent
+    description: >
+      The inter-packet delay variation of UDP packets (link to test host).
+    frequency: 'each packet generation'
+  - name: ipdv_received
+    description: >
+      The inter-packet delay variation of UDP packets (link from test host).
+    frequency: 'each packet generation'
+  - name: pdv_sent
+    description: >
+      The packet delay variation (defined as 95th-percentile - 50th percentile) of UDP packets (link to test host).
+    frequency: 'each sub-interval defined by the granularity'
+  - name: pdv_received
+    description: >
+      The packet delay variation (defined as 95th-percentile - 50th percentile) of UDP packets (link from test host).
+    frequency: 'each sub-interval defined by the granularity'
