@@ -1,0 +1,4 @@
+This job launches the Receiver Component (ITGRecv) from the D-ITG platform. It can be assimilated to
+a daemon running on the server host listening to a TCP socket for incoming traffic reception requests.
+A new thread is created each time a request is made.
+
