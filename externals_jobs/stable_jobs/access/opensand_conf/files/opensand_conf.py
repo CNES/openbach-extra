@@ -63,23 +63,9 @@ class OpsError(Exception):
 class OpsEntity(object):
     ''' OpenSAND Entity '''
 
-    def __init__(self, entity_type, platform_id):
-        '''
-        Initialize entity with arguments.
-        
-        Args:
-            entity_type:   the type of the entity.
-            platform_id:   the platform identifier (can be None).
-        '''
+    def __init__(self, **argv):
         self._debconf_params = {}
-
-        self._debconf_params['opensand-daemon/service/name_adv'] = entity_type
-
-        self._debconf_params['opensand-daemon/service/type'] = \
-                self._get_ops_service_type(platform_id)
-
-        self._debconf_params['opensand-daemon/output/libpath'] = \
-                '/usr/lib/libopensand_output_openbach.so.0'
+        super().__init__(**argv)
 
     def _get_ops_service_type(self, platform_id):
         '''
@@ -98,7 +84,7 @@ class OpsEntity(object):
     def __configure(self):
         '''
         Set the debconf configuration for OpenSAND daemon.
-        
+
         Raises:
             OpsError:  if setting the debconf configuration failed.
         '''
@@ -132,7 +118,7 @@ class OpsEntity(object):
     def __start_daemon(self):
         '''
         Start the OpenSAND daemon.
-        
+
         Raises:
             OpsError:  if the OpenSAND daemon failed.
         '''
@@ -149,92 +135,149 @@ class OpsEntity(object):
         self.__start_daemon()
 
 
-class EmuOpsEntity(OpsEntity):
+class OpsCommonConf:
     def __init__(self,
-                 entity_type,
-                 platform_id,
-                 ctrl_iface,
-                 emu_iface,
-                 emu_ipv4,
-                 service_port,
-                 command_port,
-                 state_port
+                 entity_type='',
+                 entity_id='',
+                 platform_id='',
+                 ctrl_iface='',
+                 service_port='',
+                 command_port='',
+                 state_port='',
+                 **argv
                 ):
         '''
-        Initialize satellite emulator with arguments.
+        Initialize configuration with arguments.
 
         Args:
             entity_type:   the type of the entity.
-            platform_id:   the platform identifier (can be None)
+            entity_id:     the identifier of the gateway/st.
+            platform_id:   the platform identifier (can be None).
             ctrl_iface:    the control interface of the OpenSAND daemon.
-            emu_iface:     the interface to emulate the satellite network.
-            emu_ipv4:      the IPv4 address to assign to the emulation
-                           interface.
             service_port:  the port to listen control request.
             command_port:  the port to listen command.
             state_port:    the port to listen state request.
         '''
-        super(EmuOpsEntity, self).__init__(entity_type, platform_id)
-        
-        self._debconf_params['opensand-daemon/service/interface'] = ctrl_iface
+        self._debconf_params = {}
+        self._debconf_params['opensand-daemon/service/name_adv'] = entity_type
+        self._debconf_params['opensand-daemon/service/st_instance'] = entity_id
 
-        self._debconf_params['opensand-daemon/network/emu_iface'] = emu_iface
-        self._debconf_params['opensand-daemon/network/emu_ipv4'] = emu_ipv4
+        self._debconf_params['opensand-daemon/service/type'] = \
+                self._get_ops_service_type(platform_id)
+
+        self._debconf_params['opensand-daemon/service/interface'] = ctrl_iface
 
         self._debconf_params['opensand-daemon/service/port'] = service_port
         self._debconf_params['opensand-daemon/command/port'] = command_port
         self._debconf_params['opensand-daemon/state/port'] = state_port
 
-class LanEmuOpsEntity(EmuOpsEntity):
+        self._debconf_params['opensand-daemon/output/libpath'] = \
+                '/usr/lib/libopensand_output_openbach.so.0'
 
+
+class OpsEmuConf(OpsCommonConf):
     def __init__(self,
-                 entity_type,
-                 platform_id,
-                 ctrl_iface,
-                 emu_iface,
-                 emu_ipv4,
-                 service_port,
-                 command_port,
-                 state_port,
-                 entity_id,
-                 lan_iface,
-                 lan_ipv4,
-                 lan_ipv6
+                 emu_iface='',
+                 emu_ipv4='',
+                 **argv
                 ):
         '''
-        Initialize gateway with arguments.
+        Initialize configuration with arguments.
 
         Args:
-            entity_type:   the type of the entity.
-            platform_id:   the platform identifier (can be None)
-            ctrl_iface:    the control interface of the OpenSAND daemon.
             emu_iface:     the interface to emulate the satellite network.
             emu_ipv4:      the IPv4 address to assign to the emulation
                            interface.
-            service_port:  the port to listen control request.
-            command_port:  the port to listen command.
-            state_port:    the port to listen state request.
-            entity_id:     the identifier of the gateway. 
+        '''
+        super().__init__(**argv)
+
+        self._debconf_params['opensand-daemon/network/emu_iface'] = emu_iface
+        self._debconf_params['opensand-daemon/network/emu_ipv4'] = emu_ipv4
+
+
+class OpsLanConf(OpsCommonConf):
+    def __init__(self,
+                 lan_iface='',
+                 lan_ipv4='',
+                 lan_ipv6='',
+                 **argv
+                 ):
+        '''
+        Initialize configuration with arguments.
+
+        Args:
             lan_iface:     the interface to connect to the real network.
             lan_ipv4:      the IPv4 address to assign to the lan interface.
             lan_ipv6:      the IPv6 address to assign to the lan interface.
         '''
-        super(LanEmuOpsEntity, self).__init__(
-            entity_type,
-            platform_id,
-            ctrl_iface,
-            emu_iface,
-            emu_ipv4,
-            service_port,
-            command_port,
-            state_port
-        )
-
-        self._debconf_params['opensand-daemon/service/st_instance'] = entity_id
+        super().__init__(**argv)
 
         self._debconf_params['opensand-daemon/network/lan_iface'] = lan_iface
         self._debconf_params['opensand-daemon/network/lan_ipv4'] = lan_ipv4
         self._debconf_params['opensand-daemon/network/lan_ipv6'] = lan_ipv6
+
+
+class OpsInterconnectConf(OpsCommonConf):
+
+    def __init__(self,
+                 interconnect_iface='',
+                 interconnect_ipv4='',
+                 **argv
+                ):
+        '''
+        Initialize gateway network & access with arguments.
+
+        Args:
+            entity_id:     the identifier of the gateway.
+            interconnect_iface:     the interface to connect to other sub-entities
+            interconnect_ipv4:      the IPv4 address to assign to the interconnect
+                           interface.
+        '''
+        super().__init__(**argv)
+
+        self._debconf_params['opensand-daemon/interconnect/interface'] = interconnect_iface
+        self._debconf_params['opensand-daemon/interconnect/interface_ip'] = interconnect_ipv4
+
+
+class OpsSatEntity(OpsEntity, OpsEmuConf):
+
+    def __init__(self, **argv):
+        '''
+        Initialize satellite with arguments.
+        '''
+        super().__init__(**argv)
+
+class OpsGwEntity(OpsEntity, OpsEmuConf, OpsLanConf):
+
+    def __init__(self, **argv):
+        '''
+        Initialize gateway with arguments.
+        '''
+        super().__init__(**argv)
+
+class OpsStEntity(OpsEntity, OpsEmuConf, OpsLanConf):
+
+    def __init__(self, **argv):
+        '''
+        Initialize satellite terminal with arguments.
+        '''
+        super().__init__(**argv)
+
+class OpsGwPhyEntity(OpsEntity, OpsEmuConf, OpsInterconnectConf):
+
+    def __init__(self, **argv):
+        '''
+        Initialize phy gateway with arguments.
+        '''
+        super().__init__(**argv)
+
+class OpsGwNetAccEntity(OpsEntity, OpsLanConf, OpsInterconnectConf):
+
+    def __init__(self, **argv):
+        '''
+        Initialize net-acc gateway with arguments.
+        '''
+        super().__init__(**argv)
 
 def ops_iface(value):
     '''
@@ -263,10 +306,10 @@ def ops_ipv4(value):
     '''
     Define OpenSAND IPv4 format to X.X.X.X/Y.
     Check value is matching or not.
-    
+
     Args:
         value:  the value to check.
-    
+
     Returns:
         the matching value.
 
@@ -285,10 +328,10 @@ def ops_ipv6(value):
     '''
     Define OpenSAND IPv6 format to X::X/Y.
     Check value is matching or not.
-    
+
     Args:
         value:  the value to check.
-    
+
     Returns:
         the matching value.
 
@@ -307,10 +350,10 @@ def ops_st_id(value):
     '''
     Define OpenSAND satellite terminal identifier.
     Check value is matching or not.
-    
+
     Args:
         value:  the value to check.
-    
+
     Returns:
         the matching value.
 
@@ -329,10 +372,10 @@ def ops_gw_id(value):
     '''
     Define OpenSAND gateway identifier.
     Check value is matching or not.
-    
+
     Args:
         value:  the value to check.
-    
+
     Returns:
         the matching value.
 
@@ -351,10 +394,10 @@ def ops_port(value):
     '''
     Define OpenSAND port.
     Check value is matching or not.
-    
+
     Args:
         value:  the value to check.
-    
+
     Returns:
         the matching value.
 
@@ -369,7 +412,7 @@ def ops_port(value):
 
     if port <= 0 or 65535 < port:
         raise argparse.ArgumentTypeError('Invalid port (1-65535)')
-    
+
     return port
 
 if __name__ == '__main__':
@@ -386,43 +429,51 @@ if __name__ == '__main__':
     sat_parser = entity_cmd.add_parser('sat', help='Satellite emulator')
     st_parser = entity_cmd.add_parser('st', help='Satellite terminal')
     gw_parser = entity_cmd.add_parser('gw', help='Gateway')
-   
+    gw_phy_parser = entity_cmd.add_parser('gw-phy', help='Gateway Phy')
+    gw_net_acc_parser = entity_cmd.add_parser('gw-net-acc', help='Gateway Net Acc')
+
     st_parser.add_argument('--entity-id', type=ops_st_id, required=True,
                            help='The entity id '
                            '(1-5 or 7-10)')
     gw_parser.add_argument('--entity-id', type=ops_gw_id, required=True,
                            help='The entity id '
                            '(0 or 6)')
+    gw_phy_parser.add_argument('--entity-id', type=ops_gw_id, required=True,
+                               help='The entity id '
+                               '(0 or 6)')
+    gw_net_acc_parser.add_argument('--entity-id', type=ops_gw_id, required=True,
+                                   help='The entity id '
+                                   '(0 or 6)')
 
-    all_parsers = (none_parser, sat_parser, st_parser, gw_parser)
-    emu_parsers = (sat_parser, st_parser, gw_parser)
-    lan_parsers = (st_parser, gw_parser)
+    all_parsers = (none_parser, sat_parser, st_parser, gw_parser,
+                   gw_phy_parser, gw_net_acc_parser)
+    emu_parsers = (sat_parser, st_parser, gw_parser, gw_phy_parser)
+    lan_parsers = (st_parser, gw_parser, gw_net_acc_parser)
+    interconnect_parsers = (gw_phy_parser, gw_net_acc_parser)
 
     for all_parser in all_parsers:
         # Entity optional arguments
         all_parser.add_argument('--platform-id', type=str,
                                 help='The plateform id (default is none)')
+        all_parser.add_argument('ctrl_iface', type=ops_iface,
+                                help='The interface used to control the OpenSAND Daemon')
+        all_parser.add_argument('--service-port', type=ops_port, default=3141,
+                                help='The port to receive information about other entitites '
+                                '(default: 3141)')
+        all_parser.add_argument('--command-port', type=ops_port, default=5926,
+                                help='The port to receive command from the manager '
+                                '(default: 5926)')
+        all_parser.add_argument('--state-port', type=ops_port, default=5358,
+                                help='The port to receive status requestes from the manager '
+                                '(default: 5358)')
 
     for emu_parser in emu_parsers:
         # Emulation entity required arguments
-        emu_parser.add_argument('ctrl_iface', type=ops_iface,
-                                help='The interface used to control the OpenSAND Daemon')
-        emu_parser.add_argument('emu_iface', type=ops_iface,
+        emu_parser.add_argument('--emu-iface', type=ops_iface, required=True,
                                 help='The interface used to emulate the satellite network')
-        emu_parser.add_argument('emu_ipv4', type=ops_ipv4,
+        emu_parser.add_argument('--emu-ipv4', type=ops_ipv4, required=True,
                                 help='The IPv4 address to set to the "emu-iface"'
                                 'interface (format X.X.X.X/X)')
-
-        # Emulation entity optional arguments
-        emu_parser.add_argument('--service-port', type=ops_port, default=3141,
-                                help='The port to receive information about other entitites '
-                                '(default: 3141)')
-        emu_parser.add_argument('--command-port', type=ops_port, default=5926,
-                                help='The port to receive command from the manager '
-                                '(default: 5926)')
-        emu_parser.add_argument('--state-port', type=ops_port, default=5358,
-                                help='The port to receive status requestes from the manager '
-                                '(default: 5358)')
 
     for lan_parser in lan_parsers:
         # Lan and emulation entity required arguments
@@ -435,17 +486,27 @@ if __name__ == '__main__':
                                 help='The IPv6 address to set to the "lan-iface" interface '
                                 'format X::X/X')
 
+    for interconnect_parser in interconnect_parsers:
+        # Interconnect entity required arguments
+        interconnect_parser.add_argument('--interconnect-iface', type=ops_iface, required=True,
+                                         help='The interface used to receive/send traffic')
+        interconnect_parser.add_argument('--interconnect-ipv4', type=ops_ipv4, required=True,
+                                         help='The IPv4 address to set to the "lan-iface" interface '
+                                         '(format X.X.X.X/X)')
+
     # Get args
     args = parser.parse_args()
 
     # Prepare constructors in function of the entity type
     constructors = {
         'none': OpsEntity,
-        'sat': EmuOpsEntity,
-        'st': LanEmuOpsEntity,
-        'gw': LanEmuOpsEntity
+        'sat': OpsSatEntity,
+        'st': OpsStEntity,
+        'gw': OpsGwEntity,
+        'gw-phy': OpsGwPhyEntity,
+        'gw-net-acc': OpsGwNetAccEntity,
     }
-    
+
     # Connect to collect agent
     collect_agent.register_collect(
             '/opt/openbach/agent/jobs/opensand_conf/opensand_conf_rstats_filter.conf')
