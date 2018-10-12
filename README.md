@@ -13,4 +13,4 @@ To include these jobs in your OpenBACH platform, clone this repository or downlo
 OpenBACH installation command line, specify the folder from which you want to use jobs:
 
 
-    ansible-playbook install -u <your_user> -k -K -e '{"openbach_jobs_folders": ["~/openbach-external-jobs/stable_jobs/", "~/openbach-external-jobs/experimental_jobs/"]}'
+    ansible-playbook install -u <your_user> -k -K -e '{"openbach_jobs_folders": ["~/openbach-extra/externals_jobs/stable_jobs/", "~/openbach-extra/externals_jobs/experimental_jobs/"]}'
