@@ -56,6 +56,12 @@
     state=present
   become: yes
 
+- name: Install Python Dependencies
+  pip: name={{ item }} executable=pip3
+  with_items:
+    - numpy
+  become: yes
+
 - name: Create owamp-client Job Folder
   file: path=/opt/openbach/agent/jobs/owamp-client state=directory mode=0755
   become: yes
