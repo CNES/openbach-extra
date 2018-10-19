@@ -1,0 +1,171 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Scenario example &#8212; OpenBACH jobs  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="voip_qoe_src job" href="voip_qoe_dest.html" />
+    <link rel="prev" title="Installation instructions" href="installation.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="scenario-example">
+<h1>Scenario example<a class="headerlink" href="#scenario-example" title="Permalink to this headline">¶</a></h1>
+<p>We called <em>st</em> and <em>gw</em> the two agents that we used in our test_scenario.</p>
+<p>This scenario is composed of three tasks:</p>
+<ul class="simple">
+<li>Task 1: start voip_qoe_dest (ITGRecv)</li>
+<li>Task 2: start voip_qoe_src (ITGSend)</li>
+<li>Task 3: stop voip_qoe_dest (ITGRecv)</li>
+</ul>
+<p>JSON overview:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_scenario&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;constants&quot;</span><span class="p">:</span> <span class="p">{},</span>
+  <span class="nt">&quot;openbach_functions&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;ITGRecv&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="mi">131402243</span><span class="p">,</span>
+      <span class="nt">&quot;start_job_instance&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;offset&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="nt">&quot;entity_name&quot;</span><span class="p">:</span> <span class="s2">&quot;gw&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;voip_qoe_dest&quot;</span><span class="p">:</span> <span class="p">{}</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;wait&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;launched_ids&quot;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="mi">131402243</span>
+        <span class="p">],</span>
+        <span class="nt">&quot;time&quot;</span><span class="p">:</span> <span class="mi">3</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;ITGSend&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="mi">194930622</span><span class="p">,</span>
+      <span class="nt">&quot;start_job_instance&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;offset&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="nt">&quot;entity_name&quot;</span><span class="p">:</span> <span class="s2">&quot;st&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;voip_qoe_src&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;root_user_dest&quot;</span><span class="p">:</span> <span class="s2">&quot;openbach&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;nb_flows&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;src_addr&quot;</span><span class="p">:</span> <span class="s2">&quot;192.168.10.78&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;starting_port&quot;</span><span class="p">:</span> <span class="s2">&quot;10002&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;codec&quot;</span><span class="p">:</span> <span class="s2">&quot;G.711.1&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;duration&quot;</span><span class="p">:</span> <span class="s2">&quot;10&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;dest_addr&quot;</span><span class="p">:</span> <span class="s2">&quot;192.168.10.195&quot;</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;wait&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;finished_ids&quot;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="mi">194930622</span>
+        <span class="p">]</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;stop_job_instances&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;openbach_function_ids&quot;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="mi">131402243</span>
+        <span class="p">]</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="mi">82989093</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;arguments&quot;</span><span class="p">:</span> <span class="p">{}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The scenario JSON file can also be found at: <a class="reference external" href="https://forge.net4sat.org/tesa/rt16-tc8-29_partage-leo-geo/tree/master/openbach_jobs/test_scenario.json">https://forge.net4sat.org/tesa/rt16-tc8-29_partage-leo-geo/tree/master/openbach_jobs/test_scenario.json</a></p>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">OpenBACH jobs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation instructions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Scenario example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="voip_qoe_dest.html">voip_qoe_src job</a></li>
+<li class="toctree-l1"><a class="reference internal" href="voip_qoe_src.html">voip_qoe_dest job</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="installation.html" title="previous chapter">Installation instructions</a></li>
+      <li>Next: <a href="voip_qoe_dest.html" title="next chapter">voip_qoe_src job</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Antoine Auger.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.9</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="_sources/scenario_example.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

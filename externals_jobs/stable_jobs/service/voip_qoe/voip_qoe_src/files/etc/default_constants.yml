@@ -1,0 +1,18 @@
+# See ITU-T G.107 recommendation (06/2015) for default values
+# https://www.itu.int/rec/T-REC-G.107-201506-I
+SLR: 8
+NC: -70
+Nfo: -62
+Ps: 35
+RLR: 2
+Ds: 3
+LSTR: 18
+Pr: 35
+qdu: 1
+STMR: 15
+TELR: 65
+Nfor: -64
+WEPL: 110
+Tr: 0
+mT: 100
+sT: 1
