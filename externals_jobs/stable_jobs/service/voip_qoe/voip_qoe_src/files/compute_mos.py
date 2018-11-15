@@ -32,7 +32,7 @@ __author__ = 'Antoine AUGER'
 __credits__ = 'Antoine AUGER <antoine.auger@tesa.prd.fr>'
 
 from math import log, exp, sqrt
-from .codec import CodecConstants
+from codec import CodecConstants
 
 
 def compute_r_value(c: CodecConstants, T, Ta, Ppl, jitter, use_jitter=True):

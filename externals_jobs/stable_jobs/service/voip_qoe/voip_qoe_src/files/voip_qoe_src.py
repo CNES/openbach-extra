@@ -40,8 +40,8 @@ import syslog
 from time import time, sleep
 import yaml
 import collect_agent
-from .codec import CodecConstants
-from .compute_mos import compute_r_value, compute_mos_value
+from codec import CodecConstants
+from compute_mos import compute_r_value, compute_mos_value
 
 job_name = "voip_qoe_src"
 receiver_job_name = "voip_qoe_dest"
