@@ -59,9 +59,9 @@ Then, press the [Enter] key three times to validate (default location, no passwo
 
 - __Step 2:__ key exchange
 
-Copy the key from host 1 (*voip_qoe_src*) to host 2 (*voip_qoe_src*)
+Copy the key from host 1 (*voip_qoe_src*) to host 2 (*voip_qoe_dest*)
 
-    ssh-copy-id openbach@host2
+    ssh-copy-id -i /home/openbach/.ssh/id_rsa.pub openbach@host2
     
 Then, test the password-less connection by typing `ssh openbach@host2`. You shoud not be prompted for any password.
     
