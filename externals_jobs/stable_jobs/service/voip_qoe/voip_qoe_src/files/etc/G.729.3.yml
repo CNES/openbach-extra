@@ -1,0 +1,6 @@
+# See ITU-T G.113 recommendation (11/2007) for codec-specific values
+# https://www.itu.int/rec/T-REC-G.113-200711-I
+Ie: 11
+Bpl: 19
+BurstR: 1
+A: 0
