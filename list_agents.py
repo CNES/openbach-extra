@@ -44,16 +44,20 @@ from frontend import FrontendBase
 class ListAgents(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — List Agents')
-        self.parser.add_argument(
+        group = self.parser.add_mutually_exclusive_group()
+        group.add_argument(
                 '-u', '--update', action='store_true',
                 help='retrieve the status by contacting the agent')
+        group.add_argument(
+                '-s', '--services', action='store_true',
+                help='fetch the status of services running on the agent')
 
     def execute(self, show_response_content=True):
-        update = self.args.update
-
         action = self.request
-        if update:
+        if self.args.update:
             action = partial(action, update='')
+        if self.args.services:
+            action = partial(action, services='')
 
         return action('GET', 'agent', show_response_content=show_response_content)
 

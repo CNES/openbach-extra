@@ -163,6 +163,14 @@ class FrontendBase:
         controller, login, password = read_controller_configuration()
         self.parser = argparse.ArgumentParser(
                 description=description,
+                epilog='Backend-specific arguments can be specified by '
+                'providing a file called \'controller\' in the same folder '
+                'than this script. This file can contain a JSON dictionary '
+                'whose values will act as defaults for the arguments or '
+                'some text whose first line will be interpreted as the '
+                '\'controller\' argument default value. If no password is '
+                'specified using either this file or the command-line, it '
+                'will be prompted without echo.',
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         backend = self.parser.add_argument_group('backend')
         backend.add_argument(
@@ -171,6 +179,8 @@ class FrontendBase:
         backend.add_argument(
                 '--login', '--username', default=login,
                 help='username used to authenticate as')
+        backend.add_argument(
+                '--password', help='password used to authenticate as')
         self._default_password = password
 
         self.session = requests.Session()
@@ -184,7 +194,7 @@ class FrontendBase:
         self.base_url = url = 'http://{}:8000/'.format(args.controller)
         login = args.login
         if login:
-            password = self._default_password
+            password = args.password or self._default_password
             if password is None:
                 password = getpass.getpass('OpenBACH password: ')
             credentials = {'login': login, 'password': password}
