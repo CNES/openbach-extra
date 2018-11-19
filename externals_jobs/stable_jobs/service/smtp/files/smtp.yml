@@ -1,0 +1,78 @@
+---
+
+general:
+  name:            smtp
+  description: >
+      This job run a smtp server or a smtp client that sends email to a server
+  job_version:     '1.0'
+  keywords:        [smtp, email]
+  persistent:      True
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/smtp/smtp.py'
+    command_stop:
+
+arguments:
+  required:
+  optional:
+      - name:        server_mode
+        type:        'None'
+        count:       0
+        flag:        '-s'
+        description: >
+            Run smtp in server mode (default: False)
+      - name:        server_ip
+        type:        'str'
+        count:       1
+        flag:        '-c'
+        description: >
+            Run smtp in client mode and specify server IP address
+      - name:        server_port
+        type:        'int'
+        count:       1
+        flag:        '-p'
+        description: >
+            Set server port to listen on/connect to (default: 1025)
+      - name:        From
+        type:        'str'
+        count:       1
+        flag:        '-F'
+        description: >
+            The sender email address (client only) (default: sender@mail.dummy.com)
+      - name:        To
+        type:        'str'
+        count:       1
+        flag:        '-T'
+        description: >  
+            The receiver email address (client only) (default: receiver@mail.dummy.com)
+      - name:        Size
+        type:        'int'
+        count:       1
+        flag:        '-S'
+        description: >
+            The size in kilobyte of the message to send (client only) (default: 100 kbytes)
+      - name:        interval
+        type:        'int'
+        count:       1
+        flag:        '-i'
+        description: >
+            The pause *interval* seconds between messages to send (client only) (default: 1 second)
+      - name:        duration
+        type:        'int'
+        count:       1
+        flag:        '-d'
+        description: >
+            The time in seconds to send messages (client only) (default: infinite)  
+          
+statistics:
+    - name: "received  messages"
+      description: >
+          The number of messages received
+      frequency: 'On message received' 
+    - name: "received data size"
+      description: >
+          Size in byte of messages received
+      frequency: 'On message received' 
