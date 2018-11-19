@@ -57,9 +57,9 @@ def main(dst_ip, port, filename, vb, ab, duration):
         sout = "#transcode{{vcodec=mp4v,acodec=mpga,{0}{1}deinterlace}}".format(
                 "vb={},".format(vb) if vb else '',
                 "ab={},".format(ab) if ab else '')
-        sout += ":rtp{{dst={0},port={1},sdp=sap}}".format(dst_ip, port)
+        sout += ":rtp{{dst={0},port={1},sdp=sap,mux=ts}}".format(dst_ip, port)
     else:
-        sout = "#rtp{{dst={0},port={1},sdp=sap}}".format(dst_ip, port)
+        sout = "#rtp{{dst={0},port={1},sdp=sap,mux=ts}}".format(dst_ip, port)
     
     cmd = ["vlc-wrapper", "-q", filename, "-Idummy", "--sout", sout, "--sout-keep", "--loop"]
     try:
