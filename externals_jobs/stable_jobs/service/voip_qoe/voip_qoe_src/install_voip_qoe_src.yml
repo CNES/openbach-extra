@@ -1,0 +1,51 @@
+---
+
+- name: Create the VoIP QoE directory for sender (source)
+  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+
+- name: Install voip_qoe_src job (sender)
+  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  with_items:
+    - { file: 'voip_qoe_src_rstats_filter.conf', mode: '0644' }
+    - { file: 'voip_qoe_src.py', mode: '0755' }
+    - { file: 'codec.py', mode: '0755' }
+    - { file: 'compute_mos.py', mode: '0755' }
+    - { file: 'voip_qoe_src.help', mode: '0644' }
+  become: yes
+
+- name: Create the etc directory for config files
+  file: path=/opt/openbach/agent/jobs/{{ job_name }}/etc state=directory mode=0755
+
+- name: Create the figures directory
+  file: path=/opt/openbach/agent/jobs/{{ job_name }}/figures state=directory mode=0755
+
+- name: Create the logs directory
+  file: path=/opt/openbach/agent/jobs/{{ job_name }}/logs state=directory mode=0755
+
+- name: Copy configuration files
+  copy: src=etc/{{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/etc mode={{ item.mode }}
+  with_items:
+    - { file: 'internal_config.yml', mode: '0644' }
+    - { file: 'default_constants.yml', mode: '0644' }
+    - { file: 'G.711.1.yml', mode: '0644' }
+    - { file: 'G.711.2.yml', mode: '0644' }
+    - { file: 'G.723.1.yml', mode: '0644' }
+    - { file: 'G.729.2.yml', mode: '0644' }
+    - { file: 'G.729.3.yml', mode: '0644' }
+  become: yes
+
+- name: Extract D-ITG software
+  unarchive: src=files/D-ITG-2.8.1-r1023.tar.gz dest=/opt/openbach/agent/jobs/{{ job_name }}/
+  become: yes
+
+- name: Build D-ITG software
+  make: chdir=/opt/openbach/agent/jobs/{{ job_name }}/D-ITG-2.8.1-r1023/src/
+  become: yes
+
+- name: Install Python Dependencies
+  pip: name={{ item }} executable=pip3
+  with_items:
+    - matplotlib
+    - pyaml
+    - psutil
+  become: yes

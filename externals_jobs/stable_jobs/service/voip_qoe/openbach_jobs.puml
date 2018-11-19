@@ -1,0 +1,50 @@
+@startuml
+
+object collect_agent {
+}
+
+package voip_qoe_src {
+
+    class CodecConstants {
+        collect_agent : object
+        etc_dir_path : str
+        codec_name : str
+        load_default_constants()
+        load_specific_constants()
+    }
+
+    object compute_mos.py {
+        compute_r_value()
+        compute_ro()
+        compute_is()
+        compute_id()
+        compute_ie_eff()
+        compute_mos_value()
+        estimate_user_satisfaction()
+    }
+
+    object voip_qoe_src.py {
+        get_timestamp()
+        build_parser()
+        main()
+    }
+
+    voip_qoe_src.py -- compute_mos.py
+    voip_qoe_src.py -- CodecConstants
+    compute_mos.py -- CodecConstants
+
+}
+
+package voip_qoe_dest {
+
+    object voip_qoe_dest.py {
+        build_parser()
+        main()
+    }
+
+}
+
+voip_qoe_src.py -- collect_agent
+voip_qoe_dest.py -- collect_agent
+
+@enduml

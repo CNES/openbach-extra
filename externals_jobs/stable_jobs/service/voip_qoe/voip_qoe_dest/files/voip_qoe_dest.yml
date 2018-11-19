@@ -1,0 +1,24 @@
+---
+
+general:
+  name: voip_qoe_dest
+  description: >
+      An OpenBACH job to measure the QoE of one or many VoIP sessions generated with D-ITG software. This job
+      corresponds to the receiver (destination) component and should be launched before the caller (source) component.
+  job_version: '2.0'
+  keywords: [VoIP, destination, QoE, D-ITG, codec]
+  persistent: True
+  need_privileges: True
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/voip_qoe_dest/voip_qoe_dest.py'
+    command_stop: 'killall -v ITGRecv'
+
+arguments:
+  required:
+  optional:
+
+statistics:

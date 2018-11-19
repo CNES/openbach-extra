@@ -1,0 +1,215 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Installation instructions &#8212; OpenBACH jobs  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Scenario example" href="scenario_example.html" />
+    <link rel="prev" title="OpenBach jobs’s documentation" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="installation-instructions">
+<h1>Installation instructions<a class="headerlink" href="#installation-instructions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="important-prerequisites">
+<h2>IMPORTANT: Prerequisites<a class="headerlink" href="#important-prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>You first want to setup a password-less ssh connection between your host 1 and your host 2, where <em>voip_qoe_src</em> and <em>voip_qoe_dest</em> jobs are installed, respectively.</p>
+<p>This password-less connection should be enforced for both the OpenBACH user (generally openbach) and for the root user.</p>
+<ul class="simple">
+<li>Step 1: key generation</li>
+</ul>
+<p>On host 1 (<em>voip_qoe_src</em>), generate a pair of public keys using following command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ssh-keygen -t rsa</span>
+</pre></div>
+</div>
+<p>Then, press the [Enter] key three times to validate (default location, no password). The output should look like:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Generating public/private rsa key pair.</span>
+<span class="go">Enter file in which to save the key (/home/openbach/.ssh/id_rsa): [Press enter key]</span>
+<span class="go">Created directory &#39;/home/openbach/.ssh&#39;.</span>
+<span class="go">Enter passphrase (empty for no passphrase): [Press enter key]</span>
+<span class="go">Enter same passphrase again: [Press enter key]</span>
+<span class="go">Your identification has been saved in /home/openbach/.ssh/id_rsa.</span>
+<span class="go">Your public key has been saved in /home/openbach/.ssh/id_rsa.pub.</span>
+<span class="go">The key fingerprint is:</span>
+<span class="go">5f:ad:40:00:8a:d1:9b:99:b3:b0:f8:08:99:c3:ed:d3 openbach@host1</span>
+<span class="go">The key&#39;s randomart image is:</span>
+<span class="go">+--[ RSA 2048]----+</span>
+<span class="go">|        ..oooE.++|</span>
+<span class="go">|         o. o.o  |</span>
+<span class="go">|          ..   . |</span>
+<span class="go">|         o  . . o|</span>
+<span class="go">|        S .  . + |</span>
+<span class="go">|       . .    . o|</span>
+<span class="go">|      . o o    ..|</span>
+<span class="go">|       + +       |</span>
+<span class="go">|        +.       |</span>
+<span class="go">+-----------------+</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>Step 2: key exchange</li>
+</ul>
+<p>Copy the key from host 1 (<em>voip_qoe_src</em>) to host 2 (<em>voip_qoe_src</em>)</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ssh-copy-id openbach@host2</span>
+</pre></div>
+</div>
+<p>Then, test the password-less connection by typing:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ssh openbach@host2</span>
+</pre></div>
+</div>
+<p>You shoud not be prompted for any password.</p>
+<ul class="simple">
+<li>Step 3</li>
+</ul>
+<p>On host 1, sudo as root:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">sudo su</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>Step 4</li>
+</ul>
+<p>Perform again step 1 and step 2.</p>
+<p>Once -and only once- this has been done, the two jobs can be added to OpenBACH in three different ways.</p>
+</div>
+<div class="section" id="option-1-install-on-a-fresh-openbach-install">
+<h2>Option 1: Install on a fresh OpenBACH install<a class="headerlink" href="#option-1-install-on-a-fresh-openbach-install" title="Permalink to this headline">¶</a></h2>
+<p>See the procedure described on OpenBACH wiki:</p>
+<ul class="simple">
+<li>OpenBACH wiki: Adding Jobs from External Sources <a class="reference external" href="https://wiki.net4sat.org/doku.php?id=openbach:manuals:installation_manual:index#adding_jobs_from_external_sources">https://wiki.net4sat.org/doku.php?id=openbach:manuals:installation_manual:index#adding_jobs_from_external_sources</a>.</li>
+</ul>
+<p>Typically, having installed the [ansible software](<a class="reference external" href="https://www.ansible.com/">https://www.ansible.com/</a>), the install command would be:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ansible-playbook install.yml -u openbach -k -K -e &#39;{&quot;openbach_jobs_folders&quot;: [&quot;/path/to/voip_qoe_src/&quot;, &quot;/path/to/voip_qoe_dest/&quot;]}&#39;</span>
+</pre></div>
+</div>
+<p>Finally, remember to finalize Grafana association:</p>
+<ul class="simple">
+<li>OpenBACH wiki - Manual Intervention <a class="reference external" href="https://wiki.net4sat.org/doku.php?id=openbach:manuals:installation_manual:index#manual_intervention">https://wiki.net4sat.org/doku.php?id=openbach:manuals:installation_manual:index#manual_intervention</a>.</li>
+</ul>
+</div>
+<div class="section" id="option-2-install-via-openbach-gui">
+<h2>Option 2: Install via OpenBACH GUI<a class="headerlink" href="#option-2-install-via-openbach-gui" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Go to the OpenBACH administration webpage at <a class="reference external" href="http:/">http:/</a>/&lt;CONTROLLER_IP&gt;/app</li>
+<li>Click on the <em>OpenBACH</em> menu in the top-right corner and then on <em>Jobs</em></li>
+<li>Enter <em>voip_qoe_src</em> in the <em>New Job Name</em> field</li>
+<li>Import the tar.gz archive containing the voip_qoe_src job</li>
+<li>Repeat procedure for the voip_qoe_dest job</li>
+</ul>
+</div>
+<div class="section" id="option-3-install-with-auditorium-scripts-cli">
+<h2>Option 3: Install with auditorium scripts (CLI)<a class="headerlink" href="#option-3-install-with-auditorium-scripts-cli" title="Permalink to this headline">¶</a></h2>
+<p>First, clone the Auditorium scripts repository from the forge</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://forge.net4sat.org/openbach/auditorium-scripts.git</span>
+<span class="go">cd auditorium-scripts</span>
+</pre></div>
+</div>
+<p>Then, execute the <cite>add_job.py</cite> script with following arguments:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">./add_job.py --controller &lt;CONTROLLER_IP&gt; --login openbach -p /path/to/voip_qoe_src/</span>
+<span class="go">./add_job.py --controller &lt;CONTROLLER_IP&gt; --login openbach -p /path/to/voip_qoe_dest/</span>
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">./add_job.py --controller &lt;CONTROLLER_IP&gt; --login openbach -t /path/to/voip_qoe_src.tar.gz</span>
+<span class="go">./add_job.py --controller &lt;CONTROLLER_IP&gt; --login openbach -t /path/to/voip_qoe_dest.tar.gz</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">OpenBACH jobs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation instructions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#important-prerequisites">IMPORTANT: Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#option-1-install-on-a-fresh-openbach-install">Option 1: Install on a fresh OpenBACH install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#option-2-install-via-openbach-gui">Option 2: Install via OpenBACH GUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#option-3-install-with-auditorium-scripts-cli">Option 3: Install with auditorium scripts (CLI)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scenario_example.html">Scenario example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="voip_qoe_dest.html">voip_qoe_src job</a></li>
+<li class="toctree-l1"><a class="reference internal" href="voip_qoe_src.html">voip_qoe_dest job</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">OpenBach jobs’s documentation</a></li>
+      <li>Next: <a href="scenario_example.html" title="next chapter">Scenario example</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Antoine Auger.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.9</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="_sources/installation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

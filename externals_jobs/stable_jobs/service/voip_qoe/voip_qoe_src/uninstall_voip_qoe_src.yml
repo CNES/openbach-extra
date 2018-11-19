@@ -1,0 +1,28 @@
+---
+
+- name: Get running processes
+  shell: "ps -ef | grep -v grep | grep -w 'ITGSend' | awk '{print $2}'"
+  register: running_processes
+
+- name: Kill running processes
+  shell: "kill {{ item }}"
+  with_items: "{{ running_processes.stdout_lines }}"
+
+- wait_for:
+    path: "/proc/{{ item }}/status"
+    state: absent
+  with_items: "{{ running_processes.stdout_lines }}"
+  ignore_errors: yes
+  register: killed_processes
+
+- name: Force kill stuck processes
+  shell: "kill -9 {{ item }}"
+  with_items: "{{ killed_processes.results | select('failed') | map(attribute='item') | list }}"
+
+- name: Remove D-ITG
+  file: path=/opt/openbach/agent/jobs/{{ job_name }}/D-ITG-2.8.1-r1023 state=absent
+  become: yes
+
+- name: Remove the voip_qoe_dest Folder
+  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
+  become: yes

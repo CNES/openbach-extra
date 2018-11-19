@@ -1,0 +1,139 @@
+---
+
+general:
+  name: voip_qoe_src
+  description: >
+      An OpenBACH job to measure the QoE of one or many VoIP sessions generated with D-ITG software. This job
+      corresponds to the caller (source) component and should be launched after the receiver (destination) component.
+  job_version: '2.0'
+  keywords: [VoIP, source, QoE, D-ITG, codec]
+  persistent: False
+  need_privileges: True
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/voip_qoe_src/voip_qoe_src.py'
+    command_stop: 'killall -v ITGSend'
+
+
+arguments:
+  required:
+    - name: src_addr
+      type: 'ip'
+      count: 1
+      description: >
+          The source IPv4 address to use for the VoIP session.
+    - name: dest_addr
+      type: 'ip'
+      count: 1
+      description: >
+          The destination IPv4 address to use for the VoIP session.
+    - name: codec
+      type: 'str'
+      count: 1
+      description: >
+          The codec to use to perform the VoIP sessions. Possible values are: G.711.1, G.711.2, G.723.1, G.729.2,
+          G.729.3.
+    - name: duration
+      type: 'int'
+      count: 1
+      description: >
+          The duration of one VoIP session in seconds.
+    - name: root_user_dest
+      type: 'str'
+      count: 1
+      description: >
+          The name of a root user on the destination (receiver) side.
+  optional:
+    - name: nb_flows
+      type: 'int'
+      count: 1
+      flag: '-f'
+      description: >
+          The number of parallel VoIP session to start. Default: 1.
+    - name: sig_src_addr
+      type: 'ip'
+      count: 1
+      flag: '-Ssa'
+      description: >
+          The IPv4 source address for D-ITG signaling channel. Default: same as src_addr.
+    - name: sig_dest_addr
+      type: 'ip'
+      count: 1
+      flag: '-Ssd'
+      description: >
+          The IPv4 destination address for D-ITG signaling channel. Default: same as dest_addr.
+    - name: use_jitter
+      type: 'None'
+      count: 0
+      flag: '-j'
+      description: >
+          Whether or not to convert jitter into delay for the MOS computation.
+    - name: vad
+      type: 'None'
+      count: 0
+      flag: '-v'
+      description: >
+          Whether or not to use the Voice Activity Detection (VAD) option in ITGSend.
+    - name: granularity
+      type: 'int'
+      count: 1
+      flag: '-g'
+      description: >
+          Statistics granularity in milliseconds.  Default: 1000.
+    - name: nb_runs
+      type: 'int'
+      count: 1
+      flag: '-n'
+      description: >
+          The number of runs to perform for each VoIP session. Default: 1.
+    - name: waiting_time
+      type: 'int'
+      count: 1
+      flag: '-w'
+      description: >
+          The number of seconds to wait between two runs. Default: 0.
+    - name: starting_port
+      type: 'int'
+      count: 1
+      flag: '-p'
+      description: >
+          The starting port to emit VoIP sessions. Each session is emitted on a different port
+          (e.g., 10000, 10001, etc.).  Default: 10000.
+    - name: protocol
+      type: 'str'
+      count: 1
+      flag: '-pt'
+      description: >
+          The protocol to use to perform the VoIP sessions. Possible values are: RTP, CRTP.  Default: RTP.
+
+statistics:
+    - name: instant_r_factor
+      description: >
+          Instantaneous R-factor of the current VoIP session.
+          Computed according to ITU-T's formula, the R-factor is a float between 0 and 120.
+      frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'
+    - name: instant_mos
+      description: >
+          Instantaneous Mean Opinion Score (MOS) of the current VoIP session.
+          The MOS is a float value between 0 and 5.
+      frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'
+    - name: bitrate
+      description: >
+          Instantaneous bitrate (in Kbits/s) of the current VoIP session.
+      frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'
+    - name: delay
+      description: >
+          Instantaneous one-way delay (in ms) of the current VoIP session.
+      frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'
+    - name: jitter
+      description: >
+          Instantaneous jitter (in ms) of the current VoIP session.
+      frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'
+    - name: packet_loss
+      description: >
+          Instantaneous packet loss ration (in %) of the current VoIP session.
+          To compute this metric, we rely on the theoretical packet rate specific to each codec.
+      frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'

@@ -1,0 +1,23 @@
+### GENERAL CONFIGURATION ###
+
+FILE_TEMP_FLOWS: 'temp_file_flows.txt'
+
+
+### CODEC BITRATES (packets/s) ###
+
+CODEC_BITRATES:
+  G.711.1: 100
+  G.711.2: 50
+  G.723.1: 26
+  G.729.2: 50
+  G.729.3: 30
+
+
+### METRICS CONFIGURATION ###
+
+D_ITG_METRIC_LABELS: ['flows', 'total_time', 'total_packets', 'min_delay', 'max_delay', 'avg_delay', 'avg_jitter',
+'delay_std', 'bytes_received', 'avg_bitrate', 'avg_packet_rate', 'packets_dropped', 'avg_loss_burst_size', 'error_lines']
+# Metrics of interest for VoIP
+METRICS_VOIP: ['r_value_avg', 'r_value_min', 'mos_avg', 'mos_min']
+# QoS metrics of interest for VoIP
+METRICS_QOS: ['avg_jitter', 'max_delay', 'packets_dropped']
