@@ -1,0 +1,1 @@
+This job launchs VLC program to receive and to play a video that is streaming over the network. It also sends statistics about medias contained in this video, to OpenBACH Collector. These statistics are computed by VLC and are obtained via a VLC Control Interface that is emulated as a telnet terminal which is used to send *stats* command each *interval* seconds.  
