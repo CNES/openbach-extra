@@ -47,5 +47,11 @@ arguments:
       flag:        '-a'
       description: >
           Transcode audio bitrate (Default: 0, no transcoding).
+    - name:        duration
+      type:        'int'
+      count:       1
+      flag:        '-d'
+      description: >
+          The time in seconds for streaming video (Default: 0, infinite)
 
 statistics:
