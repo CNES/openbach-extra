@@ -1,1 +1,15 @@
-This job launchs VLC program to receive and to play a video that is streaming over the network. It also sends statistics about medias contained in this video, to OpenBACH Collector. These statistics are computed by VLC and are obtained via a VLC Control Interface that is emulated as a telnet terminal which is used to send *stats* command each *interval* seconds.  
+Examples:
+========
+Example1: From Agent "sender", stream default video (Big Buck Bunny) using vlc job to IP address 192.168.1.4 which is the address of receiver agent that will play video during 50 seconds.  
+
+-In the web interface, set the following parameters:
+ For Agent "sender" running vlc job:
+     dest_ip: 192.168.1.4
+ For Agent "receiver" (Start 5s after sender is launched):
+     recv_ip = 192.168.1.4
+     duration = 50
+     
+-Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id of 0): 
+    From sender CLI: JOB_NAME=vlc sudo -E -u openbach python3 /opt/openbach/agent/jobs/vlc/vlc.py -dst_ip 192.168.1.4 
+    From receiver CLI: JOB_NAME=vlc_receiver sudo -E -u openbach python3 /opt/openbach/agent/jobs/vlc_receiver/vlc_receiver.py -recv_ip 192.168.1.4 -d 50 
+  
