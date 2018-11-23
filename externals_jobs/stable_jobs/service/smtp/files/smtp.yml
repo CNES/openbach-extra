@@ -65,7 +65,7 @@ arguments:
         count:       1
         flag:        '-d'
         description: >
-            The time in seconds to send messages (client only) (default: infinite)  
+            The time in seconds to transmit for (client only) (default: infinite)  
           
 statistics:
     - name: "received  messages"
