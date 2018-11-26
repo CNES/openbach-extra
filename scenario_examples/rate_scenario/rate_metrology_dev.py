@@ -10,7 +10,7 @@ import scenario_builder as sb
 
 SCENARIO_NAME = 'New_Rate_Metrology'
 SCENARIO_DESCRIPTION = 'Rate metrology scenario measuring network bandwidth'
-UDP_RATES = range(15000000, 17000000, 4000000)
+UDP_RATES = range(10000, 17000, 4000)
 NUTTCP_CLIENT_UDP_LABEL = 'nuttcp client: {} flows, rate {}, mtu {}b, tos {} (iter {})'
 NUTTCP_SERVER_UDP_LABEL = 'nuttcp server: {} flows, rate {}, mtu {}b, tos {} (iter {})'
 CLIENT_TCP_LABEL = '{} client: {} flows, mtu {}, tos {} (iter {})'
@@ -20,8 +20,8 @@ POST_PROC = []
 
 def build_rate_scenario(
         client_entity, server_entity, jobs=('iperf3', 'nuttcp', ),
-        parallel_flows=(1, 5,), mtu_sizes=(1200,), tos_values=('0x00',),
-        iterations=1, interval=0.5, udp=False):
+        parallel_flows=(1, ), mtu_sizes=(1200,), tos_values=('0x00',),
+        iterations=1, interval=1, udp=False):
     
     # Create the scenario with scenario_builder
     scenario = sb.Scenario(SCENARIO_NAME, SCENARIO_DESCRIPTION)
@@ -47,8 +47,8 @@ def build_rate_scenario(
                             label=NUTTCP_SERVER_UDP_LABEL.format(flow_count, rate, mtu, tos, iteration+1),
                     )
                     launch_nuttcpserver.configure(
-                            job_name, server_entity, offset=0, port='$port',
-                            server_mode=True, command_port='$com_port',
+                            job_name, server_entity, offset=0,
+                            command_port='$com_port', server={}
                     )
                     launch_nuttcpclient = scenario.add_function(
                             'start_job_instance',
@@ -58,11 +58,10 @@ def build_rate_scenario(
                     )
                     launch_nuttcpclient.configure(
                             job_name, client_entity, offset=0,
-                            server_mode=False, server_ip='$dst_ip',
-                            command_port='$com_port', port='$port', udp=True,
-                            receiver=False, dscp='{0}'.format(tos), mss=mtu-40,
-                            stats_interval=interval, rate_limit=rate,
-                            duration='$duration', n_streams=flow_count,
+                            command_port='$com_port', client = {'server_ip':'$dst_ip',
+                            'port':'$port', 'receiver':'{0}'.format(False), 'dscp':'{0}'.format(tos),
+                            'stats_interval':'{0}'.format(interval), 'duration':'$duration',
+                            'n_streams':'{0}'.format(flow_count), 'rate_limit':'{0}'.format(rate), 'udp':{}}
                     )
                     POST_PROC.append([NUTTCP_CLIENT_UDP_LABEL.format(flow_count, rate, mtu, tos, iteration+1), job_name, flow_count, iteration+1])
                     stop_nuttcpserver = scenario.add_function(
@@ -157,8 +156,7 @@ def extract_nuttcp_statistics(job):
 def main(project_name):
     #Build a scenario specifying the entity name of the client and the server.
     scenario_builder = build_rate_scenario('client', 'server', udp=False)
-    scenario_builder.write('toto.json')
-    #return
+    scenario_builder.write('your_scenario.json')
     #ScenarioObserver creates the scenario / the post_processing is used to request the statistics from the desired jobs (by means of the labels of the openbach-functions)
     observer = ScenarioObserver(SCENARIO_NAME, project_name, scenario_builder)
     for pp in POST_PROC:
@@ -199,7 +197,6 @@ def main(project_name):
     plt_thr.show()
     plt_cdf.show()
     input()
-
 
 
 if __name__ == '__main__':
