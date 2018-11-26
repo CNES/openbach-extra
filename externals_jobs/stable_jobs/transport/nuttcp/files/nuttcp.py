@@ -32,6 +32,7 @@
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
  * Alban FRICOT <africot@toulouse.viveris.com>
+ * David PRADAS <david.pradas@toulouse.viveris.com>
 '''
 
 
@@ -58,7 +59,7 @@ def _command_build_helper(flag, value):
 
 def server(command_port):
     cmd = ['nuttcp', '-S', '--nofork']
-    cmd.extend(_command_build_helper('-P', args.get('command_port')))
+    cmd.extend(_command_build_helper('-P', command_port))
     p = subprocess.run(cmd)
     sys.exit(p.returncode)
 
@@ -76,18 +77,18 @@ def client(
         sys.exit(message)
 
     cmd = ['stdbuf', '-oL', 'nuttcp', '-fparse', '-frunningtotal']
-    cmd.extend(('-r', ) if args.get('receiver') else '')
+    cmd.extend(('-r', ) if receiver else '')
     cmd.extend(('-u', ) if protocol == 'udp' else '')
-    cmd.extend(_command_build_helper('-P', args.get('command_port')))
-    cmd.extend(_command_build_helper('-p', args.get('port')))
-    cmd.extend(_command_build_helper('-w', args.get('buffer_size')))
-    cmd.extend(_command_build_helper('-M', args.get('mss')))
-    cmd.extend(_command_build_helper('-c', args.get('dscp')))
-    cmd.extend(_command_build_helper('-N', args.get('n_streams')))
-    cmd.extend(_command_build_helper('-T', args.get('duration')))
-    cmd.extend(_command_build_helper('-R', args.get('rate_limit')))
-    cmd.extend(_command_build_helper('-i', args.get('stats_interval')))
-    cmd.extend((args.get('server_ip'), ))
+    cmd.extend(_command_build_helper('-P', command_port))
+    cmd.extend(_command_build_helper('-p', port))
+    cmd.extend(_command_build_helper('-w', buffer_size))
+    cmd.extend(_command_build_helper('-M', mss))
+    cmd.extend(_command_build_helper('-c', dscp))
+    cmd.extend(_command_build_helper('-N', n_streams))
+    cmd.extend(_command_build_helper('-T', duration))
+    cmd.extend(_command_build_helper('-R', rate_limit))
+    cmd.extend(_command_build_helper('-i', stats_interval))
+    cmd.extend((server_ip, ))
     
     if protocol == 'udp':
         STAT = UDP_STAT
