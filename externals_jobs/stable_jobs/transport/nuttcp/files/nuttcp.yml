@@ -4,7 +4,7 @@ general:
   name:            nuttcp
   description: >
       This Job launches the nuttcp tool (client or server mode) to generate UDP/TCP traffic with configured parameters (duration, bandwidth, parallel flows, ToS, MSS, etc.). It measures throughput, sent/lost packets, etc.  
-  job_version:     '1.0'
+  job_version:     '2.0'
   keywords:        [nuttcp, udp, tcp, throughput, loss]
   persistent:      True
   need_privileges: True
