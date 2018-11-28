@@ -1,0 +1,9 @@
+Examples:
+========
+Example1: Every 2s, show how much processing power and memory are being used on the system running a given Agent. 
+-In the web interface, set the following parameters:
+ For the Agent to monitor:
+    interval = 2
+
+-Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id of 0): 
+    JOB_NAME=system_utilization sudo -E python3 /opt/openbach/agent/jobs/system_utilization/system_utilization.py -i 2 
