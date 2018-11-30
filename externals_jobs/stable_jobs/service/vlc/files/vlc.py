@@ -91,7 +91,7 @@ if __name__ == "__main__":
     parser.add_argument('-a', '--ab', type=int, default=0,
                         help='The audio bitrade when transcoding')
     parser.add_argument('-d', '--duration', type=int, default=0,
-                        help='The duration (Default: 0 infinite')
+                        help='The duration (Default: 0 infinite)')
     
     # Get arguments
     args = parser.parse_args()

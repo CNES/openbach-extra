@@ -1,0 +1,65 @@
+---
+
+general:
+  name:            web_browsing_qoe
+  description: >
+      Monitor performances timing of HTTP Service. 
+  job_version:     '1.0'
+  keywords:        [web, performance, HTTP, QoE]
+  persistent:      False
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/web_browsing_qoe/web_browsing_qoe.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        nb_runs
+      type:        'int'
+      count:        1
+      description: >
+          The number of fetches to perform for each website
+statistics:
+    - name: "dns_lookup_start_time"
+      description: >
+          The time elapsed between a request and when the browser starts the domain name lookup for the page, in ms.
+      frequency: 'every time a page is fetched'
+    - name: "dns_lookup_end_time"
+      description: >
+          The time elapsed between a request and when the browser finishes the domain name lookup for the page, in ms.
+      frequency: 'every time a page is fetched'
+    - name: "connect_start_time"
+      description: >
+          The time elapsed in ms, between a request and when the browser starts to connect to the server.
+      frequency: 'every time a page is fetched'
+    - name: "connect_end_time"
+      description: >
+          The time elapsed in ms, between a request and when the connection is established between the browser and the server.
+      frequency: 'every time a page is fetched'
+    - name: "request_start_time"
+      description: >
+          The time elapsed in ms, between a request and when the browser starts to request the page content.
+      frequency: 'every time a page is fetched'
+    - name: "response_start_time"
+      description: >
+          The time elapsed in ms, between a request and when the browser starts to receive the first byte of the response from the server.
+      frequency: 'every time a page is fetched'
+    - name: "response_end_time"
+      description: >
+          The time elapsed in ms, between a request and when the browser receives the last byte of the requested document.
+      frequency: 'every time a page is fetched'
+    - name: "page_interaction_time"
+      description: >
+          The time elapsed in ms, between a request and the moment when a user can click on links, type in text fields or scroll the page.
+      frequency: 'every time a page is fetched'
+    - name: "page_rendering_time"
+      description: >
+          The time elapsed in ms, between a user's request and the moment when content is completed and ready to be loaded in their browser.
+      frequency: 'every time a page is fetched'
+    - name: "page_load_time"
+      description: >
+          The time elapsed in ms, between a user's request and the moment when page is fully loaded in their browser.
+      frequency: 'every time a page is fetched'

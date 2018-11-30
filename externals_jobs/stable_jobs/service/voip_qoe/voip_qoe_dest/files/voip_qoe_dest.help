@@ -1,0 +1,18 @@
+Examples:
+========
+Example1: From Agent "receiver", launch voip_qoe_src job and wait for call on IP address 192.168.1.4 from Agent "caller" which will call with IP address 192.168.1.5 during 50 seconds using G.711.1 as codec.  
+
+-In the web interface, set the following parameters:
+ For Agent "receiver" running voip_qoe_dest job:
+     run the job with default parameters
+ For Agent "caller" running voip_qoe_src job (Start 5s after receiver is launched):
+     src_addr = 192.168.1.4
+     dest_addr = 192.168.1.5
+     codec = G.711.1
+     duration = 50000
+     root_user_dest = openbach
+     
+-Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id of 0): 
+    From receiver CLI: JOB_NAME=voip_qoe_dest sudo -E python3 /opt/openbach/agent/jobs/voip_qoe_dest/voip_qoe_dest.py  
+    From caller CLI: JOB_NAME=voip_qoe_src sudo -E python3 /opt/openbach/agent/jobs/voip_qoe_src/voip_qoe_src.py 192.168.1.5 192.168.1.4 G.711.1 50000 openbach
+  
