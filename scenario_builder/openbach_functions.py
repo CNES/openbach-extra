@@ -203,42 +203,6 @@ class StopScenarioInstance(OpenBachFunction):
         return context
 
 
-class RetrieveStatusAgents(OpenBachFunction):
-    """Representation of the retrieve_status_agents openbach function."""
-
-    def __init__(self, launched, finished, delay, label):
-        super().__init__(launched, finished, delay, label)
-        self.agents_addresses = ()
-        self.update = False
-
-    def configure(self, *addresses, update=False):
-        """Define this openbach function with the mandatory values:
-         - addresses: addresses of the agent from whom to fetch
-                      the status.
-        Optional parameter:
-         - update: connect to the agent and ask it to update its
-                   status in the backend database before returning
-                   it.
-        """
-
-        self.agents_addresses = list(addresses)
-        self.update = update
-
-    def build(self, functions):
-        """Construct a dictionary representing this function.
-
-        This dictionary is suitable to be included in the
-        `openbach_functions` array of the associated scenario.
-        """
-
-        context = super().build(functions)
-        context['retrieve_status_agents'] = {
-            'addresses': self.agents_addresses,
-            'update': self.update,
-        }
-        return context
-
-
 class _Condition(OpenBachFunction):
     """Intermediate representation for openbach function
     that makes use of conditions.
