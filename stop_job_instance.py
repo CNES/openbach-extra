@@ -36,7 +36,7 @@ __credits__ = '''Contributors:
 '''
 
 
-from functool import partial
+from functools import partial
 
 from frontend import FrontendBase
 
