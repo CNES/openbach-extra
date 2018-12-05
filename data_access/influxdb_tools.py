@@ -427,8 +427,9 @@ class InfluxDBConnection(InfluxDBCommunicator):
         response = self.sql_query(tag_query('@scenario_instance_id', job, condition))
         return {int(tag['value']) for _, tag in parse_influx(response)}
 
-    def timestamps(self, job=None, scenario=None, agent=None,
-                   job_instance=None, suffix=None, condition=None):
+    def timestamps(
+            self, job=None, scenario=None, agent=None,
+            job_instance=None, suffix=None, condition=None):
         """List the available timestamps in InfluxDB
         that correspond to the given constraints.
         """
@@ -456,8 +457,9 @@ class InfluxDBConnection(InfluxDBCommunicator):
         response = self.sql_query(tag_query('@suffix', job, condition))
         return {tag['value'] for _, tag in parse_influx(response)}
 
-    def raw_statistics(self, job=None, scenario=None, agent=None, job_instance=None,
-                   suffix=None, fields=None, condition=None):
+    def raw_statistics(
+            self, job=None, scenario=None, agent=None, job_instance=None,
+            suffix=None, fields=None, condition=None):
         """Fetch data from InfluxDB that correspond to the given constraints
         and generate values in series.
         """
@@ -465,8 +467,9 @@ class InfluxDBConnection(InfluxDBCommunicator):
         response = self.sql_query(select_query(job, fields, condition))
         yield from parse_influx(response)
 
-    def statistics(self, job=None, scenario=None, agent=None, job_instance=None,
-                   suffix=None, fields=None, condition=None):
+    def statistics(
+            self, job=None, scenario=None, agent=None, job_instance=None,
+            suffix=None, fields=None, condition=None):
         """Fetch data from InfluxDB that correspond to the given constraints
         and generate according `Scenario`s instances.
         """
@@ -499,8 +502,9 @@ class InfluxDBConnection(InfluxDBCommunicator):
             condition = ConditionAnd(condition, timestamp_condition)
         return parse_orphans(self.sql_query(select_query(None, None, condition)))
 
-    def remove_statistics(self, job=None, scenario=None, agent=None,
-                          job_instance=None, suffix=None, condition=None):
+    def remove_statistics(
+            self, job=None, scenario=None, agent=None,
+            job_instance=None, suffix=None, condition=None):
         """Delete data in InfluxDB that matches the given constraints"""
         if condition is None or condition.is_timestamp:
             self.sql_query(delete_query(job, scenario, agent, job_instance, suffix, condition))
