@@ -37,7 +37,7 @@ well as means to filter them at will.
 
 __author__ = 'Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>'
 __credits__ = 'Maintainer: Mathias ETTINGER <mettinger@toulouse.viveris.com>'
-__version__ = 'v1.2.0'
+__version__ = 'v1.2.1'
 __all__ = [
     'read_scenario',
     'CollectorConnection',

@@ -29,6 +29,8 @@ __author__ = 'Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>'
 __credits__ = 'contributions: Mathias ETTINGER'
 __all__ = ['CollectorConnection']
 
+from contextlib import suppress
+
 from .influxdb_tools import InfluxDBConnection
 from .elasticsearch_tools import ElasticSearchConnection
 from .result_data import extract_jobs, get_or_create_scenario
@@ -157,7 +159,8 @@ class CollectorConnection:
         if scenario_instance_id is None:
             yield from (scenario for scenario in scenarios.values() if scenario.owner is None)
         else:
-            yield scenarios[(scenario_instance_id,)]
+            with suppress(KeyError):
+                yield scenarios[(scenario_instance_id,)]
 
     def import_scenario(self, scenario_instance):
         """Import the results of the `Scenario` instance in
