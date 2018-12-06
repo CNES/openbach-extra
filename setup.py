@@ -12,7 +12,7 @@ def read(fname):
 
 setup(
     name='openbach-api',
-    version='2.3.0',
+    version='2.3.1',
     author='OpenBACH Team',
     author_email='admin@openbach.org',
     description='OpenBACH API: build scenario JSONs and access Collector Data',
@@ -21,7 +21,7 @@ setup(
     url='http://openbach.org',
 
     packages=find_packages(),
-    install_requires=['requests'],
+    install_requires=['requests', 'pandas', 'matplotlib'],
 
     test_suite='nose.collector',
     tests_require=['nose'],
