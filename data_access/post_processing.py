@@ -68,32 +68,6 @@ def compute_histogram(bins):
     return _compute_histogram
 
 
-def parse_dataframes(response):
-    for df in influx_to_pandas(response):
-        converters = dict.fromkeys(df.columns, partial(pd.to_numeric, errors='coerce'))
-        converters.pop('@owner_scenario_instance_id')
-        converters.pop('@suffix', None)
-        converters['@agent_name'] = _identity
-
-        converted = [convert(df[column]) for column, convert in converters.items()]
-        if '@suffix' in df:
-            converted.append(df['@suffix'].fillna(''))
-        else:
-            converted.append(pd.Series('', index=df.index, name='@suffix'))
-        df = pd.concat(converted, axis=1)
-
-        df.set_index(['@job_instance_id', '@scenario_instance_id', '@agent_name', '@suffix'], inplace=True)
-        names = ['job', 'scenario', 'agent', 'suffix', 'statistic']
-        for index in df.index.unique():
-            section = df.xs(index).reset_index(drop=True).dropna(axis=1, how='all')
-            section['time'] -= section.time[0]
-            section.set_index('time', inplace=True)
-            section.index.name = 'Time (ms)'
-            columns = [index + (name,) for name in section.columns]
-            section.columns = pd.MultiIndex.from_tuples(columns, names=names)
-            yield section
-
-
 def save(figure, filename, use_pickle=False):
     if use_pickle:
         with open(filename, 'wb') as storage:
@@ -103,6 +77,17 @@ def save(figure, filename, use_pickle=False):
 
 
 class Statistics(InfluxDBCommunicator):
+    @property
+    def origin(self):
+        with suppress(AttributeError):
+            return self._origin
+
+    @origin.setter
+    def origin(self, value):
+        if value is not None and not isinstance(value, int):
+            raise TypeError('origin should be None or a timestamp in milliseconds')
+        self._origin = value
+
     def _raw_influx_data(
             self, job=None, scenario=None, agent=None, job_instances=(),
             suffix=None, fields=None, condition=None):
@@ -122,33 +107,61 @@ class Statistics(InfluxDBCommunicator):
             _condition = ConditionAnd(conditions, ConditionOr(*instances))
         return self.sql_query(select_query(job, fields, _condition))
 
+    def _parse_dataframes(self, response):
+        offset = self.origin
+        for df in influx_to_pandas(response):
+            converters = dict.fromkeys(df.columns, partial(pd.to_numeric, errors='coerce'))
+            converters.pop('@owner_scenario_instance_id')
+            converters.pop('@suffix', None)
+            converters['@agent_name'] = _identity
+
+            converted = [convert(df[column]) for column, convert in converters.items()]
+            if '@suffix' in df:
+                converted.append(df['@suffix'].fillna(''))
+            else:
+                converted.append(pd.Series('', index=df.index, name='@suffix'))
+            df = pd.concat(converted, axis=1)
+
+            df.set_index(['@job_instance_id', '@scenario_instance_id', '@agent_name', '@suffix'], inplace=True)
+            names = ['job', 'scenario', 'agent', 'suffix', 'statistic']
+            for index in df.index.unique():
+                section = df.xs(index).reset_index(drop=True).dropna(axis=1, how='all')
+                section['time'] -= section.time[0] if offset is None else offset
+                section.set_index('time', inplace=True)
+                section.index.name = 'Time (ms)'
+                columns = [index + (name,) for name in section.columns]
+                section.columns = pd.MultiIndex.from_tuples(columns, names=names)
+                yield section
+
     def fetch(
             self, job=None, scenario=None, agent=None, job_instances=(),
             suffix=None, fields=None, condition=None):
         data = self._raw_influx_data(job, scenario, agent, job_instances, suffix, fields, condition)
-        yield from (_Plot(df) for df in parse_dataframes(data))
+        yield from (_Plot(df) for df in self._parse_dataframes(data))
 
     def fetch_all(
             self, job=None, scenario=None, agent=None, job_instances=(),
             suffix=None, fields=None, condition=None):
         data = self._raw_influx_data(job, scenario, agent, job_instances, suffix, fields, condition)
-        df = pd.concat(parse_dataframes(data), axis=1)
+        df = pd.concat(self._parse_dataframes(data), axis=1)
         return _Plot(df)
 
 
 class _Plot:
     def __init__(self, dataframe):
         self.dataframe = dataframe
+        self.df = dataframe[dataframe.index >= 0]
 
     def time_series(self):
-        return self.dataframe.interpolate()
+        df = self.dataframe.interpolate()
+        return df[df.index >= 0]
 
     def histogram(self, buckets):
-        r_min = self.dataframe.min().min()
-        r_max = self.dataframe.max().max()
+        r_min = self.df.min().min()
+        r_max = self.df.max().max()
         bins = np.linspace(r_min, r_max, buckets + 1)
         histogram = compute_histogram(bins)
-        df = self.dataframe.apply(histogram)
+        df = self.df.apply(histogram)
         bins = (bins + np.roll(bins, -1)) / 2
         df.index = bins[:buckets]
         return df
@@ -157,8 +170,8 @@ class _Plot:
         return self.histogram(buckets).cumsum()
 
     def comparison(self):
-        mean = self.dataframe.mean()
-        std = self.dataframe.std().fillna(0)
+        mean = self.df.mean()
+        std = self.df.std().fillna(0)
         df = pd.concat([mean, std], axis=1)
         df.columns = ['Ε', 'δ']
         return df
@@ -170,7 +183,7 @@ class _Plot:
         return axis
 
     def plot_kde(self, axis=None, secondary_title=None):
-        axis = self.dataframe.plot.kde(ax=axis)
+        axis = self.df.plot.kde(ax=axis)
         if secondary_title is not None:
             axis.set_xlabel(secondary_title)
         return axis
