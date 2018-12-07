@@ -36,6 +36,7 @@ import pickle
 from functools import partial
 from contextlib import suppress
 
+import yaml
 import numpy as np
 import pandas as pd
 
@@ -44,6 +45,9 @@ from .influxdb_tools import (
         InfluxDBCommunicator, Operator,
         ConditionTag, ConditionAnd, ConditionOr,
 )
+
+
+DEFAULT_COLLECTOR_FILEPATH = '/opt/openbach/agent/collector.yml'
 
 
 def _identity(x):
@@ -77,6 +81,18 @@ def save(figure, filename, use_pickle=False):
 
 
 class Statistics(InfluxDBCommunicator):
+    @classmethod
+    def from_default_collector(cls, filepath=DEFAULT_COLLECTOR_FILEPATH):
+        with open(filepath) as f:
+            collector = yaml.load(f)
+
+        influx = collector.get('stats', {})
+        return cls(
+                collector['address'],
+                influx.get('query', 8086),
+                influx.get('database', 'openbach'),
+                influx.get('precision', 'ms'))
+
     @property
     def origin(self):
         with suppress(AttributeError):
