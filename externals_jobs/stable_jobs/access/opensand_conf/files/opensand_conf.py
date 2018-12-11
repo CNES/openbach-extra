@@ -67,20 +67,6 @@ class OpsEntity(object):
         self._debconf_params = {}
         super().__init__(**argv)
 
-    def _get_ops_service_type(self, platform_id):
-        '''
-        Get the OpenSAND service type.
-        
-        Args:
-            platform_id:  the string identifying the OpenSAND platform.
-
-        Returns:
-            the OpenSAND service type.
-        '''
-        if platform_id is None or platform_id == '':
-            return '_opensand._tcp'
-        return '_{}_opensand._tcp'.format(platform_id)
-
     def __configure(self):
         '''
         Set the debconf configuration for OpenSAND daemon.
@@ -162,8 +148,7 @@ class OpsCommonConf:
         self._debconf_params['opensand-daemon/service/name_adv'] = entity_type
         self._debconf_params['opensand-daemon/service/st_instance'] = entity_id
 
-        self._debconf_params['opensand-daemon/service/type'] = \
-                self._get_ops_service_type(platform_id)
+        self._debconf_params['opensand-daemon/service/type'] = platform_id
 
         self._debconf_params['opensand-daemon/service/interface'] = ctrl_iface
 
