@@ -65,7 +65,7 @@ class OpsEntity(object):
 
     def __init__(self, **argv):
         self._debconf_params = {}
-        super().__init__(**argv)
+        super().__init__()
 
     def __configure(self):
         '''
