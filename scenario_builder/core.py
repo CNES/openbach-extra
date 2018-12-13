@@ -86,19 +86,15 @@ class Scenario:
         This dictionary is suitable to be written in a file as
         JSON data.
         """
-
-        openbach_functions = self.openbach_functions
-        functions = [f.build(openbach_functions) for f in openbach_functions]
-        for index, function in enumerate(functions):
-            function['id'] = index
-            function.setdefault('label', '#{}'.format(index))
-
         return {
             'name': self.name,
             'description': self.description,
             'arguments': self.arguments.copy(),
             'constants': self.constants.copy(),
-            'openbach_functions': functions,
+            'openbach_functions': [
+                f.build(self.openbach_functions, id)
+                for id, f in enumerate(self.openbach_functions)
+            ],
         }
 
     def write(self, filename):

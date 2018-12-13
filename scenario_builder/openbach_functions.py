@@ -23,19 +23,22 @@ class OpenBachFunction:
         self.wait_finished = finished
         self.label = label
 
-    def build(self, functions):
+    def build(self, functions, function_id):
         """Construct a dictionary representing this function.
 
         This dictionary is suitable to be included in the
         `openbach_functions` array of the associated scenario.
         """
 
-        context = {'wait': {'time': self.time}}
-        context['wait']['launched_ids'] = list(safe_indexor(functions, self.wait_launched))
-        context['wait']['finished_ids'] = list(safe_indexor(functions, self.wait_finished))
-        if self.label is not None:
-            context['label'] = self.label
-        return context
+        return {
+                'id': function_id,
+                'label': self.label if self.label else '#{}'.format(function_id),
+                'wait': {
+                    'time': self.time,
+                    'launched_ids': list(safe_indexor(functions, self.wait_launched)),
+                    'finished_ids': list(safe_indexor(functions, self.wait_finished)),
+                },
+        }
 
 
 class StartJobInstance(OpenBachFunction):
@@ -64,7 +67,7 @@ class StartJobInstance(OpenBachFunction):
         arguments[job_name] = job_arguments
         self.job_name = job_name
 
-    def build(self, functions):
+    def build(self, functions, function_id):
         """Construct a dictionary representing this function.
 
         This dictionary is suitable to be included in the
@@ -74,17 +77,37 @@ class StartJobInstance(OpenBachFunction):
         if self.job_name is None:
             raise ImproperlyConfiguredFunction('start_job_instance')
 
-        context = super().build(functions)
+        context = super().build(functions, function_id)
 
         job = self.job_name
         function = self.start_job_instance
         context['start_job_instance'] = {
             'entity_name': function['entity_name'],
             'offset': function['offset'],
-            job: function[job].copy()
+            job: self._prepare_arguments(function[job], functions),
         }
 
         return context
+
+    @staticmethod
+    def _prepare_arguments(arguments, functions):
+        if isinstance(arguments, dict):
+            return {
+                    key: StartJobInstance._prepare_arguments(value, functions)
+                    for key, value in arguments.items()
+            }
+        elif isinstance(arguments, list):
+            return [
+                    StartJobInstance._prepare_arguments(arg, functions)
+                    for arg in arguments
+            ]
+        elif isinstance(arguments, (StartJobInstance, StartScenarioInstance)):
+            try:
+                return next(safe_indexor(functions, [arguments]))
+            except StopIteration:
+                raise ImproperlyConfiguredFunction('start_job_instance')
+        else:
+            return arguments
 
 
 class StopJobInstance(OpenBachFunction):
@@ -106,14 +129,14 @@ class StopJobInstance(OpenBachFunction):
 
         self.openbach_function_indexes = openbach_functions
 
-    def build(self, functions):
+    def build(self, functions, function_id):
         """Construct a dictionary representing this function.
 
         This dictionary is suitable to be included in the
         `openbach_functions` array of the associated scenario.
         """
 
-        context = super().build(functions)
+        context = super().build(functions, function_id)
         context['stop_job_instances'] = {
             'openbach_function_ids': list(
                 safe_indexor(functions, self.openbach_function_indexes))}
@@ -139,7 +162,7 @@ class StartScenarioInstance(OpenBachFunction):
         self.scenario_name = scenario_name
         self.scenario_arguments = scenario_arguments
 
-    def build(self, functions):
+    def build(self, functions, function_id):
         """Construct a dictionary representing this function.
 
         This dictionary is suitable to be included in the
@@ -149,7 +172,7 @@ class StartScenarioInstance(OpenBachFunction):
         if self.scenario_name is None:
             raise ImproperlyConfiguredFunction('start_scenario_instance')
 
-        context = super().build(functions)
+        context = super().build(functions, function_id)
         context['start_scenario_instance'] = {
             'scenario_name': str(self.scenario_name),
             'arguments': self.scenario_arguments,
@@ -178,7 +201,7 @@ class StopScenarioInstance(OpenBachFunction):
 
         self.openbach_function_id = openbach_function
 
-    def build(self, functions):
+    def build(self, functions, function_id):
         """Construct a dictionary representing this function.
 
         This dictionary is suitable to be included in the
@@ -196,7 +219,7 @@ class StopScenarioInstance(OpenBachFunction):
                              'does not reference a valid openbach_function '
                              'for this scenario') from None
 
-        context = super().build(functions)
+        context = super().build(functions, function_id)
         context['stop_scenario_instance'] = {
             'openbach_function_id': openbach_function_id,
         }
@@ -231,7 +254,7 @@ class _Condition(OpenBachFunction):
             raise TypeError('{}.{}() arguments must be OpenBachFunction\'s '
                             'instances'.format(self.__class__.__name__, name))
 
-    def build(self, functions, name, branch_true_name, branch_false_name):
+    def build(self, functions, function_id, name, branch_true_name, branch_false_name):
         """Construct a dictionary representing this function.
 
         This dictionary is suitable to be included in the
@@ -241,7 +264,7 @@ class _Condition(OpenBachFunction):
         if self.condition is None:
             raise ImproperlyConfiguredFunction(name)
 
-        context = super().build(functions)
+        context = super().build(functions, function_id)
         context[name] = {
             'condition': self.condition.build(functions),
             branch_true_name: list(safe_indexor(functions, self.branch_true)),
@@ -269,7 +292,7 @@ class If(_Condition):
         self._check_openbach_functions(openbach_functions, 'configure_if_false')
         self.branch_false = openbach_functions
 
-    def build(self, functions):
+    def build(self, functions, function_id):
         """Construct a dictionary representing this function.
 
         This dictionary is suitable to be included in the
@@ -278,7 +301,7 @@ class If(_Condition):
 
         name_true = 'openbach_functions_true'
         name_false = 'openbach_functions_false'
-        return super().build(functions, 'if', name_true, name_false)
+        return super().build(functions, function_id, 'if', name_true, name_false)
 
 
 class While(_Condition):
@@ -300,7 +323,7 @@ class While(_Condition):
         self._check_openbach_functions(openbach_functions, 'configure_while_end')
         self.branch_false = openbach_functions
 
-    def build(self, functions):
+    def build(self, functions, function_id):
         """Construct a dictionary representing this function.
 
         This dictionary is suitable to be included in the
@@ -309,7 +332,7 @@ class While(_Condition):
 
         name_true = 'openbach_functions_while'
         name_false = 'openbach_functions_end'
-        return super().build(functions, 'while', name_true, name_false)
+        return super().build(functions, function_id, 'while', name_true, name_false)
 
 
 def safe_indexor(reference, lookup):
