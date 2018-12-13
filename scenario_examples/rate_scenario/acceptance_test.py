@@ -22,7 +22,7 @@ def build_metrics_scenario(
         client_entity, server_entity):
     
     # Create the scenario with scenario_builder
-    scenario = sb.Scenario('metrics', SCENARIO_DESCRIPTION)
+    scenario = sb.Scenario('QoS_metrics', 'This scenario analyse the path between server and client in terms of maximum date rate (b/s) and one-way delay (s)')
     scenario.add_argument('dst_ip', '192.168.19.3') # The IP of the server
     scenario.add_argument('port', '7000') # The port of the server
     scenario.add_constant('com_port', '6000') # The port of nuttcp server for signalling
@@ -78,7 +78,7 @@ def build_metrics_scenario(
 def build_rate_scenario(
            client_entity, server_entity):
    
-    scenario = sb.Scenario('File', SCENARIO_DESCRIPTION)
+    scenario = sb.Scenario('File_transfer', 'This scenarios modifies the TCP congestion control of a server and transmits a 100MB file between an iperf3 server and an iperf3 client')
     scenario.add_argument('dst_ip', 'The IP of the iperf3 server') # The IP of the server
     scenario.add_argument('port', 'The port of the iperf3 server') # The port of the server
     scenario.add_argument('cc_servera', 'Congestion Control of server A')
@@ -96,6 +96,7 @@ def build_rate_scenario(
     )
     
     #launch_sysctlserverb.configure(
+    #      'sysctl', server_entity,
     #       parameter='net.ipv4.tcp_available_congestion_control', value='cc_serverb',
     #)
 
