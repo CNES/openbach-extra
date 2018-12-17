@@ -231,7 +231,7 @@ class ElasticSearchCommunicator:
         """Configure the routes to send/get data to/from ElasticSearch"""
 
         base_url = 'http://{}:{}'.format(ip, port)
-        self.querying_URL = base_url + '/logstash-*/logs/_search'
+        self.querying_URL = base_url + '/logstash-*/_search'
         self.writing_URL = base_url + '/_bulk'
         self.scrolling_URL = base_url + '/_search/scroll'
         self.deleting_URL = base_url + '/logstash-*/_delete_by_query'
