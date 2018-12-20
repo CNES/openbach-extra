@@ -73,7 +73,6 @@
   apt_repository:
     repo: "deb {{ opensand_repository_url }} {{ opensand_repository_distribution }} {{ opensand_repository_component }}"
     state: present
-    update_cache: yes
   become: yes
 
 - name: Install OpenSAND
@@ -83,7 +82,7 @@
     name: '{{ item }}'
     state: installed
     force: yes
-    update_cache: no
+    update_cache: yes
   with_items:
     - opensand
     - libopensand-rohc-lan-adapt-plugin
