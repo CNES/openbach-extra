@@ -63,9 +63,9 @@ class OpsError(Exception):
 class OpsEntity(object):
     ''' OpenSAND Entity '''
 
-    def __init__(self, **argv):
+    def __init__(self, **kwargs):
         self._debconf_params = {}
-        super().__init__()
+        super().__init__(**kwargs)
 
     def __configure(self):
         '''
@@ -130,7 +130,7 @@ class OpsCommonConf:
                  service_port='',
                  command_port='',
                  state_port='',
-                 **argv
+                 **kwargs
                 ):
         '''
         Initialize configuration with arguments.
@@ -164,7 +164,7 @@ class OpsEmuConf(OpsCommonConf):
     def __init__(self,
                  emu_iface='',
                  emu_ipv4='',
-                 **argv
+                 **kwargs
                 ):
         '''
         Initialize configuration with arguments.
@@ -174,7 +174,7 @@ class OpsEmuConf(OpsCommonConf):
             emu_ipv4:      the IPv4 address to assign to the emulation
                            interface.
         '''
-        super().__init__(**argv)
+        super().__init__(**kwargs)
 
         self._debconf_params['opensand-daemon/network/emu_iface'] = emu_iface
         self._debconf_params['opensand-daemon/network/emu_ipv4'] = emu_ipv4
@@ -185,7 +185,7 @@ class OpsLanConf(OpsCommonConf):
                  lan_iface='',
                  lan_ipv4='',
                  lan_ipv6='',
-                 **argv
+                 **kwargs
                  ):
         '''
         Initialize configuration with arguments.
@@ -195,7 +195,7 @@ class OpsLanConf(OpsCommonConf):
             lan_ipv4:      the IPv4 address to assign to the lan interface.
             lan_ipv6:      the IPv6 address to assign to the lan interface.
         '''
-        super().__init__(**argv)
+        super().__init__(**kwargs)
 
         self._debconf_params['opensand-daemon/network/lan_iface'] = lan_iface
         self._debconf_params['opensand-daemon/network/lan_ipv4'] = lan_ipv4
@@ -207,7 +207,7 @@ class OpsInterconnectConf(OpsCommonConf):
     def __init__(self,
                  interconnect_iface='',
                  interconnect_ipv4='',
-                 **argv
+                 **kwargs
                 ):
         '''
         Initialize gateway network & access with arguments.
@@ -218,51 +218,59 @@ class OpsInterconnectConf(OpsCommonConf):
             interconnect_ipv4:      the IPv4 address to assign to the interconnect
                            interface.
         '''
-        super().__init__(**argv)
+        super().__init__(**kwargs)
 
         self._debconf_params['opensand-daemon/interconnect/interface'] = interconnect_iface
         self._debconf_params['opensand-daemon/interconnect/interface_ip'] = interconnect_ipv4
 
 
+class OpsNoneEntity(OpsEntity, OpsCommonConf):
+
+    def __init__(self, **kwargs):
+        '''
+        Initialize none entity.
+        '''
+        super().__init__(**kwargs)
+
 class OpsSatEntity(OpsEntity, OpsEmuConf):
 
-    def __init__(self, **argv):
+    def __init__(self, **kwargs):
         '''
         Initialize satellite with arguments.
         '''
-        super().__init__(**argv)
+        super().__init__(**kwargs)
 
 class OpsGwEntity(OpsEntity, OpsEmuConf, OpsLanConf):
 
-    def __init__(self, **argv):
+    def __init__(self, **kwargs):
         '''
         Initialize gateway with arguments.
         '''
-        super().__init__(**argv)
+        super().__init__(**kwargs)
 
 class OpsStEntity(OpsEntity, OpsEmuConf, OpsLanConf):
 
-    def __init__(self, **argv):
+    def __init__(self, **kwargs):
         '''
         Initialize satellite terminal with arguments.
         '''
-        super().__init__(**argv)
+        super().__init__(**kwargs)
 
 class OpsGwPhyEntity(OpsEntity, OpsEmuConf, OpsInterconnectConf):
 
-    def __init__(self, **argv):
+    def __init__(self, **kwargs):
         '''
         Initialize phy gateway with arguments.
         '''
-        super().__init__(**argv)
+        super().__init__(**kwargs)
 
 class OpsGwNetAccEntity(OpsEntity, OpsLanConf, OpsInterconnectConf):
 
-    def __init__(self, **argv):
+    def __init__(self, **kwargs):
         '''
         Initialize net-acc gateway with arguments.
         '''
-        super().__init__(**argv)
+        super().__init__(**kwargs)
 
 def ops_iface(value):
     '''
@@ -484,7 +492,7 @@ if __name__ == '__main__':
 
     # Prepare constructors in function of the entity type
     constructors = {
-        'none': OpsEntity,
+        'none': OpsNoneEntity,
         'sat': OpsSatEntity,
         'st': OpsStEntity,
         'gw': OpsGwEntity,
