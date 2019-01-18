@@ -46,7 +46,6 @@ import argparse
 from functools import partial
 
 sys.path.append('/usr/lib/python3/dist-packages/')
-import collect_agent
 from opensand_manager_shell.opensand_shell_manager import ShellManager, \
         BaseFrontend, \
         ShellMgrException
@@ -64,7 +63,6 @@ class OpsError(Exception):
         '''
         Initialize openSAND error.
         '''
-        collect_agent.send_log(syslog.LOG_ERR, message)
         super(OpsError, self).__init__(self, message)
 
 
@@ -78,17 +76,6 @@ class OpsLogger(object):
         self._prefix = "[OpenSAND Emulation]"
         self._verbose = verbose
 
-    def register(self):
-        '''
-        Register logger.
-        '''
-        success = collect_agent.register_collect(
-                '/opt/openbach/agent/jobs/opensand_run/'
-                'opensand_run_rstats_filter.conf')
-        if not success:
-            collect_agent.send_log(syslog.LOG_ERR,
-                    'Error when connecting to collect_agent')
-
     def log(self, priority, message):
         '''
         Send a log message with priority.
@@ -97,9 +84,9 @@ class OpsLogger(object):
             priority:  the log priority for syslog
             message:   the log message
         '''
-        collect_agent.send_log(priority, message)
         if self._verbose:
-            print(message)
+            prefix = '[ERROR] ' if priority == syslog.LOG_ERR else ''
+            print(prefix + message)
 
     def info(self, message):
         '''
@@ -119,16 +106,6 @@ class OpsLogger(object):
         '''
         self.log(syslog.LOG_ERR, message)
 
-    def stat(self, named_values):
-        '''
-        Send statistic.
-
-        Args:
-            named_values:  the dictionary of named values to send
-        '''
-        timestamp = int(time.time() * 1000)
-        collect_agent.send_stat(timestamp, **named_values)
-
 
 class OpsEmulation(object):
     ''' OpenSAND Emulation '''
@@ -141,7 +118,6 @@ class OpsEmulation(object):
             platform_id:  the platform identifier (can be None).
         '''
         self._logger = OpsLogger(verbose)
-        self._logger.register()
 
         self._service_type = \
                 self._get_ops_service_type(platform_id)
@@ -154,7 +130,6 @@ class OpsEmulation(object):
         
         self._logger.info('Platform id set to "{}"'.format(platform_id))
         self._logger.info('OpenSAND service type set to "{}"'.format(self._service_type))
-        self._logger.stat({'Status': 'READY'})
 
     def _get_ops_service_type(self, platform_id):
         '''
@@ -196,7 +171,6 @@ class OpsEmulation(object):
             self._logger.info('Hosts already detected')
             return
         self._started = False
-        self._logger.stat({'Status': 'DETECTING'})
 
         # Load manager
         try:
@@ -207,7 +181,6 @@ class OpsEmulation(object):
                                remote_logs = False,
                                frontend = self._frontend)
             self._logger.info('Hosts detected')
-            self._logger.stat({'Status': 'DETECTED'})
             self._opened = True
         except KeyboardInterrupt as err:
             self._logger.info('Hosts detection interrupted: {}'.format(err))
@@ -217,7 +190,6 @@ class OpsEmulation(object):
             raise err
         except ShellMgrException as err:
             # Main host not found => emulation is not startable
-            self._logger.stat({'Status': 'NOT_DETECTED'})
             self._manager.close()
             self._logger.err('Hosts detection failed: {}'.format(err))
             raise OpsError('Hosts detection failed: {}'.format(err))
@@ -236,7 +208,6 @@ class OpsEmulation(object):
         self._manager.close()
         self._logger.info('Emulation released')
         self._opened = False
-        self._logger.stat({'Status': 'READY'})
 
     def start(self, scenario_path=None):
         '''
@@ -255,7 +226,6 @@ class OpsEmulation(object):
             return
 
         # Configure scenario
-        self._logger.stat({'Status': 'DEPLOYING'})
         try:
             self._logger.info('Deploying emulation scenario'
                              ' "{}"...'.format('default'
@@ -269,22 +239,17 @@ class OpsEmulation(object):
                              ' "{}" deployed'.format('default'
                                                      if scenario_path is None
                                                      else scenario_path))
-            self._logger.stat({'Status': 'DEPLOYED'})
         except ShellMgrException as err:
-            self._logger.stat({'Status': 'NOT_DEPLOYED'})
             self._logger.err('Emulation scenario deployment failed: {}'.format(err))
             raise OpsError('Emulation scenario deployment failed: {}'.format(err))
 
         # Start platform
-        self._logger.stat({'Status': 'STARTING'})
         try:
             self._logger.info('Starting OpenSAND platform...')
             self._manager.start_opensand()
             self._logger.info('OpenSAND platform started')
             self._started = True
-            self._logger.stat({'Status': 'STARTED'})
         except ShellMgrException as err:
-            self._logger.stat({'Status': 'NOT_STARTED'})
             self._logger.err('OpenSAND platform starting failed: {}'.format(err))
             raise OpsError('OpenSAND platform starting failed: {}'.format(err))
 
@@ -299,23 +264,19 @@ class OpsEmulation(object):
         retries = 3
         is_running = partial(str.__eq__, 'running')
         # Stop platform
-        self._logger.stat({'Status': 'STOPPING'})
         self._logger.info('Stopping OpenSAND platform...')
         while any(map(is_running, self._manager.status_opensand().values())) and retries:
             try:
                 self._manager.stop_opensand()
             except ShellMgrException as err:
-                self._logger.stat({'Status': 'NOT_STOPPED'})
                 self._logger.err('OpenSAND platform stopping failed: {}'.format(err))
                 raise OpsError('OpenSAND platform stopping failed: {}'.format(err))
             retries -= 1
         if retries == 0:
-            self._logger.stat({'Status': 'NOT_STOPPED'})
             self._logger.err('OpenSAND platform stopping failed: {}'.format(err))
             return
         self._logger.info('OpenSAND platform stopped')
         self._started = False
-        self._logger.stat({'Status': 'STOPPED'})
 
     def __enter__(self):
         '''
