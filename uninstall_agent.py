@@ -43,12 +43,18 @@ class UninstallAgent(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Uninstall Agent')
         self.parser.add_argument('agent', help='IP address of the agent')
+        self.parser.add_argument(
+                '-d', '--detach', '--render-autonomous',
+                action='store_true',
+                help='do not uninstall anything on the Agent; only '
+                'detach it from the controller to render it autonomous.')
 
     def execute(self, show_response_content=True):
-        address = self.args.agent
-        self.request(
-                'DELETE', 'agent/{}/'.format(address),
-                show_response_content=False)
+        route = 'agent/{}/'.format(self.args.agent)
+        if self.args.detach:
+            route += '?detach_only'
+
+        self.request('DELETE', route, show_response_content=False)
         self.wait_for_success('uninstall', show_response_content=show_response_content)
 
     def query_state(self):

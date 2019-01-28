@@ -58,6 +58,11 @@ class InstallAgent(FrontendBase):
                 help='username to connect as on the agent-to-be '
                 'if the SSH key of the controller cannot be used to '
                 'connect to the openbach user on the machine.')
+        self.parser.add_argument(
+                '-r', '--reattach', '--attach-autonomous-agent',
+                action='store_true',
+                help='re-attach an existing (autonomous) agent '
+                'instead of performing a full-blown installation.')
 
     def parse(self, args=None):
         super().parse(args)
@@ -76,8 +81,10 @@ class InstallAgent(FrontendBase):
         username = self.args.user
         password = self.args.password
 
+        route = 'agent?reattach' if self.args.reattach else 'agent'
+
         self.request(
-                'POST', 'agent', show_response_content=False,
+                'POST', route, show_response_content=False,
                 address=agent, name=name, username=username,
                 password=password, collector_ip=collector)
         self.wait_for_success('install', show_response_content=show_response_content)
