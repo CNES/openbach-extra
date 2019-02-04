@@ -66,8 +66,6 @@ class CustomWebSocket(websocket.WebSocketHandler):
                     del data[stat]
         
         data['suffix'] = self.request.remote_ip
-        print(data["bitrate"])
-        print(self.request.remote_ip)
         collect_agent.send_stat(**data)
         collect_agent.send_log(syslog.LOG_DEBUG, 'Message received')
 
@@ -93,7 +91,6 @@ def main(port):
     ])
 
     listen_message = 'Starting tornado on {}:{}'.format('0.0.0.0', port)
-    print(listen_message)
     collect_agent.send_log(syslog.LOG_DEBUG, listen_message)
     application.listen(port, '0.0.0.0')
     ioloop.IOLoop.current().start()
