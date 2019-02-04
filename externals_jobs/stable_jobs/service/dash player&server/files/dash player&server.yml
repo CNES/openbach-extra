@@ -3,7 +3,7 @@
 general:
   name:            'dash player&server'
   description: >
-      Deploys a Tornado server with a DASH video in 4 different qualities and a web integrated DASH JS player (can be played via Chrome/Firefox). It collects metrics from the player (video quality, bandwidth, rtt, buffer size, etc.)
+      Deploys a Tornado server (listen on all IPs, i.e. 0.0.0.0)  with a DASH video in 4 different qualities and a web integrated DASH JS player (can be played via Chrome/Firefox). It collects metrics from the player (video quality, bandwidth, rtt, buffer size, etc.)
   job_version:     '1.0'
   keywords:        [dash, dashjs, server, tornado, player, QoE]
   persistent:      True
@@ -19,12 +19,6 @@ platform_configuration:
 arguments:
   required:
   optional:
-    - name:        local_address
-      type:        'str'
-      count:       1
-      flag:        '-a'
-      description: >
-          Local address to bind the server (default: 0.0.0.0)
     - name:        port
       type:        'int'
       count:       1

@@ -33,13 +33,15 @@
 
 ---
 
-- name: Install Firefox
-  apt: name=firefox state=present
-  become: yes
 
 - name: Get client architecture
   shell: uname -p
   register: cpu_arch
+
+- name: Install Firefox
+  apt:
+    deb: https://sourceforge.net/projects/ubuntuzilla/files/mozilla/apt/pool/main/f/firefox-mozilla-build/firefox-mozilla-build_62.0.3-0ubuntu1_{{ 'amd64' if cpu_arch.stdout == "x86_64" else 'i386' }}.deb
+  become: yes
 
 - name: Install Gecko Driver
   unarchive: 
