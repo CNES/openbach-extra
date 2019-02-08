@@ -43,6 +43,10 @@
     deb: https://sourceforge.net/projects/ubuntuzilla/files/mozilla/apt/pool/main/f/firefox-mozilla-build/firefox-mozilla-build_62.0.3-0ubuntu1_{{ 'amd64' if cpu_arch.stdout == "x86_64" else 'i386' }}.deb
   become: yes
 
+- name: Install codecs video
+  apt: pkg=x264 state=present
+  become: yes
+
 - name: Install Gecko Driver
   unarchive: 
     src: https://github.com/mozilla/geckodriver/releases/download/v0.19.1/geckodriver-v0.19.1-linux{{ 64 if cpu_arch.stdout == "x86_64" else 32 }}.tar.gz
