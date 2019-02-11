@@ -1,0 +1,13 @@
+
+# Driver infos
+driver:
+  binary_type: GoogleChromeBinary
+  binary_path: /usr/bin/google-chrome
+  executable_path: /usr/local/bin/chromedriver
+
+# Candidate keywords to use to find videos to play
+keywords:
+  - Java tutorial for beginners
+  - Python tutorial
+  - MPLS
+  - C++ tutorial

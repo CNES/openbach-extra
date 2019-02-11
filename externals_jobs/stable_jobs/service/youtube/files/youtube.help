@@ -1,0 +1,13 @@
+Examples:
+========
+Example1: From a given Agent plays a youtube video during 60 seconds.
+ 
+-In the web interface, set the following parameters:
+
+ For Agent:
+    duration = 60
+    
+-Or launch the job manually from the Agents as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id of 0): 
+    From CLI of the Agent: 
+    JOB_NAME=youtube sudo -E -u openbach python3 /opt/openbach/agent/jobs/youtube/youtube.py 60
+
