@@ -117,20 +117,20 @@ def find_interface(entity, network_name):
     return find_item_with_param(entity[IFACES], NETWORK, network_name)
 
 
-def find_a_gateway(topology):
-    gateway, *_ = find_items_with_param(topology[HOSTS], TYPE, EntityType.GW.value)
-    return gateway
+def find_host_by_name(topology, name):
+    return find_item_with_param(topology[HOSTS], NAME, name)
 
 
-def find_a_lan_network(entity):
-    lan, *_ = remove_items_with_param(entity[IFACES], NETWORK, MANAGEMENT, EMULATION)
-    return lan
+def find_common_lan_network(*hosts):
+    lans = [remove_items_with_param(host[IFACES], NETWORK, MANAGEMENT, EMULATION) for host in hosts]
 
+    lan_names = (set(lan[NETWORK] for lan in l) for l in lans)
+    names = next(lan_names, set())
+    for names_ in lan_names:
+        names.intersection_update(names_)
 
-def find_work_stations_on_network(topology, interface):
-    network_name = interface[NETWORK]
-    interfaces = (host[IFACES] for host in topology[HOSTS] if TYPE not in host)
-    return find_items_with_param(itertools.chain.from_iterable(interfaces), NETWORK, network_name)
+    lan_name = names.pop()
+    return [find_item_with_param(host[IFACES], NETWORK, lan_name) for host in hosts]
 
 
 def format_address(interface, network, protocol=IPV4):
