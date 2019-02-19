@@ -209,6 +209,11 @@ def main(project_name='rate_jobs', scenario_name='Metrology FAIRNESS TRANSPORT')
             title=['CDF of transmitted data'],
             cumulative=True)
 
+    stop_opensand = scenario.add_function(
+            'stop_scenario_instance',
+            wait_finished=[time_series, histograms])
+    stop_opensand.configure(start_emulation)
+
     observer.launch_and_wait(scenario)
 
 
