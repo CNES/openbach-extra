@@ -182,3 +182,80 @@ class ScenarioObserver(FrontendBase):
                 callbacks[job.instance_id][0]: callbacks[job.instance_id][1](job)
                 for job in scenario.jobs if job.instance_id in callbacks
         }
+
+
+class ScenarioConstructor(ScenarioObserver):
+    def __init__(self):
+        super(ScenarioObserver, self).__init__('OpenBACH — Run a scenario and postprocess stats')
+        self.build_parser()
+
+    def build_parser(self):
+        self.parser.add_argument(
+                '-o', '--override', action='store_true',
+                help='have the provided scenario builder '
+                '(if any) replace the current scenario')
+
+        group = self.parser.add_argument_group('collector')
+        group.add_argument(
+                '-c', '--collector', metavar='ADDRESS',
+                help='IP address of the collector. If empty, will '
+                'assume the collector is on the controller')
+        group.add_argument(
+                '-e', '--elasticsearch-port',
+                type=int, default=9200, metavar='PORT',
+                help='port on which the ElasticSearch service is listening')
+        group.add_argument(
+                '-i', '--influxdb-port',
+                type=int, default=8086, metavar='PORT',
+                help='port on which the InfluxDB query service is listening')
+        group.add_argument(
+                '-d', '--database-name', default='openbach', metavar='NAME',
+                help='name of the InfluxDB database where statistics are stored')
+        group.add_argument(
+                '-t', '--time', '--epoch', default='ms', metavar='UNIT',
+                help='unit of time for data returned by the InfluxDB API')
+
+        group = self.parser.add_argument_group('scenario arguments')
+        group.add_argument(
+                '-n', '--name', '--scenario-name',
+                default=' *** Generated Scenario *** ',
+                help='name of the scenario to launch')
+        group.add_argument(
+                '-p', '--project', '--project-name', metavar='NAME',
+                help='name of the project the scenario is associated with')
+
+        return group
+
+    def launch_and_wait(self, builder=None):
+        if self.args.collector is None:
+            self.args.collector = self.args.controller
+
+        if not hasattr(self.args, 'argument'):
+            self.args.argument = {}
+
+        self._scenarios = {}
+        scenario_getter = self._share_state(GetScenario)
+        if builder is None:
+            scenario = scenario_getter.execute(False)
+            scenario.raise_for_status()
+            self._extract_scenario_json(scenario)
+        else:
+            scenario_setter = self._share_state(CreateScenario)
+            scenario_modifier = self._share_state(ModifyScenario)
+            for scenario in builder.subscenarios:
+                self.args.name = str(scenario)
+                self.args.scenario = scenario.build()
+
+                try:
+                    scenario = scenario_getter.execute(False)
+                    scenario.raise_for_status()
+                except Exception:
+                    scenario = scenario_setter.execute(False)
+                else:
+                    if self.args.override:
+                        scenario = scenario_modifier.execute(False)
+                scenario.raise_for_status()
+                self._extract_scenario_json(scenario)
+
+        self._post_processing = {}
+        super().launch_and_wait()
