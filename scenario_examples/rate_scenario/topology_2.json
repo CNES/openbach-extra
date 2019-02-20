@@ -1,0 +1,146 @@
+{
+	"platform":"openbach_recette",
+	"opensand_run":"SAT_2",
+	"networks": [
+		{
+			"name": "management",
+			"ipv4": {
+				"address": "192.168.3.0",
+				"netdigit": "24"
+			}
+		},
+		{
+			"name": "emulation",
+			"ipv4": {
+				"address": "10.3.107.0",
+				"netdigit": "24"
+			}
+		},
+		{
+			"name": "lan0",
+			"ipv4": {
+				"address": "10.3.106.0",
+				"netdigit": "24"
+			},
+			"ipv6": {
+				"address": "2001:660:6602:142::1",
+				"netdigit": "64"
+			}
+		},
+		{
+			"name": "lan1",
+			"ipv4": {
+				"address": "10.3.108.0",
+				"netdigit": "24"
+			},
+			"ipv6": {
+				"address": "2001:660:6602:102::1",
+				"netdigit": "64"
+			}
+		}
+	],
+	"hosts": [
+		{
+			"name": "SAT_2",
+			"opensand-entity": "sat",
+			"ifaces": [
+				{
+					"name": "ens3",
+					"network": "management",
+					"ipv4": "192.168.3.218"
+				},
+				{
+					"name": "ens4",
+					"network": "emulation",
+					"ipv4": "10.3.107.158"
+				}
+			]
+		},
+		{
+			"name": "GW_2",
+			"opensand-entity": "gw",
+			"opensand-entity-id":0,
+			"ifaces": [
+				{
+					"name": "ens3",
+					"network": "management",
+					"ipv4": "192.168.3.234"
+				},
+				{
+					"name": "ens4",
+					"network": "emulation",
+					"ipv4": "10.3.107.163"
+				},
+				{
+					"name": "ens5",
+					"network": "lan0",
+					"ipv4": "10.3.106.155",
+					"ipv6": "2001:660:6602:142::1"
+				}
+			]
+		},
+		{
+			"name": "ST_2",
+			"opensand-entity": "st",
+			"opensand-entity-id":1,
+			"ifaces": [
+				{
+					"name": "ens3",
+					"network": "management",
+					"ipv4": "192.168.3.230"
+				},
+				{
+					"name": "ens4",
+					"network": "emulation",
+					"ipv4": "10.3.107.0.151"
+				},
+				{
+					"name": "ens5",
+					"network": "lan1",
+					"ipv4": "10.3.108.151",
+					"ipv6": "2001:660:6602:102::1"
+				}
+			]
+		},
+		{
+			"name": "SRV-A_2",
+			"ifaces": [
+				{
+					"name": "ens4",
+					"network": "lan0",
+					"ipv4": "10.3.106.157"
+				}
+                        ]
+		},
+		{
+			"name": "SRV-B_2",
+			"ifaces": [
+				{
+					"name": "ens4",
+					"network": "lan0",
+					"ipv4": "10.3.106.158"
+				}
+                        ]
+		},
+		{
+			"name": "PC-A_2",
+			"ifaces": [
+				{
+					"name": "ens4",
+					"network": "lan1",
+					"ipv4": "10.3.108.158"
+				}
+                        ]
+		},
+		{
+			"name": "PC-B_2",
+			"ifaces": [
+				{
+					"name": "ens4",
+					"network": "lan1",
+					"ipv4": "10.3.108.161"
+				}
+                        ]
+		}
+	]
+}
