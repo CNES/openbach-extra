@@ -71,7 +71,7 @@
     name: "{{ item }}"
     state: installed
     force: yes
-    update_cache: no
+    update_cache: yes
   with_items:
     - opensand-manager
     - opensand-manager-gui
