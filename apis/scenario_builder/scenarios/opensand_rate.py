@@ -1,17 +1,14 @@
 import itertools
 
-from scenario_observer import ScenarioConstructor
-
-import scenario_builder as sb
-from scenario_builder.openbach_functions import StartJobInstance
-from lib.opensand import (
-        topology as topology_loader,
-        find_host_by_name, find_common_lan_network,
-        build_configure_scenario, build_emulation_scenario,
-)
-from lib.metrics import (
-        configure_one_way_delays, analyse_one_way_delay,
-        analyse_rate, analyse_performances,
+from .. import Scenario
+from ..openbach_functions import StartJobInstance
+from ..scenarios.opensand import build_configure_scenario, build_emulation_scenario
+from ..helpers.opensand import find_host_by_name, find_common_lan_network
+from ..helpers.metrics import (
+        configure_one_way_delays,
+        analyse_one_way_delay,
+        analyse_rate,
+        analyse_performances,
 )
 
 
@@ -21,46 +18,6 @@ CONGESTION_CONTROLS = (
         ('cubic', 'cubic'),
         ('cubic', 'bbr'),
 )
-
-
-class ScenarioObserver(ScenarioConstructor):
-    def build_parser(self):
-        group = super().build_parser()
-        group.add_argument(
-                '--topology', type=topology_loader, metavar='PATH',
-                default='/home/exploit/topology.json',
-                help='path to the JSON file describing the OpenSand topology')
-        group.add_argument(
-                '--opensand-scenario', default='/home/exploit/.opensand/openbach/',
-                help='path, on the OpenSand manager, to the scenario to run')
-        group.add_argument(
-                '--post-processing', '--post-processing-entity',
-                metavar='NAME', default='SAT',
-                help='name of the entity to run post-processing jobs onto')
-        group.add_argument(
-                '--client1', '--client1-entity', metavar='NAME', default='client1',
-                help='name of the entity to act as client for performance jobs')
-        group.add_argument(
-                '--client2', '--client2-entity', metavar='NAME', default='client2',
-                help='name of the entity to act as client for performance jobs')
-        group.add_argument(
-                '--server1', '--server1-entity', metavar='NAME', default='serverA',
-                help='name of the entity to act as client for performance jobs')
-        group.add_argument(
-                '--server2', '--server2-entity', metavar='NAME', default='serverB',
-                help='name of the entity to act as server for performance jobs')
-        group.add_argument(
-                '--gateway', '--gateway-entity',
-                metavar='NAME', default='GW',
-                help='name of the entity hosting the gateway to '
-                'configure the one-way delay for performance tests')
-        group.add_argument(
-                '--duration', '--tests-duration',
-                type=int, metavar='TIME', default=10,
-                help='duration in seconds of the analyze rate tests')
-        group.add_argument(
-                '--file-size', metavar='SIZE', default='100M',
-                help='size of the file to transfer during performance tests')
 
 
 def extract_jobs_to_postprocess(scenario):
@@ -79,7 +36,7 @@ def extract_jobs_to_postprocess(scenario):
 def build_metrology_scenario(
         client1, client2, server1, server2, gateway,
         rate_test_duration, transfered_file_size):
-    scenario = sb.Scenario(
+    scenario = Scenario(
             'QoS metrics',
             'This scenario analyse the path between server and client in '
             'terms of maximum data rate (b/s) and one-way delay (s)')
@@ -123,30 +80,19 @@ def build_metrology_scenario(
     return scenario
 
 
-def main(project_name='rate_jobs', scenario_name='Metrology FAIRNESS TRANSPORT'):
-    observer = ScenarioObserver()
-    observer.parse()
-    if not observer.args.project:
-        observer.args.project = project_name
-    if not observer.args.name:
-        observer.args.name = scenario_name
-
-    topology = observer.args.topology
+def build(
+        scenario_name, topology, opensand_scenario,
+        client1, client2, server1, server2,
+        gateway_entity, post_processing_entity,
+        duration=10, file_size='100M'):
     configure_opensand = build_configure_scenario(topology)
     opensand_emulation = build_emulation_scenario(topology)
-    client1 = observer.args.client1
-    client2 = observer.args.client2
-    server1 = observer.args.server1
-    server2 = observer.args.server2
-    gateway_entity = observer.args.gateway
     metrology_scenario = build_metrology_scenario(
             client1, client2, server1, server2,
-            gateway_entity,
-            observer.args.duration,
-            observer.args.file_size)
+            gateway_entity, duration, file_size)
 
-    scenario = sb.Scenario(
-            observer.args.name,
+    scenario = Scenario(
+            scenario_name,
             'This scenario aims at comparing the fairness and '
             'performance of two congestion controls for different '
             'SATCOM system characteristics.')
@@ -160,7 +106,7 @@ def main(project_name='rate_jobs', scenario_name='Metrology FAIRNESS TRANSPORT')
             wait_delay=10)
     start_emulation.configure(
             opensand_emulation,
-            opensand_scenario=observer.args.opensand_scenario)
+            opensand_scenario=opensand_scenario)
 
     gateway = find_host_by_name(topology, gateway_entity)
     serverA = find_host_by_name(topology, server1)
@@ -179,7 +125,6 @@ def main(project_name='rate_jobs', scenario_name='Metrology FAIRNESS TRANSPORT')
             interface_server_B=lan_serverB['name'],
             interface_gateway=lan_gateway['name'])
 
-    entity = observer.args.post_processing
     post_processed = [
             [start_metrology, function_id]
             for function_id in extract_jobs_to_postprocess(metrology_scenario)
@@ -190,7 +135,7 @@ def main(project_name='rate_jobs', scenario_name='Metrology FAIRNESS TRANSPORT')
             wait_finished=[start_metrology],
             wait_delay=2)
     time_series.configure(
-            'time_series', entity, offset=0,
+            'time_series', post_processing_entity, offset=0,
             jobs=[post_processed],
             statistics=[['rate'], ['owd_sent'], ['throughput']],
             label=[['Transmitted data (bits)'], ['OWD (sec)'], ['Throughput (b/s)']],
@@ -201,7 +146,7 @@ def main(project_name='rate_jobs', scenario_name='Metrology FAIRNESS TRANSPORT')
             wait_finished=[start_metrology],
             wait_delay=2)
     histograms.configure(
-            'histogram', entity, offset=0,
+            'histogram', post_processing_entity, offset=0,
             jobs=[post_processed],
             bins=100,
             statistics=[['sent_data']],
@@ -214,8 +159,4 @@ def main(project_name='rate_jobs', scenario_name='Metrology FAIRNESS TRANSPORT')
             wait_finished=[time_series, histograms])
     stop_opensand.configure(start_emulation)
 
-    observer.launch_and_wait(scenario)
-
-
-if __name__ == '__main__':
-    main()
+    return scenario

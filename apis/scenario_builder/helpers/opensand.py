@@ -2,10 +2,7 @@ import re
 import enum
 import json
 import ipaddress
-import itertools
 from argparse import ArgumentTypeError, FileType
-
-import scenario_builder as sb
 
 
 NETWORKS = 'networks'
@@ -262,33 +259,6 @@ def build_opensand_scenario(scenario, topology, entities_handler, workstation_ac
                         action=workstation_action.value)
         except (KeyError, ValueError):
             raise ValueError('Invalid work-station host format')
-
-
-def build_configure_scenario(topology, name='*** BUILT *** Configure OpenSAND platform'):
-    scenario_configure = sb.Scenario(name, '')
-    build_opensand_scenario(scenario_configure, topology, configure_entities, WorkstationAction.ADD)
-    return scenario_configure
-
-
-def build_reset_scenario(topology, name='*** BUILT *** Reset OpenSAND platform'):
-    scenario_reset = sb.Scenario(name, '')
-    build_opensand_scenario(scenario_reset, topology, reset_entities, WorkstationAction.DELETE)
-    return scenario_reset
-
-
-def build_emulation_scenario(topology, name='*** BUILT *** Run OpenSAND Emulation'):
-    scenario = sb.Scenario(name, '')
-    scenario.add_argument('opensand_scenario', 'The path to the OpenSAND scenario')
-
-    function = scenario.add_function('start_job_instance')
-    function.configure(
-            'opensand_run', topology[OPENSAND_RUN], offset=0,
-            **{
-                'platform-id': topology[PLATFORM],
-                'scenario-path': '$opensand_scenario',
-            })
-
-    return scenario
 
 
 def topology(path):
