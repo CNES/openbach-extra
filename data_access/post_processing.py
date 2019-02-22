@@ -67,7 +67,7 @@ def influx_to_pandas(response):
 
 def compute_histogram(bins):
     def _compute_histogram(series):
-        histogram, _ = np.histogram(series, bins)
+        histogram, _ = np.histogram(series.dropna(), bins)
         return histogram / histogram.sum()
     return _compute_histogram
 
