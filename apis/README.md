@@ -6,6 +6,7 @@ Content
 
  * Scenario builder: build JSON of Scenarios programmatically
  * Data access: ease retrieval of data from Collector (ElasticSearch & InfluxDB)
+ * Auditorium Scripts: interact with a controller through the command line
 
 
 Scenario Builder
@@ -21,3 +22,10 @@ Data Access
 
 This package ease API calls to InfluxDB and ElasticSearch and allow one to retrieve
 data associated to scenarios of interest into simple Python objects.
+
+
+Auditorium Scripts
+------------------
+
+This package is a collection of executable allowing to interact with a controller
+through the command-line.
