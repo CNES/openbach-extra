@@ -6,7 +6,9 @@ def _one_way_delay(
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    function.configure('configure_link', entity, interface_name=interface, delay=delay)
+    function.configure(
+            'configure_link', entity,
+            interface_name=interface, delay=delay)
     return function
 
 
@@ -73,7 +75,9 @@ def analyse_rate(
                 'udp': {},
             })
 
-    stopper = scenario.add_function('stop_job_instance', wait_finished=[client])
+    stopper = scenario.add_function(
+            'stop_job_instance',
+            wait_finished=[client])
     stopper.configure(server)
 
     return [server]
@@ -99,7 +103,9 @@ def analyse_one_way_delay(
             'owamp-client', client_entity, offset=0,
             destination_address=server_address)
 
-    stopper = scenario.add_function('stop_job_instance', wait_finished=[client])
+    stopper = scenario.add_function(
+            'stop_job_instance',
+            wait_finished=[client])
     stopper.configure(server)
 
     return [server]
@@ -131,3 +137,45 @@ def analyse_performances(
             })
 
     return [server]
+
+
+def analyse_rtt_fping(
+        scenario, client_entity, server_address, duration,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    ping = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    ping.configure(
+            'fping', client_entity, offset=0,
+            destination_ip=server_address)
+
+    stop = scenario.add_function(
+            'stop_job_instance',
+            wait_launched=[ping],
+            wait_delay=duration)
+    stop.configure(ping)
+
+    return [ping]
+
+
+def analyse_rtt_hping(
+        scenario, client_entity, server_address, duration,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    ping = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    ping.configure(
+            'hping', client_entity, offset=0,
+            destination_ip=server_address)
+
+    stop = scenario.add_function(
+            'stop_job_instance',
+            wait_launched=[ping],
+            wait_delay=duration)
+    stop.configure(ping)
+
+    return [ping]
