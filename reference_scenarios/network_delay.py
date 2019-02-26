@@ -1,27 +1,22 @@
-from auditorium_scripts.scenario_observer import ScenarioConstructor
+from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios.network import delay, delay_sequential
 
 
-class ScenarioObserver(ScenarioConstructor):
-    def build_parser(self):
-        group = super().build_parser()
-        group.add_argument(
-                '--client', '--client-entity', default='Client',
-                help='name of the entity for the client of the RTT tests')
-        group.add_argument(
-                '--server', '--server-entity', default='Server',
-                help='name of the entity for the server of the owamp RTT test')
-        group.add_argument(
-                '--sequential', action='store_true',
-                help='whether or not the test should run one after the other')
-
-
-def main():
+def main(scenario_name='Delay metrology scenario'):
     observer = ScenarioObserver()
-    observer.parse()
+    observer.add_scenario_argument(
+            '--client', '--client-entity', default='Client',
+            help='name of the entity for the client of the RTT tests')
+    observer.add_scenario_argument(
+            '--server', '--server-entity', default='Server',
+            help='name of the entity for the server of the owamp RTT test')
+    observer.add_scenario_argument(
+            '--sequential', action='store_true',
+            help='whether or not the test should run one after the other')
+    args = observer.parse(default_scenario_name=scenario_name)
 
-    builder = delay_sequential if observer.args.sequential else delay
-    scenario = builder(observer.args.client, observer.args.server)
+    builder = delay_sequential if args.sequential else delay
+    scenario = builder(args.client, args.server, args.name)
     observer.launch_and_wait(scenario)
 
 

@@ -201,6 +201,8 @@ class FrontendBase:
             response = self.session.post(url + 'login/', json=credentials)
             response.raise_for_status()
 
+        return args
+
     def date_to_timestamp(self, fmt='%Y-%m-%d %H:%M:%S.%f'):
         date = getattr(self.args, 'date', None)
         if date is not None:
