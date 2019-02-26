@@ -35,7 +35,7 @@ __credits__ = '''Contributors:
 '''
 
 
-from frontend import FrontendBase
+from auditorium_scripts.frontend import FrontendBase
 
 
 class DeleteScenarioInstance(FrontendBase):

@@ -39,7 +39,7 @@ __credits__ = '''Contributors:
 import getpass
 from functools import partial
 
-from frontend import FrontendBase
+from auditorium_scripts.frontend import FrontendBase
 
 
 class AddCollector(FrontendBase):

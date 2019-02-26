@@ -40,7 +40,7 @@ import os
 import tarfile
 import tempfile
 
-from frontend import FrontendBase
+from auditorium_scripts.frontend import FrontendBase
 
 
 class AddJob(FrontendBase):

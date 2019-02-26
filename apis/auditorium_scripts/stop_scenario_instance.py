@@ -38,7 +38,7 @@ __credits__ = '''Contributors:
 
 from functools import partial
 
-from frontend import FrontendBase
+from auditorium_scripts.frontend import FrontendBase
 
 
 class StopScenarioInstance(FrontendBase):

@@ -36,21 +36,22 @@ __credits__ = '''Contributors:
 
 import time
 import json
+from pathlib import Path
 from contextlib import suppress
 
 import requests
 from data_access import CollectorConnection
 
-from frontend import FrontendBase, ActionFailedError
-from create_scenario import CreateScenario
-from get_scenario import GetScenario
-from modify_scenario import ModifyScenario
-from start_scenario_instance import StartScenarioInstance
-from status_scenario_instance import StatusScenarioInstance
+from auditorium_scripts.frontend import FrontendBase
+from auditorium_scripts.create_scenario import CreateScenario
+from auditorium_scripts.get_scenario import GetScenario
+from auditorium_scripts.modify_scenario import ModifyScenario
+from auditorium_scripts.start_scenario_instance import StartScenarioInstance
+from auditorium_scripts.status_scenario_instance import StatusScenarioInstance
 
 
 class ScenarioObserver(FrontendBase):
-    def __init__(self, scenario, project=None, builder=None):
+    def __init__(self):
         super().__init__('OpenBACH — Run a scenario and postprocess stats')
         self._post_processing = {}
         self._scenarios = {}
@@ -62,7 +63,22 @@ class ScenarioObserver(FrontendBase):
                 help='have the provided scenario builder '
                 '(if any) replace the current scenario')
 
-        group = self.parser.add_argument_group('collector')
+        self.scenario_group = self.parser.add_argument_group('scenario arguments')
+        self.add_scenario_argument(
+                '-n', '--name', '--scenario-name',
+                help='name of the scenario to launch')
+        self.add_scenario_argument(
+                '-p', '--project', '--project-name', metavar='NAME',
+                help='name of the project the scenario is associated with')
+
+        self.parser.set_defaults(_action=self._launch_and_wait)
+        parsers = self.parser.add_subparsers(title='actions', metavar='action')
+        parsers.required = False
+
+        parser = parsers.add_parser(
+                'run', help='run the selected scenario on the controller '
+                'after optionally sending it (default action)')
+        group = parser.add_argument_group('collector')
         group.add_argument(
                 '-c', '--collector', metavar='ADDRESS',
                 help='IP address of the collector. If empty, will '
@@ -81,22 +97,52 @@ class ScenarioObserver(FrontendBase):
         group.add_argument(
                 '-t', '--time', '--epoch', default='ms', metavar='UNIT',
                 help='unit of time for data returned by the InfluxDB API')
+        parser.set_defaults(_action=self._launch_and_wait)
 
-        self.scenario_group = self.parser.add_argument_group('scenario arguments')
-        self.add_scenario_argument(
-                '-n', '--name', '--scenario-name',
-                help='name of the scenario to launch')
-        self.add_scenario_argument(
-                '-p', '--project', '--project-name', metavar='NAME',
-                help='name of the project the scenario is associated with')
+        parser = parsers.add_parser(
+                'build', help='write the JSON of the selected '
+                'scenario into the given directory')
+        parser.add_argument(
+                'json_path', metavar='PATH',
+                help='path to a directory to store generated JSON files')
+        parser.add_argument(
+                '--local', '--no-controller',
+                dest='contact_controller', action='store_false',
+                help='do not try to contact the controller to fetch '
+                'or update information; use the provided scenario '
+                'builder (if any) instead.')
+        parser.set_defaults(_action=self._write_json)
 
     def add_scenario_argument(
             self, *name_or_flags, action=None, nargs=None,
             const=None, default=None, type=None, choices=None,
             required=None, help=None, metavar=None, dest=None):
-        self.scenario_group.add_argument(
-                *name_or_flags, action, nargs, const, default,
-                type, choices, required, help, metavar, dest)
+        kwargs = {
+                'action': action,
+                'nargs': nargs,
+                'const': const,
+                'default': default,
+                'type': type,
+                'choices': choices,
+                'required': required,
+                'help': help,
+                'metavar': metavar,
+                'dest': dest,
+        }
+        kwargs = {key: value for key, value in kwargs.items() if value is not None}
+        self.scenario_group.add_argument(*name_or_flags, **kwargs)
+
+    def post_processing(self, label, callback, *, subscenario=None, ignore_missing_label=False):
+        if subscenario is None:
+            subscenario = self.args.name
+
+        try:
+            function_id = self._scenarios[subscenario][label]
+        except KeyError:
+            if not ignore_missing_label:
+                self.parser.error('missing openbach function labeled \'{}\' in scenario \'{}\''.format(label, subscenario))
+        else:
+            self._post_processing[(subscenario, function_id)] = (label, callback)
 
     def parse(self, args=None, default_scenario_name=' *** Generated Scenario *** '):
         args = super().parse(args)
@@ -105,6 +151,12 @@ class ScenarioObserver(FrontendBase):
         return args
 
     parse_args = parse
+
+    def launch_and_wait(self, builder=None):
+        if not hasattr(self, 'args'):
+            self.parse()
+
+        return self.args._action(builder)
 
     def _share_state(self, script_cls):
         instance = script_cls()
@@ -120,18 +172,6 @@ class ScenarioObserver(FrontendBase):
                 if 'start_job_instance' in function and function['label']
         }
 
-    def post_processing(self, label, callback, *, subscenario=None, ignore_missing_label=False):
-        if subscenario is None:
-            subscenario = self.args.name
-
-        try:
-            function_id = self._scenarios[subscenario][label]
-        except KeyError:
-            if not ignore_missing_label:
-                self.parser.error('missing openbach function labeled \'{}\' in scenario \'{}\''.format(label, subscenario))
-        else:
-            self._post_processing[(subscenario, function_id)] = (label, callback)
-
     def _extract_callback(self, scenario_instance):
         name = scenario_instance['scenario_name']
         for function in scenario_instance['openbach_functions']:
@@ -141,13 +181,7 @@ class ScenarioObserver(FrontendBase):
                 callback = self._post_processing[(name, function['id'])]
                 yield function['job']['id'], callback
 
-    def launch_and_wait(self, builder=None):
-        if self.args.collector is None:
-            self.args.collector = self.args.controller
-
-        if not hasattr(self.args, 'argument'):
-            self.args.argument = {}
-
+    def _send_scenario_to_controller(self, builder=None):
         scenario_getter = self._share_state(GetScenario)
         if builder is None:
             scenario = scenario_getter.execute(False)
@@ -171,6 +205,7 @@ class ScenarioObserver(FrontendBase):
                 scenario.raise_for_status()
                 self._extract_scenario_json(scenario)
 
+    def _run_scenario_to_completion(self):
         scenario_starter = self._share_state(StartScenarioInstance)
         response = scenario_starter.execute(False)
         try:
@@ -190,7 +225,18 @@ class ScenarioObserver(FrontendBase):
             if status in ('Finished', 'Finished OK'):
                 break
 
-        callbacks = dict(self._extract_callback(response))
+        return response
+
+    def _launch_and_wait(self, builder=None):
+        if self.args.collector is None:
+            self.args.collector = self.args.controller
+
+        if not hasattr(self.args, 'argument'):
+            self.args.argument = {}
+
+        self._send_scenario_to_controller(builder)
+        scenario_instance = self._run_scenario_to_completion()
+        callbacks = dict(self._extract_callback(scenario_instance))
         collector = CollectorConnection(
                 self.args.collector,
                 self.args.elasticsearch_port,
@@ -199,7 +245,7 @@ class ScenarioObserver(FrontendBase):
                 self.args.time,
         )
         try:
-            scenario, = collector.scenarios(scenario_instance_id=scenario_id)
+            scenario, = collector.scenarios(scenario_instance_id=scenario_instance['scenario_instance_id'])
         except ValueError:
             self.parser.error('cannot retrieve scenario instance data from database')
 
@@ -207,3 +253,28 @@ class ScenarioObserver(FrontendBase):
                 callbacks[job.instance_id][0]: callbacks[job.instance_id][1](job)
                 for job in scenario.jobs if job.instance_id in callbacks
         }
+
+    def _write_json(self, builder=None):
+        path = Path(self.args.json_path).absolute()
+        path.mkdir(parents=True, exist_ok=True)
+
+        if self.args.contact_controller:
+            self._send_scenario_to_controller(builder)
+            scenario_getter = self._share_state(GetScenario)
+            scenarios = [self.args.name] if builder is None else builder.subscenarios
+            for scenario in scenarios:
+                self.args.name = str(scenario)
+                scenario = scenario_getter.execute(False)
+                scenario.raise_for_status()
+                content = scenario.json()
+                name = '{}.json'.format(content['name'])
+                with open(str(path / name), 'w') as fp:
+                    json.dump(content, fp, indent=4)
+        elif builder:
+            for scenario in builder.subscenarios:
+                name = '{}.json'.format(scenario)
+                scenario.write(str(path / name))
+        else:
+            self.parser.error(
+                    'asked to *not* contact the controller without a provided '
+                    'scenario builder: cannot create scenario file')

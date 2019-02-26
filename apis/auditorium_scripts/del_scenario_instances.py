@@ -37,7 +37,7 @@ __credits__ = '''Contributors:
 
 import pprint
 
-from frontend import FrontendBase
+from auditorium_scripts.frontend import FrontendBase
 
 
 class DeleteScenarioInstances(FrontendBase):

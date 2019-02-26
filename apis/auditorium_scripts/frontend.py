@@ -43,7 +43,6 @@ __credits__ = '''Contributors:
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
-import os
 import json
 import fcntl
 import socket
@@ -54,17 +53,21 @@ import datetime
 import argparse
 import warnings
 from time import sleep
+from pathlib import Path
 from contextlib import suppress
 
 import requests
 
 
-PWD = os.path.dirname(os.path.abspath(__file__))
+CWD = Path(__file__).absolute().parent
 
 
 def get_interfaces():
     """Return the name of the first network interface found"""
-    yield from filter('lo'.__ne__, os.listdir('/sys/class/net/'))
+    yield from (
+            iface.name
+            for iface in Path('/sys/class/net/').iterdir()
+            if iface.name != 'lo')
     yield 'lo'
 
 
@@ -85,11 +88,11 @@ def get_default_ip_address():
             return get_ip_address(iface)
 
 
-def read_controller_configuration(filename=os.path.join(PWD, 'controller')):
+def read_controller_configuration(filename=CWD/'controller'):
     default_ip = get_default_ip_address()
     try:
         stream = open(filename)
-    except OSError as e:
+    except OSError:
         message = (
                 'File not found: \'{}\'. Using one of your '
                 'IP address instead as the default: \'{}\'.'

@@ -39,7 +39,7 @@ __credits__ = '''Contributors:
 import shlex
 from functools import partial
 
-from frontend import FrontendBase
+from auditorium_scripts.frontend import FrontendBase
 
 
 def parse(value):

@@ -39,7 +39,7 @@ __credits__ = '''Contributors:
 import json
 from argparse import FileType
 
-from frontend import FrontendBase
+from auditorium_scripts.frontend import FrontendBase
 
 
 class ModifyScenario(FrontendBase):

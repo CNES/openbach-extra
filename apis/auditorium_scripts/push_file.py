@@ -38,7 +38,7 @@ __credits__ = '''Contributors:
 
 from argparse import FileType
 
-from frontend import FrontendBase, pretty_print
+from auditorium_scripts.frontend import FrontendBase, pretty_print
 
 
 class PushFile(FrontendBase):

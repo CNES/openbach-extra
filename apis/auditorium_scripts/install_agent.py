@@ -38,7 +38,7 @@ __credits__ = '''Contributors:
 
 import getpass
 
-from frontend import FrontendBase
+from auditorium_scripts.frontend import FrontendBase
 
 
 class InstallAgent(FrontendBase):
