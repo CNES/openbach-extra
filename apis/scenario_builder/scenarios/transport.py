@@ -1,0 +1,26 @@
+from .. import Scenario
+from ..helpers.metrics import analyse_transport_rate
+from ..helpers.configuration import multipath_tcp, terrestrial_link
+
+
+def configure_mptcp(
+        server, server_ifaces, server_terrestrial_iface, server_bandwidth,
+        client, client_ifaces, client_terrestrial_iface, client_bandwidth,
+        delay, scenario_name='Configure MpTCP'):
+    scenario = Scenario(scenario_name, 'Configure MpTCP')
+
+    wait = terrestrial_link(
+            scenario, server, server_terrestrial_iface, server_bandwidth,
+            client, client_terrestrial_iface, client_bandwidth, delay)
+    multipath_tcp(scenario, server, server_ifaces, client, client_ifaces, wait)
+    return scenario
+
+
+def mptcp(server, client, count=1, scenario_name='Measure Time'):
+    scenario = Scenario(scenario_name, 'Measure time to transfer files using socat')
+    scenario.add_argument('filesize', 'The size of the file to transfer')
+    scenario.add_argument('dest_ip', 'The destination IP for the clients')
+    scenario.add_argument('port', 'The port of the server')
+
+    analyse_transport_rate(scenario, server, client, '$filesize', '$dest_ip', '$port', count)
+    return scenario

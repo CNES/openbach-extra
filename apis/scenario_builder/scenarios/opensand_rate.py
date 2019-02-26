@@ -35,9 +35,10 @@ def extract_jobs_to_postprocess(scenario):
 
 def build_metrology_scenario(
         client1, client2, server1, server2, gateway,
-        rate_test_duration, transfered_file_size):
+        rate_test_duration, transfered_file_size,
+        scenario_name='QoS metrics'):
     scenario = Scenario(
-            'QoS metrics',
+            scenario_name,
             'This scenario analyse the path between server and client in '
             'terms of maximum data rate (b/s) and one-way delay (s)')
     scenario.add_constant('com_port', '6000')
@@ -81,10 +82,11 @@ def build_metrology_scenario(
 
 
 def build(
-        scenario_name, topology, opensand_scenario,
+        topology, opensand_scenario,
         client1, client2, server1, server2,
         gateway_entity, post_processing_entity,
-        duration=10, file_size='100M'):
+        duration=10, file_size='100M',
+        scenario_name='Metrology Fairness Transport'):
     configure_opensand = build_configure_scenario(topology)
     opensand_emulation = build_emulation_scenario(topology)
     metrology_scenario = build_metrology_scenario(

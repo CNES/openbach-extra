@@ -2,10 +2,8 @@ from .. import Scenario
 from ..helpers.metrics import analyse_one_way_delay, analyse_rtt_fping, analyse_rtt_hping
 
 
-def delay(client, server):
-    scenario = Scenario(
-            'Delay metrology scenario (fping, hping, owping)',
-            'Comparison of 3 RTTs')
+def delay(client, server, scenario_name='Delay Metrology Scenario'):
+    scenario = Scenario(scenario_name, 'Comparison of 3 RTTs')
     scenario.add_argument('ip_dst', 'Target of the pings and server ip adress')
 
     wait = analyse_one_way_delay(scenario, server, client, '$ip_dst')
@@ -20,10 +18,8 @@ def delay(client, server):
     return scenario
 
 
-def delay_sequential(client, server):
-    scenario = Scenario(
-            'Delay metrology scenario (fping, hping, owping)',
-            'Comparison of 3 RTTs at different times')
+def delay_sequential(client, server, scenario_name='Delay Metrology Scenario'):
+    scenario = Scenario(scenario_name, 'Comparison of 3 RTTs at different times')
     scenario.add_argument('ip_dst', 'Target of the pings and server ip adress')
 
     wait = analyse_rtt_hping(scenario, client, '$ip_dst', 60)
