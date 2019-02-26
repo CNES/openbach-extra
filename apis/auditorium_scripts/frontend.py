@@ -59,9 +59,6 @@ from contextlib import suppress
 import requests
 
 
-CWD = Path(__file__).absolute().parent
-
-
 def get_interfaces():
     """Return the name of the first network interface found"""
     yield from (
@@ -88,7 +85,7 @@ def get_default_ip_address():
             return get_ip_address(iface)
 
 
-def read_controller_configuration(filename=CWD/'controller'):
+def read_controller_configuration(filename='controller'):
     default_ip = get_default_ip_address()
     try:
         stream = open(filename)
