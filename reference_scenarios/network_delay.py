@@ -13,6 +13,8 @@ def main(scenario_name='Delay metrology scenario'):
     observer.add_scenario_argument(
             '--sequential', action='store_true',
             help='whether or not the test should run one after the other')
+    observer.add_run_argument(
+            'ip_dst', help='server ip address and target of the pings')
     args = observer.parse(default_scenario_name=scenario_name)
 
     builder = delay_sequential if args.sequential else delay
