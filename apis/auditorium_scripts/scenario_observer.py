@@ -51,10 +51,11 @@ from auditorium_scripts.status_scenario_instance import StatusScenarioInstance
 
 
 class ScenarioObserver(FrontendBase):
-    def __init__(self):
+    def __init__(self, **default_run_arguments):
         super().__init__('OpenBACH — Run a scenario and postprocess stats')
         self._post_processing = {}
         self._scenarios = {}
+        self._default_arguments = default_run_arguments
         self.build_parser()
 
     def build_parser(self):
@@ -78,6 +79,7 @@ class ScenarioObserver(FrontendBase):
         parser = parsers.add_parser(
                 'run', help='run the selected scenario on the controller '
                 'after optionally sending it (default action)')
+        self.run_group = parser.add_argument_group('scenario arguments')
         group = parser.add_argument_group('collector')
         group.add_argument(
                 '-c', '--collector', metavar='ADDRESS',
@@ -131,6 +133,26 @@ class ScenarioObserver(FrontendBase):
         }
         kwargs = {key: value for key, value in kwargs.items() if value is not None}
         self.scenario_group.add_argument(*name_or_flags, **kwargs)
+
+    def add_run_argument(
+            self, *name_or_flags, action=None, nargs=None,
+            const=None, default=None, type=None, choices=None,
+            required=None, help=None, metavar=None, dest=None):
+        kwargs = {
+                'action': action,
+                'nargs': nargs,
+                'const': const,
+                'default': default,
+                'type': type,
+                'choices': choices,
+                'required': required,
+                'help': help,
+                'metavar': metavar,
+                'dest': dest,
+        }
+        kwargs = {key: value for key, value in kwargs.items() if value is not None}
+        action = self.run_group.add_argument(*name_or_flags, **kwargs)
+        self._default_arguments[action.dest] = action.default
 
     def post_processing(self, label, callback, *, subscenario=None, ignore_missing_label=False):
         if subscenario is None:
@@ -232,7 +254,10 @@ class ScenarioObserver(FrontendBase):
             self.args.collector = self.args.controller
 
         if not hasattr(self.args, 'argument'):
-            self.args.argument = {}
+            self.args.argument = {
+                name: getattr(self.args, name, value)
+                for name, value in self._default_arguments.items()
+            }
 
         self._send_scenario_to_controller(builder)
         scenario_instance = self._run_scenario_to_completion()
