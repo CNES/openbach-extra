@@ -13,6 +13,9 @@ def main(scenario_name='Measure Time'):
     observer.add_scenario_argument(
             '--count', '--clients-count', type=int, default=1,
             help='amount of socat clients to launch')
+    observer.add_run_argument('filesize')
+    observer.add_run_argument('dest_ip')
+    observer.add_run_argument('port')
     args = observer.parse(default_scenario_name=scenario_name)
 
     scenario = mptcp(args.client, args.server, args.count, args.name)
