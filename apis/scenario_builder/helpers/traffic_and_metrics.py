@@ -1,52 +1,6 @@
-def _one_way_delay(
-        scenario, delay, entity, interface,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    function = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    function.configure(
-            'configure_link', entity,
-            interface_name=interface, delay=delay)
-    return function
+#### Transport Rate & Traffic ####
 
-
-def _sysctl(
-        scenario, entity, congestion_control,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    function = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    function.configure(
-            'sysctl', entity,
-            parameter='net.ipv4.tcp_congestion_control',
-            value=congestion_control)
-    return function
-
-
-def configure_one_way_delays(
-        scenario, delay, gateway_entity, gateway_interface,
-        wait_finished=None, wait_launched=None, wait_delay=0, **work_stations):
-    one_way_delays = [
-            _one_way_delay(
-                scenario, delay, entity, interface,
-                wait_finished, wait_launched, wait_delay)
-            for entity, (interface, _) in work_stations.items()
-    ]
-    one_way_delays.append(_one_way_delay(
-        scenario, delay, gateway_entity, gateway_interface,
-        wait_finished, wait_launched, wait_delay))
-
-    return [
-            _sysctl(scenario, entity, cc, one_way_delays)
-            for entity, (_, cc) in work_stations.items()
-    ]
-
-
-def analyse_rate(
+def nuttcp_rate_udp(
         scenario, server_entity, client_entity, command_port,
         server_ip, port, receiver, duration, rate_limit,
         wait_finished=None, wait_launched=None, wait_delay=0):
@@ -83,7 +37,35 @@ def analyse_rate(
     return [server]
 
 
-def analyse_transport_rate(
+def iperf3_send_file_tcp(
+        scenario, server_entity, client_entity,
+        port, server_ip, transmitted_size,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    server = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    server.configure(
+            'iperf3', server_entity, offset=0,
+            port=port, server={'exit': True})
+
+    client = scenario.add_function(
+            'start_job_instance',
+            wait_launched=[server],
+            wait_delay=2)
+    client.configure(
+            'iperf3', client_entity, offset=0,
+            port=port, client={
+                'server_ip': server_ip,
+                'transmitted_size': transmitted_size,
+                'tcp': {},
+            })
+
+    return [server]
+
+
+def socat_send_files_tcp(
         scenario, server_entity, client_entity,
         filesize, destination_ip, port, clients_count,
         wait_finished=None, wait_launched=None, wait_delay=0):
@@ -123,7 +105,51 @@ def analyse_transport_rate(
     return [server]
 
 
-def analyse_one_way_delay(
+#### Network Delay & Traffic ####
+
+def fping_measure_rtt(
+        scenario, client_entity, server_address, duration,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    ping = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    ping.configure(
+            'fping', client_entity, offset=0,
+            destination_ip=server_address)
+
+    stop = scenario.add_function(
+            'stop_job_instance',
+            wait_launched=[ping],
+            wait_delay=duration)
+    stop.configure(ping)
+
+    return [ping]
+
+
+def hping_measure_rtt(
+        scenario, client_entity, server_address, duration,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    ping = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    ping.configure(
+            'hping', client_entity, offset=0,
+            destination_ip=server_address)
+
+    stop = scenario.add_function(
+            'stop_job_instance',
+            wait_launched=[ping],
+            wait_delay=duration)
+    stop.configure(ping)
+
+    return [ping]
+ 
+
+def owamp_measure_owd(
         scenario, server_entity, client_entity, server_address,
         wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
@@ -151,71 +177,3 @@ def analyse_one_way_delay(
     return [server]
 
 
-def analyse_performances(
-        scenario, server_entity, client_entity,
-        port, server_ip, transmitted_size,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    server = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    server.configure(
-            'iperf3', server_entity, offset=0,
-            port=port, server={'exit': True})
-
-    client = scenario.add_function(
-            'start_job_instance',
-            wait_launched=[server],
-            wait_delay=2)
-    client.configure(
-            'iperf3', client_entity, offset=0,
-            port=port, client={
-                'server_ip': server_ip,
-                'transmitted_size': transmitted_size,
-                'tcp': {},
-            })
-
-    return [server]
-
-
-def analyse_rtt_fping(
-        scenario, client_entity, server_address, duration,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    ping = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    ping.configure(
-            'fping', client_entity, offset=0,
-            destination_ip=server_address)
-
-    stop = scenario.add_function(
-            'stop_job_instance',
-            wait_launched=[ping],
-            wait_delay=duration)
-    stop.configure(ping)
-
-    return [ping]
-
-
-def analyse_rtt_hping(
-        scenario, client_entity, server_address, duration,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    ping = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    ping.configure(
-            'hping', client_entity, offset=0,
-            destination_ip=server_address)
-
-    stop = scenario.add_function(
-            'stop_job_instance',
-            wait_launched=[ping],
-            wait_delay=duration)
-    stop.configure(ping)
-
-    return [ping]
