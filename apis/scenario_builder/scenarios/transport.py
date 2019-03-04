@@ -1,5 +1,5 @@
 from .. import Scenario
-from ..helpers.metrics import analyse_transport_rate
+from ..helpers.traffic_and_metrics import iperf3_send_file_tcp
 from ..helpers.configuration import multipath_tcp, terrestrial_link
 
 
@@ -22,5 +22,5 @@ def mptcp(server, client, count=1, scenario_name='Measure Time'):
     scenario.add_argument('dest_ip', 'The destination IP for the clients')
     scenario.add_argument('port', 'The port of the server')
 
-    analyse_transport_rate(scenario, server, client, '$filesize', '$dest_ip', '$port', count)
+    iperf3_send_file_tcp(scenario, server, client, '$filesize', '$dest_ip', '$port', count)
     return scenario

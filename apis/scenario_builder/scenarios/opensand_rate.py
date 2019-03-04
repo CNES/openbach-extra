@@ -9,7 +9,7 @@ from ..helpers.traffic_and_metrics import (
         nuttcp_rate_udp,
         iperf3_send_file_tcp,
 )
-from ..helpers.metrics import (
+from ..helpers.configuration import (
         configure_one_way_delays,
 
 
@@ -64,18 +64,18 @@ def build_metrology_scenario(
         wait = configure_one_way_delays(
                 scenario, delay, gateway, '$interface_gateway',
                 wait_finished=wait_finished, **work_stations)
-        wait = analyse_rate(
+        wait = nuttcp_rate_udp(
                 scenario, server1, client1, '$com_port',
                 '$dest_ip_server_A', '$port', 'False',
                 '$duration', '$udp_rate', wait, wait_delay=2)
-        wait = analyse_one_way_delay(
+        wait = owamp_measure_owd(
                 scenario, server1, client1,
                 '$dest_ip_server_A', wait)
-        wait_finished = analyse_performances(
+        wait_finished = iperf3_send_file_tcp(
                 scenario, server1, client1, '$port',
                 '$dest_ip_server_A', '$file_size',
                 wait, wait_delay=2)
-        wait_finished.extend(analyse_performances(
+        wait_finished.extend(iperf3_send_file_tcp(
                 scenario, server2, client2, '$port',
                 '$dest_ip_server_B', '$file_size',
                 wait, wait_delay=2))
