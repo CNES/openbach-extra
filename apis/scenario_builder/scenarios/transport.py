@@ -16,8 +16,8 @@ def configure_mptcp(
     return scenario
 
 
-def mptcp(server, client, count=1, scenario_name='Measure Time'):
-    scenario = Scenario(scenario_name, 'Measure time to transfer files using socat')
+def send_file_tcp(server, client, count=1, scenario_name='Measure Time'):
+    scenario = Scenario(scenario_name, 'Measure time to transfer files using iperf3')
     scenario.add_argument('filesize', 'The size of the file to transfer')
     scenario.add_argument('dest_ip', 'The destination IP for the clients')
     scenario.add_argument('port', 'The port of the server')
