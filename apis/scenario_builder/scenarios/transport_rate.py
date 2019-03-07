@@ -4,7 +4,7 @@ from ..openbach_functions import StartJobInstance, StartScenarioInstance
 
 
 
-"""This scenario allows to :
+SCENARIO_DESCRIPTION="""This scenario allows to :
      - Launch the subscenario rate_tcp
        (allowing to compare the rate measurement of iperf3,
        and nuttcp jobs).
@@ -24,8 +24,8 @@ def extract_jobs_to_postprocess(scenario):
 
 
 
-def rate_tcp(server, client, scenario_name='Rate metrology with tcp flows'):
-    scenario = Scenario(scenario_name, 'Rate metrology scenario measuring network bandwidth with TCP flows')
+def rate_tcp(server, client, scenario_name='Rate measurements'):
+    scenario = Scenario(scenario_name, 'Comparison of rate measurements with TCP flows, by means of iperf3/nuttcp')
     scenario.add_argument('ip_dst', 'The destination IP for the clients')
     scenario.add_argument('port', 'The port of the server')
     scenario.add_argument('command_port', 'The port of nuttcp server for signalling')
@@ -43,10 +43,7 @@ def rate_tcp(server, client, scenario_name='Rate metrology with tcp flows'):
 def build(client, server, ip_dst, port, command_port, post_processing_entity, duration, num_flows, tos, mtu, scenario_name):
     
     rate_metrology = rate_tcp (server, client)
-    scenario = Scenario(
-            scenario_name,
-            'Rate metrology scenario measuring network bandwidth with TCP flows '
-            'using nuttcp and iperf3')
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     start_rate_metrology = scenario.add_function(
             'start_scenario_instance')

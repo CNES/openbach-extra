@@ -1,18 +1,9 @@
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import transport_rate 
 
-"""This scenario allows to :                                         
-     - Launch the subscenario rate_tcp 
-       (allowing to compare the rate measurement of iperf3,            
-       and nuttcp jobs).                                        
-     - Perform two postprocessing tasks to compare the               
-       time-series and the CDF of the rate measurements.            
-"""                                                                  
+"""This scenario launches the *transport_delay* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """                                         
 
-
-def main(scenario_name='Rate metrology scenario'):
-    """ Rate metrology scenario measuring network bandwidth with TCP flows 
-        using nuttcp and iperf3 """
+def main(scenario_name='Rate Metrology and Postprocessing'):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--client', '--client-entity', default='Client',
@@ -37,7 +28,7 @@ def main(scenario_name='Rate metrology scenario'):
             args.port, 
             args.command_port, 
             args.entity_pp, 
-            30, #duration 
+            30, #duration of iperf/nuttcp tests
             1, #number of parallel flows
             0, #ToS
             1000-40, #MTU size

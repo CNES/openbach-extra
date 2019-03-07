@@ -3,7 +3,7 @@ from ..helpers.traffic_and_metrics import owamp_measure_owd, fping_measure_rtt, 
 from ..openbach_functions import StartJobInstance, StartScenarioInstance
 
 
-DESCRIPTION="""This scenario allows to :
+SCENARIO_DESCRIPTION="""This scenario allows to :
      - Launch the subscenarios delay_simultaneous or delay_sequential
        (allowing to compare the RTT measurement of fping,
        hping and owamp jobs).
@@ -22,7 +22,7 @@ def extract_jobs_to_postprocess(scenario):
                 yield function_id
 
 
-def delay_simultaneous(client, server, scenario_name='Delay measurements- simultaneous'):
+def delay_simultaneous(client, server, scenario_name='Delay measurements - simultaneous'):
     scenario = Scenario(scenario_name, 'Comparison of three RTT measurements simultaneously')
     scenario.add_argument('ip_dst', 'Target of the pings and server IP adress')
     scenario.add_argument('duration', 'The duration of fping/hping tests')
@@ -47,7 +47,7 @@ def delay_sequential(client, server, scenario_name='Delay measurements - sequent
 
 
 def build(client, server, sequential, ip_dst, duration, post_processing_entity, scenario_name):              
-    scenario = Scenario(scenario_name, DESCRIPTION)                                                                  
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)                                                                  
     if sequential:                                                                                 
        delay_metrology = delay_sequential(client, server)                                          
     else:                                                                                          
