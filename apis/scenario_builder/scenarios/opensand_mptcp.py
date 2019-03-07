@@ -1,6 +1,6 @@
 from .. import Scenario
 from ..scenarios.opensand import build_configure_scenario, build_emulation_scenario
-from ..scenarios.transport import mptcp, configure_mptcp
+from ..scenarios.transport_mptcp import mptcp, configure_mptcp
 
 
 FILE_SIZES = ('1M', '5M')

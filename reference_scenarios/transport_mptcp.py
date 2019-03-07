@@ -1,5 +1,5 @@
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios.transport import mptcp
+from scenario_builder.scenarios.transport import send_file_tcp
 
 
 def main(scenario_name='Measure Time'):
@@ -18,7 +18,7 @@ def main(scenario_name='Measure Time'):
     observer.add_run_argument('port')
     args = observer.parse(default_scenario_name=scenario_name)
 
-    scenario = mptcp(args.client, args.server, args.count, args.name)
+    scenario = send_file_tcp(args.server, args.client, args.count, args.name)
     observer.launch_and_wait(scenario)
 
 
