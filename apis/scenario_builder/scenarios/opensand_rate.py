@@ -11,7 +11,7 @@ from ..helpers.traffic_and_metrics import (
 )
 from ..helpers.configuration import (
         configure_one_way_delays,
-
+)
 
 
 DELAYS = (10,)
