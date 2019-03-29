@@ -1,5 +1,6 @@
 from .. import Scenario
-from ..helpers.traffic_and_metrics import iperf3_rate_tcp, nuttcp_rate_tcp
+from ..helpers.transport.iperf3 import iperf3_rate_tcp
+from ..helpers.transport.nuttcp import nuttcp_rate_tcp
 from ..openbach_functions import StartJobInstance, StartScenarioInstance
 
 

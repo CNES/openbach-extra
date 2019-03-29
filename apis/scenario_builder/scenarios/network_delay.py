@@ -1,5 +1,7 @@
 from .. import Scenario
-from ..helpers.traffic_and_metrics import owamp_measure_owd, fping_measure_rtt, hping_measure_rtt
+from ..helpers.network.owamp import owamp_measure_owd
+from ..helpers.network.fping import fping_measure_rtt
+from ..helpers.network.hping import ping_measure_rtt
 from ..openbach_functions import StartJobInstance, StartScenarioInstance
 
 

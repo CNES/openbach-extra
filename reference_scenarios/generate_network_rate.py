@@ -1,7 +1,7 @@
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios import transport_rate 
+from scenario_builder.scenarios import network_rate 
 
-"""This scenario launches the *transport_delay* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """                                         
+"""This scenario launches the *network_rate* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """                                         
 
 def main(scenario_name='Rate Metrology and Postprocessing'):
     observer = ScenarioObserver()
