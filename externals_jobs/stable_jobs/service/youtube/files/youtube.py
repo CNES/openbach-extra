@@ -86,9 +86,10 @@ class Youtube:
         		self.results.append(WATCH_URL + video['href'])
         time.sleep(10)
    
-    def watch_first_video(self, duration):
+    def watch_video(self, duration):
         """
-          Launch the browser and play first proposed video during *duration* seconds                 
+          Launch the browser and play a randomly selected video from the list of proposed video,
+          during *duration* seconds                 
         """ 
         # Initialize a Selenium driver. Only support googe-chrome for now.
         try:
@@ -104,7 +105,6 @@ class Youtube:
                 self.driver = webdriver.Chrome(executable_path=chromedriver_path,
                                                chrome_options=chrome_options
                 )
-                self.driver.maximize_window()
         except Exception as ex:
             message = 'ERROR when initializing the web driver: {}'
             collect_agent.send_log(syslog.LOG_ERR, message.format(ex))
@@ -115,7 +115,8 @@ class Youtube:
         # Launch the browser and play video during *duration* seconds
         try: 
             self.driver.delete_all_cookies()
-            self.driver.get(self.results[0])
+            url = random.choice(self.results)
+            self.driver.get(url)
             time.sleep(duration)
         except Exception as ex:
             message = 'ERROR when watching video: {}'
@@ -132,7 +133,7 @@ class Youtube:
 def launch(duration):
     youtube = Youtube()
     youtube.search_video()
-    youtube.watch_first_video(duration)
+    youtube.watch_video(duration)
     youtube.close_browser()
    
 
@@ -140,10 +141,10 @@ if __name__ == "__main__":
     # Define usage
     parser = argparse.ArgumentParser(
         description='This script finds youtube videos by a randomly'
-                    ' selected keyword then plays first proposed video using a web browser.', 
+                    ' selected keyword then plays a randomly selected video using a web browser.', 
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument("duration", type=int,
+    parser.add_argument('duration', type=int,
                         help='The duration for watching the video, in seconds'
     )
     

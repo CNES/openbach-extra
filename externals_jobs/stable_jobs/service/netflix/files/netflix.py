@@ -103,7 +103,7 @@ class Netflix:
                 # Path to binary google-chrome 
                 chrome_options.binary_location = binary_path
                 # Runs Chrome in headless mode
-                chrome_options.add_argument("--headless")
+                #chrome_options.add_argument("--headless")
                 self.driver = webdriver.Chrome(executable_path=chromedriver_path,
                                                chrome_options=chrome_options
                 )
@@ -132,7 +132,8 @@ class Netflix:
           and choose the first profile                 
         """ 
         try:
-            self.driver.find_element_by_link_text("S'identifier").click()
+            element = self.driver.find_element_by_link_text("S'identifier")
+            self.driver.execute_script("arguments[0].click();", element)
             self.wait.until(EC.presence_of_element_located((By.ID, "id_userLoginId")))
             self.wait.until(EC.presence_of_element_located((By.ID, "id_password")))
             self.driver.find_element_by_id("id_userLoginId").clear()
@@ -167,7 +168,7 @@ class Netflix:
         keyword = random.choice(self.config['keywords'])
         try:
             self.driver.find_element_by_xpath(
-                    '//*[@id="appMountPoint"]/div/div/div/div/div[1]/div/div/div/div[1]/div/button/span'
+                    '//*[@id="appMountPoint"]/div/div/div[1]/div/div[1]/div/div/div/div[1]/div/button'
             ).click()
         
             self.driver.find_element(By.CSS_SELECTOR, ("input")).clear()

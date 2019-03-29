@@ -171,14 +171,17 @@ class Facebook:
             self.driver.find_element_by_xpath("//*[@id='MercuryJewelFooter']/a[1]").click()
             element = self.wait.until(EC.visibility_of_element_located((
                     By.XPATH,
-                    "//*[@id='js_e']/div/div/div[1]/span[1]/label/input"
+                    #"//*[@id='js_k']/div/div/div[1]/span[1]/label/input"
+                    "//input[@placeholder='Rechercher dans Messenger']"
+                   
             )))
             element.clear()
             # Launch search and wait
             element.send_keys(friend_name)
             time.sleep(5)
             element = self.wait.until(EC.visibility_of_element_located((By.XPATH, 
-            "//div[@class='_364g'][text()='{}']".format(friend_name))))
+            #"//div[@class='_364g'][text()='{}']".format(friend_name))))
+            "//span/span[text()='{}']".format(friend_name))))
             element.click()      
         except Exception as ex:
             message = "ERROR when finding friend '{}' : {}".format(friend_name, ex)

@@ -3,8 +3,8 @@
 general:
   name:            youtube
   description: >
-      This job finds youtube videos by a randomly selected keyword then plays first proposed videos 
-      using a web browser. 
+      This job finds youtube videos by a randomly selected keyword, then plays a randomly selected videos 
+      from the proposed videos list, using a web browser. 
   job_version:     '1.0'
   keywords:        [youtube, streaming, video, multimedia]
   persistent:      False
@@ -23,6 +23,5 @@ arguments:
       count:        1
       description: >
           The duration for playing the video, in seconds
-  optional:
                        
 statistics:

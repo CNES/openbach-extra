@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # OpenBACH is a generic testbed able to control/configure multiple
 # network/physical entities (under test) and collect data from them. It is
@@ -146,15 +144,14 @@ class Skype:
             # Click on the button "Sign in"
             self.driver.find_element(By.CSS_SELECTOR, ("input[type='submit']")).submit()
             self.wait.until(EC.visibility_of_element_located((
-                    By.XPATH,
-                    "//*[@id='timelineComponent']/div/swx-sidebar/"
-                    "div[1]/swx-search-input/div/input",
-            )))
+                                  By.XPATH,
+                                  "//button[@title='People, groups & messages']"))
+            )
         # Catch: WebDriveException, InvalideSelectorExeception, NoSuchElementException
         except Exception as ex:
-            message = 'ERROR when login: {}'
-            collect_agent.send_log(syslog.LOG_ERR, message.format(ex))
-            print(message.format(ex))
+            message = 'ERROR when login: {}'.format(ex)
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            print(message)
             self.close_browser()
             sys.exit(message)
     
@@ -164,26 +161,36 @@ class Skype:
         """
         try:
             # Launch search
-            self.driver.find_element_by_xpath("//*[@id='timelineComponent']"
-            "/div/swx-sidebar/div[1]/swx-search-input/div/input").send_keys(contact_name)
-            time.sleep(2)
-            # Get the first contact
-            self.driver.find_element_by_xpath("//*[@id='timelineComponent']"
-            "/div/swx-sidebar/div[1]/swx-search-results/div[1]/div/swx-people-search/ul/li").click()
+            element = self.wait.until(EC.element_to_be_clickable((
+                                  By.XPATH,
+                                  "//button[@title='People, groups & messages']/div"))
+            )
+            self.driver.execute_script("arguments[0].click();", element)
+            #self.driver.find_element_by_xpath("//button[@title='People, groups & messages']/div").click()
+            self.wait.until(EC.visibility_of_element_located((
+                                  By.XPATH,
+                                  "//input[@placeholder='Search Skype']"))
+            )
+            search_element = self.driver.find_element_by_xpath("//input[@placeholder='Search Skype']")
+            search_element.clear()
+            search_element.send_keys(contact_name)
+            # Wait for first contact is clickable then open conversation
+            self.wait.until(EC.element_to_be_clickable((
+                                  By.XPATH,
+                                  "//div[@role='group'][@aria-label='PEOPLE']/div[2]"))
+            ).click()
         except Exception as ex:
-            message = 'ERROR when finding contact {} : {}'
-            collect_agent.send_log(syslog.LOG_ERR, message.format(contact_name, ex))
-            print(message.format(contact_name, ex))
+            message = 'ERROR when finding contact {} : {}'.format(contact_name, ex)
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            print(message)
             self.close_browser()
             sys.exit(message)
          
     def call_person(self, call_type):
-        xpath = "//*[@id='swxContent1']/swx-navigation/div/div/div/swx-header/"\
-        "div[1]/div/div/div/div/swx-button[{}]/button"
         if call_type == 'video':
-            xpath = xpath.format(1)
+            xpath = "//button[@title='Video Call']"
         else:
-            xpath = xpath.format(2)
+            xpath = "//button[@title='Audio Call']"
         call_element = self.driver.find_element_by_xpath(xpath)
         try:
             #Select Skype call if the contact can be reachable by another way such as via its mobile number
@@ -199,8 +206,7 @@ class Skype:
         """
         time.sleep(call_duration)        
         try:
-            end_call_element = self.driver.find_element_by_xpath("//*[@id='swxContent1']/swx-navigation/"
-            "div/div/div/swx-call-screen/div/div[1]/div[3]/swx-call-footer/div/div/button[4]")
+            end_call_element = self.driver.find_element_by_xpath("//button[@title='End Call']")
             end_call_element.click()
         except:
           pass
@@ -250,22 +256,29 @@ def receive(email_address, password, call_type, timeout):
     print('########## Wait for incoming call #############')
     # Wait for incoming call
     if call_type == 'audio':
-        skype.persistent_wait.until(EC.presence_of_element_located((
-        By.XPATH, "//*[@id='toasts']/div/div[1]/div[4]/button[2]")))
-        answer_call_element = skype.driver.find_element_by_xpath("//*[@id='toasts']/div/div[1]/div[4]/button[2]")
+        answer_call_element = skype.persistent_wait.until(EC.presence_of_element_located((
+                                      By.XPATH, 
+                                      "//button[contains(@title, 'Answer call') "
+                                      "and contains(@title, 'voice only')]"))
+                              )
     else:
-        skype.persistent_wait.until(EC.presence_of_element_located((
-                By.XPATH, 
-                "//*[@id='toasts']/div/div[1]/div[4]/button[1]",
-        )))
-        answer_call_element = skype.driver.find_element_by_xpath("//*[@id='toasts']/div/div[1]/div[4]/button[1]") 
+        answer_call_element = skype.persistent_wait.until(EC.presence_of_element_located((
+                                      By.XPATH, 
+                                      "//button[contains(@title, 'Answer call') " 
+                                      "and contains(@title, 'video')]"))
+                              )
     # Answer and wait until the caller end the call
     time.sleep(2)
     answer_call_element.click()
+    skype.persistent_wait.until(EC.presence_of_element_located((
+            By.XPATH,
+            "//button[@title='End Call']",
+    )))
     skype.persistent_wait.until_not(EC.presence_of_element_located((
             By.XPATH, 
-            "//*[@id='swxContent1']/swx-navigation/div/div/div/swx-call-screen",
+            "//button[@title='End Call']",
     )))
+    #skype.close_browser()
     print('########## call Ended #############')
     
     
