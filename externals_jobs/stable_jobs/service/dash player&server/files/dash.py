@@ -66,13 +66,11 @@ class CustomWebSocket(websocket.WebSocketHandler):
                     del data[stat]
         
         data['suffix'] = self.request.remote_ip
-        print(data["bitrate"])
-        print(self.request.remote_ip)
         collect_agent.send_stat(**data)
         collect_agent.send_log(syslog.LOG_DEBUG, 'Message received')
 
 
-def main(address, port):
+def main(port):
     # Connect to collect_agent
     success = collect_agent.register_collect(
             '/opt/openbach/agent/jobs/dash_player_server/'
@@ -92,10 +90,9 @@ def main(address, port):
         }),
     ])
 
-    listen_message = 'Starting tornado on {}:{}'.format(address, port)
-    print(listen_message)
+    listen_message = 'Starting tornado on {}:{}'.format('0.0.0.0', port)
     collect_agent.send_log(syslog.LOG_DEBUG, listen_message)
-    application.listen(port, address)
+    application.listen(port, '0.0.0.0')
     ioloop.IOLoop.current().start()
 
 
@@ -107,9 +104,6 @@ if __name__ == '__main__':
     parser.add_argument(
             '-p', '--port', type=int, default=80,
             help='Port to use to serve HTTP')
-    parser.add_argument(
-            '-a', '--address', type=str, default='0.0.0.0',
-            help='Address to bind to')
 
     # get args
     args = parser.parse_args()

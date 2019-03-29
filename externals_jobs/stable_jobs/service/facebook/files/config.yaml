@@ -1,0 +1,17 @@
+
+driver:
+  binary_type: GoogleChromeBinary
+  binary_path: /usr/bin/google-chrome
+  executable_path: /usr/local/bin/chromedriver
+  
+statistics:
+
+# Audio chat from http://www.voiptroubleshooter.com/open_speech/american.html
+audio_to_play:
+  - audio/OSR_us_000_0010_8k.wav
+  - audio/OSR_us_000_0011_8k.wav
+
+# Video chat from https://media.xiph.org/video/derf/
+video_to_play:
+  - video/akiyo_cif.y4m
+  - video/bowing_cif.y4m

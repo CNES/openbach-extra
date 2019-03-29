@@ -3,9 +3,9 @@
 general:
   name:            vlc
   description: >
-      Launches a VLC video streaming from a server to an IP address.
-  job_version:     '1.0'
-  keywords:        [vlc, video, streaming]
+      This job launches VLC tool (sender or receiver mode) in order to send or receive a video stream. Statistics about medias contained in this video are sent by the receiver. You would start sender first.
+  job_version:     '2.0'
+  keywords:        [vlc, video, streaming, playing, frames lost]
   persistent:      False
 
 platform_configuration:
@@ -28,30 +28,63 @@ arguments:
       count:       1
       flag:        '-p'
       description: >
-          The dst port number (Default: 6000)
-    - name:        filename
-      type:        'str'
-      count:       1
-      flag:        '-f'
-      description: >
-          Video to stream. Default: Big Buck Bunny
-    - name:        transcode_vb
-      type:        'int'
-      count:       1
-      flag:        '-v'
-      description: >
-          Transcode video bitrate (Default: 0, no transcoding).
-    - name:        transcode_ab
-      type:        'int'
-      count:       1
-      flag:        '-a'
-      description: >
-          Transcode audio bitrate (Default: 0, no transcoding).
+          The destination port number (Default: 6000)
     - name:        duration
       type:        'int'
       count:       1
       flag:        '-d'
       description: >
-          The time in seconds for streaming video (Default: 0, infinite)
+          The duration of the transmission/reception, in seconds (Default: infinite)
+          
+  subcommand:
+  - group_name:  mode
+    optional:    False
+    choices:
+      - name:    sender
+        required:
+        optional:
+        - name:        filename
+          type:        'str'
+          count:       1
+          flag:        '-f'
+          description: >
+              Video to stream. Default: Big Buck Bunny
+        - name:        transcode_vb
+          type:        'int'
+          count:       1
+          flag:        '-v'
+          description: >
+              Transcode video bitrate (Default: 0, no transcoding).
+        - name:        transcode_ab
+          type:        'int'
+          count:       1
+          flag:        '-a'
+          description: >
+              Transcode audio bitrate (Default: 0, no transcoding).
+      - name:    receiver
+        required:
+        optional:
+        - name:        interval
+          type:        'int'
+          count:       1
+          flag:        '-i'
+          description: >
+              The period in seconds to retrieve and send statistics (Default: 1s).
 
 statistics:
+    - name: "demux bytes read"
+      description: >
+          The amount of data read, in Bytes
+      frequency: 'every *interval* seconds'
+    - name: "demux bitrate"
+      description: >
+          The bite rate of video flux, in bits/sec
+      frequency: 'every *interval* seconds'
+    - name: "frames displayed"
+      description: >
+          The number of displayed video frames
+      frequency: 'every *interval* seconds'
+    - name: "frames lost"
+      description: >
+          The number of video frames lost
+      frequency: 'every *interval* seconds'

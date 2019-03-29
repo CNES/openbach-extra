@@ -3,9 +3,9 @@
 general:
   name:            nuttcp
   description: >
-      This Job launches the nuttcp tool (client or server mode)
-  job_version:     '1.0'
-  keywords:        [nuttcp]
+      This Job launches the nuttcp tool (client or server mode) to generate UDP/TCP traffic with configured parameters (duration, bandwidth, parallel flows, ToS, MSS, etc.). It measures throughput, sent/lost packets, etc.  
+  job_version:     '2.0'
+  keywords:        [nuttcp, udp, tcp, throughput, loss]
   persistent:      True
   need_privileges: True
 
@@ -19,83 +19,89 @@ platform_configuration:
 arguments:
   required:
   optional:
-    - name:        server_mode
-      type:        'None'
-      count:       0
-      flag:        '-s'
-      description: >
-          Start the nuttcp in server mode
-    - name:        server_ip
-      type:        'str'
-      count:       1
-      flag:        '-i'
-      description: >
-          Server IP address (Client only)
     - name:        command_port
       type:        'int'
       count:       1
       flag:        '-P'
       description: >
-          Set server port to listen on/connect to (default 5000)
-    - name:        port
-      type:        'int'
-      count:       1
-      flag:        '-p'
-      description: >
-          Set server port for the data transmission (default 5001)
-    - name:        receiver
-      type:        'None'
-      count:       0
-      flag:        '-R'
-      description: >
-          Launch client as receiver (else, transmitter)
-    - name:        udp
-      type:        'None'
-      count:       0
-      flag:        '-u'
-      description: >
-          Use UDP rather than TCP (client mode only)
-    - name:        buffer_size
-      type:        'int'
-      count:       1
-      flag:        '-b'
-      description: >
-          The receive buffer size.
-    - name:        mss
-      type:        'int'
-      count:       1
-      flag:        '-m'
-      description: >
-          The MSS for data connection.
-    - name:        dscp
-      type:        'str'
-      count:       1
-      flag:        '-c'
-      description: >
-          The DSCP value on data streams (t|T suffix for full TOS field).
-    - name:        n_streams
-      type:        'int'
-      count:       1
-      flag:        '-n'
-      description: >
-          The number of streams.
-    - name:        duration
-      type:        'int'
-      count:       1
-      flag:        '-d'
-      description: >
-          The duration of the transmission (default: 10).
-    - name:        rate_limit
-      type:        'int'
-      count:       1
-      flag:        '-r'
-      description: >
-          The transmit rate limit in Kbps.
-    - name:        stats_interval
-      type:        'float'
-      count:       1
-      flag:        '-I'
-      description: >
-          The statistics interval (default: 1 second).
-
+          Set port number for control connection (default 5000)
+  subcommand:
+    - group_name:        mode
+      choices:
+        - name:        server      
+          required:
+          optional:
+        - name:        client
+          required:      
+            - name:        server_ip
+              type:        'str'
+              count:       1
+              flag:        '-i'
+              description: >
+                  Server IP address
+          optional:
+            - name:        port
+              type:        'int'
+              count:       1
+              flag:        '-p'
+              description: >
+                  Set server port for the data transmission (default 5001)
+            - name:        receiver
+              type:        'None'
+              count:       0
+              flag:        '-R'
+              description: >
+                  Launch client as receiver (else, by default the client is the transmitter)
+            - name:        dscp
+              type:        'str'
+              count:       1
+              flag:        '-c'
+              description: >
+                  The DSCP value on data streams (t|T suffix for full TOS field).
+            - name:        n_streams
+              type:        'int'
+              count:       1
+              flag:        '-n'
+              description: >
+                  The number of parallel flows (default 1 flow).
+            - name:        duration
+              type:        'int'
+              count:       1
+              flag:        '-d'
+              description: >
+                  The duration of the transmission (default: 10s).
+            - name:        rate_limit
+              type:        'str'
+              count:       1
+              flag:        '-r'
+              description: >
+                  The transmit rate limit in Kbps or Mbps (add m suffix) or Gbps (add g)  or bps (add p). Example: 10m sends data at 10Mbps rate.
+            - name:        stats_interval
+              type:        'float'
+              count:       1
+              flag:        '-I'
+              description: >
+                  Interval (seconds) between periodic collected statistics (default 1 sec).
+          subcommand:
+            - group_name:        protocol
+              choices:
+                - name:         udp
+                  required:
+                  optional:
+                - name:         tcp
+                  required:
+                  optional:
+                    - name:        buffer_size
+                      type:        'int'
+                      count:       1
+                      flag:        '-b'
+                      description: >
+                          The receiver and transmitter TCP buffer size (then effectively sets the window size)
+                    - name:        mss
+                      type:        'int'
+                      count:       1
+                      flag:        '-m'
+                      description: >
+                          The MSS for TCP data connection.
+                                
 statistics:
