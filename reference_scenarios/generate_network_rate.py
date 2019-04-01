@@ -21,7 +21,7 @@ def main(scenario_name='Rate Metrology and Postprocessing'):
             '--entity_pp', help='The entity nama where the post-processing will be performed')
      
     args = observer.parse(default_scenario_name=scenario_name)
-    scenario = transport_rate.build(
+    scenario = network_rate.build(
             args.client, 
             args.server, 
             args.ip_dst, 
