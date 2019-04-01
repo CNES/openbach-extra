@@ -1,7 +1,7 @@
-from .. import Scenario
-from ..helpers.transport.iperf3 import iperf3_rate_tcp
-from ..helpers.transport.nuttcp import nuttcp_rate_tcp
-from ..openbach_functions import StartJobInstance, StartScenarioInstance
+from scenario_builder import Scenario
+from scenario_builder.helpers.transport.iperf3 import iperf3_rate_tcp
+from scenario_builder.helpers.transport.nuttcp import nuttcp_rate_tcp
+from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 
 

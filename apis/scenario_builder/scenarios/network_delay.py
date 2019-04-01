@@ -1,8 +1,8 @@
-from .. import Scenario
-from ..helpers.network.owamp import owamp_measure_owd
-from ..helpers.network.fping import fping_measure_rtt
-from ..helpers.network.hping import ping_measure_rtt
-from ..openbach_functions import StartJobInstance, StartScenarioInstance
+from scenario_builder import Scenario
+from scenario_builder.helpers.network.owamp import owamp_measure_owd
+from scenario_builder.helpers.network.fping import fping_measure_rtt
+from scenario_builder.helpers.network.hping import hping_measure_rtt
+from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 
 SCENARIO_DESCRIPTION="""This scenario allows to :
