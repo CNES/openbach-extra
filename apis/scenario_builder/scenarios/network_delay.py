@@ -2,6 +2,8 @@ from scenario_builder import Scenario
 from scenario_builder.helpers.network.owamp import owamp_measure_owd
 from scenario_builder.helpers.network.fping import fping_measure_rtt
 from scenario_builder.helpers.network.hping import hping_measure_rtt
+from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
+from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 
@@ -67,29 +69,8 @@ def build(client, server, sequential, ip_dst, duration, post_processing_entity, 
             [start_delay_metrology, function_id]                                                   
             for function_id in extract_jobs_to_postprocess(delay_metrology)                        
     ]                                                                                              
-                                                                                                   
-    time_series = scenario.add_function(                                                           
-            'start_job_instance',                                                                  
-            wait_finished=[start_delay_metrology],                                                 
-            wait_delay=2)                                                                          
-    time_series.configure(                                                                         
-            'time_series', post_processing_entity, offset=0,                                       
-            jobs=[post_processed],                                                                 
-            statistics=[['rtt', 'owd_sent']],                                                      
-            label=[['RTT delay (ms)']],                                                            
-            title=[['Comparison of RTT']])                                                         
-                                                                                                   
-    histograms = scenario.add_function(                                                            
-            'start_job_instance',
-            wait_finished=[start_delay_metrology],             
-            wait_delay=2)                                      
-    histograms.configure(                                      
-            'histogram', post_processing_entity, offset=0,     
-            jobs=[post_processed],                             
-            bins=100,                                          
-            statistics=[['rtt', 'owd_sent']],                  
-            label=['RTT delay (ms)'],                          
-            title=['CDF of RTT delay measurements'],           
-            cumulative=True)
+    
+    time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rtt', 'owd_sent']], [['RTT delay (ms)']], [['Comparison of measured RTTs']], [start_delay_metrology], None, 2)
+    cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rtt', 'owd_sent']], [['RTT delay (ms)']], [['CDF of RTT delay measurements']], [start_delay_metrology], None, 2)
 
     return scenario                                   

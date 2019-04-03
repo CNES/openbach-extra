@@ -1,6 +1,8 @@
 from scenario_builder import Scenario
 from scenario_builder.helpers.transport.iperf3 import iperf3_rate_tcp
 from scenario_builder.helpers.transport.nuttcp import nuttcp_rate_tcp
+from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
+from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 
@@ -59,29 +61,7 @@ def build(client, server, ip_dst, port, command_port, post_processing_entity, du
             for function_id in extract_jobs_to_postprocess(rate_metrology)
     ]
 
-    time_series = scenario.add_function(
-            'start_job_instance',
-            wait_finished=[start_rate_metrology],
-            wait_delay=2)
-    time_series.configure(
-            'time_series', post_processing_entity, offset=0,
-            jobs=[post_processed],
-            statistics=[['rate', 'throughput']],
-            label=[['Rate (b/s)']],
-            title=[['Comparison of Rate measurements']])
-
-    histograms = scenario.add_function(
-            'start_job_instance',
-            wait_finished=[start_rate_metrology],
-            wait_delay=2)
-    histograms.configure(
-            'histogram', post_processing_entity, offset=0,
-            jobs=[post_processed],
-            bins=100,
-            statistics=[['rate', 'throughput']],
-            label=['Rate (b/s)'],
-            title=['CDF of Rate measurements'],
-            cumulative=True)
-
+    time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rate', 'throughput']], [['Rate (b/s)']], [['Comparison of Rate measurements']], [start_rate_metrology], None, 2)
+    cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rate', 'throughput']], [['Rate (b/s)']], [['CDF of Rate measurements']], [start_rate_metrology], None, 2)
 
     return scenario
