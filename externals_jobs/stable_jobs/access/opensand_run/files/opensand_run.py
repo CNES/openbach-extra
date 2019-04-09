@@ -8,7 +8,7 @@
    Agents (one for each network entity that wants to be tested).
    
    
-   Copyright © 2016 CNES
+   Copyright © 2019 CNES
    
    
    This file is part of the OpenBACH testbed.
@@ -231,9 +231,7 @@ class OpsEmulation(object):
                              ' "{}"...'.format('default'
                                                if scenario_path is None
                                                else scenario_path))
-            if scenario_path is None:
-                self._manager.default_scenario()
-            else:
+            if scenario_path is not None:
                 self._manager.set_scenario(scenario_path)
             self._logger.info('Emulation scenario'
                              ' "{}" deployed'.format('default'

@@ -4,7 +4,7 @@ general:
   name:            opensand-emulation
   description: >
      This job manages the OpenSAND emulations, deploying the OpenSAND scenario on all OpenSAND entities.
-  job_version:     '2.1'
+  job_version:     '2.2'
   keywords:        [opensand, emulation, manager]
   persistent:      true
 
