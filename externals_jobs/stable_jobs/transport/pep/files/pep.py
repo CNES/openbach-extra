@@ -41,6 +41,7 @@ import syslog
 import collect_agent
 import sys
 import iptc
+import re
 
 def set_conf(ifaces, src_ip, dst_ip, port, mark, table_num, unset=False):
     # Set (or unset) routing configuration for PEPSal
@@ -195,12 +196,9 @@ if __name__ == "__main__":
     gcc_interval = args.gcc_interval
     log_file = args.log_file
     pending_time = args.pending_time
-    ifaces = args.ifaces.split(',')
-    ifaces = list(filter(None, ifaces))
-    src_ip = args.src_ip.split(',')
-    src_ip = list(filter(None, src_ip))
-    dst_ip = args.dst_ip.split(',')
-    dst_ip = list(filter(None, dst_ip))
+    ifaces = re.findall(r'[^\,\ \t]+', args.ifaces)
+    src_ip = re.findall(r'[^\,\ \t]+', args.src_ip)
+    dst_ip = re.findall(r'[^\,\ \t]+', args.dst_ip)
     stop = args.stop
     mark = args.mark
     table_num = args.table_num

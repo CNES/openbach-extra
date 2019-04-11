@@ -1,1 +1,42 @@
-TODO
+The job 'pep' launches PEPSal, and sets up the routes and iptables
+configurations necessary to perform TCP splitting.
+
+The job will append rules to the iptable mangle, chain PREROUTING,
+according to the parameters 'redirect_ifaces', 'redirect_src_ip' and
+'redirect_dst_ip'. One rule will be created per interface/IP.
+
+Each rule matches TCP segments according to the source or destination IP,
+or input interface, and redirects them to a transparent proxy on 0.0.0.0,
+on the port specified by 'port' (default: 5000), and using the mark specified
+by 'mark' (default: 1).
+
+The routing of packets is completed by creating a new routing table (number
+specified by 'table_num, default: 100) that redirects all packets with the
+mark to the lo interface.
+
+All routes and rules are removed when the job is stopped.
+
+The 'mark', 'port' and 'table_num' parameters should only be modified by
+advanced users.
+
+Others advanced PEPSal parameters are also available:
+
+ - 'address': the address that PEPSal uses to bind the listening socket
+              (default: 0.0.0.0 binds on all interfaces).
+ - 'fastopen': enable TCP FastOpen.
+ - 'maxconns': the maximum number of simultaneous connections (default: 2112).
+ - 'gcc_interval': garbage collector interval, that cleans dead or garbage connections
+                   (default: 54000 seconds, 24 hs)
+ - 'pending_lifetime': the pending connections lifetime (default: 18000 seconds).
+ - 'log_file': Path for logging all connections to a file.
+
+Examples
+========
+Example 1: launch PEPSal on a host. Redirect all traffic coming from
+'192.168.1.0/24' and '192.168.2.0/24', all traffic going to '192.168.20.0/24',
+and all traffic entering via 'ens3' to the PEP.
+
+In the web interface, set the following parameters:
+ - 'redirect_ifaces': 'ens3'
+ - 'redirect_src_ip': '192.168.1.0/24, 192.168.2.0/24'
+ - 'redirect_dst_ip': '192.168.20.0/24'
