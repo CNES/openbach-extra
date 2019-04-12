@@ -42,7 +42,7 @@
   with_items:
     - twinkle
     - alsa-utils
-    - linux-image-extra-{{ kernel.stdout }}
+    - linux-modules-extra-{{ kernel.stdout }}
   become: yes
     
 - name: Create twinkle_voip repository

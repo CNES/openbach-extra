@@ -103,7 +103,7 @@ class Netflix:
                 # Path to binary google-chrome 
                 chrome_options.binary_location = binary_path
                 # Runs Chrome in headless mode
-                #chrome_options.add_argument("--headless")
+                chrome_options.add_argument("--headless")
                 self.driver = webdriver.Chrome(executable_path=chromedriver_path,
                                                chrome_options=chrome_options
                 )
@@ -188,18 +188,20 @@ class Netflix:
         Watch the first video found during *duration* seconds
         """
         try:
-            self.driver.find_element_by_xpath(
+            element = self.driver.find_element_by_xpath(
                     '//*[@id="title-card-0-0"]/div[1]/a/div'
-            ).click()
+            )
+            self.driver.execute_script("arguments[0].click();", element)
                  
             resume = True
             # If play button is displayed
             try:
-                element = WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((
+                element = self.wait.until(EC.presence_of_element_located((
                             By.XPATH,
-                            '//*[@id="pane-Overview"]/div/div/div/div[1]/div/div[3]/a/span'
+                            #'//*[@id="pane-Overview"]/div/div/div/div[1]/div/div[3]/a/span'
+                            '//*[@id="pane-Overview"]/div/div/div/div[1]/div/div[5]/a/span'
                 )))
-                element.click()
+                self.driver.execute_script("arguments[0].click();", element)
                 resume = False
             except:
                 pass
@@ -207,11 +209,13 @@ class Netflix:
             # If resume buttton is displayed rather than play button
             if resume:
                 try:
-                    element = WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((
+                    element = self.wait.until(EC.presence_of_element_located((
                                 By.XPATH,
-                                '//*[@id="pane-Overview"]/div/div/div/div[1]/div/div[4]/a/span'
+                                #'//*[@id="pane-Overview"]/div/div/div/div[1]/div/div[4]/a/span'
+                                '//*[@id="pane-Overview"]/div/div/div/div[1]/div/div[5]/a/span'
                     )))
-                    element.click()
+                    self.driver.execute_script("arguments[0].click();", element)
+                    #element.click()
                 except Exception as ex:
                     message = 'ERROR when launching video resume: {}'.format(ex)
                     handle_exception(self, message)

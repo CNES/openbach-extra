@@ -48,7 +48,7 @@ from selenium.webdriver.chrome.options import Options
 import random
 import math
 
-URL = "https://web.skype.com/fr/"
+URL = "https://web.skype.com"
     
 class Skype:
   
@@ -106,9 +106,9 @@ class Skype:
                                                chrome_options=chrome_options
                 )
         except Exception as ex:
-            message = 'ERROR when initializing the web driver: {}'
-            collect_agent.send_log(syslog.LOG_ERR, message.format(ex))
-            print( message.format(ex))
+            message = 'ERROR when initializing the web driver: {}'.format(ex)
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            print( message)
             self.close_browser()
             exit(message)
         
@@ -118,12 +118,16 @@ class Skype:
             self.driver.get(URL)
             self.persistent_wait = WebDriverWait(self.driver, math.inf)
             self.wait = WebDriverWait(self.driver, self.timeout)
-            self.wait.until(EC.presence_of_element_located((By.ID, "i0116")))
+            #self.wait.until(EC.presence_of_element_located((By.ID, "i0116")))
+            self.wait.until(EC.visibility_of_element_located((
+                                  By.CSS_SELECTOR, 
+                                  "input[type='email']"))
+            )
          # Catch: WebDriveException, InvalideSelectorExeception, NoSuchElementException, TimeoutException
         except Exception as ex:
-            message = 'ERROR when launching the browser: {}'
-            collect_agent.send_log(syslog.LOG_ERR, message.format(ex))
-            print( message.format(ex))
+            message = 'ERROR when launching the browser: {}'.format(ex)
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            print( message)
             self.close_browser()
             exit(message)
            
@@ -137,7 +141,10 @@ class Skype:
             element.send_keys(self.email_address)
             # Click on the button "Next"
             self.driver.find_element_by_id("idSIButton9").click()
-            time.sleep(2)
+            self.wait.until(EC.visibility_of_element_located((
+                                  By.CSS_SELECTOR,
+                                  "input[type='password']"))
+            )
             element = self.driver.find_element(By.CSS_SELECTOR, ("input[type='password']"))
             element.clear()
             element.send_keys(self.password)
@@ -179,6 +186,9 @@ class Skype:
                                   By.XPATH,
                                   "//div[@role='group'][@aria-label='PEOPLE']/div[2]"))
             ).click()
+            
+            # Get the first contact
+            #self.driver.find_element_by_xpath("//div[@role='group'][@aria-label='PEOPLE']/div[2]").click()
         except Exception as ex:
             message = 'ERROR when finding contact {} : {}'.format(contact_name, ex)
             collect_agent.send_log(syslog.LOG_ERR, message)
@@ -278,7 +288,7 @@ def receive(email_address, password, call_type, timeout):
             By.XPATH, 
             "//button[@title='End Call']",
     )))
-    #skype.close_browser()
+    skype.close_browser()
     print('########## call Ended #############')
     
     
