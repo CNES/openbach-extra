@@ -34,7 +34,7 @@ def rate_tcp(server, client, scenario_name='network_rate'):
     scenario.add_argument('command_port', 'The port of nuttcp server for signalling')
     scenario.add_argument('duration', 'The duration of each test (sec.)')
     scenario.add_argument('num_flows', 'The number of parallel flows to launch')
-    scenario.add_argument('tos', 'The duration of each test (sec.)')
+    scenario.add_argument('tos', 'The type of service used')
     scenario.add_argument('mtu', 'The MTU sizes to test')
     
 

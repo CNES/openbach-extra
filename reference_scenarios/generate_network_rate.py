@@ -14,7 +14,7 @@ def main(scenario_name='generate_network_rate'):
     observer.add_scenario_argument(
             '--ip_dst', help='The server IP address')
     observer.add_scenario_argument(
-            '--port', default = 7000,  help='The iperf3/nuttcp server IP port for data')
+            '--port', default = 7000,  help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
             '--command_port', default = 8000, help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
