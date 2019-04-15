@@ -27,7 +27,7 @@ def extract_jobs_to_postprocess(scenario):
 
 
 
-def rate_tcp(server, client, scenario_name='Rate measurements'):
+def rate_tcp(server, client, scenario_name='network_rate'):
     scenario = Scenario(scenario_name, 'Comparison of rate measurements with TCP flows, by means of iperf3/nuttcp')
     scenario.add_argument('ip_dst', 'The destination IP for the clients')
     scenario.add_argument('port', 'The port of the server')

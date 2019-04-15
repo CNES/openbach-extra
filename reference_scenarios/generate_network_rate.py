@@ -3,7 +3,7 @@ from scenario_builder.scenarios import network_rate
 
 """This scenario launches the *network_rate* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """                                         
 
-def main(scenario_name='Rate Metrology and Postprocessing'):
+def main(scenario_name='generate_network_rate'):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--client', '--client-entity', default='Client',
@@ -14,9 +14,9 @@ def main(scenario_name='Rate Metrology and Postprocessing'):
     observer.add_scenario_argument(
             '--ip_dst', help='The server IP address')
     observer.add_scenario_argument(
-            '--port', help='The server IP port')
+            '--port', default = 7000,  help='The iperf3/nuttcp server IP port for data')
     observer.add_scenario_argument(
-            '--command_port', help='The port of nuttcp server for signalling')
+            '--command_port', default = 8000, help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
             '--entity_pp', help='The entity nama where the post-processing will be performed')
      
