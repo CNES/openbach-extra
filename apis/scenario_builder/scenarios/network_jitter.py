@@ -18,9 +18,8 @@ SCENARIO_DESCRIPTION="""This scenario allows to :
 def extract_jobs_to_postprocess(scenario):
     for function_id, function in enumerate(scenario.openbach_functions):
         if isinstance(function, StartJobInstance):
-            if function.job_name == 'owamp_server':
-                if 'client' in function.start_job_instance['nuttcp']:
-                    yield function_id
+            if function.job_name == 'owamp-client':
+                yield function_id
             elif function.job_name == 'iperf3':
                 if 'server' in function.start_job_instance['iperf3']:
                     yield function_id
