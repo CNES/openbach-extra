@@ -150,7 +150,7 @@ def client(destination_address, count, interval):
             time_tab.append(timestamp(sent_timestamp))
 
             if n % granularity == 0:
-                statistics = {'inter-packet delay variation sent (ms)': np.mean(ipdv_tab)}
+                statistics = {'ipdv_sent': np.mean(ipdv_tab)}
                 collect_agent.send_stat(timestamp(sent_timestamp), **statistics)
 
                 # clear ipdv_tab and time_tab
@@ -159,7 +159,7 @@ def client(destination_address, count, interval):
 
                 # compute packet delay variation (95th percentile - 50th percentile)
                 pdv = np.percentile(delay_tab, 95) - np.percentile(delay_tab, 50)
-                statistics = {'packet delay variation P95-P50 sent (ms)': pdv}
+                statistics = {'pdv_sent': pdv}
                 collect_agent.send_stat(timestamp(sent_timestamp), **statistics)
 
                 # clear delay_tab
@@ -221,7 +221,7 @@ def client(destination_address, count, interval):
             time_tab.append(timestamp(received_timestamp))
 
             if m % granularity == 0:
-                statistics = {'inter-packet delay variation received (ms)': np.mean(ipdv_tab)}
+                statistics = {'ipdv_received': np.mean(ipdv_tab)}
                 collect_agent.send_stat(timestamp(received_timestamp), **statistics)
 
                 # clear ipdv_tab and time_tab
@@ -230,7 +230,7 @@ def client(destination_address, count, interval):
 
                 # compute packet delay variation (95th percentile - 50th percentile)
                 pdv = np.percentile(delay_tab, 95) - np.percentile(delay_tab, 50)
-                statistics = {'packet delay variation P95-P50 received (ms)': pdv}
+                statistics = {'pdv_received': pdv}
                 collect_agent.send_stat(timestamp(received_timestamp), **statistics)
 
                 # clear delay_tab
