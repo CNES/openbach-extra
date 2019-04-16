@@ -69,7 +69,7 @@ class ScenarioObserver(FrontendBase):
                 '-n', '--name', '--scenario-name',
                 help='name of the scenario to launch')
         self.add_scenario_argument(
-                '-p', '--project', '--project-name', metavar='NAME',
+                '-p', '--project', '--project-name', metavar='NAME', required=True,
                 help='name of the project the scenario is associated with')
 
         self.parser.set_defaults(_action=self._launch_and_wait)
