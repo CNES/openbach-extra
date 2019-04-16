@@ -1,6 +1,6 @@
 from scenario_builder import Scenario
 from scenario_builder.helpers.transport.iperf3 import iperf3_rate_tcp
-from scenario_builder.helpers.transport.nuttcp import nuttcp_rate_tcp
+from scenario_builder.helpers.transport.nuttcp import nuttcp_rate_tcp, nuttcp_rate_udp
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
@@ -36,14 +36,15 @@ def rate_tcp(server, client, scenario_name='network_rate'):
     scenario.add_argument('num_flows', 'The number of parallel flows to launch')
     scenario.add_argument('tos', 'The type of service used')
     scenario.add_argument('mtu', 'The MTU sizes to test')
+    scenario.add_argument('rate', 'The rate for the UDP test')
     
 
     wait = iperf3_rate_tcp(scenario, server, client, '$ip_dst', '$port', '$duration', '$num_flows', '$tos', '$mtu')
-    nuttcp_rate_tcp(scenario, server, client, '$ip_dst', '$port', '$command_port', '$duration', '$num_flows', '$tos', '$mtu', wait)
-    
+    wait = nuttcp_rate_tcp(scenario, server, client, '$ip_dst', '$port', '$command_port', '$duration', '$num_flows', '$tos', '$mtu', wait, None, 5)
+    nuttcp_rate_udp(scenario, server, client, '$ip_dst', '$port', '$command_port', '$duration', '$rate', wait, None, 5) 
     return scenario
 
-def build(client, server, ip_dst, port, command_port, post_processing_entity, duration, num_flows, tos, mtu, scenario_name):
+def build(client, server, ip_dst, port, command_port, rate, post_processing_entity, duration, num_flows, tos, mtu, scenario_name):
     
     rate_metrology = rate_tcp (server, client)
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
@@ -55,7 +56,9 @@ def build(client, server, ip_dst, port, command_port, post_processing_entity, du
             ip_dst=ip_dst, port=port,
             command_port=command_port,
             duration=duration, num_flows=num_flows,
-            tos=tos, mtu=mtu)
+            tos=tos, mtu=mtu,
+            rate=rate)
+
     post_processed = [
             [start_rate_metrology, function_id]
             for function_id in extract_jobs_to_postprocess(rate_metrology)

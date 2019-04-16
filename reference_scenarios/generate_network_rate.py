@@ -16,6 +16,8 @@ def main(scenario_name='generate_network_rate'):
     observer.add_scenario_argument(
             '--port', default = 7000,  help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
+            '--rate', help='Set a higher rate (in kb/s) than what you estimate between server and client for the UDP test (add m/g to set M/G b/s)', required=True)
+    observer.add_scenario_argument(
             '--command_port', default = 8000, help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
             '--entity_pp', help='The entity nama where the post-processing will be performed')
@@ -27,6 +29,7 @@ def main(scenario_name='generate_network_rate'):
             args.ip_dst, 
             args.port, 
             args.command_port, 
+            args.rate,
             args.entity_pp, 
             30, #duration of iperf/nuttcp tests
             1, #number of parallel flows

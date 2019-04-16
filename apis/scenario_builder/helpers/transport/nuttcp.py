@@ -1,6 +1,6 @@
 def nuttcp_rate_udp(
-        scenario, server_entity, client_entity, command_port,
-        server_ip, port, receiver, duration, rate_limit,
+        scenario, server_entity, client_entity,
+        server_ip, port, command_port, duration, rate_limit,
         wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
             'start_job_instance',
@@ -21,7 +21,6 @@ def nuttcp_rate_udp(
             client={
                 'server_ip': server_ip,
                 'port': port,
-                'receiver': receiver,
                 'duration': duration,
                 'rate_limit': rate_limit,
                 'udp': {},
