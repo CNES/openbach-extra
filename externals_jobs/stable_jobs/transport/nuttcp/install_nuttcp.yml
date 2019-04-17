@@ -32,8 +32,27 @@
 
 ---
 
+
+- name: Download perfSONAR release repository
+  get_url:
+    url: http://downloads.perfsonar.net/debian/perfsonar-jessie-release.list
+    dest: /etc/apt/sources.list.d/perfsonar-jessie-release.list
+    mode: 0440
+  become: yes
+
+- name: Download and add apt repository key
+  apt_key:
+    url: http://downloads.perfsonar.net/debian/perfsonar-debian-official.gpg.key
+    state: present
+  become: yes
+
+- name: Update apt packages
+  apt:
+    update_cache: yes
+  become: yes
+
 - name: Install package nuttcp
-  apt: name="nuttcp=6.1.2-4+b1" state=present force=yes allow_unauthenticated=yes
+  apt: name="nuttcp=8.1.3-2" state=present force=yes allow_unauthenticated=yes
   become: yes
 
 - name: Create the nuttcp Job Repository
