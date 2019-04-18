@@ -18,11 +18,12 @@ def main(scenario_name='generate_network_jitter'):
             '--bandwidth', default = '1M', 
             help='the bandwidth (bits/s) of iperf3 test')
     observer.add_scenario_argument(
-            '--ip_dst', help='server ip address and target of the pings')
+            '--ip_dst', required=True, help='server ip address and target of the pings')
     observer.add_scenario_argument(
             '--port', default = 7000, help='the iperf3 server port for data')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity nama where the post-processing will be performed')
+            '--entity_pp', default='Client', help='The entity where the post-processing will '
+            'be performed (histogtram/time-series jobs must be installed)')
 
     args = observer.parse(default_scenario_name=scenario_name)
 

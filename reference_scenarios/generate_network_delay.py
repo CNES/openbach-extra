@@ -15,11 +15,12 @@ def main(scenario_name='generate_network_delay'):
             '--sequential', action='store_true',
             help='whether or not the test should run one after the other')
     observer.add_scenario_argument(
-            '--ip_dst', help='server ip address and target of the pings')
+            '--ip_dst', required=True, help='server ip address and target of the pings')
     observer.add_scenario_argument(
-            '--duration', help='duration of delay scenario (s)')
+            '--duration', default=10, help='duration of delay scenario (s)')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity nama where the post-processing will be performed')
+            '--entity_pp', default='Client', help='The entity where the post-processing will '
+            'be performed (histogtram/time-series jobs must be installed)')
        
     args = observer.parse(default_scenario_name=scenario_name)
     
