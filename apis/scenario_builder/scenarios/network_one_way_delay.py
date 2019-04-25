@@ -23,7 +23,7 @@ def one_way_delay(client, server, scenario_name='network_one_way_delay'):
     scenario = Scenario(scenario_name, 'OpenBACH Network One Way Delay Measurement')
     scenario.add_argument('ip_dst', 'Target of the pings and server IP adress')
 
-    owamp_measure_owd(scenario, server, client, '$ip_dst')
+    owamp_measure_owd(scenario, client, server, '$ip_dst')
 
     return scenario
 
@@ -38,14 +38,14 @@ def build(client, server, ip_dst, post_processing_entity, scenario_name):
                                                                                                    
     start_one_way_delay_metrology.configure(                                                               
             one_way_delay_metrology,                                                                       
-            ip_dst=ip_dst)                                                                         
-                                                                                                   
-    post_processed = [                                                                             
+            ip_dst=ip_dst)                                                                        
+
+    if post_processing_entity is not None:                                                                                               
+        post_processed = [                                                                             
             [start_one_way_delay_metrology, function_id]                                                   
             for function_id in extract_jobs_to_postprocess(one_way_delay_metrology)                        
-    ]                                                                                              
-    
-    time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['owd_sent','owd_received']], [['One Way Delay (ms)']], [['One Way delays in both directions']], [start_one_way_delay_metrology], None, 2)
-    cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['owd_sent', 'owd_received']], [['One Way Delay (ms)']], [['CDF of One Way delay in both directions']], [start_one_way_delay_metrology], None, 2)
+        ]                                                                                              
+        time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['owd_sent','owd_received']], [['One Way Delay (ms)']], [['One Way delays in both directions']], [start_one_way_delay_metrology], None, 2)
+        cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['owd_sent', 'owd_received']], [['One Way Delay (ms)']], [['CDF of One Way delay in both directions']], [start_one_way_delay_metrology], None, 2)
 
     return scenario                                   

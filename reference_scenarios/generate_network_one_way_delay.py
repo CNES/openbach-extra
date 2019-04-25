@@ -6,15 +6,15 @@ from scenario_builder.scenarios import network_one_way_delay
 def main(scenario_name='generate_network_one_way_delay'):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--client', '--client-entity', default='Client',
+            '--client', '--client-entity', required=True,
             help='name of the entity for the client of the RTT tests')
     observer.add_scenario_argument(
-            '--server', '--server-entity', default='Server',
+            '--server', '--server-entity', required=True,
             help='name of the entity for the server of the owamp RTT test')
     observer.add_scenario_argument(
-            '--ip_dst', help='server ip address and target of the pings')
+            '--ip_dst', required=True, help='server ip address and target of owamp test')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity nama where the post-processing will be performed')
+            '--entity_pp', help='The entity nama where the post-processing will be performed if defined')
        
     args = observer.parse(default_scenario_name=scenario_name)
     

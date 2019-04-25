@@ -36,7 +36,7 @@ def network_jitter(server, client, scenario_name='network_jitter'):
     scenario.add_argument('bandwidth','the bandwidth of the measurement')
 
     wait = iperf3_rate_udp(scenario, server, client, '$ip_dst', '$port', '$num_flows', '$duration', '$tos', '$bandwidth')
-    wait = owamp_measure_owd(scenario, server, client, '$ip_dst', wait) 
+    wait = owamp_measure_owd(scenario, client, server, '$ip_dst', wait) 
     
     return scenario
 

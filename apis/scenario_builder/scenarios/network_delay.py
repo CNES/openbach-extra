@@ -23,7 +23,7 @@ def extract_jobs_to_postprocess(scenario):
                 yield function_id
 
 
-def delay_simultaneous(client, server, scenario_name='network_delay_simultaneous'):
+def delay_simultaneous(client, scenario_name='network_delay_simultaneous'):
     scenario = Scenario(scenario_name, 'OpenBACH Network Delay Measurement: Comparison of two RTT measurements simultaneously')
     scenario.add_argument('ip_dst', 'Target of the pings and server IP adress')
     scenario.add_argument('duration', 'The duration of fping/hping tests')
@@ -34,7 +34,7 @@ def delay_simultaneous(client, server, scenario_name='network_delay_simultaneous
     return scenario
 
 
-def delay_sequential(client, server, scenario_name='network_delay_sequential'):
+def delay_sequential(client, scenario_name='network_delay_sequential'):
     scenario = Scenario(scenario_name, 'OpenBACH Network Delay Measurement: Comparison of two RTT measurements one after the other')
     scenario.add_argument('ip_dst', 'Target of the pings and server IP adress')
     scenario.add_argument('duration', 'The duration of each fping/hping tests')
@@ -45,12 +45,12 @@ def delay_sequential(client, server, scenario_name='network_delay_sequential'):
     return scenario
 
 
-def build(client, server, sequential, ip_dst, duration, post_processing_entity, scenario_name):              
+def build(client, ip_dst, duration, simultaneous, post_processing_entity, scenario_name):              
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)                                                                  
-    if sequential:                                                                                 
-       delay_metrology = delay_sequential(client, server)                                          
+    if simultaneous:                                                                                 
+       delay_metrology = delay_simultaneous(client)                                        
     else:                                                                                          
-       delay_metrology = delay_simultaneous(client, server)                                        
+       delay_metrology = delay_sequential(client)                                          
                                                                                                    
     start_delay_metrology = scenario.add_function(                                                 
             'start_scenario_instance')                                                             
@@ -59,13 +59,12 @@ def build(client, server, sequential, ip_dst, duration, post_processing_entity, 
             delay_metrology,                                                                       
             ip_dst=ip_dst,
             duration=duration)                                                                         
-                                                                                                   
-    post_processed = [                                                                             
+    if post_processing_entity is not None:
+       post_processed = [                                                                             
             [start_delay_metrology, function_id]                                                   
             for function_id in extract_jobs_to_postprocess(delay_metrology)                        
-    ]                                                                                              
-    
-    time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rtt']], [['RTT delay (ms)']], [['Comparison of measured RTTs']], [start_delay_metrology], None, 2)
-    cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rtt']], [['RTT delay (ms)']], [['CDF of RTT delay measurements']], [start_delay_metrology], None, 2)
+       ]                                                                                              
+       time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rtt']], [['RTT delay (ms)']], [['Comparison of measured RTTs']], [start_delay_metrology], None, 2)
+       cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rtt']], [['RTT delay (ms)']], [['CDF of RTT delay measurements']], [start_delay_metrology], None, 2)
 
     return scenario                                   

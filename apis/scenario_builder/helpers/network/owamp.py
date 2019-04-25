@@ -1,5 +1,5 @@
 def owamp_measure_owd(
-        scenario, server_entity, client_entity, server_address,
+        scenario, client_entity, server_entity, server_address,
         wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
             'start_job_instance',
