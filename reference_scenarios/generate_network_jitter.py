@@ -32,7 +32,7 @@ from scenario_builder.scenarios import network_jitter
 
 """This script launches the *network_jitter* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
-def main(scenario_name='generate_network_jitter'):
+def main():
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--client', '--client-entity', required=True,
@@ -60,7 +60,7 @@ def main(scenario_name='generate_network_jitter'):
             '--entity_pp', help='The entity where the post-processing will '
             'be performed (histogtram/time-series jobs must be installed) if defined')
 
-    args = observer.parse(default_scenario_name=scenario_name)
+    args = observer.parse()
 
     scenario = network_jitter.build(
                       args.client,
@@ -71,8 +71,7 @@ def main(scenario_name='generate_network_jitter'):
                       args.num_flows,
                       args.tos,
                       args.bandwidth,
-                      args.entity_pp,
-                      args.name)
+                      args.entity_pp)
     observer.launch_and_wait(scenario)
 
 

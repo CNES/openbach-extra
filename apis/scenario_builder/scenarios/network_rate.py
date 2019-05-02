@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+#
 #   OpenBACH is a generic testbed able to control/configure multiple
 #   network/physical entities (under test) and collect data from them. It is
 #   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
@@ -35,13 +35,14 @@ from scenario_builder.openbach_functions import StartJobInstance, StartScenarioI
 
 
 
-SCENARIO_DESCRIPTION="""This scenario allows to :
-     - Launch the subscenario rate_tcp_udp
+SCENARIO_DESCRIPTION="""This network_rate scenario allows to :
+     - Launch the subscenario network_rate_core
        (allowing to compare the TCP rate measurement of iperf3
        and nuttcp jobs and the UDP rate of nuttcp).
      - Perform two postprocessing tasks to compare the
        time-series and the CDF of the rate measurements.
 """
+SCENARIO_NAME="""network_rate"""
 
 def extract_jobs_to_postprocess(scenario):
     for function_id, function in enumerate(scenario.openbach_functions):
@@ -53,7 +54,7 @@ def extract_jobs_to_postprocess(scenario):
                 if 'server' in function.start_job_instance['iperf3']:
                     yield function_id
 
-def rate_tcp_udp(client, server, scenario_name='network_rate'):
+def network_rate_core(client, server, scenario_name='network_rate_core'):
     scenario = Scenario(scenario_name, 'Comparison of rate measurements with TCP and UDP flows, by means of iperf3/nuttcp')
     scenario.add_argument('ip_dst', 'The destination IP for the clients')
     scenario.add_argument('port', 'The port of the server')
@@ -67,32 +68,31 @@ def rate_tcp_udp(client, server, scenario_name='network_rate'):
     wait = iperf3_rate_tcp(scenario, client, server, '$ip_dst', '$port', '$duration', '$num_flows', '$tos', '$mtu')
     wait = nuttcp_rate_tcp(scenario, client, server, '$ip_dst', '$port', '$command_port', '$duration', '$num_flows', '$tos', '$mtu', wait, None, 5)
     nuttcp_rate_udp(scenario, client, server, '$ip_dst', '$port', '$command_port', '$duration', '$rate', wait, None, 5)
+
     return scenario
 
-def build(client, server, ip_dst, port, duration, command_port, rate, num_flows, tos, mtu, post_processing_entity, scenario_name):
 
+def build(client, server, ip_dst, port, command_port, duration, rate, num_flows, tos, mtu, post_processing_entity, scenario_name=SCENARIO_NAME):
+    # Create scenario and subscenario core
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-
-    rate_metrology = rate_tcp_udp(client, server)
-
-    start_rate_metrology = scenario.add_function(
+    start_scenario_core = scenario.add_function(
             'start_scenario_instance')
-
-    start_rate_metrology.configure(
-            rate_metrology,
+    scenario_core = network_rate_core(client, server)
+    start_scenario_core.configure(
+            scenario_core,
             ip_dst=ip_dst, port=port,
             command_port=command_port,
             duration=duration, num_flows=num_flows,
             tos=tos, mtu=mtu,
             rate=rate)
+
+    #Post processing part
     if post_processing_entity is not None:
-
         post_processed = [
-                [start_rate_metrology, function_id]
-                for function_id in extract_jobs_to_postprocess(rate_metrology)
-                ]
-
-        time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rate', 'throughput']], [['Rate (b/s)']], [['Comparison of Rate measurements']], [start_rate_metrology], None, 2)
-        cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rate', 'throughput']], [['Rate (b/s)']], [['CDF of Rate measurements']], [start_rate_metrology], None, 2)
+                [start_scenario_core, function_id]
+                for function_id in extract_jobs_to_postprocess(scenario_core)
+        ]
+        time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rate', 'throughput']], [['Rate (b/s)']], [['Rate time series']], [start_scenario_core], None, 2)
+        cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rate', 'throughput']], [['Rate (b/s)']], [['Rate CDF']], [start_scenario_core], None, 2)
 
     return scenario

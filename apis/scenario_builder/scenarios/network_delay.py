@@ -34,13 +34,14 @@ from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph,
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 
-SCENARIO_DESCRIPTION="""This scenario allows to :
+SCENARIO_DESCRIPTION="""This network_delay scenario allows to :
      - Launch the subscenarios delay_simultaneous or delay_sequential
        (allowing to compare the RTT measurement of fping (ICMP),
        hping (TCP SYN ACK) ).
      - Perform two postprocessing tasks to compare the
        time-series and the CDF of the delay measurements.
 """
+SCENARIO_NAME="""network_delay"""
 
 def extract_jobs_to_postprocess(scenario):
     for function_id, function in enumerate(scenario.openbach_functions):
@@ -51,7 +52,7 @@ def extract_jobs_to_postprocess(scenario):
                 yield function_id
 
 
-def delay_simultaneous(client, scenario_name='network_delay_simultaneous'):
+def network_delay_simultaneous_core(client, scenario_name='network_delay_simultaneous_core'):
     scenario = Scenario(scenario_name, 'OpenBACH Network Delay Measurement: Comparison of two RTT measurements simultaneously')
     scenario.add_argument('ip_dst', 'Target of the pings and server IP adress')
     scenario.add_argument('duration', 'The duration of fping/hping tests')
@@ -62,7 +63,7 @@ def delay_simultaneous(client, scenario_name='network_delay_simultaneous'):
     return scenario
 
 
-def delay_sequential(client, scenario_name='network_delay_sequential'):
+def network_delay_sequential_core(client, scenario_name='network_delay_sequential_core'):
     scenario = Scenario(scenario_name, 'OpenBACH Network Delay Measurement: Comparison of two RTT measurements one after the other')
     scenario.add_argument('ip_dst', 'Target of the pings and server IP adress')
     scenario.add_argument('duration', 'The duration of each fping/hping tests')
@@ -73,26 +74,27 @@ def delay_sequential(client, scenario_name='network_delay_sequential'):
     return scenario
 
 
-def build(client, ip_dst, duration, simultaneous, post_processing_entity, scenario_name):
+def build(client, ip_dst, duration, simultaneous, post_processing_entity, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     if simultaneous:
-       delay_metrology = delay_simultaneous(client)
+       scenario_core = network_delay_simultaneous_core(client)
     else:
-       delay_metrology = delay_sequential(client)
+       scenario_core = network_delay_sequential_core(client)
 
-    start_delay_metrology = scenario.add_function(
+    start_scenario_core = scenario.add_function(
             'start_scenario_instance')
 
-    start_delay_metrology.configure(
-            delay_metrology,
+    start_scenario_core.configure(
+            scenario_core,
             ip_dst=ip_dst,
             duration=duration)
+
     if post_processing_entity is not None:
        post_processed = [
-            [start_delay_metrology, function_id]
-            for function_id in extract_jobs_to_postprocess(delay_metrology)
+            [start_scenario_core, function_id]
+            for function_id in extract_jobs_to_postprocess(scenario_core)
        ]
-       time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rtt']], [['RTT delay (ms)']], [['Comparison of measured RTTs']], [start_delay_metrology], None, 2)
-       cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rtt']], [['RTT delay (ms)']], [['CDF of RTT delay measurements']], [start_delay_metrology], None, 2)
+       time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rtt']], [['RTT delay (ms)']], [['RTTs time series']], [start_scenario_core], None, 2)
+       cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rtt']], [['RTT delay (ms)']], [['RTT CDFs']], [start_scenario_core], None, 2)
 
     return scenario

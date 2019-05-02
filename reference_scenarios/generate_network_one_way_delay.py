@@ -30,9 +30,9 @@
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_one_way_delay
 
-"""This script launches the *one_way_network_delay* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
+"""This script launches the *network_one_way_delay* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
-def main(scenario_name='generate_network_one_way_delay'):
+def main():
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--client', '--client-entity', required=True,
@@ -45,14 +45,13 @@ def main(scenario_name='generate_network_one_way_delay'):
     observer.add_scenario_argument(
             '--entity_pp', help='The entity name where the post-processing will be performed if defined')
 
-    args = observer.parse(default_scenario_name=scenario_name)
+    args = observer.parse()
 
     scenario = network_one_way_delay.build(
                       args.client,
                       args.server,
                       args.ip_dst,
-                      args.entity_pp,
-                      scenario_name)
+                      args.entity_pp)
 
     observer.launch_and_wait(scenario)
 

@@ -41,6 +41,7 @@ SCENARIO_DESCRIPTION="""This scenario allows to :
      - Perform two postprocessing tasks to compare the
        time-series and the CDF of the jitter measurements.
 """
+SCENARIO_NAME="""network_jitter"""
 
 def extract_jobs_to_postprocess(scenario):
     for function_id, function in enumerate(scenario.openbach_functions):
@@ -53,8 +54,8 @@ def extract_jobs_to_postprocess(scenario):
 
 
 
-def network_jitter(server, client, scenario_name='network_jitter'):
-    scenario = Scenario(scenario_name, 'Comparison of jitter measurements with iperf3, owamp and D-ITG')
+def network_jitter_core(server, client, scenario_name='network_jitter_core'):
+    scenario = Scenario(scenario_name, 'Comparison of jitter measurements with iperf3, owamp')
     scenario.add_argument('ip_dst', 'The destination IP for the clients')
     scenario.add_argument('port', 'The port of the server')
     scenario.add_argument('num_flows', 'The number of parallel flows to launch')
@@ -67,15 +68,15 @@ def network_jitter(server, client, scenario_name='network_jitter'):
 
     return scenario
 
-def build(client, server, ip_dst, port, duration, num_flows, tos, bandwidth, post_processing_entity, scenario_name):
+def build(client, server, ip_dst, port, duration, num_flows, tos, bandwidth, post_processing_entity, scenario_name=SCENARIO_NAME):
 
-    jitter_metrology = network_jitter(server, client)
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    scenario_core = network_jitter_core(server, client)
 
-    start_jitter_metrology = scenario.add_function(
+    start_scenario_core = scenario.add_function(
             'start_scenario_instance')
-    start_jitter_metrology.configure(
-            jitter_metrology,
+    start_scenario_core.configure(
+            scenario_core,
             ip_dst=ip_dst,
             port=port,
             num_flows=num_flows,
@@ -83,11 +84,11 @@ def build(client, server, ip_dst, port, duration, num_flows, tos, bandwidth, pos
             tos=tos,
             bandwidth=bandwidth)
     post_processed = [
-            [start_jitter_metrology, function_id]
-            for function_id in extract_jobs_to_postprocess(jitter_metrology)
+            [start_scenario_core, function_id]
+            for function_id in extract_jobs_to_postprocess(scenario_core)
     ]
 
-    time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['jitter', 'ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']], [['Jitter (ms)']], [['Comparison of Jitter measurements']], [start_jitter_metrology], None, 2)
-    cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['jitter', 'ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']], [['Jitter (ms)']], [['CDF of Jitter measurements']], [start_jitter_metrology], None, 2)
+    time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['jitter', 'ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']], [['Jitter (ms)']], [['Jitters time series']], [start_scenario_core], None, 2)
+    cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['jitter', 'ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']], [['Jitter (ms)']], [['Jitter CDF']], [start_scenario_core], None, 2)
 
     return scenario

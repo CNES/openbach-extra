@@ -49,15 +49,14 @@ def main(scenario_name='generate_network_delay'):
             '--entity_pp',  help='The entity where the post-processing will '
             'be performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse(default_scenario_name=scenario_name)
+    args = observer.parse()
 
     scenario = network_delay.build(
                       args.client,
                       args.ip_dst,
                       args.duration,
                       args.simultaneous,
-                      args.entity_pp,
-                      scenario_name)
+                      args.entity_pp)
     observer.launch_and_wait(scenario)
 
 

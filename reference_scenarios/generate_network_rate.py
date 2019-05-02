@@ -32,7 +32,7 @@ from scenario_builder.scenarios import network_rate
 
 """This scenario launches the *network_rate* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
-def main(scenario_name='generate_network_rate'):
+def main():
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--client', '--client-entity', required=True,
@@ -59,22 +59,21 @@ def main(scenario_name='generate_network_rate'):
             '--mtu', default=1000-40, help='MTU size (default : 1000-40)')
     observer.add_scenario_argument(
             '--entity_pp', help='The entity where the post-processing will be performed '
-            '(histogtram/time-series jobs must be installed)')
+            '(histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse(default_scenario_name=scenario_name)
+    args = observer.parse()
     scenario = network_rate.build(
             args.client,
             args.server,
             args.ip_dst,
             args.port,
-            args.duration,
             args.command_port,
+            args.duration,
             args.rate,
             args.num_flows,
             args.tos,
             args.mtu,
-            args.entity_pp,
-            args.name)
+            args.entity_pp)
     observer.launch_and_wait(scenario)
 
 if __name__ == '__main__':
