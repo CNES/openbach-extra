@@ -29,7 +29,7 @@
 
 """ Helpers of sysctl job """
 
-def _sysctl_configure_tcp_congestion_control(
+def sysctl_configure_tcp_congestion_control(
         scenario, entity, congestion_control,
         wait_finished=None, wait_launched=None, wait_delay=0):
     function = scenario.add_function(
