@@ -16,6 +16,7 @@ Two complementary OpenBACH jobs have been developed in the context of this R&T:
 - OpenBACH software (see [official website](http://www.openbach.org))
 - 2 OpenBACH agents installed on two different hosts
 - A password-less connection between the two hosts (see the "Installation instructions" for more details)
+- Both hosts must have a common ntp time synchronisation
 
 Both jobs have been extensively tested on Ubuntu 16.04 virtual machines with success. They may also work on other Ubuntu versions.
 
