@@ -91,12 +91,7 @@ def read_controller_configuration(filename='controller'):
     try:
         stream = open(filename)
     except OSError:
-        message = (
-                'File not found: \'{}\'. Using one of your '
-                'IP address instead as the default: \'{}\'.'
-                .format(filename, default_ip))
-        warnings.warn(message, RuntimeWarning)
-        return default_ip, None, None
+        return default_ip, None, None, True
 
     with stream:
         try:
@@ -112,23 +107,21 @@ def read_controller_configuration(filename='controller'):
             if not isinstance(content, dict):
                 message = (
                         'Content of the \'controller\' file '
-                        'is not a JSON string or dictionnary: '
-                        'will consider it as an empty file.')
+                        'is valid JSON but neither a string '
+                        'nor a dictionnary: will consider it '
+                        'as an empty file.')
                 warnings.warn(message, RuntimeWarning)
                 content = {}
             controller = content.get('controller')
             password = content.get('password')
             login = content.get('login')
 
+    should_warn = False
     if not controller:
-        message = (
-                'Empty file: \'{}\'. Using one of your '
-                'IP address instead as the default: \'{}\'.'
-                .format(filename, default_ip))
-        warnings.warn(message, RuntimeWarning)
         controller = default_ip
+        should_warn = True
 
-    return controller, login, password
+    return controller, login, password, should_warn
 
 
 def pretty_print(response):
@@ -161,7 +154,8 @@ class FrontendBase:
             self.parser.error(error.message)
 
     def __init__(self, description):
-        controller, login, password = read_controller_configuration()
+        self.__filename = 'controller'
+        controller, login, password, unspecified = read_controller_configuration(self.__filename)
         self.parser = argparse.ArgumentParser(
                 description=description,
                 epilog='Backend-specific arguments can be specified by '
@@ -183,6 +177,7 @@ class FrontendBase:
         backend.add_argument(
                 '--password', help='password used to authenticate as')
         self._default_password = password
+        self._default_controller = controller if unspecified else None
 
         self.session = requests.Session()
 
@@ -192,6 +187,13 @@ class FrontendBase:
             self.parser.error(
                     'error: no controller was specified '
                     'and the default cannot be found')
+        if args.controller == self._default_controller:
+            message = (
+                    'File not found or empty: \'{}\'. Using one of your '
+                    'IP address instead as the default: \'{}\'.'
+                    .format(self.__filename, args.controller))
+            warnings.warn(message, RuntimeWarning)
+
         self.base_url = url = 'http://{}:8000/'.format(args.controller)
         login = args.login
         if login:
