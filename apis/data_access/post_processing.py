@@ -127,11 +127,12 @@ class Statistics(InfluxDBCommunicator):
 
     def _parse_dataframes(self, response, columns=None):
         if columns is None:
-            names = ['job', 'scenario', 'agent', 'suffix', 'statistic']
+            columns = iter([])
         else:
-            names = None
+            columns = iter(columns)
 
         offset = self.origin
+        names = ['job', 'scenario', 'agent', 'suffix', 'statistic']
         for df in influx_to_pandas(response):
             converters = dict.fromkeys(df.columns, partial(pd.to_numeric, errors='coerce'))
             converters.pop('@owner_scenario_instance_id')
@@ -151,8 +152,14 @@ class Statistics(InfluxDBCommunicator):
                 section['time'] -= section.time[0] if offset is None else offset
                 section.set_index('time', inplace=True)
                 section.index.name = 'Time (ms)'
-                renamed = [index + (name,) for name in section.columns] if columns is None else columns
-                section.columns = pd.MultiIndex.from_tuples(renamed, names=names)
+                section.reindex(columns=section.columns.sort_values())
+
+                column_names = [next(columns, None) for _ in range(len(section.columns))]
+                if all(name is None for name in column_names):
+                    renamed = [index + (name,) for name in section.columns]
+                    section.columns = pd.MultiIndex.from_tuples(renamed, names=names)
+                else:
+                    section.columns = column_names
                 yield section
 
     def fetch(
