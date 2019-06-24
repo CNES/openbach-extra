@@ -94,6 +94,7 @@ class Statistics(InfluxDBCommunicator):
                 influx.get('database', 'openbach'),
                 influx.get('precision', 'ms'))
 
+
     @property
     def origin(self):
         with suppress(AttributeError):
@@ -124,7 +125,12 @@ class Statistics(InfluxDBCommunicator):
             _condition = ConditionAnd(conditions, ConditionOr(*instances))
         return self.sql_query(select_query(job, fields, _condition))
 
-    def _parse_dataframes(self, response):
+    def _parse_dataframes(self, response, columns=None):
+        if columns is None:
+            names = ['job', 'scenario', 'agent', 'suffix', 'statistic']
+        else:
+            names = None
+
         offset = self.origin
         for df in influx_to_pandas(response):
             converters = dict.fromkeys(df.columns, partial(pd.to_numeric, errors='coerce'))
@@ -140,27 +146,26 @@ class Statistics(InfluxDBCommunicator):
             df = pd.concat(converted, axis=1)
 
             df.set_index(['@job_instance_id', '@scenario_instance_id', '@agent_name', '@suffix'], inplace=True)
-            names = ['job', 'scenario', 'agent', 'suffix', 'statistic']
             for index in df.index.unique():
                 section = df.xs(index).reset_index(drop=True).dropna(axis=1, how='all')
                 section['time'] -= section.time[0] if offset is None else offset
                 section.set_index('time', inplace=True)
                 section.index.name = 'Time (ms)'
-                columns = [index + (name,) for name in section.columns]
-                section.columns = pd.MultiIndex.from_tuples(columns, names=names)
+                renamed = [index + (name,) for name in section.columns] if columns is None else columns
+                section.columns = pd.MultiIndex.from_tuples(renamed, names=names)
                 yield section
 
     def fetch(
             self, job=None, scenario=None, agent=None, job_instances=(),
-            suffix=None, fields=None, condition=None):
+            suffix=None, fields=None, condition=None, columns=None):
         data = self._raw_influx_data(job, scenario, agent, job_instances, suffix, fields, condition)
-        yield from (_Plot(df) for df in self._parse_dataframes(data))
+        yield from (_Plot(df) for df in self._parse_dataframes(data, columns))
 
     def fetch_all(
             self, job=None, scenario=None, agent=None, job_instances=(),
-            suffix=None, fields=None, condition=None):
+            suffix=None, fields=None, condition=None, columns=None):
         data = self._raw_influx_data(job, scenario, agent, job_instances, suffix, fields, condition)
-        df = pd.concat(self._parse_dataframes(data), axis=1)
+        df = pd.concat(self._parse_dataframes(data, columns), axis=1)
         return _Plot(df)
 
 
@@ -193,34 +198,33 @@ class _Plot:
         df.columns = ['Ε', 'δ']
         return df
 
-    def plot_time_series(self, axis=None, secondary_title=None):
-        axis = self.time_series().plot(ax=axis)
+    def plot_time_series(self, axis=None, secondary_title=None, legend=True):
+        axis = self.time_series().plot(ax=axis, legend=legend)
         if secondary_title is not None:
             axis.set_ylabel(secondary_title)
         return axis
 
-    def plot_kde(self, axis=None, secondary_title=None):
-        axis = self.df.plot.kde(ax=axis)
+    def plot_kde(self, axis=None, secondary_title=None, legend=True):
+        axis = self.df.plot.kde(ax=axis, legend=legend)
         if secondary_title is not None:
             axis.set_xlabel(secondary_title)
         return axis
 
-    def plot_histogram(self, axis=None, secondary_title=None, bins=100):
-        # axis = self.histogram(bins).plot.bar(ax=axis, ylim=[0.0, 1.0])
-        axis = self.histogram(bins).plot(ax=axis, ylim=[-0.01, 1.01])
+    def plot_histogram(self, axis=None, secondary_title=None, bins=100, legend=True):
+        axis = self.histogram(bins).plot(ax=axis, ylim=[-0.01, 1.01], legend=legend)
         if secondary_title is not None:
             axis.set_xlabel(secondary_title)
         return axis
 
-    def plot_cumulative_histogram(self, axis=None, secondary_title=None, bins=100):
-        axis = self.cumulative_histogram(bins).plot(ax=axis, ylim=[-0.01, 1.01])
+    def plot_cumulative_histogram(self, axis=None, secondary_title=None, bins=100, legend=True):
+        axis = self.cumulative_histogram(bins).plot(ax=axis, ylim=[-0.01, 1.01], legend=legend)
         if secondary_title is not None:
             axis.set_xlabel(secondary_title)
         return axis
 
-    def plot_comparison(self, axis=None, secondary_title=None):
+    def plot_comparison(self, axis=None, secondary_title=None, legend=True):
         df = self.comparison()
-        axis = df.Ε.plot.bar(ax=axis, yerr=df.δ, rot=30)
+        axis = df.Ε.plot.bar(ax=axis, yerr=df.δ, rot=30, legend=legend)
         if secondary_title is not None:
             axis.set_ylabel(secondary_title)
         return axis
