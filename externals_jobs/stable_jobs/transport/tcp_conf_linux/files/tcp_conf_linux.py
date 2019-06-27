@@ -51,8 +51,8 @@ def main(reset, tcp_congestion_control, tcp_slow_start_after_idle,
 
     if reset:
         print("reset")
-        for line in open("/opt/openbach/agent/jobs/tcp_conf_linux/60-openbach-tcp_conf_linux.conf","r"):
-            name,value = line.split(" = ")
+        for line in open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux.conf","r"):
+            name,value = line.split("=")
             value = value.rstrip()
             if " " in value or "\t" in value:
                 value = "\""+value+"\""
@@ -61,6 +61,13 @@ def main(reset, tcp_congestion_control, tcp_slow_start_after_idle,
             rc = subprocess.call(cmd, shell=True)
             if rc:
                 message = "WARNING \'{}\' exited with non-zero code".format(cmd)
+        for line in open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux_cubic.conf","r"):
+            name,value = line.split("=")
+            value = value.rstrip()
+            name = name.split('.')[-1]
+            dst = open("/sys/module/tcp_cubic/parameters/"+name,"w")
+            dst.write(value)
+            dst.close()
 
     changes = {}
     conf_file = open("/etc/sysctl.d/60-openbach-job.conf","w")
@@ -98,6 +105,7 @@ def main(reset, tcp_congestion_control, tcp_slow_start_after_idle,
     if tcp_low_latency:
         conf_file.write("net.ipv4.tcp_low_latency="+str(tcp_low_latency)+"\n")
         changes["net.ipv4.tcp_low_latency"] = tcp_low_latency
+    conf_file.close()
 
     print(reset, tcp_congestion_control, tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,

@@ -33,23 +33,10 @@
 
 ---
 
-- name: Reset configuration
-  copy:
-    src: /opt/openbach/agent/jobs/{{ job_name }}/60-openbach-tcp_conf_linux.conf
-    dest: /etc/sysctl.d/60-openbach-tcp_conf_linux.conf
-    mode: '0644'
-  become: yes
-
-- name: Load default configuration
-  command: systemctl restart procps
-  become: yes
-
-- name: Remove default in etc
-  file: path=/etc/sysctl.d/60-openbach-tcp_conf_linux.conf state=absent
-  become: yes
-
-- name: Remove default in etc
-  file: path=/etc/sysctl.d/60-openbach-job.conf state=absent
+- name: Restore default configuration
+  script: /opt/openbach/agent/jobs/{{ job_name }}/restore_config.py
+  args:
+    executable: python3
   become: yes
 
 - name: Remove the Tcp Conf Linux repository
