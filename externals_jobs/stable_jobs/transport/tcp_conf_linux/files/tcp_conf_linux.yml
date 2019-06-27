@@ -1,0 +1,106 @@
+---
+
+general:
+  name: tcp_conf_linux
+  description: This Job configures TCP options Ubuntu kernel
+  job_version: '1.0'
+  keywords: [tcp, conf, sysct]
+  persistent: False
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: 'python3 /opt/openbach/agent/jobs/tcp_conf_linux/tcp_conf_linux.py'
+    command_stop:
+
+arguments:
+  optional:
+    - name: reset
+      type: None
+      count: 0
+      flag: '--reset'
+      description: Resets the parameters to default configuration before applying changes
+    - name: tcp_congestion_control
+      type: 'str'
+      count: 1
+      flag: '--tcp_congestion_control'
+      description: The tcp_congestion_control field
+    - name: tcp_slow_start_after_idle
+      type: 'int'
+      count: 1
+      flag: '--tcp_slow_start_after_idle'
+      description: The tcp_slow_start_after_idle field
+    - name: tcp_no_metrics_save
+      type: 'int'
+      count: 1
+      flag: '--tcp_no_metrics_save'
+      description: The tcp_no_metrics_save field
+    - name: tcp_sack
+      type: 'int'
+      count: 1
+      flag: '--tcp_sack'
+      description: The tcp_sack field
+    - name: tcp_recovery
+      type: 'int'
+      count: 1
+      flag: '--tcp_recovery'
+      description: The tcp_recovery field
+    - name: tcp_wmem_min
+      type: 'int'
+      count: 1
+      flag: '--tcp_wmem_min'
+      description: The tcp_wmem_min field
+    - name: tcp_wmem_default
+      type: 'int'
+      count: 1
+      flag: '--tcp_wmem_default'
+      description: The tcp_wmem_default field
+    - name: tcp_wmem_max
+      type: 'int'
+      count: 1
+      flag: '--tcp_wmem_max'
+      description: The tcp_wmem_max field
+    - name: tcp_fastopen
+      type: 'int'
+      count: 1
+      flag: '--tcp_fastopen'
+      description: The tcp_fastopen field
+    - name: tcp_low_latency
+      type: 'int'
+      count: 1
+      flag: '--tcp_low_latency'
+      description: The tcp_low_latency field
+
+
+statistics:
+  - name: "tcp_congestion_control_param"
+    description: The value of tcp_congestion_control after launching the job
+    frequency: 'once'
+  - name: "tcp_slow_start_after_idle_param"
+    description: The value of tcp_slow_start_after_idle after launching the job
+    frequency: 'once'
+  - name: "tcp_no_metrics_save_param"
+    description: The value of tcp_no_metrics_save after launching the job
+    frequency: 'once'
+  - name: "tcp_sack_param"
+    description: The value of tcp_sack after launching the job
+    frequency: 'once'
+  - name: "tcp_recovery_param"
+    description: The value of tcp_recovery after launching the job
+    frequency: 'once'
+  - name: "tcp_wmem_min_param"
+    description: The value of tcp_wmem_min after launching the job
+    frequency: 'once'
+  - name: "tcp_wmem_default_param"
+    description: The value of tcp_wmem_default after launching the job
+    frequency: 'once'
+  - name: "tcp_wmem_max_param"
+    description: The value of tcp_wmem_max after launching the job
+    frequency: 'once'
+  - name: "tcp_fastopen_param"
+    description: The value of tcp_fastopen after launching the job
+    frequency: 'once'
+  - name: "tcp_low_latency_param"
+    description: The value of tcp_low_latency after launching the job
+    frequency: 'once'
