@@ -133,14 +133,14 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
     for param in ["tcp_congestion_control", "tcp_slow_start_after_idle",
     "tcp_no_metrics_save", "tcp_sack", "tcp_recovery", "tcp_fastopen", "tcp_low_latency"]:
         file = open("/proc/sys/net/ipv4/"+param)
-        statistics[param+"_param"] = file.readline()
+        statistics[param] = file.readline()
         file.close()
 
     file = open("/proc/sys/net/ipv4/tcp_wmem")
     new_wmem = file.readline().split()
-    statistics["tcp_wmem_min_param"] = new_wmem[0]
-    statistics["tcp_wmem_default_param"] = new_wmem[1]
-    statistics["tcp_wmem_max_param"] = new_wmem[2]
+    statistics["tcp_wmem_min"] = new_wmem[0]
+    statistics["tcp_wmem_default"] = new_wmem[1]
+    statistics["tcp_wmem_max"] = new_wmem[2]
     file.close()
 
     collect_agent.send_stat(int(time.time() * 1000), **statistics)
@@ -196,7 +196,7 @@ def cubic(reset, tcp_slow_start_after_idle,
     "hystart_low_window", "tcp_friendliness", "hystart", "hystart_detect",
     "initial_ssthresh"]:
         file = open("/sys/module/tcp_cubic/parameters/"+param)
-        statistics[param+"_param"] = file.readline()
+        statistics[param] = file.readline()
         file.close()
 
     collect_agent.send_stat(int(time.time() * 1000), **statistics)

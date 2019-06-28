@@ -123,57 +123,57 @@ arguments:
       description: The tcp_low_latency field
 
 statistics:
-  - name: "tcp_congestion_control_param"
+  - name: "tcp_congestion_control"
     description: The value of tcp_congestion_control after launching the job
     frequency: 'once'
-  - name: "tcp_slow_start_after_idle_param"
+  - name: "tcp_slow_start_after_idle"
     description: The value of tcp_slow_start_after_idle after launching the job
     frequency: 'once'
-  - name: "tcp_no_metrics_save_param"
+  - name: "tcp_no_metrics_save"
     description: The value of tcp_no_metrics_save after launching the job
     frequency: 'once'
-  - name: "tcp_sack_param"
+  - name: "tcp_sack"
     description: The value of tcp_sack after launching the job
     frequency: 'once'
-  - name: "tcp_recovery_param"
+  - name: "tcp_recovery"
     description: The value of tcp_recovery after launching the job
     frequency: 'once'
-  - name: "tcp_wmem_min_param"
+  - name: "tcp_wmem_min"
     description: The value of tcp_wmem_min after launching the job
     frequency: 'once'
-  - name: "tcp_wmem_default_param"
+  - name: "tcp_wmem_default"
     description: The value of tcp_wmem_default after launching the job
     frequency: 'once'
-  - name: "tcp_wmem_max_param"
+  - name: "tcp_wmem_max"
     description: The value of tcp_wmem_max after launching the job
     frequency: 'once'
-  - name: "tcp_fastopen_param"
+  - name: "tcp_fastopen"
     description: The value of tcp_fastopen after launching the job
     frequency: 'once'
-  - name: "tcp_low_latency_param"
+  - name: "tcp_low_latency"
     description: The value of tcp_low_latency after launching the job
     frequency: 'once'
-  - name: "beta_param"
+  - name: "beta"
     description: The value of tcp_cubic beta after launching the job
     frequency: 'once'
-  - name: "fast_convergence_param"
+  - name: "fast_convergence"
     description: The value of tcp_cubic fast_convergence after launching the job
     frequency: 'once'
-  - name: "hystart_ack_delta_param"
+  - name: "hystart_ack_delta"
     description: The value of tcp_cubic hystart_ack_delta after launching the job
     frequency: 'once'
-  - name: "hystart_low_window_param"
+  - name: "hystart_low_window"
     description: The value of tcp_cubic hystart_low_window after launching the job
     frequency: 'once'
-  - name: "tcp_friendliness_param"
+  - name: "tcp_friendliness"
     description: The value of tcp_cubic tcp_friendliness after launching the job
     frequency: 'once'
-  - name: "hystart_param"
+  - name: "hystart"
     description: The value of tcp_cubic hystart after launching the job
     frequency: 'once'
-  - name: "hystart_detect_param"
+  - name: "hystart_detect"
     description: The value of tcp_cubic hystart_detect after launching the job
     frequency: 'once'
-  - name: "initial_ssthresh_param"
+  - name: "initial_ssthresh"
     description: The value of tcp_cubic initial_ssthresh after launching the job
     frequency: 'once'
