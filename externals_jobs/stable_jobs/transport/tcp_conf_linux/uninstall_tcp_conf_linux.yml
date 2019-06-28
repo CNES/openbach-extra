@@ -40,4 +40,12 @@
   become: yes
 
 - name: Remove the Tcp Conf Linux repository
+  file: path=/etc/sysctl.d/60-openbach-job.conf state=absent
+  become: yes
+
+- name: Remove the Tcp Conf Linux repository
+  file: path=/etc/sysctl.d/60-openbach-job-cubic.conf state=absent
+  become: yes
+
+- name: Remove the Tcp Conf Linux repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent

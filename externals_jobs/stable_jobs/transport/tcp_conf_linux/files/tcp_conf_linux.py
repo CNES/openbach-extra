@@ -45,11 +45,12 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
     tcp_wmem_max,tcp_fastopen,tcp_low_latency):
     collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/tcp_conf_linux/'
-            'tcp_conf_linux_rstats_filter.conf'
+        '/opt/openbach/agent/jobs/tcp_conf_linux/'
+        'tcp_conf_linux_rstats_filter.conf'
     )
     collect_agent.send_log(syslog.LOG_DEBUG, "Starting job tcp_conf_linux")
 
+    #resets to defaults config if asked
     if reset:
         print("reset")
         for line in open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux.conf","r"):
@@ -70,6 +71,7 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
             dst.write(value)
             dst.close()
 
+    #getting changes to tcp parameters in /proc/sys/net/ipv4
     changes = {}
     conf_file = open("/etc/sysctl.d/60-openbach-job.conf","w")
     if tcp_congestion_control is not None:
@@ -112,11 +114,13 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
     tcp_wmem_max,tcp_fastopen,tcp_low_latency)
 
+    # does not seem to work...
     rc = subprocess.call("systemctl restart procps", shell=True)
     print(rc)
 
     print(changes)
 
+    #applying changes via sysctl command
     for name,value in changes.items():
         cmd = "sysctl -w {}={}".format(name,value)
         print(cmd)
@@ -124,6 +128,7 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
         if rc:
             message = "WARNING \'{}\' exited with non-zero code".format(cmd)
 
+    #retrieving new values
     statistics = {}
     for param in ["tcp_congestion_control", "tcp_slow_start_after_idle",
     "tcp_no_metrics_save", "tcp_sack", "tcp_recovery", "tcp_fastopen", "tcp_low_latency"]:
@@ -148,6 +153,7 @@ def cubic(reset, tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
     tcp_wmem_max,tcp_fastopen,tcp_low_latency)
 
+    #getting changes to CUBIC parameters in /etc/module/tcp_cubic/parameters
     changes = {}
     conf_file = open("/etc/sysctl.d/60-openbach-job-cubic.conf","w")
     if beta is not None:
@@ -178,11 +184,13 @@ def cubic(reset, tcp_slow_start_after_idle,
 
     print(changes)
 
+    #applying changes
     for name,value in changes.items():
         dst=open("/sys/module/tcp_cubic/parameters/"+name,"w")
         dst.write(str(value))
         dst.close()
 
+    #retrieving new values for tcp_cubic parameters
     statistics = {}
     for param in ["beta", "fast_convergence", "hystart_ack_delta",
     "hystart_low_window", "tcp_friendliness", "hystart", "hystart_detect",
@@ -236,7 +244,6 @@ if __name__ == "__main__":
     parser_cubic.set_defaults(function=cubic)
     parser_other.set_defaults(function=other_CC)
 
-    # Get args and call the appropriate function
     args = vars(parser.parse_args())
 
     print(args)
