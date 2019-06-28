@@ -53,7 +53,8 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
     #resets to defaults config if asked
     if reset:
         print("reset")
-        for line in open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux.conf","r"):
+        src = open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux.conf","r")
+        for line in src:
             name,value = line.split("=")
             value = value.rstrip()
             if " " in value or "\t" in value:
@@ -63,13 +64,16 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
             rc = subprocess.call(cmd, shell=True)
             if rc:
                 message = "WARNING \'{}\' exited with non-zero code".format(cmd)
-        for line in open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux_cubic.conf","r"):
+        src.close()
+        src = open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux_cubic.conf","r")
+        for line in src:
             name,value = line.split("=")
             value = value.rstrip()
             name = name.split('.')[-1]
             dst = open("/sys/module/tcp_cubic/parameters/"+name,"w")
             dst.write(value)
             dst.close()
+        src.close()
 
     #getting changes to tcp parameters in /proc/sys/net/ipv4
     changes = {}
