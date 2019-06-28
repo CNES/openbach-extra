@@ -4,7 +4,7 @@ This Job executes allows to change some kernel parameters. Default configuration
 The user can change several TCP values and CUBIC parameters if the congestion control is chosen. At each launch, only the parameters which have a new value are changed, the others do not change until a new value is set.
 At each launch, the user can also choose to reset to the default configuration, and have the parameters values as they were before the job installation.
 
-TODO case of reboot ?
+In case of reboot, only the parameters that are located in /proc/sys/ are loaded, the others are reset to a default value.
 
 Examples
 ========

@@ -43,7 +43,7 @@ import time
 
 def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
-    tcp_wmem_max,tcp_fastopen,tcp_low_latency):
+    tcp_wmem_max,tcp_fastopen):
     collect_agent.register_collect(
         '/opt/openbach/agent/jobs/tcp_conf_linux/'
         'tcp_conf_linux_rstats_filter.conf'
@@ -52,47 +52,36 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
 
     #resets to defaults config if asked
     if reset:
-        print("reset")
         src = open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux.conf","r")
         for line in src:
             name,value = line.split("=")
-            value = value.rstrip()
-            if " " in value or "\t" in value:
-                value = "\""+value+"\""
-            cmd = "sysctl -w {}={}".format(name,value)
-            print(cmd)
-            rc = subprocess.call(cmd, shell=True)
-            if rc:
-                message = "WARNING \'{}\' exited with non-zero code".format(cmd)
+            while '.' in name:
+                name = name.replace('.','/')
+            dst=open("/proc/sys/"+name,"w")
+            dst.write(value)
+            dst.close()
         src.close()
         src = open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux_cubic.conf","r")
         for line in src:
             name,value = line.split("=")
             value = value.rstrip()
-            name = name.split('.')[-1]
             dst = open("/sys/module/tcp_cubic/parameters/"+name,"w")
             dst.write(value)
             dst.close()
         src.close()
 
-    #getting changes to tcp parameters in /proc/sys/net/ipv4
-    changes = {}
+    #writing changes in /etc/sysctl.d/60-openbach-job.conf
     conf_file = open("/etc/sysctl.d/60-openbach-job.conf","w")
     if tcp_congestion_control is not None:
         conf_file.write("net.ipv4.tcp_congestion_control="+tcp_congestion_control+"\n")
-        changes["net.ipv4.tcp_congestion_control"] = tcp_congestion_control
     if tcp_slow_start_after_idle is not None:
         conf_file.write("net.ipv4.tcp_slow_start_after_idle="+str(tcp_slow_start_after_idle)+"\n")
-        changes["net.ipv4.tcp_slow_start_after_idle"] = tcp_slow_start_after_idle
     if tcp_no_metrics_save is not None:
         conf_file.write("net.ipv4.tcp_no_metrics_save="+str(tcp_no_metrics_save)+"\n")
-        changes["net.ipv4.tcp_no_metrics_save"] = tcp_no_metrics_save
     if tcp_sack is not None:
         conf_file.write("net.ipv4.tcp_sack="+str(tcp_sack)+"\n")
-        changes["net.ipv4.tcp_sack"] = tcp_sack
     if tcp_recovery is not None:
         conf_file.write("net.ipv4.tcp_recovery="+str(tcp_recovery)+"\n")
-        changes["net.ipv4.tcp_recovery"] = tcp_recovery
     if tcp_wmem_min is not None or tcp_wmem_default is not None or tcp_wmem_max is not None:
         rc = subprocess.Popen("cat /proc/sys/net/ipv4/tcp_wmem", shell=True, 
             stdout=subprocess.PIPE)
@@ -105,37 +94,20 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
             tcp_wmem_max = wmem_old[2]
         conf_file.write("net.ipv4.tcp_wmem="+str(tcp_wmem_min)+" "+
             str(tcp_wmem_default)+" "+str(tcp_wmem_max)+"\n")
-        changes["net.ipv4.tcp_wmem"] = "\""+str(tcp_wmem_min)+" "+str(tcp_wmem_default)+" "+str(tcp_wmem_max)+"\""
     if tcp_fastopen is not None:
         conf_file.write("net.ipv4.tcp_fastopen="+str(tcp_fastopen)+"\n")
-        changes["net.ipv4.tcp_fastopen"] = tcp_fastopen
-    if tcp_low_latency is not None:
-        conf_file.write("net.ipv4.tcp_low_latency="+str(tcp_low_latency)+"\n")
-        changes["net.ipv4.tcp_low_latency"] = tcp_low_latency
     conf_file.close()
 
-    print(reset, tcp_congestion_control, tcp_slow_start_after_idle,
-    tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
-    tcp_wmem_max,tcp_fastopen,tcp_low_latency)
-
-    # does not seem to work...
+    #loading new configuration
     rc = subprocess.call("systemctl restart procps", shell=True)
-    print(rc)
-
-    print(changes)
-
-    #applying changes via sysctl command
-    for name,value in changes.items():
-        cmd = "sysctl -w {}={}".format(name,value)
-        print(cmd)
-        rc = subprocess.call(cmd, shell=True)
-        if rc:
-            message = "WARNING \'{}\' exited with non-zero code".format(cmd)
+    if rc:
+        message = "WARNING \'{}\' exited with non-zero code".format(cmd)
+        collect_agent.send_log(syslog.LOG_ERR, message)
 
     #retrieving new values
     statistics = {}
     for param in ["tcp_congestion_control", "tcp_slow_start_after_idle",
-    "tcp_no_metrics_save", "tcp_sack", "tcp_recovery", "tcp_fastopen", "tcp_low_latency"]:
+    "tcp_no_metrics_save", "tcp_sack", "tcp_recovery", "tcp_fastopen"]:
         file = open("/proc/sys/net/ipv4/"+param)
         statistics[param] = file.readline()
         file.close()
@@ -151,13 +123,14 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
 
 def cubic(reset, tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
-    tcp_wmem_max,tcp_fastopen,tcp_low_latency,beta,fast_convergence,hystart_ack_delta,
+    tcp_wmem_max,tcp_fastopen,beta,fast_convergence,hystart_ack_delta,
     hystart_low_window,tcp_friendliness,hystart,hystart_detect,initial_ssthresh):
     set_main_args(reset, "cubic", tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
-    tcp_wmem_max,tcp_fastopen,tcp_low_latency)
+    tcp_wmem_max,tcp_fastopen)
 
-    #getting changes to CUBIC parameters in /etc/module/tcp_cubic/parameters
+    # getting changes to CUBIC parameters in /etc/module/tcp_cubic/parameters and
+    # writing changes in /etc/sysctl.d/60-openbach-job-cubic.conf
     changes = {}
     conf_file = open("/etc/sysctl.d/60-openbach-job-cubic.conf","w")
     if beta is not None:
@@ -186,8 +159,6 @@ def cubic(reset, tcp_slow_start_after_idle,
         changes["initial_ssthresh"] = initial_ssthresh
     conf_file.close()
 
-    print(changes)
-
     #applying changes
     for name,value in changes.items():
         dst=open("/sys/module/tcp_cubic/parameters/"+name,"w")
@@ -207,10 +178,10 @@ def cubic(reset, tcp_slow_start_after_idle,
 
 def other_CC(reset, tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
-    tcp_wmem_max,tcp_fastopen,tcp_low_latency,congestion_control_name):
+    tcp_wmem_max,tcp_fastopen,congestion_control_name):
     set_main_args(reset, congestion_control_name, tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
-    tcp_wmem_max,tcp_fastopen,tcp_low_latency)
+    tcp_wmem_max,tcp_fastopen)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -226,7 +197,6 @@ if __name__ == "__main__":
     parser.add_argument('--tcp_wmem_default', type=int)
     parser.add_argument('--tcp_wmem_max', type=int)
     parser.add_argument('--tcp_fastopen', type=int)
-    parser.add_argument('--tcp_low_latency', type=int)
 
     subparsers = parser.add_subparsers(
             title='Subcommand mode',
@@ -249,8 +219,6 @@ if __name__ == "__main__":
     parser_other.set_defaults(function=other_CC)
 
     args = vars(parser.parse_args())
-
-    print(args)
 
     main = args.pop('function')
     main(**args)
