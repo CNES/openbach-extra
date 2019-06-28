@@ -37,7 +37,12 @@ __credits__ = '''Contributors:
 '''
 
 
+import argparse
+import itertools
+import threading
+
 from auditorium_scripts.frontend import FrontendBase
+from auditorium_scripts.state_job import StateJob
 
 
 class UninstallJob(FrontendBase):
@@ -53,25 +58,53 @@ class UninstallJob(FrontendBase):
                 required=True, help='IP address of the agent where the next '
                 'set of jobs should be installed. May be specified several '
                 'times to install different sets of jobs on different agents.')
+        self.parser.add_argument(
+                '-l', '--launch', '--launch-only', action='store_true',
+                help='do not wait until installation of the jobs completes '
+                'on each agent; return as soon as orders have been sent.')
 
     def parse(self, args=None):
         super().parse(args)
         jobs = self.args.job_name
         agents = self.args.agent
+
         if len(jobs) != len(agents):
             self.parser.error('-j and -a arguments should appear by pairs')
 
     def execute(self, show_response_content=True):
         jobs_names = self.args.job_name
         agents_ips = self.args.agent
+        launch_only = self.args.launch
 
-        return [
+        responses = [
                 self.request(
                     'POST', 'job', action='uninstall',
                     names=jobs, addresses=agents,
-                    show_response_content=show_response_content)
+                    show_response_content=launch_only and show_response_content)
                 for agents, jobs in zip(agents_ips, jobs_names)
         ]
+
+        if not launch_only:
+            threads = list(self._start_monitoring(show_response_content))
+            for thread in threads:
+                thread.join()
+        return responses
+
+    def _start_monitoring(self, show_response_content=True):
+        for agents, jobs in zip(self.args.agent, self.args.job_name):
+            for agent, job in itertools.product(agents, jobs):
+                args = (self.session, self.base_url, job, agent, show_response_content)
+                thread = threading.Thread(target=check_uninstall_state, args=args)
+                thread.start()
+                yield thread
+
+
+def check_uninstall_state(session, base_url, job_name, agent_address, show=True):
+    self = StateJob()
+    self.session = session
+    self.base_url = base_url
+    self.args = argparse.Namespace(name=job_name, agent=agent_address)
+    self.wait_for_success('uninstall', show_response_content=show)
 
 
 if __name__ == '__main__':

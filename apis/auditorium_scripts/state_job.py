@@ -56,6 +56,9 @@ class StateJob(FrontendBase):
                 'GET', 'job/{}/state/'.format(job), address=address,
                 show_response_content=show_response_content)
 
+    def query_state(self):
+        return self.execute(False)
+
 
 if __name__ == '__main__':
     StateJob.autorun()
