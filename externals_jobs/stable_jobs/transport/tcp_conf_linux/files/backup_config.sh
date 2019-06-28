@@ -15,4 +15,3 @@ do
     echo -n "=" >> /opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux_cubic.conf
 	cat /sys/module/tcp_cubic/parameters/$param >> /opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux_cubic.conf
 done
-
