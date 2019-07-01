@@ -1,8 +1,8 @@
 Job Description
 ===========
-This Job allows to change some kernel parameters. Default configuration is saved during the job installation and set back during uninstallation.
+This Job allows to change some linux kernel TCP parameters. Default configuration is saved during the job installation and set back during uninstallation.
 The user can change several TCP values, and CUBIC parameters if this congestion control is chosen. At each launch, only the parameters which have a new value are changed, the others do not change until a new value is set.
-At each launch, the user can also choose to reset to the default configuration, and have the parameters values as they were before the job installation.
+At each launch, the user can also choose to reset to the default configuration, and get the parameters values as they were before the job installation.
 
 In case of reboot, only the parameters that are located in /proc/sys/ are loaded, the others are reset to a default value.
 
@@ -11,4 +11,23 @@ The current configuration is stored in /etc/sysctl.d/60-openbach-job.conf and /e
 Examples
 ========
 
-TODO
+At job installation: creates a backup of all the parameters used in this job. Let us suppose the value of net.ipv4.tcp_recovery is 1. We execute the following commands in order:
+
+$ sudo -E python3 /opt/openbach/agent/jobs/tcp_conf_linux/tcp_conf_linux.py --reset CUBIC
+	reset the parameters to their default values, and choose CUBIC as congestion control
+
+$ sudo -E python3 /opt/openbach/agent/jobs/tcp_conf_linux/tcp_conf_linux.py --tcp_recovery 4 CUBIC --beta 700
+	change the values of net.ipv4.tcp_recovery and beta (CUBIC parameter). The other parameters are not changed
+
+$ sudo -E python3 /opt/openbach/agent/jobs/tcp_conf_linux/tcp_conf_linux.py --tcp_sack 0 other reno
+	choose reno as congestion control, set the value of net.ipv4.tcp_sack to 0. tcp_recovery is still 4.
+
+$ sudo -E python3 /opt/openbach/agent/jobs/tcp_conf_linux/tcp_conf_linux.py --reset --tcp_no_metrics_save 1 CUBIC
+	reset all the values first (tcp_recovery is now 1), set net.ipv4.tcp_no_metrics_save to 1 and choose CUBIC as congestion control
+
+$ sudo -E python3 /opt/openbach/agent/jobs/tcp_conf_linux/tcp_conf_linux.py --reset --tcp_recovery 2 CUBIC
+	reset all the parameters, and set net.ipv4.tcp_recovery to 2
+
+If we uninstall the job now, all the parameters are set back to the default value. For example, net.ipv4.tcp_recovery is 1, as before the job installation.
+
+After each call to the job, the current parameters are stored in /etc/sysctl.d/60-openbach-job.conf and /etc/sysctl.d/60-openbach-job-cubic.conf and sent back to the statistics. The default parameters are in /opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux.conf and /opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux_CUBIC.conf.
