@@ -19,7 +19,7 @@ $ sudo -E python3 /opt/openbach/agent/jobs/tcp_conf_linux/tcp_conf_linux.py --re
 $ sudo -E python3 /opt/openbach/agent/jobs/tcp_conf_linux/tcp_conf_linux.py --tcp_recovery 4 CUBIC --beta 700
 	change the values of net.ipv4.tcp_recovery and beta (CUBIC parameter). The other parameters are not changed
 
-If we reboot the machine now, the parameters stored in /proc/sys/ are loaded as they were before (net.ipv4.tcp_recevery is 4), but not the CUBIC parameters (beta is reset to its default value).
+If we reboot the machine now, the parameters stored in /proc/sys/ are loaded as they were before (net.ipv4.tcp_recovery is still 4), but not the CUBIC parameters (beta is reset to its default value).
 
 $ sudo -E python3 /opt/openbach/agent/jobs/tcp_conf_linux/tcp_conf_linux.py --tcp_sack 0 other reno
 	choose reno as congestion control, set the value of net.ipv4.tcp_sack to 0. tcp_recovery is still 4.
