@@ -228,7 +228,7 @@ def rest_protocol(job_name, scenario_id, owner_id, agent_name, job_id, logs):
 class ElasticSearchCommunicator:
     """Manage network access to an ElasticSearch server"""
 
-    def __init__(self, ip, port=9200):
+    def __init__(self, ip, port=9200, credentials=None):
         """Configure the routes to send/get data to/from ElasticSearch"""
 
         base_url = 'http://{}:{}'.format(ip, port)
@@ -236,13 +236,17 @@ class ElasticSearchCommunicator:
         self.writing_URL = base_url + '/_bulk'
         self.scrolling_URL = base_url + '/_search/scroll'
         self.deleting_URL = base_url + '/logstash-*/_delete_by_query'
+        if credentials is None:
+            self.auth_header = None
+        else:
+            self.auth_header = {'Authorization': 'Basic {}'.format(credentials)}
 
     def search_query(self, body=None, **query):
         """Send a query to ElasticSearch and gather the results"""
 
         query['scroll'] = '1m'
         session = requests.Session()
-        response = session.post(self.querying_URL, params=query, json=body).json()
+        response = session.post(self.querying_URL, params=query, json=body, headers=self.auth_header).json()
         while True:
             hits = response.get('hits', {}).get('hits', [])
             if not hits:
@@ -253,18 +257,18 @@ class ElasticSearchCommunicator:
             except KeyError:
                 break
             body = {'scroll': '1m', 'scroll_id': scroll_id}
-            response = session.post(self.scrolling_URL, json=body).json()
+            response = session.post(self.scrolling_URL, json=body, headers=self.auth_header).json()
 
     def delete_query(self, query):
         """Send query to ElasticSearch so that matching logs are removed"""
-        response = requests.post(self.deleting_URL, json=query)
+        response = requests.post(self.deleting_URL, json=query, headers=self.auth_header)
         return response.json()
 
     def data_write(self, body, first_time_request=False):
         """Send data to ElasticSearch so they are stored"""
         if first_time_request:
             self.data_write(body)
-        return requests.post(self.writing_URL, data=body.encode())
+        return requests.post(self.writing_URL, data=body.encode(), headers=self.auth_header)
 
 
 class ElasticSearchConnection(ElasticSearchCommunicator):
