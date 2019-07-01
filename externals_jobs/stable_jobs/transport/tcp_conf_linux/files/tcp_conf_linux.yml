@@ -1,0 +1,171 @@
+---
+
+general:
+  name: tcp_conf_linux
+  description: This Job configures several TCP options in Ubuntu kernel
+  job_version: '1.0'
+  keywords: [tcp, conf, sysctl]
+  persistent: False
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: 'python3 /opt/openbach/agent/jobs/tcp_conf_linux/tcp_conf_linux.py'
+    command_stop:
+
+arguments:
+  subcommand:
+    - group_name: congestion control
+      optional: no
+      choices:
+        - name: CUBIC
+          required:
+          optional:
+            - name: beta
+              type: int
+              count: 1
+              flag: '--beta'
+              description: The beta field of CUBIC (default = 717)
+            - name: fast_convergence
+              type: int
+              count: 1
+              flag: '--fast_convergence'
+              description: The fast_convergence field of CUBIC (default = 1)
+            - name: hystart_ack_delta
+              type: int
+              count: 1
+              flag: '--hystart_ack_delta'
+              description: The hystart_ack_delta field of CUBIC (default = 2)
+            - name: hystart_low_window
+              type: int
+              count: 1
+              flag: '--hystart_low_window'
+              description: The hystart_low_window field of CUBIC (default = 16)
+            - name: tcp_friendliness
+              type: int
+              count: 1
+              flag: '--tcp_friendliness'
+              description: The tcp_friendliness field of CUBIC (default = 1)
+            - name: hystart
+              type: int
+              count: 1
+              flag: '--hystart'
+              description: The hystart field of CUBIC (default = 1)
+            - name: hystart_detect
+              type: int
+              count: 1
+              flag: '--hystart_detect'
+              description: The hystart_detect field of CUBIC (default = 3)
+            - name: initial_ssthresh
+              type: int
+              count: 1
+              flag: '--initial_ssthresh'
+              description: The initial_ssthresh field of CUBIC (default = 0)
+        - name: other
+          required:
+            - name: congestion_control_name
+              type: str
+              count: 1
+              flag: '--tcp_congestion_control_name'
+              description: The congestion control chosen
+          optional:
+  optional:
+    - name: reset
+      type: None
+      count: 0
+      flag: '--reset'
+      description: Reset the parameters to default configuration before applying changes
+    - name: tcp_slow_start_after_idle
+      type: 'int'
+      count: 1
+      flag: '--tcp_slow_start_after_idle'
+      description: The tcp_slow_start_after_idle field (possible = {0,1}, default = 1)
+    - name: tcp_no_metrics_save
+      type: 'int'
+      count: 1
+      flag: '--tcp_no_metrics_save'
+      description: The tcp_no_metrics_save field (possible = {0,1})
+    - name: tcp_sack
+      type: 'int'
+      count: 1
+      flag: '--tcp_sack'
+      description: The tcp_sack field (possible = {0,1})
+    - name: tcp_recovery
+      type: 'int'
+      count: 1
+      flag: '--tcp_recovery'
+      description: The tcp_recovery field (possible = {1,2,4}, default = 1)
+    - name: tcp_wmem_min
+      type: 'int'
+      count: 1
+      flag: '--tcp_wmem_min'
+      description: The tcp_wmem_min field (default = 4K)
+    - name: tcp_wmem_default
+      type: 'int'
+      count: 1
+      flag: '--tcp_wmem_default'
+      description: The tcp_wmem_default field (default = 16K)
+    - name: tcp_wmem_max
+      type: 'int'
+      count: 1
+      flag: '--tcp_wmem_max'
+      description: The tcp_wmem_max field (default = between 64K and 4M)
+    - name: tcp_fastopen
+      type: 'int'
+      count: 1
+      flag: '--tcp_fastopen'
+      description: The tcp_fastopen field (possible = {1,2,4,200,400}, default = 1)
+
+statistics:
+  - name: "tcp_congestion_control"
+    description: The value of tcp_congestion_control after launching the job
+    frequency: 'once'
+  - name: "tcp_slow_start_after_idle"
+    description: The value of tcp_slow_start_after_idle after launching the job
+    frequency: 'once'
+  - name: "tcp_no_metrics_save"
+    description: The value of tcp_no_metrics_save after launching the job
+    frequency: 'once'
+  - name: "tcp_sack"
+    description: The value of tcp_sack after launching the job
+    frequency: 'once'
+  - name: "tcp_recovery"
+    description: The value of tcp_recovery after launching the job
+    frequency: 'once'
+  - name: "tcp_wmem_min"
+    description: The value of tcp_wmem_min after launching the job
+    frequency: 'once'
+  - name: "tcp_wmem_default"
+    description: The value of tcp_wmem_default after launching the job
+    frequency: 'once'
+  - name: "tcp_wmem_max"
+    description: The value of tcp_wmem_max after launching the job
+    frequency: 'once'
+  - name: "tcp_fastopen"
+    description: The value of tcp_fastopen after launching the job
+    frequency: 'once'
+  - name: "beta"
+    description: The value of tcp_cubic beta after launching the job
+    frequency: 'once'
+  - name: "fast_convergence"
+    description: The value of tcp_cubic fast_convergence after launching the job
+    frequency: 'once'
+  - name: "hystart_ack_delta"
+    description: The value of tcp_cubic hystart_ack_delta after launching the job
+    frequency: 'once'
+  - name: "hystart_low_window"
+    description: The value of tcp_cubic hystart_low_window after launching the job
+    frequency: 'once'
+  - name: "tcp_friendliness"
+    description: The value of tcp_cubic tcp_friendliness after launching the job
+    frequency: 'once'
+  - name: "hystart"
+    description: The value of tcp_cubic hystart after launching the job
+    frequency: 'once'
+  - name: "hystart_detect"
+    description: The value of tcp_cubic hystart_detect after launching the job
+    frequency: 'once'
+  - name: "initial_ssthresh"
+    description: The value of tcp_cubic initial_ssthresh after launching the job
+    frequency: 'once'
