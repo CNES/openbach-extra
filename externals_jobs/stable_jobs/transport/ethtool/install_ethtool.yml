@@ -34,6 +34,12 @@
 - name: Create the ethtool Job repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory
 
+- name: Install ethtool
+  apt: pkg={{ item }} state=present update_cache=false
+  with_items:
+    - ethtool
+  become: yes
+
 - name: Install the ethtool Job
   copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
   with_items:
