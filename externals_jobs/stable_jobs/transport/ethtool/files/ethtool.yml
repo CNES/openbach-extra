@@ -1,0 +1,41 @@
+---
+
+general:
+  name: ethtool
+  description: This Job configures the GSO and TSO options via ethtool
+  job_version: '1.0'
+  keywords: [ethtool, GSO, TSO]
+  persistent: False
+  need_privileges: yes
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: 'python3 /opt/openbach/agent/jobs/ethtool/ethtool.py'
+    command_stop:
+
+arguments:
+  required:
+    - name: interface
+      type: 'str'
+      count: 1
+  optional:
+    - name: Activate GSO
+      type: None
+      count: 0
+      flag: '--gso'
+      description: Tick this box to activate GSO, otherwise it is disabled
+    - name: Activate TSO
+      type: None
+      count: 0
+      flag: '--tso'
+      description: Tick this box to activate TSO, otherwise it is disabled
+
+statistics:
+  - name: "gso"
+    description: The current value of GSO
+    frequency: 'once'
+  - name: "tso"
+    description: The current value of TSO
+    frequency: 'once'
