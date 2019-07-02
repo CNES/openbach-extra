@@ -49,13 +49,13 @@ def main(interface, gso, tso):
     collect_agent.send_log(syslog.LOG_DEBUG, "Starting job ethool")
 
     # loading new configuration
-    rc = subprocess.call("ethtool -K "+interface+
-            " gso "+("on" if gso else "off"), shell=True)
+    rc = subprocess.call("ethtool -K " + interface +
+            " gso " + ("on" if gso.lower()=="true" else "off"), shell=True)
     if rc:
         message = "WARNING \'{}\' exited with non-zero code".format(cmd)
         collect_agent.send_log(syslog.LOG_ERR, message)
-    rc = subprocess.call("ethtool -K "+interface+
-            " tso "+("on" if tso else "off"), shell=True)
+    rc = subprocess.call("ethtool -K " + interface +
+            " tso " + ("on" if tso.lower()=="true" else "off"), shell=True)
     if rc:
         message = "WARNING \'{}\' exited with non-zero code".format(cmd)
         collect_agent.send_log(syslog.LOG_ERR, message)
@@ -80,10 +80,10 @@ if __name__ == "__main__":
 
     parser.add_argument('interface', type=str,
             help='The interface to modify')
-    parser.add_argument('--gso', action='store_true',
-            help='Activate GSO, if this flag is absent, GSO is disabled')
-    parser.add_argument('--tso', action='store_true',
-            help='Activate TSO, if this flag is absent, TSO is disabled')
+    parser.add_argument('gso', type=str,
+            help='Activate GSO, can be True or False')
+    parser.add_argument('tso', type=str,
+            help='Activate TSO, can be True or False')
 
     args = vars(parser.parse_args())
     main(**args)

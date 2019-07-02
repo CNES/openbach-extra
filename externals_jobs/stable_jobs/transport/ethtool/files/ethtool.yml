@@ -18,19 +18,19 @@ platform_configuration:
 arguments:
   required:
     - name: interface
-      type: 'str'
+      type: str
       count: 1
+    - name: Enable GSO
+      type: str
+      count: 1
+      choices: ['True', 'False']
+      description: Enable or disable GSO
+    - name: Enable TSO
+      type: str
+      count: 1
+      choices: ['True', 'False']
+      description: Enable or disable TSO
   optional:
-    - name: Activate GSO
-      type: None
-      count: 0
-      flag: '--gso'
-      description: Tick this box to activate GSO, otherwise it is disabled
-    - name: Activate TSO
-      type: None
-      count: 0
-      flag: '--tso'
-      description: Tick this box to activate TSO, otherwise it is disabled
 
 statistics:
   - name: "gso"
