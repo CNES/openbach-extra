@@ -1,0 +1,21 @@
+Job Description
+===========
+
+This job allows to change the generic-segmentation-offload (gso) and tcp-segmentation-offload (tso) parameters, using the ethtool tool. These options can be activated or not on the chosen interface. OpenBACH sends back statistics acknowledging the current value of GSO and TSO.
+
+The arguments are in-order:
+	- interface chosen
+	- enable or disable TSO
+	- enable or disable GSO
+
+Examples
+========
+
+$ sudo -E python3 /opt/openbach/agent/jobs/ethtool/ethtool.py eth0 True False
+	enable tso and disable gso on eth0 interface
+
+$ sudo -E python3 /opt/openbach/agent/jobs/ethtool/ethtool.py eth0 False False
+	disable gso and tso on eth0 interface
+
+$ sudo -E python3 /opt/openbach/agent/jobs/ethtool/ethtool.py eth0 True True
+	enable gso and tso on eth0 interface
