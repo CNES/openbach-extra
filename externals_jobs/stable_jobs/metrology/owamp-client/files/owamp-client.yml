@@ -4,7 +4,7 @@ general:
   name: owamp-client
   description: >
     This Job executes the owping (owamp-client) command to open TCP connection with server and measure the one-way delay of a group of UDP packets. Must be used with owamp-server.
-  job_version: '1.0'
+  job_version: '1.1'
   keywords: [owping, owdelay, client]
   persistent: no
 
