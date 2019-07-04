@@ -102,7 +102,7 @@ def iperf3_rate_udp(
 
 def iperf3_send_file_tcp(
         scenario, client_entity, server_entity,
-        server_ip, port, transmitted_size,
+        server_ip, port, transmitted_size, tos, mtu,
         wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
             'start_job_instance',
@@ -122,7 +122,8 @@ def iperf3_send_file_tcp(
             port=port, client={
                 'server_ip': server_ip,
                 'transmitted_size': transmitted_size,
-                'tcp': {},
+                'tos': '{0}'.format(tos),
+                'tcp': {'mss':'{0}'.format(mtu)},
             })
 
     return [server]
