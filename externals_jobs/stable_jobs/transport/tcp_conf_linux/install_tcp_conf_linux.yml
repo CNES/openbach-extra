@@ -25,7 +25,7 @@
 #   
 #   
 #   
-#   @file     install_tcp_buffer.yml
+#   @file     install_tcp_conf_linux.yml
 #   @brief    Playbook that install the Job tcp_conf_linux
 #   @author   Bastien TAURAN <bastien.tauran@viveris.com>
 
@@ -44,7 +44,5 @@
     - { file: 'restore_config.py', mode: '0755' }
 
 - name: Copy default configuration
-  script: /opt/openbach/agent/jobs/{{ job_name }}/backup_config.py
-  args:
-    executable: python3
+  shell: python3 /opt/openbach/agent/jobs/{{ job_name }}/backup_config.py
   become: yes
