@@ -34,9 +34,7 @@
 ---
 
 - name: Restore default configuration
-  script: /opt/openbach/agent/jobs/{{ job_name }}/restore_config.py
-  args:
-    executable: python3
+  shell: python3 /opt/openbach/agent/jobs/{{ job_name }}/restore_config.py
   become: yes
 
 - name: Remove the Tcp Conf Linux repository
