@@ -3,7 +3,7 @@
 general:
   name: ethtool
   description: This Job configures the GSO and TSO options via ethtool
-  job_version: '1.0'
+  job_version: '1.1'
   keywords: [ethtool, GSO, TSO]
   persistent: False
   need_privileges: yes
@@ -20,12 +20,12 @@ arguments:
     - name: interface
       type: str
       count: 1
-    - name: Enable GSO
+    - name: enable_GSO
       type: str
       count: 1
       choices: ['True', 'False']
       description: Enable or disable GSO
-    - name: Enable TSO
+    - name: enable_TSO
       type: str
       count: 1
       choices: ['True', 'False']
