@@ -88,7 +88,7 @@ def build(client, server, ip_dst, port, duration, num_flows, tos, bandwidth, pos
             for function_id in extract_jobs_to_postprocess(scenario_core)
     ]
 
-    time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['jitter', 'ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']], [['Jitter (ms)']], [['Jitters time series']], [start_scenario_core], None, 2)
-    cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['jitter', 'ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']], [['Jitter (ms)']], [['Jitter CDF']], [start_scenario_core], None, 2)
+    time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['jitter', 'ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']], [['Jitter (ms)']], [['Jitters time series']], [['UDP iperf3'], ['owamp ipdv_sent'], ['owamp ipdv_received'], ['owamp pdv_send'], ['owamp pdv_received']], [start_scenario_core], None, 2)
+    cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['jitter', 'ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']], [['Jitter (ms)']], [['Jitter CDF']], [['UDP iperf3'], ['owamp ipdv_sent'], ['owamp ipdv_received'], ['owamp pdv_send'], ['owamp pdv_received']], [start_scenario_core], None, 2)
 
     return scenario

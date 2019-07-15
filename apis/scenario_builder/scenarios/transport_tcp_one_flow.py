@@ -81,7 +81,7 @@ def build(client, server, ip_dst, port, transmitted_size, tos, mtu, post_process
                 [start_scenario_core, function_id]
                 for function_id in extract_jobs_to_postprocess(scenario_core)
         ]
-        time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rate', 'throughput']], [['Rate (b/s)']], [['Rate time series']], [start_scenario_core], None, 2)
-        cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rate', 'throughput']], [['Rate (b/s)']], [['Rate CDF']], [start_scenario_core], None, 2)
+        time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['throughput']], [['Rate (b/s)']], [['Rate time series']], [['iperf3']], [start_scenario_core], None, 2)
+        cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['throughput']], [['Rate (b/s)']], [['Rate CDF']], [['iperf3']], [start_scenario_core], None, 2)
 
     return scenario
