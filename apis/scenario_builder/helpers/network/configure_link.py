@@ -28,8 +28,8 @@
 
 """ Helpers of configure_link job """
 
-def _tc_configure_link_delay(
-        scenario, delay, entity, interface,
+def configure_link_delay(
+        scenario, entity, interface, delay,
         wait_finished=None, wait_launched=None, wait_delay=0):
     function = scenario.add_function(
             'start_job_instance',
@@ -40,6 +40,20 @@ def _tc_configure_link_delay(
             'configure_link', entity,
             interface_name=interface, delay=delay)
     return function
+
+def configure_link_loss(
+        scenario, entity, interface, loss,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    function = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    function.configure(
+            'configure_link', entity,
+            interface_name=interface, loss=loss)
+    return function
+
 
 def terrestrial_link(
         scenario, server, server_iface, server_bandwidth,
