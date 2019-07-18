@@ -75,7 +75,7 @@ def build(client, server, ip_dst, post_processing_entity, scenario_name=SCENARIO
             [start_scenario_core, function_id]
             for function_id in extract_jobs_to_postprocess(scenario_core)
         ]
-        time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['owd_sent','owd_received']], [['One Way Delay (ms)']], [['Both One Way delays time series']], [start_scenario_core], None, 2)
-        cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['owd_sent', 'owd_received']], [['One Way Delay (ms)']], [['Both One Way delay CDF']], [start_scenario_core], None, 2)
+        time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['owd_sent','owd_received']], [['One Way Delay (ms)']], [['Both One Way delays time series']], [['owd_sent'], ['owd_received']],[start_scenario_core], None, 2)
+        cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['owd_sent', 'owd_received']], [['One Way Delay (ms)']], [['Both One Way delay CDF']], [['owd_sent'],['owd_received']], [start_scenario_core], None, 2)
 
     return scenario
