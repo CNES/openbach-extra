@@ -1,0 +1,17 @@
+Examples:
+========
+Example1: Launch apache2 on entity called 'server.
+-In the web interface, set the following parameters:
+ For Agent that will run apache2, in this case 'server'
+ $ for 'operation' choose the item start and then run the scenario
+
+-Or launch the job manually from CLI of the Agent as follows: 
+    JOB_NAME=apache2 sudo -E python3 /opt/openbach/agent/jobs/apache2/apache2.py start 
+
+Exemple2: Stop apache2 which is running on 'server'
+-In the web interface, set the following parameters:
+ For Agent that is running  apache2, in this case 'server'
+ $ for 'operation' choose the item stop and then run the scenario
+
+-Or launch the job manually from CLI of the sagent as follows:
+    JOB_NAME=apache2 sudo -E python3 /opt/openbach/agent/jobs/apache2/apache2.py stop
