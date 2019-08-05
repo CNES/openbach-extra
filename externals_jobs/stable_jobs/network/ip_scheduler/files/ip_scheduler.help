@@ -1,0 +1,68 @@
+This job allows to:
+- remove all qdisc rules on an interface
+- change the qdisc rules on an interface using a configuration file
+
+The configuration file must be organized as follows:
+
+{
+    "destinations": [
+    {
+        "destination_address": "192.168.2.8", 
+        "rate" : "1.5M",
+        "trunk_id": "1",
+        "qos": {
+            "prio_0": {
+                "rate" : "1M",
+                "limit" : 300000,
+                "AQM" : "codel"
+            },
+            "prio_1": {
+                "rate" : "1M",
+                "limit" : 300000,
+                "AQM" : ""
+            },
+            "prio_2": {
+                "rate" : "1M",
+                "limit" : 300000,
+                "AQM" : ""
+            },
+            "prio_3": {
+                "rate" : "0.1M",
+                "limit" : 30000,
+                "AQM" : ""
+            }
+        }
+    },
+    {
+        "destination_address": "192.168.2.11", 
+        "rate" : "2M",
+        "qos": "",
+        "trunk_id": "2",
+        "limit" : 30000
+    }
+    ],
+    "trunks": {
+        "1": "1.5M",
+        "2": "0.5M"
+    }
+}
+
+This file contains two main sections: trunks and destinations
+
+In the trunks section, we set a maximum rate allowed. A WRR rule in set between the trunks with a weight proportional to the rate
+
+For each destination, we need to specify:
+- the address of the terminal
+- the trunk id to which belongs this terminal
+- the maximum rate allowed. A WRR rule is set between all the destinations of a same trunk (the weight is proportional to the rate)
+
+We need also to set the qos rule for each terminal is we need one. If not, leave this field empty and specify the queue size in bytes in the limit field.
+If we need a qos scheduler, we need to specify for each priority:
+- the maximum rate
+- the queue size in bytes
+- an AQM if needed
+A strict priority scheduling is applied between these four priorities. The scheduling is made according to the ToS field:
+- prio_0 : ToS = 0x0
+- prio_1 : ToS = 0x8
+- prio_2 : ToS = 0x18
+- prio_3 : ToS = 0x10
