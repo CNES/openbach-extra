@@ -61,7 +61,7 @@ def main():
         '--bandwidth', default = '1M',
         help='the bandwidth (bits/s) of iperf3 test')
     observer.add_scenario_argument(
-        '--entity_pp', help='The entity nama where the post-processing will be performed')
+        '--entity_pp', help='The entity name where the post-processing will be performed')
 
     args = observer.parse()
 

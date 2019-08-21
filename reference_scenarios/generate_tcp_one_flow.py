@@ -30,7 +30,7 @@
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import transport_tcp_one_flow
 
-"""This scenario launches the *transport_one_tcp_flow* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
+"""This scenario launches the *transport_tcp_one_flow* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
 def main():
     observer = ScenarioObserver()
