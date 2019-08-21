@@ -30,7 +30,7 @@
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import transport_tcp_one_flow
 
-"""This scenario launches the *transport_tcp_one_flow* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
+"""This scenario launches the *transport_one_tcp_flow* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
 def main():
     observer = ScenarioObserver()
@@ -45,7 +45,7 @@ def main():
     observer.add_scenario_argument(
             '--port', default = 7000,  help='The iperf3 server port for data')
     observer.add_scenario_argument(
-            '--transmitted_size', required=True, help="the iperf3 transmitted_size")
+            '--transmitted_size', required=True, help='The iperf3 transmitted_size (in bytes - you can use [K/M/G]: set 100M to send 100 MBytes)')
     observer.add_scenario_argument(
             '--tos', default=0, help='Type of Service of the trafic (default : 0)')
     observer.add_scenario_argument(
