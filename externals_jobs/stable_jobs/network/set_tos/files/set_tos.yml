@@ -1,0 +1,82 @@
+---
+
+general:
+  name:             set_tos
+  description: >
+      This job adds an iptables rule to set the ToS field of the packets
+  job_version:      '1.0'
+  keywords:         [tos]
+  persistent:       False
+  needs_privileges: True
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/set_tos/set_tos.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        action
+      type:        'str'
+      count:       1
+      choices:     ['add','del']
+      description: >
+          Action to perform (add or delete the rule to mark the packets)
+    - name:        chain
+      type:        'str'
+      count:       1
+      choices:     ['PREROUTING', 'POSTROUTING', 'FORWARD']
+      description: >
+          Chain to apply the rule
+    - name:        tos
+      type:        'str'
+      count:       1
+      description: >
+          Supports decimal and hexadecimal values
+
+  optional:
+    - name:        in_interface
+      type:        'str'
+      count:       1
+      flag:        '-i'
+      description: >
+          Name of the interface receiving the packet.
+    - name:        out_interface
+      type:        'str'
+      count:       1
+      flag:        '-o'
+      description: >
+          Name of the interface delivering the packet.
+    - name:        protocol 
+      type:        'str'
+      count:       1
+      flag:        '-p'
+    - name:        ip_dest
+      type:        'str'
+      count:       1
+      flag:        '-d'
+      description: >
+          Destination IP address
+    - name:        ip_src
+      type:        'str'
+      count:       1
+      flag:        '-s'
+      description: >
+          Source IP address
+    - name:        port_dest
+      type:        int
+      count:       1
+      flag:        '--dport'
+      description: >
+          Destination port
+    - name:        port_src
+      type:        int
+      count:       1
+      flag:        '--sport'
+      description: >
+          Source port
+          
+statistics:
+
