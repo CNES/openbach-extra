@@ -40,7 +40,7 @@ def iperf3_rate_tcp(
     server.configure(
             'iperf3', server_entity, offset=0,
             num_flows=num_flows, port=port,
-            interval=1.0, server={'exit':True})
+            interval=1.0, server={'exit':True, 'bind':server_ip})
 
     client = scenario.add_function(
             'start_job_instance',
@@ -55,11 +55,6 @@ def iperf3_rate_tcp(
                 'tos': '{0}'.format(tos),
                 'tcp': {'mss':'{0}'.format(mtu)},
             })
-
-    stopper = scenario.add_function(
-            'stop_job_instance',
-            wait_finished=[client])
-    stopper.configure(server)
 
     return [server]
 
@@ -76,7 +71,7 @@ def iperf3_rate_udp(
     server.configure(
             'iperf3', server_entity, offset=0,
             num_flows=num_flows, port=port,
-            interval=1.0, server={'exit':True})
+            interval=1.0, server={'exit':True, 'bind':server_ip})
 
     client = scenario.add_function(
             'start_job_instance',
@@ -92,11 +87,6 @@ def iperf3_rate_udp(
                 'udp': {'bandwidth':'{0}'.format(bandwidth)},
             })
 
-    stopper = scenario.add_function(
-            'stop_job_instance',
-            wait_finished=[client])
-    stopper.configure(server)
-
     return [server]
 
 
@@ -111,7 +101,7 @@ def iperf3_send_file_tcp(
             wait_delay=wait_delay)
     server.configure(
             'iperf3', server_entity, offset=0,
-            port=port, server={'exit': True})
+            port=port, server={'exit': True, 'bind':server_ip})
 
     client = scenario.add_function(
             'start_job_instance',
