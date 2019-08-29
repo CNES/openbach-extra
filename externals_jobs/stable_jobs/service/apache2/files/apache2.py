@@ -40,11 +40,12 @@ import os
 import sys
 import argparse
 import subprocess
+import time
 
 DESCRIPTION = ("This job  starts or stops the web server apache2 that provides " 
                "HTTP services in standard http/1.1 and http2")
 
-DEFAULT_HTTP_PORT = 8080
+DEFAULT_HTTP_PORT = 8081
 DEFAULT_HTT2_PORT = 8082
 
 def connect_to_collect_agent():
@@ -70,6 +71,12 @@ def start():
         message = "Error when starting apache2: {}".format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
+    # Wait for status to change to active
+    status = 0
+    while (status == 0):
+        time.sleep(5)
+        status = os.system('systemctl is-active --quiet apache2')
+
 
 def stop():
     """
@@ -85,7 +92,6 @@ def stop():
         message = "Error when stopping apache2: {}".format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
-
 
 if __name__ == "__main__":
     # Argument parsing

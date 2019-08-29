@@ -13,7 +13,7 @@ platform_configuration:
     ansible_distribution:  'Ubuntu'
     ansible_distribution_version: '16.04'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/apache2/apache2.py'
-    command_stop: 
+    command_stop: '/usr/bin/env python3 /opt/openbach/agent/jobs/apache2/apache2.py stop' 
 
 arguments:
   required:
