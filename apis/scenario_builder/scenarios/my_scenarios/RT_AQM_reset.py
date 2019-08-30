@@ -54,7 +54,7 @@ def build(gateway, interface, reset_scheduler, reset_iptables, scenario_name=SCE
 
     print(scenario_name)
 
-    # Create scenario and subscenario core
+    # Create scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     reset_config(scenario, gateway, interface, reset_scheduler, reset_iptables)
 

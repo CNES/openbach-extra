@@ -1,19 +1,31 @@
-["iperf",("192.168.2.9",5201,"2M",0)]
-["iperf",("192.168.2.9",5202,"2M",8)]
+# arguments format:
+# id traffic_type src_entity dst_entity duration wait_launched wait_finished wait_delay extra_args
+# wait_launched and wait_finished can contain several elements -> they must be separated by a '-'. If no element, put None
 
-["iperf",("192.168.2.10",5201,"2M",0)]
+# extra_args:
+# iperf -> dst_ip dst_port rate tos
+# dash  -> src_ip dst_ip src_port
+# voip  -> src_ip dst_ip dst_port codecs
 
-["iperf",("192.168.2.11",5201,"2M",0)]
 
-["iperf",("192.168.2.12",5201,"2M",0)]
+1 iperf A1 A3 30 None None 0 192.168.2.9 5201 2M 0
+2 iperf A1 A3 30 None None 0 192.168.2.9 5202 2M 8
 
-["iperf",("192.168.2.13",5201,"2M",0)]
-["iperf",("192.168.2.13",5202,"2M",8)]
+3 iperf A1 A3 30 None None 0 192.168.2.10 5201 2M 0
 
-["iperf",("192.168.2.14",5201,"2M",0)]
+4 iperf A1 A3 30 1-2-3 None 15 192.168.2.11 5201 2M 0
 
-["iperf",("192.168.2.15",5201,"2M",0)]
+5 iperf A1 A3 30 None None 0 192.168.2.12 5201 2M 0
 
-["iperf",("192.168.2.16",5201,"2M",0)]
+6 iperf A1 A3 30 None None 0 192.168.2.13 5201 2M 0
+7 iperf A1 A3 30 None None 0 192.168.2.13 5202 2M 8
 
-["dash",("192.168.2.9",3001,"192.168.1.4")]
+8 iperf A1 A3 30 None None 0 192.168.2.14 5201 2M 0
+
+9 iperf A1 A3 30 None None 0 192.168.2.15 5201 2M 0
+
+10 iperf A1 A3 30 None 7-8-9 5 192.168.2.16 5201 2M 0
+
+11 dash A1 A3 30 None None 0 192.168.1.4 192.168.2.9 3001
+
+12 voip A1 A3 30 None None 0 192.168.1.4 192.168.2.9 8001 G.711.1

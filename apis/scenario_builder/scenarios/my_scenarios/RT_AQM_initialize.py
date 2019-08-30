@@ -68,7 +68,7 @@ def build(gateway, interface, path, iptables, scenario_name=SCENARIO_NAME):
 
     print(scenario_name)
 
-    # Create scenario and subscenario core
+    # Create scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     initialize_core(scenario, gateway, interface, path, iptables)
