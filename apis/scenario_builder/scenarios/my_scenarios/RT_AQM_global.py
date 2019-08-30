@@ -28,9 +28,8 @@
 
 
 from scenario_builder import Scenario
-from scenario_builder.scenarios.my_scenarios import RT_AQM_initialize, RT_AQM_iperf, RT_AQM_DASH, RT_AQM_VOIP
+from scenario_builder.scenarios.my_scenarios import RT_AQM_initialize, RT_AQM_reset
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
-
 from scenario_builder.helpers.transport.iperf3 import iperf3_rate_udp
 from scenario_builder.helpers.service.dash import dash
 from scenario_builder.helpers.service.voip import voip
@@ -38,14 +37,14 @@ from scenario_builder.helpers.postprocessing.time_series import time_series_on_s
 
 
 
-SCENARIO_DESCRIPTION="""This scenario is a wrapper of
-        - RT_AQM_initialization
-        - RT_AQM_iperf
-        - RT_AQM_DASH
-        - RT_AQM_web_transfer (TODO)
-        - RT_AQM_voip
-        - RT_AQM_reset
-        scenarios
+SCENARIO_DESCRIPTION="""This scenario do the following in-order:
+        - launches RT_AQM_initialization
+        - launches traffic chosen in the args parameter. This can be:
+            * iperf3
+            * DASH
+            * Web transfert (TODO)
+            * VoIP
+        - launches RT_AQM_reset
 """
 SCENARIO_NAME="""RT_AQM_global"""
 
@@ -104,10 +103,10 @@ def generate_iptables(args_list):
     return iptables
 
 
-#1 iperf A1 A3 30 None None 0 192.168.2.9 5201 2M
-#2 iperf A1 A3 30 None None 0 192.168.2.10 5201 2M
-#3 dash A1 A3 30 None None 0 192.168.1.4 192.168.2.9 3001
-#4 voip A1 A3 30 None None 0 192.168.1.4 192.168.2.9 8001 G.711.1
+# 1 iperf A1 A3 30 None None 0 192.168.2.9 5201 2M 0
+# 2 iperf A1 A3 30 None None 0 192.168.2.10 5201 2M 0
+# 3 dash A1 A3 30 None None 0 192.168.1.4 192.168.2.9 3001
+# 4 voip A1 A3 30 None None 0 192.168.1.4 192.168.2.9 8001 G.711.1
 
 
 def build(gateway_scheduler, interface_scheduler, path_scheduler, duration, post_processing_entity, args_list, reset_scheduler, reset_iptables, scenario_name=SCENARIO_NAME):
@@ -118,10 +117,10 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, duration, post
 
     # Add RT_AQM_initialize scenario
     start_RT_AQM_initialize = scenario.add_function('start_scenario_instance')
-    scenario_RT_AQM_initialize = RT_AQM_initialize.build(gateway_scheduler, interface_scheduler, path_scheduler, generate_iptables(args_list), False, False)
+    scenario_RT_AQM_initialize = RT_AQM_initialize.build(gateway_scheduler, interface_scheduler, path_scheduler, generate_iptables(args_list))
     start_RT_AQM_initialize.configure(scenario_RT_AQM_initialize)
 
-    # parsing arguments
+    # launching traffic
     for args in args_list:
         print(args)
         traffic = args[1]
@@ -150,14 +149,14 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, duration, post
 
     print(map_scenarios)
 
-    # Add RT_AQM_initialize scenario
+    # Add RT_AQM_reset scenario
     start_RT_AQM_reset = scenario.add_function(
                 'start_scenario_instance', wait_finished=list_wait_finished, wait_delay=5)
-    scenario_RT_AQM_reset = RT_AQM_initialize.build(gateway_scheduler, interface_scheduler, "", "", reset_scheduler, reset_iptables, "RT_AQM_reset")
+    scenario_RT_AQM_reset = RT_AQM_reset.build(gateway_scheduler, interface_scheduler, reset_scheduler, reset_iptables)
     start_RT_AQM_reset.configure(scenario_RT_AQM_reset)
 
     
-    #Post processing partst
+    # Post processing part
     if post_processing_entity is not None:
         post_processed = []
         legends = []

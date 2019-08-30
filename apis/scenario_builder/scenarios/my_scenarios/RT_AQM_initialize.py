@@ -64,32 +64,13 @@ def initialize_core(scenario, gateway, interface, path, iptables):
 
     return scenario
 
-def reset_config(scenario, gateway, interface, reset_scheduler, reset_iptables):
-
-    if reset_scheduler:
-        scheduler_del = scenario.add_function('start_job_instance')
-        scheduler_del.configure(
-                'ip_scheduler', gateway, offset=0,
-                 interface_name=interface,remove={})
-
-    if reset_iptables:
-        iptables_del = scenario.add_function('start_job_instance')
-        iptables_del.configure(
-                'iptables', gateway, offset=0,
-                rule="-t mangle -F")
-
-    return scenario
-
-def build(gateway, interface, path, iptables, reset_scheduler, reset_iptables, scenario_name=SCENARIO_NAME):
+def build(gateway, interface, path, iptables, scenario_name=SCENARIO_NAME):
 
     print(scenario_name)
 
     # Create scenario and subscenario core
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
-    if not path and not iptables:
-        reset_config(scenario, gateway, interface, reset_scheduler, reset_iptables)
-    else:
-        initialize_core(scenario, gateway, interface, path, iptables)
+    initialize_core(scenario, gateway, interface, path, iptables)
 
     return scenario
