@@ -64,8 +64,8 @@ def main():
         for line in file:
             if len(line) < 10:
                 continue
-            if line and line[0] != '#':
-	            extra_args.append(eval(line))
+            if line[0] != '#':
+                extra_args.append(line.split())
         file.close()
     except (OSError, IOError):
         print("Cannot open args file, exiting")

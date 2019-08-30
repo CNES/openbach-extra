@@ -50,7 +50,7 @@ def build(duration, post_processing_entity, args, scenario_id, scenario_name=SCE
 
     print(scenario_name + "_" + str(scenario_id))
 
-    scenario = Scenario(scenario_name + "_" + str(scenario_id), SCENARIO_DESCRIPTION)
+    scenario = Scenario(scenario_name + "_" + scenario_id, SCENARIO_DESCRIPTION)
     src, dst, ip_dst, port, bandwidth, tos = args
 
     server = scenario.add_function('start_job_instance')

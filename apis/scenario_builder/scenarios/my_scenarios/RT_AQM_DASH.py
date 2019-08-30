@@ -56,7 +56,7 @@ def build(duration, post_processing_entity, args, scenario_id, scenario_name=SCE
 
     # Create scenario and subscenario core
     scenario = Scenario(scenario_name + "_" + str(scenario_id), SCENARIO_DESCRIPTION)
-    src, dst, server_ip, port, client_ip = args
+    src, dst, src_ip, dst_ip, port = args
 
     server = scenario.add_function('start_job_instance')
     server.configure(
@@ -69,7 +69,7 @@ def build(duration, post_processing_entity, args, scenario_id, scenario_name=SCE
             wait_delay=2)
     client.configure(
             'dash client', dst, offset=0,
-             dst_ip=client_ip, port=port, duration=duration)
+             dst_ip=src_ip, port=port, duration=duration)
 
     stopper = scenario.add_function(
             'stop_job_instance',

@@ -44,69 +44,80 @@ SCENARIO_DESCRIPTION="""This scenario is a wrapper of
 """
 SCENARIO_NAME="""RT_AQM_global"""
 
-def generate_iptables(args):
+def generate_iptables(args_list):
     iptables = []
-    # TODO remove next line
-    # return iptables
-    for traffic,params in args:
-        if traffic == "iperf":
-            address = params[2]
-            port = params[3]
-            iptables.append((address,"",port,"TCP",16))
-            iptables.append((address,"",port,"UDP",16))
-        if traffic == "dash":
-            address = params[2]
-            port = params[3]
-            iptables.append((address,port,"","TCP",24))
-        if traffic == "voip":
-            address = params[3]
-            port = params[4]
-            iptables.append((address,"",port,"UDP",0))
+
+    for args in args_list:
+        print(args)
+        if args[1] == "iperf":
+            address = args[8]
+            port = args[9]
+            iptables.append((address, "", port, "TCP", 16))
+            iptables.append((address, "", port, "UDP", 16))
+        if args[1] == "dash":
+            address = args[9]
+            port = args[10]
+            iptables.append((address, port, "", "TCP", 24))
+        if args[1] == "voip":
+            address = args[9]
+            port = args[10]
+            iptables.append((address, "", port, "UDP", 0))
+
     return iptables
 
-def build(gateway_scheduler, interface_scheduler, path_scheduler, duration, post_processing_entity, args, reset_scheduler, reset_iptables, scenario_name=SCENARIO_NAME):
+
+#1 iperf A1 A3 30 None None 0 192.168.2.9 5201 2M
+#2 iperf A1 A3 30 None None 0 192.168.2.10 5201 2M
+#3 dash A1 A3 30 None None 0 192.168.1.4 192.168.2.9 3001
+#4 voip A1 A3 30 None None 0 192.168.1.4 192.168.2.9 8001 G.711.1
+
+
+
+def build(gateway_scheduler, interface_scheduler, path_scheduler, duration, post_processing_entity, args_list, reset_scheduler, reset_iptables, scenario_name=SCENARIO_NAME):
     # Create top network_global scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     list_wait_finished = []
+    map_scenarios = {}
 
     # Add RT_AQM_initialize scenario
-    start_RT_AQM_initialize = scenario.add_function(
-                'start_scenario_instance')
-    scenario_RT_AQM_initialize = RT_AQM_initialize.build(gateway_scheduler, interface_scheduler, path_scheduler, generate_iptables(args), False, False)
+    start_RT_AQM_initialize = scenario.add_function('start_scenario_instance')
+    scenario_RT_AQM_initialize = RT_AQM_initialize.build(gateway_scheduler, interface_scheduler, path_scheduler, generate_iptables(args_list), False, False)
     start_RT_AQM_initialize.configure(scenario_RT_AQM_initialize)
 
-    # Add RT_AQM_iperf scenario
-    args_iperf = [line[1] for line in args if line[0] == "iperf"]
-    scenario_id = 1
-    for arg_iperf in args_iperf:
-        start_RT_AQM_iperf = scenario.add_function(
-                    'start_scenario_instance', wait_finished=[start_RT_AQM_initialize], wait_delay=2)
-        scenario_RT_AQM_iperf = RT_AQM_iperf.build(duration, post_processing_entity, arg_iperf, scenario_id)
-        start_RT_AQM_iperf.configure(scenario_RT_AQM_iperf)
-        list_wait_finished.append(start_RT_AQM_iperf)
-        scenario_id += 1
+    # parsing arguments
+    for args in args_list:
+        print(args)
+        traffic = args[1]
+        scenario_id = args[0]
+        wait_finished_list = [start_RT_AQM_initialize] + ([map_scenarios[i] for i in args[6].split('-')] if args[6] != "None" else [])
+        wait_launched_list = ([map_scenarios[i] for i in args[5].split('-')] if args[5] != "None" else [])
+        print(wait_finished_list,wait_launched_list)
 
-    # Add RT_AQM_DASH scenario
-    args_dash = [line[1] for line in args if line[0] == "dash"]
-    scenario_id = 1
-    for arg_dash in args_dash:
-        start_RT_AQM_DASH = scenario.add_function(
-                   'start_scenario_instance', wait_finished=[start_RT_AQM_initialize], wait_delay=2)
-        scenario_RT_AQM_DASH = RT_AQM_DASH.build(duration, post_processing_entity, arg_dash, scenario_id)
-        start_RT_AQM_DASH.configure(scenario_RT_AQM_DASH)
-        list_wait_finished.append(start_RT_AQM_DASH)
-        scenario_id += 1
+        if traffic == "iperf":
+            start_RT_AQM_iperf = scenario.add_function(
+                    'start_scenario_instance', wait_finished=wait_finished_list, wait_launched=wait_launched_list, wait_delay=int(args[7]) + 5)
+            scenario_RT_AQM_iperf = RT_AQM_iperf.build(int(args[4]), post_processing_entity, [args[2], args[3]] + args[8:], scenario_id)
+            start_RT_AQM_iperf.configure(scenario_RT_AQM_iperf)
+            list_wait_finished.append(start_RT_AQM_iperf)
+            map_scenarios[scenario_id] = start_RT_AQM_iperf
 
-    # Add RT_AQM_VoIP scenario
-    args_voip = [line[1] for line in args if line[0] == "voip"]
-    scenario_id = 1
-    for arg_voip in args_voip:
-        start_RT_AQM_VOIP = scenario.add_function(
-                   'start_scenario_instance', wait_finished=[start_RT_AQM_initialize], wait_delay=2)
-        scenario_RT_AQM_VOIP = RT_AQM_VOIP.build(duration, post_processing_entity, arg_voip, scenario_id)
-        start_RT_AQM_VOIP.configure(scenario_RT_AQM_VOIP)
-        list_wait_finished.append(start_RT_AQM_VOIP)
-        scenario_id += 1
+        if traffic == "dash":
+            start_RT_AQM_DASH = scenario.add_function(
+                    'start_scenario_instance', wait_finished=wait_finished_list, wait_launched=wait_launched_list, wait_delay=int(args[7]) + 5)
+            scenario_RT_AQM_DASH = RT_AQM_DASH.build(int(args[4]), post_processing_entity, [args[2], args[3]] + args[8:], scenario_id)
+            start_RT_AQM_DASH.configure(scenario_RT_AQM_DASH)
+            list_wait_finished.append(start_RT_AQM_DASH)
+            map_scenarios[scenario_id] = start_RT_AQM_DASH
+
+        if traffic == "voip":
+            start_RT_AQM_VOIP = scenario.add_function(
+                    'start_scenario_instance', wait_finished=wait_finished_list, wait_launched=wait_launched_list, wait_delay=int(args[7]) + 5)
+            scenario_RT_AQM_VOIP = RT_AQM_VOIP.build(int(args[4]), post_processing_entity, [args[2], args[3]] + args[8:], scenario_id)
+            start_RT_AQM_VOIP.configure(scenario_RT_AQM_VOIP)
+            list_wait_finished.append(start_RT_AQM_VOIP)
+            map_scenarios[scenario_id] = start_RT_AQM_VOIP
+
+    print(map_scenarios)
 
     # Add RT_AQM_initialize scenario
     start_RT_AQM_reset = scenario.add_function(
