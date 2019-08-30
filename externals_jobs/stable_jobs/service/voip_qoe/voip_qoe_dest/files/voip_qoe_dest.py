@@ -29,13 +29,21 @@
 """Sources of the voip_qoe_dest OpenBACH job"""
 
 __author__ = 'Antoine AUGER'
-__credits__ = 'Antoine AUGER <antoine.auger@tesa.prd.fr>'
+__credits__ = '''Contributors:
+ * Antoine AUGER <antoine.auger@tesa.prd.fr>
+ * Bastien TAURAN <bastien.tauran@toulouse.viveris.com>
+'''
 
 import argparse
 import os
+import ipaddress
 import subprocess
 import syslog
 import collect_agent
+import socket
+import shutil
+import time
+import threading
 
 job_name = "voip_qoe_dest"
 common_prefix = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))  # /opt/openbach/agent/jobs
@@ -51,10 +59,56 @@ def build_parser():
     parser = argparse.ArgumentParser(description='Start a receiver (destination) component to measure QoE of one or '
                                                  'many VoIP sessions generated with D-ITG software',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('dest_addr', type=ipaddress.ip_address, help='The destination IPv4 address to use for the '
+                                                                     'signaling channel')
+    parser.add_argument('-cp', '--control_port', type=int, default=50000,
+                        help='The port used on the sender side to send and receive OpenBACH commands from the client.'
+                             'Should be the same on the destination side.  Default: 50000.')
     return parser
 
+def socket_thread(address, port):
+    s = socket.socket()
+    host = address
+    try:
+        s.bind((host, port))
+    except socket.error as msg:
+        print("Socket binding error: " + str(msg) + "\n" + "Retrying...")
+    s.listen(1)
 
-def main():
+    print('Server listening.... on',host,port)
+
+
+    while True:
+        conn, addr = s.accept()
+        print('Got connection from', addr)
+        run_id = -1
+
+        while True:
+            command = conn.recv(1024).decode()
+            print("Received command:", command)
+            if command == "BYE":
+                break
+            elif command == "GET_LOG_FILE":
+                f = open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id), 'recv.log'),'rb')
+                l = f.read(1024)
+                while (l):
+                   conn.send(l)
+                   l = f.read(1024)
+                f.close()
+                time.sleep(5)
+                print("TRANSFERT_FINISHED".encode())
+                conn.send("TRANSFERT_FINISHED".encode())
+            elif command == "DELETE_FOLDER":
+                shutil.rmtree(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id)))
+            elif "RUN_ID" in command:
+                run_id = int(command.split("-")[1])
+                print("run_id",run_id)
+                os.mkdir(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id)))
+
+        conn.close()
+
+
+def main(args):
     """
     Main method
 
@@ -66,6 +120,14 @@ def main():
         message = 'Could not connect to rstats'
         collect_agent.send_log(syslog.LOG_ERR, message)
         exit(message)
+
+    try:
+        th = threading.Thread(target=socket_thread, args=(str(args.dest_addr),args.control_port))
+        th.daemon = True
+        th.start()
+    except (KeyboardInterrupt, SystemExit):
+        cleanup_stop_thread()
+        exit()
 
     process = subprocess.Popen([os.path.join(common_prefix, job_name, 'D-ITG-2.8.1-r1023', 'bin', 'ITGRecv')],
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -88,4 +150,4 @@ if __name__ == "__main__":
     # No internal configuration needed for receiver side
     # Argument parsing
     args = build_parser().parse_args()
-    main()
+    main(args)

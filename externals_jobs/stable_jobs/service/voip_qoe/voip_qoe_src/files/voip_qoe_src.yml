@@ -5,7 +5,7 @@ general:
   description: >
       An OpenBACH job to measure the QoE of one or many VoIP sessions generated with D-ITG software. This job
       corresponds to the caller (source) component and should be launched after the receiver (destination) component.
-  job_version: '2.0'
+  job_version: '2.2'
   keywords: [VoIP, source, QoE, D-ITG, codec]
   persistent: False
   need_privileges: True
@@ -41,11 +41,6 @@ arguments:
       count: 1
       description: >
           The duration of one VoIP session in seconds.
-    - name: root_user_dest
-      type: 'str'
-      count: 1
-      description: >
-          The name of a root user on the destination (receiver) side.
   optional:
     - name: nb_flows
       type: 'int'
@@ -102,6 +97,13 @@ arguments:
       description: >
           The starting port to emit VoIP sessions. Each session is emitted on a different port
           (e.g., 10000, 10001, etc.).  Default: 10000.
+    - name: control_port
+      type: 'int'
+      count: 1
+      flag: '-cp'
+      description: >
+          The port used on the sender side to send and receive OpenBACH commands from the client.
+          Should be the same on the destination side.  Default: 50000.
     - name: protocol
       type: 'str'
       count: 1
