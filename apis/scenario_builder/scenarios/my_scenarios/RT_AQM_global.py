@@ -29,7 +29,6 @@
 
 from scenario_builder import Scenario
 from scenario_builder.scenarios.my_scenarios import RT_AQM_initialize, RT_AQM_reset, RT_AQM_traffic_generation
-from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 
 SCENARIO_DESCRIPTION="""This scenario launches the following in-order:
@@ -60,7 +59,7 @@ def generate_iptables(args_list):
 
     return iptables
 
-def build(gateway_scheduler, interface_scheduler, path_scheduler, duration, post_processing_entity, args_list, reset_scheduler, reset_iptables, scenario_name=SCENARIO_NAME):
+def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processing_entity, args_list, reset_scheduler, reset_iptables, scenario_name=SCENARIO_NAME):
     # Create top network_global scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     list_wait_finished = []
@@ -73,7 +72,7 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, duration, post
 
     # launching traffic
     start_RT_AQM_traffic_generation = scenario.add_function('start_scenario_instance', wait_finished=[start_RT_AQM_initialize], wait_delay=5)
-    scenario_RT_AQM_traffic_generation = RT_AQM_traffic_generation.build(gateway_scheduler, post_processing_entity, args_list)
+    scenario_RT_AQM_traffic_generation = RT_AQM_traffic_generation.build(post_processing_entity, args_list)
     start_RT_AQM_traffic_generation.configure(scenario_RT_AQM_traffic_generation)
 
     # Add RT_AQM_reset scenario

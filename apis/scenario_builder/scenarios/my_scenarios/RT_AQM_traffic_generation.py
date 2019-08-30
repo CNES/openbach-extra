@@ -28,12 +28,11 @@
 
 
 from scenario_builder import Scenario
-from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
+from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.transport.iperf3 import iperf3_rate_udp
 from scenario_builder.helpers.service.dash import dash
 from scenario_builder.helpers.service.voip import voip
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
-
 
 
 SCENARIO_DESCRIPTION="""This scenario launches traffic chosen in the args parameter. This can be:
@@ -84,7 +83,7 @@ def extract_jobs_to_postprocess(scenario, traffic):
 # 4 voip A1 A3 30 None None 0 192.168.1.4 192.168.2.9 8001 G.711.1
 
 
-def build(gateway_scheduler, post_processing_entity, args_list, scenario_name=SCENARIO_NAME):
+def build(post_processing_entity, args_list, scenario_name=SCENARIO_NAME):
     # Create top network_global scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     list_wait_finished = []

@@ -44,8 +44,6 @@ def main():
             '--path_scheduler', required=True,
             help='path to the configuration file of the scheduler, on the entity')
     observer.add_scenario_argument(
-            '--duration', default=30, help='duration of the tests')
-    observer.add_scenario_argument(
             '--entity_pp', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
     observer.add_scenario_argument(
@@ -75,7 +73,6 @@ def main():
             args.gateway_scheduler,
             args.interface_scheduler,
             args.path_scheduler,
-            args.duration,
             args.entity_pp,
             extra_args,
             args.reset_scheduler,

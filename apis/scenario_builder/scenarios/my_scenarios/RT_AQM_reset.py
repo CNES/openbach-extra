@@ -27,8 +27,6 @@
 #   this program. If not, see http://www.gnu.org/licenses/.
 
 from scenario_builder import Scenario
-from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
-
 
 
 SCENARIO_DESCRIPTION="""Reset scheduler and iptables if requested"""
