@@ -37,7 +37,7 @@ from scenario_builder.helpers.service.web_browsing_qoe import web_browsing_qoe
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 
 
-SCENARIO_DESCRIPTION="""This scenario launches traffic chosen in the args parameter. This can be:
+SCENARIO_DESCRIPTION="""This scenario launches traffic chosen in the extra_args parameter. This can be:
          - iperf3
          - DASH
          - Web transfert
@@ -190,9 +190,9 @@ def build(post_processing_entity, args_list, scenario_name=SCENARIO_NAME):
             post_processed.append([function_id])
             legends.append([dst + " " + str(port)])
             print(post_processed[-1],legends[-1])
-            time_series_on_same_graph(scenario, post_processing_entity, [post_processed[-1]], [['page_load_time']], [['PLT']], [['Rate time series']], [legends[-1]], list_wait_finished, None, 2)
+            time_series_on_same_graph(scenario, post_processing_entity, [post_processed[-1]], [['page_load_time']], [['PLT (ms)']], [['Rate time series']], [legends[-1]], list_wait_finished, None, 2)
 
         if post_processed:
-            time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['page_load_time']], [['PLT']], [['Rate time series']], legends, list_wait_finished, None, 2)
+            time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['page_load_time']], [['PLT (ms)']], [['Rate time series']], legends, list_wait_finished, None, 2)
 
     return scenario

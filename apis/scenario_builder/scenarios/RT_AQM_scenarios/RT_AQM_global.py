@@ -28,7 +28,7 @@
 
 
 from scenario_builder import Scenario
-from scenario_builder.scenarios.my_scenarios import RT_AQM_initialize, RT_AQM_reset, RT_AQM_traffic_generation
+from scenario_builder.scenarios.RT_AQM_scenarios import RT_AQM_initialize, RT_AQM_reset, RT_AQM_traffic_generation
 
 
 SCENARIO_DESCRIPTION="""This scenario launches the following in-order:

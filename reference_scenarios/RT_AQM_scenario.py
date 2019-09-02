@@ -28,7 +28,7 @@
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios.my_scenarios import RT_AQM_global
+from scenario_builder.scenarios.RT_AQM_scenarios import RT_AQM_global
 
 """This scenario launches the *RT_AGM_global* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
