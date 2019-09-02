@@ -8,7 +8,7 @@
 # voip  -> src_ip dst_ip dst_port codecs
 # web  -> nb_runs dst_ip								(do not forget to edit the config file with correct address)
 
-# Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 RT_AQM_scenario.py -o -p tests --gateway_scheduler controller --interface_scheduler opensand_tun --path_scheduler "/home/exploit/tests_3levels.conf" --entity_pp A3 --extra_args ./extra_args_short.txt --reset_iptables --reset_scheduler run
+# Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 RT_AQM_scenario.py -o -p tests --gateway_scheduler controller --interface_scheduler opensand_tun --path_scheduler "/home/exploit/tests_3levels.conf" --entity_pp A3 --extra_args ./extra_args.txt --reset_iptables --reset_scheduler run
 
 
 1 iperf A1 A3 30 None None 0 192.168.2.9 5201 2M 0
