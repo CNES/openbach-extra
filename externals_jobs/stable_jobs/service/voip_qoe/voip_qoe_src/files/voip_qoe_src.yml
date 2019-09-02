@@ -102,7 +102,7 @@ arguments:
       count: 1
       flag: '-cp'
       description: >
-          The port used on the sender side to send and receive OpenBACH commands from the client.
+          The port used on the dest side to send and receive OpenBACH commands from the sender.
           Should be the same on the destination side.  Default: 50000.
     - name: protocol
       type: 'str'
