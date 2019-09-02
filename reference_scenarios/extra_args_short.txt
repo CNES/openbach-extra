@@ -6,6 +6,7 @@
 # iperf -> dst_ip dst_port rate tos
 # dash  -> src_ip dst_ip src_port
 # voip  -> src_ip dst_ip dst_port codecs
+# web  -> nb_runs dst_ip								(do not forget to edit the config file with correct address)
 
 # Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 RT_AQM_scenario.py -o -p tests --gateway_scheduler controller --interface_scheduler opensand_tun --path_scheduler "/home/exploit/tests_3levels.conf" --entity_pp A3 --extra_args ./extra_args_short.txt --reset_iptables --reset_scheduler run
 
@@ -14,3 +15,4 @@
 2 iperf A1 A3 30 1 None 10 192.168.2.10 5201 2M 0
 3 dash A1 A3 60 None None 0 192.168.1.4 192.168.2.9 3001
 4 voip A1 A3 30 None 1 15 192.168.1.4 192.168.2.9 8001 G.711.1
+5 web A1 A3 60 None None 0 1 192.168.2.9

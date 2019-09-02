@@ -52,6 +52,9 @@ def generate_iptables(args_list):
             address = args[9]
             port = args[10]
             iptables.append((address, port, "", "TCP", 24))
+        if args[1] == "web":
+            address = args[9]
+            iptables.append((address, 8082, "", "TCP", 8))
         if args[1] == "voip":
             address = args[9]
             port = args[10]
@@ -70,7 +73,7 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processin
     scenario_RT_AQM_initialize = RT_AQM_initialize.build(gateway_scheduler, interface_scheduler, path_scheduler, generate_iptables(args_list))
     start_RT_AQM_initialize.configure(scenario_RT_AQM_initialize)
 
-    # launching traffic
+    # Launching traffic
     start_RT_AQM_traffic_generation = scenario.add_function('start_scenario_instance', wait_finished=[start_RT_AQM_initialize], wait_delay=5)
     scenario_RT_AQM_traffic_generation = RT_AQM_traffic_generation.build(post_processing_entity, args_list)
     start_RT_AQM_traffic_generation.configure(scenario_RT_AQM_traffic_generation)
