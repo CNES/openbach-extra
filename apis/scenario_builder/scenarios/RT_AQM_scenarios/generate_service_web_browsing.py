@@ -42,7 +42,7 @@ def extract_jobs_to_postprocess(scenario):
             if function.job_name == 'web_browsing_qoe':
                 dst = function.start_job_instance['entity_name']
                 port = "Unknown port..." # TODO
-                yield (function_id, dst, port)
+                yield (function_id, dst + " " + str(port))
 
 
 def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
@@ -58,9 +58,9 @@ def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
     if post_processing_entity is not None:
         post_processed = []
         legends = []
-        for function_id, dst, port in extract_jobs_to_postprocess(scenario):
+        for function_id, legend in extract_jobs_to_postprocess(scenario):
             post_processed.append([function_id])
-            legends.append([dst + " " + str(port)])
+            legends.append([legend])
         if post_processed:
             time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['page_load_time']], [['PLT (ms)']], [['Rate time series']], legends, start_scenario, None, 2)
             cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['page_load_time']], [['PLT (ms)']], [['Rate CDF']], legends, start_scenario, None, 2)

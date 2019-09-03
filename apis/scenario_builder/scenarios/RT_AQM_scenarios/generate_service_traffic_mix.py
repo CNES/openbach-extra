@@ -45,29 +45,27 @@ SCENARIO_DESCRIPTION="""This scenario launches the following in-order:
 SCENARIO_NAME="""generate_service_traffic_mix"""
 
 def extract_jobs_to_postprocess(scenarios, traffic):
-    for scenario in scenarios:
+    for scenario, start_scenario in scenarios:
         for function_id, function in enumerate(scenario.openbach_functions):
-            print(function_id, function)
             if isinstance(function, StartJobInstance):
                 if traffic == "iperf" and function.job_name == 'iperf3':
                     if 'server' in function.start_job_instance['iperf3']:
                         port = function.start_job_instance['iperf3']['port']
                         address = function.start_job_instance['iperf3']['server']['bind']
-                        print("iperf3",function_id, address, port, function.start_job_instance)
-                        yield (function_id, address, port)
+                        yield (start_scenario, function_id, address + " " + str(port))
                 if traffic == "dash" and function.job_name == 'dash player&server':
                     port = function.start_job_instance['dash player&server']['port']
                     #address = function.start_job_instance['dash player&server']['bind']
                     address = "Unknown address..." # TODO
-                    yield (function_id, address, port)
+                    yield (start_scenario, function_id, address + " " + str(port))
                 if traffic == "voip" and function.job_name == 'voip_qoe_src':
                     port = function.start_job_instance['voip_qoe_src']['starting_port']
                     address = function.start_job_instance['voip_qoe_src']['dest_addr']
-                    yield (function_id, address, port)
+                    yield (start_scenario, function_id, address + " " + str(port))
                 if traffic == "web" and function.job_name == 'web_browsing_qoe':
                     dst = function.start_job_instance['entity_name']
                     port = "Unknown port..." # TODO
-                    yield (function_id, dst, port)
+                    yield (start_scenario, function_id, dst + " " + str(port))
 
 def generate_iptables(args_list):
     iptables = []
@@ -142,7 +140,7 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processin
         start_scenario.configure(scenario)
         list_wait_finished += [start_scenario]
         map_scenarios[scenario_id] = start_scenario
-        list_scenarios.append(scenario)
+        list_scenarios.append((scenario, start_scenario))
         
     # stopping all Apache2 servers
     for server_entity,scenario_server in apache_servers.items():
@@ -162,44 +160,20 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processin
     start_RT_AQM_reset.configure(scenario_RT_AQM_reset)
 
     # Post processing data
-    post_processing_entity = None
     if post_processing_entity is not None:
         print("Loading:", "post processing")
-        post_processed = []
-        legends = []
-        for function_id, address, port in extract_jobs_to_postprocess(list_scenarios, "iperf"):
-            post_processed.append([function_id])
-            legends.append([address + " " + str(port)])
-        if post_processed:
-            time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [['throughput']], [['Rate (b/s)']], [['Rate time series']], legends, list_wait_finished, None, 2)
-            cdf_on_same_graph(scenario_mix, post_processing_entity, post_processed, 100, [['throughput']], [['Rate (b/s)']], [['Rate CDF']], legends, list_wait_finished, None, 2)
-
-        post_processed = []
-        legends = []
-        for function_id, address, port in extract_jobs_to_postprocess(list_scenarios, "dash"):
-            post_processed.append([function_id])
-            legends.append([address + " " + str(port)])
-        if post_processed:
-            time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [['bitrate']], [['Rate (b/s)']], [['Rate time series']], legends, list_wait_finished, None, 2)
-            cdf_on_same_graph(scenario_mix, post_processing_entity, post_processed, 100, [['bitrate']], [['Rate (b/s)']], [['Rate CDF']], legends, list_wait_finished, None, 2)
-
-        post_processed = []
-        legends = []
-        for function_id, address, port in extract_jobs_to_postprocess(list_scenarios, "voip"):
-            post_processed.append([function_id])
-            legends.append([address + " " + str(port)])
-        if post_processed:
-            time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [['instant_mos']], [['MOS']], [['Rate time series']], legends, list_wait_finished, None, 2)
-            cdf_on_same_graph(scenario_mix, post_processing_entity, post_processed, 100, [['instant_mos']], [['MOS']], [['Rate CDF']], legends, list_wait_finished, None, 2)
-
-        post_processed = []
-        legends = []
-        for function_id, dst, port in extract_jobs_to_postprocess(list_scenarios, "web"):
-            post_processed.append([function_id])
-            legends.append([dst + " " + str(port)])
-        if post_processed:
-            time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [['page_load_time']], [['PLT (ms)']], [['Rate time series']], legends, list_wait_finished, None, 2)
-            cdf_on_same_graph(scenario_mix, post_processing_entity, post_processed, 100, [['page_load_time']], [['PLT (ms)']], [['Rate CDF']], legends, list_wait_finished, None, 2)
+        for traffic, name, y_axis in [("iperf", "throughput", "Rate (b/s)"),
+                                        ("dash", "bitrate", "Rate (b/s)"),
+                                        ("web", "page_load_time", "PLT (ms)"),
+                                        ("voip", "instant_mos", "MOS")]:
+            post_processed = []
+            legends = []
+            for scenario_id, function_id, legend in extract_jobs_to_postprocess(list_scenarios, traffic):
+                post_processed.append([scenario_id, function_id])
+                legends.append([legend])
+            if post_processed:
+                time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [[name]], [[y_axis]], [['Rate time series']], legends, list_wait_finished, None, 2)
+                cdf_on_same_graph(scenario_mix, post_processing_entity, post_processed, 100, [[name]], [[y_axis]], [['Rate CDF']], legends, list_wait_finished, None, 2)
 
     print("All scenarios loaded, launching simulation")
 
