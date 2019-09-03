@@ -62,9 +62,9 @@ def initialize_core(scenario, gateway, interface, path, iptables):
 
     return scenario
 
-def build(gateway, interface, path, iptables, scenario_name=SCENARIO_NAME):
 
-    print(scenario_name)
+def build(gateway, interface, path, iptables, scenario_name=SCENARIO_NAME):
+    print("loading:",scenario_name)
 
     # Create scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)

@@ -48,9 +48,9 @@ def reset_config(scenario, gateway, interface, reset_scheduler, reset_iptables):
 
     return scenario
 
-def build(gateway, interface, reset_scheduler, reset_iptables, scenario_name=SCENARIO_NAME):
 
-    print(scenario_name)
+def build(gateway, interface, reset_scheduler, reset_iptables, scenario_name=SCENARIO_NAME):
+    print("loading:",scenario_name)
 
     # Create scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)

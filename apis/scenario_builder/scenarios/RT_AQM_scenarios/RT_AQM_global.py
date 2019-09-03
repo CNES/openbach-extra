@@ -42,7 +42,6 @@ def generate_iptables(args_list):
     iptables = []
 
     for args in args_list:
-        print(args)
         if args[1] == "iperf":
             address = args[8]
             port = args[9]
@@ -61,6 +60,7 @@ def generate_iptables(args_list):
             iptables.append((address, "", port, "UDP", 0))
 
     return iptables
+
 
 def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processing_entity, args_list, reset_scheduler, reset_iptables, scenario_name=SCENARIO_NAME):
     # Create top network_global scenario
@@ -83,5 +83,7 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processin
                 'start_scenario_instance', wait_finished=[start_RT_AQM_traffic_generation], wait_delay=5)
     scenario_RT_AQM_reset = RT_AQM_reset.build(gateway_scheduler, interface_scheduler, reset_scheduler, reset_iptables)
     start_RT_AQM_reset.configure(scenario_RT_AQM_reset)
+
+    print("All scenarios loaded, launching simulation")
 
     return scenario

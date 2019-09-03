@@ -26,7 +26,6 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.transport.iperf3 import iperf3_rate_udp
@@ -79,14 +78,9 @@ def extract_jobs_to_postprocess(scenario, traffic):
                     yield (function_id, dst, port)
 
 
-# 1 iperf A1 A3 30 None None 0 192.168.2.9 5201 2M 0
-# 2 iperf A1 A3 30 1 None 10 192.168.2.10 5201 2M 0
-# 3 dash A1 A3 60 None None 0 192.168.1.4 192.168.2.9 3001
-# 4 voip A1 A3 30 None 1 15 192.168.1.4 192.168.2.9 8001 G.711.1
-# 5 web A1 A3 30 None None 0 1
-
-
 def build(post_processing_entity, args_list, scenario_name=SCENARIO_NAME):
+    print("loading:",scenario_name)
+
     # Create top network_global scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     list_wait_finished = []
@@ -147,8 +141,6 @@ def build(post_processing_entity, args_list, scenario_name=SCENARIO_NAME):
         apache2(scenario, server_entity, "stop",
                 wait_finished=list_wait_finished,
                 wait_delay=5)
-
-    print(map_scenarios)
     
     # Post processing data
     if post_processing_entity is not None:
@@ -157,9 +149,6 @@ def build(post_processing_entity, args_list, scenario_name=SCENARIO_NAME):
         for function_id, address, port in extract_jobs_to_postprocess(scenario, "iperf"):
             post_processed.append([function_id])
             legends.append([address + " " + str(port)])
-            print(post_processed[-1],legends[-1])
-            #time_series_on_same_graph(scenario, post_processing_entity, [post_processed[-1]], [['throughput']], [['Rate (b/s)']], [['Rate time series']], [legends[-1]], list_wait_finished, None, 2)
-
         if post_processed:
             time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['throughput']], [['Rate (b/s)']], [['Rate time series']], legends, list_wait_finished, None, 2)
             cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['throughput']], [['Rate (b/s)']], [['Rate CDF']], legends, list_wait_finished, None, 2)
@@ -169,9 +158,6 @@ def build(post_processing_entity, args_list, scenario_name=SCENARIO_NAME):
         for function_id, address, port in extract_jobs_to_postprocess(scenario, "dash"):
             post_processed.append([function_id])
             legends.append([address + " " + str(port)])
-            print(post_processed[-1],legends[-1])
-            #time_series_on_same_graph(scenario, post_processing_entity, [post_processed[-1]], [['bitrate']], [['Rate (b/s)']], [['Rate time series']], [legends[-1]], list_wait_finished, None, 2)
-
         if post_processed:
             time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['bitrate']], [['Rate (b/s)']], [['Rate time series']], legends, list_wait_finished, None, 2)
             cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['bitrate']], [['Rate (b/s)']], [['Rate CDF']], legends, list_wait_finished, None, 2)
@@ -181,9 +167,6 @@ def build(post_processing_entity, args_list, scenario_name=SCENARIO_NAME):
         for function_id, address, port in extract_jobs_to_postprocess(scenario, "voip"):
             post_processed.append([function_id])
             legends.append([address + " " + str(port)])
-            print(post_processed[-1],legends[-1])
-            #time_series_on_same_graph(scenario, post_processing_entity, [post_processed[-1]], [['instant_mos']], [['MOS']], [['Rate time series']], [legends[-1]], list_wait_finished, None, 2)
-
         if post_processed:
             time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['instant_mos']], [['MOS']], [['Rate time series']], legends, list_wait_finished, None, 2)
             cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['instant_mos']], [['MOS']], [['Rate CDF']], legends, list_wait_finished, None, 2)
@@ -193,9 +176,6 @@ def build(post_processing_entity, args_list, scenario_name=SCENARIO_NAME):
         for function_id, dst, port in extract_jobs_to_postprocess(scenario, "web"):
             post_processed.append([function_id])
             legends.append([dst + " " + str(port)])
-            print(post_processed[-1],legends[-1])
-            #time_series_on_same_graph(scenario, post_processing_entity, [post_processed[-1]], [['page_load_time']], [['PLT (ms)']], [['Rate time series']], [legends[-1]], list_wait_finished, None, 2)
-
         if post_processed:
             time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['page_load_time']], [['PLT (ms)']], [['Rate time series']], legends, list_wait_finished, None, 2)
             cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['page_load_time']], [['PLT (ms)']], [['Rate CDF']], legends, list_wait_finished, None, 2)

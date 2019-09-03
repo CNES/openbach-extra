@@ -56,7 +56,6 @@ def main():
     args = observer.parse()
     extra_args = []
 
-    # TODO handle bad path
     try:
         file = open(args.extra_args,"r")
         for line in file:
