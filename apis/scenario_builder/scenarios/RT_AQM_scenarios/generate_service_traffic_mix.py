@@ -30,7 +30,7 @@
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.service.apache2 import apache2
-from scenario_builder.scenarios.RT_AQM_scenarios import RT_AQM_initialize, RT_AQM_reset
+from scenario_builder.scenarios.RT_AQM_scenarios import generate_network_iptables, generate_network_scheduler
 from scenario_builder.scenarios.RT_AQM_scenarios import generate_service_data_transfer, generate_service_video_dash, generate_service_web_browsing, generate_service_voip
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
@@ -99,17 +99,22 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processin
     apache_servers = {}
     map_scenarios = {}
 
-    # Add RT_AQM_initialize scenario
-    start_RT_AQM_initialize = scenario_mix.add_function('start_scenario_instance')
-    scenario_RT_AQM_initialize = RT_AQM_initialize.build(gateway_scheduler, interface_scheduler, path_scheduler, generate_iptables(args_list))
-    start_RT_AQM_initialize.configure(scenario_RT_AQM_initialize)
+    # Add ip_scheduler
+    start_ip_scheduler_init = scenario_mix.add_function('start_scenario_instance')
+    scenario_ip_scheduler_init = generate_network_scheduler.build(gateway_scheduler, interface_scheduler, path_scheduler, "init")
+    start_ip_scheduler_init.configure(scenario_ip_scheduler_init)
+
+    # Add iptables
+    start_iptables_init = scenario_mix.add_function('start_scenario_instance')
+    scenario_iptables_init = generate_network_iptables.build(gateway_scheduler, generate_iptables(args_list), "init")
+    start_iptables_init.configure(scenario_iptables_init)
 
     #launching Apache2 servers first
     start_RT_AQM_WEB_servers = []
     for args in args_list:
         if args[1] == "web" and args[2] not in apache_servers:
             start_RT_AQM_WEB_server = apache2(scenario_mix, args[2], "start",
-                    wait_finished=[start_RT_AQM_initialize], wait_launched=None, wait_delay=5)[0]
+                    wait_finished=[start_ip_scheduler_init, start_iptables_init], wait_launched=None, wait_delay=5)[0]
             apache_servers[args[2]] = start_RT_AQM_WEB_server
             start_RT_AQM_WEB_servers.append(start_RT_AQM_WEB_server)
 
@@ -146,18 +151,24 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processin
     for server_entity,scenario_server in apache_servers.items():
         stopper = scenario_mix.add_function(
                 'stop_job_instance',
-                wait_finished=list_wait_finished,
-                wait_delay=5)
+                wait_finished=list_wait_finished, wait_delay=5)
         stopper.configure(scenario_server)
         apache2(scenario_mix, server_entity, "stop",
-                wait_finished=list_wait_finished,
-                wait_delay=5)
+                wait_finished=list_wait_finished, wait_delay=5)
 
-    # Add RT_AQM_reset scenario
-    start_RT_AQM_reset = scenario_mix.add_function(
-                'start_scenario_instance', wait_finished=list_wait_finished, wait_delay=5)
-    scenario_RT_AQM_reset = RT_AQM_reset.build(gateway_scheduler, interface_scheduler, reset_scheduler, reset_iptables)
-    start_RT_AQM_reset.configure(scenario_RT_AQM_reset)
+    # Removes ip_scheduler
+    if reset_scheduler:
+        start_ip_scheduler_init = scenario_mix.add_function('start_scenario_instance',
+                wait_finished=list_wait_finished, wait_delay=5)
+        scenario_ip_scheduler_init = generate_network_scheduler.build(gateway_scheduler, interface_scheduler, path_scheduler, "reset")
+        start_ip_scheduler_init.configure(scenario_ip_scheduler_init)
+
+    # Removes iptables
+    if reset_iptables:
+        start_iptables_init = scenario_mix.add_function('start_scenario_instance',
+                wait_finished=list_wait_finished, wait_delay=5)
+        scenario_iptables_init = generate_network_iptables.build(gateway_scheduler, generate_iptables(args_list), "reset")
+        start_iptables_init.configure(scenario_iptables_init)
 
     # Post processing data
     if post_processing_entity is not None:

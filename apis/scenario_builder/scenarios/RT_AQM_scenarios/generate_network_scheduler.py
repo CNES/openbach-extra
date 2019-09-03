@@ -29,31 +29,35 @@
 from scenario_builder import Scenario
 
 
-SCENARIO_DESCRIPTION="""Reset scheduler and iptables if requested"""
-SCENARIO_NAME="""RT_AQM_reset"""
+SCENARIO_DESCRIPTION="""Initializes or removes ip scheduler"""
+SCENARIO_NAME="""generate_network_scheduler"""
 
-def reset_config(scenario, gateway, interface, reset_scheduler, reset_iptables):
-
-    if reset_scheduler:
-        scheduler_del = scenario.add_function('start_job_instance')
-        scheduler_del.configure(
+def reset(scenario, gateway, interface):
+    scheduler = scenario.add_function('start_job_instance')
+    scheduler.configure(
                 'ip_scheduler', gateway, offset=0,
-                 interface_name=interface,remove={})
+                 interface_name=interface, remove={})
 
-    if reset_iptables:
-        iptables_del = scenario.add_function('start_job_instance')
-        iptables_del.configure(
-                'iptables', gateway, offset=0,
-                rule="-t mangle -F")
+def initialize(scenario, gateway, interface, path):
+
+    scheduler = scenario.add_function('start_job_instance')
+    scheduler.configure(
+            'ip_scheduler', gateway, offset=0,
+             interface_name=interface,
+             add={'file_path': path})
 
     return scenario
 
 
-def build(gateway, interface, reset_scheduler, reset_iptables, scenario_name=SCENARIO_NAME):
-    print("loading:",scenario_name)
+def build(gateway, interface, path, action, scenario_name=SCENARIO_NAME):
+    print("loading:",scenario_name + "_" + action)
 
     # Create scenario
-    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    reset_config(scenario, gateway, interface, reset_scheduler, reset_iptables)
+    scenario = Scenario(scenario_name + "_" + action, SCENARIO_DESCRIPTION )
+
+    if action == "init":
+        initialize(scenario, gateway, interface, path)
+    if action == "reset":
+        reset(scenario, gateway, interface)
 
     return scenario

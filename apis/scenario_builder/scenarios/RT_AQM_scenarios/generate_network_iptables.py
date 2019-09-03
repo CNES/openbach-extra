@@ -29,29 +29,23 @@
 from scenario_builder import Scenario
 
 
-SCENARIO_DESCRIPTION="""Initializes scheduler and iptables"""
-SCENARIO_NAME="""RT_AQM_initialize"""
+SCENARIO_DESCRIPTION="""Initializes or removes iptables"""
+SCENARIO_NAME="""generate_network_iptables"""
 
-def initialize_core(scenario, gateway, interface, path, iptables):
+def reset(scenario, gateway):
+    iptables = scenario.add_function('start_job_instance')
+    iptables.configure(
+                'iptables', gateway, offset=0,
+                rule="-t mangle -F")
 
-    scheduler = scenario.add_function('start_job_instance')
-    scheduler.configure(
-            'ip_scheduler', gateway, offset=0,
-             interface_name=interface,
-             add={'file_path': path})
+def initialize(scenario, gateway, iptables):
 
-    iptables_del = scenario.add_function('start_job_instance')
-    iptables_del.configure(
-            'iptables', gateway, offset=0,
-            rule="-t mangle -F")
+    reset(scenario, gateway)
 
-    prev_job = [iptables_del]
+    prev_job = []
     for address,src_port,dst_port,protocol,tos in iptables:
-        iptable = scenario.add_function(
-            'start_job_instance',
-            wait_finished=prev_job,
-            wait_launched=None,
-            wait_delay=1)
+        iptable = scenario.add_function('start_job_instance',
+            wait_finished=prev_job, wait_launched=None, wait_delay=1)
         if src_port:
             iptable.configure(
                     'iptables', gateway, offset=0,
@@ -65,12 +59,15 @@ def initialize_core(scenario, gateway, interface, path, iptables):
     return scenario
 
 
-def build(gateway, interface, path, iptables, scenario_name=SCENARIO_NAME):
-    print("loading:",scenario_name)
+def build(gateway, iptables, action, scenario_name=SCENARIO_NAME):
+    print("loading:",scenario_name + "_" + action)
 
     # Create scenario
-    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    scenario = Scenario(scenario_name + "_" + action, SCENARIO_DESCRIPTION)
 
-    initialize_core(scenario, gateway, interface, path, iptables)
+    if action == "init":
+        initialize(scenario, gateway, iptables)
+    if action == "reset":
+        reset(scenario, gateway)
 
     return scenario
