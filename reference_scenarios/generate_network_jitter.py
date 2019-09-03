@@ -27,12 +27,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+"""This script launches the *network_jitter* scenario
+from /openbach-extra/apis/scenario_builder/scenarios/
+"""
+
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_jitter
 
-"""This script launches the *network_jitter* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
-def main():
+def main(scenario_name='generate_network_jitter', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--client', '--client-entity', required=True,
@@ -43,24 +47,24 @@ def main():
     observer.add_scenario_argument(
             '--ip_dst', required=True, help='server ip address and target of the pings')
     observer.add_scenario_argument(
-            '--port', default = 7000, help='the iperf3 server port for data')
+            '--port', default=7000, help='the iperf3 server port for data')
     observer.add_scenario_argument(
-            '--duration', default = 10,
+            '--duration', default=10,
             help='the duration of iperf3 test')
     observer.add_scenario_argument(
-            '--num_flows', default = '1',
+            '--num_flows', default='1',
             help='the number of flows to launch with iperf3')
     observer.add_scenario_argument(
-            '--tos', default = '0',
+            '--tos', default='0',
             help='the ToS of iperf3 test')
     observer.add_scenario_argument(
-            '--bandwidth', default = '1M',
+            '--bandwidth', default='1M',
             help='the bandwidth (bits/s) of iperf3 test')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will '
-            'be performed (histogtram/time-series jobs must be installed) if defined')
+            '--entity_pp', help='The entity where the post-processing will be '
+            'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse()
+    args = observer.parse(argv, scenario_name)
 
     scenario = network_jitter.build(
                       args.client,

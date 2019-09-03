@@ -27,43 +27,49 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+"""This script launches the *network_global* scenario
+from /openbach-extra/apis/scenario_builder/scenarios/
+"""
+
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_global
 
-"""This script launches the *network_global* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
-def main():
+def main(scenario_name='generate_network_global', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-        '--client', '--client-entity', required=True,
-        help='name of the entity for the client of global tests')
+            '--client', '--client-entity', required=True,
+            help='name of the entity for the client of global tests')
     observer.add_scenario_argument(
-        '--server', '--server-entity', required=True,
-        help='name of the entity for the server of the global tests')
+            '--server', '--server-entity', required=True,
+            help='name of the entity for the server of the global tests')
     observer.add_scenario_argument(
-        '--ip_dst', help='server ip address and target of the global network test')
+            '--ip_dst', help='server ip address and target of the global network test')
     observer.add_scenario_argument(
-        '--port', default = 7000,  help='The iperf3/nuttcp server port for data')
+            '--port', default=7000,  help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
-        '--command_port', default = 8000, help='The port of nuttcp server for signalling')
+            '--command_port', default=8000, help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
-        '--duration', default=30, help='duration of each delay, rate,   scenario (s)')
+            '--duration', default=30, help='duration of each delay, rate,   scenario (s)')
     observer.add_scenario_argument(
-        '--rate', help='Set a higher rate (in kb/s) than what you estimate between server and client '
-        'for the UDP test (add m/g to set M/G b/s)', required=True)
+            '--rate', required=True, help='Set a higher rate (in kb/s) '
+            'than what you estimate between server and client for the '
+            'UDP test (add m/g to set M/G b/s)')
     observer.add_scenario_argument(
-        '--num_flows', default=1, help='Number of iperf3 flows generated (default : 1)')
+            '--num_flows', default=1, help='Number of iperf3 flows generated (default : 1)')
     observer.add_scenario_argument(
-        '--tos', default=0, help='Type of Service of the trafic (default : 0)')
+            '--tos', default=0, help='Type of Service of the trafic (default : 0)')
     observer.add_scenario_argument(
-        '--mtu', default=1000-40, help='MTU size (default : 1000-40)')
+            '--mtu', default=1000-40, help='MTU size (default : 1000-40)')
     observer.add_scenario_argument(
-        '--bandwidth', default = '1M',
-        help='the bandwidth (bits/s) of iperf3 test')
+            '--bandwidth', default='1M',
+            help='the bandwidth (bits/s) of iperf3 test')
     observer.add_scenario_argument(
-        '--entity_pp', help='The entity name where the post-processing will be performed')
+            '--entity_pp', help='The entity where the post-processing will be '
+            'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse()
+    args = observer.parse(argv, scenario_name)
 
     scenario = network_global.build(
                       args.client,
