@@ -29,7 +29,10 @@
 """Sources of the voip_qoe_src.py file"""
 
 __author__ = 'Antoine AUGER'
-__credits__ = 'Antoine AUGER <antoine.auger@tesa.prd.fr>'
+__credits__ = '''Contributors:
+ * Antoine AUGER <antoine.auger@tesa.prd.fr>
+ * Bastien TAURAN <bastien.tauran@toulouse.viveris.com>
+'''
 
 import shutil
 import argparse
@@ -42,6 +45,8 @@ import yaml
 import collect_agent
 from codec import CodecConstants
 from compute_mos import compute_r_value, compute_mos_value
+import random
+import socket
 
 job_name = "voip_qoe_src"
 receiver_job_name = "voip_qoe_dest"
@@ -75,7 +80,6 @@ def build_parser():
     parser.add_argument('codec', type=str, help="The codec to use to perform the VoIP sessions",
                         choices=['G.711.1', 'G.711.2', 'G.723.1', 'G.729.2', 'G.729.3'])
     parser.add_argument('duration', type=int, help='The duration of one VoIP session in seconds')
-    parser.add_argument('root_user_dest', type=str, help='The name of a root user on the destination (receiver) side')
     parser.add_argument('-f', '--nb_flows', type=int, default=1, help='The number of parallel VoIP session to start')
     parser.add_argument('-Ssa', '--sig_src_addr', type=ipaddress.ip_address, default=None, help='The source address '
                                                                                                 'for the signaling '
@@ -95,9 +99,26 @@ def build_parser():
     parser.add_argument('-p', '--starting_port', type=int, default=10000,
                         help='The starting port to emit VoIP sessions. Each session is emitted on a different port '
                              '(e.g., 10000, 10001, etc.).')
+    parser.add_argument('-cp', '--control_port', type=int, default=50000,
+                        help='The port used on the sender side to send and receive OpenBACH commands from the client.'
+                             'Should be the same on the destination side.  Default: 50000.')
     parser.add_argument('-pt', '--protocol', type=str, default='RTP',
                         help='The protocol to use to perform the VoIP sessions', choices=['RTP', 'CRTP'])
     return parser
+
+def clean(s,run_id):
+    """
+    Removes temp folders on both sides before exiting job
+    """
+    s.send("DELETE_FOLDER".encode())
+    sleep(2)
+    try:
+        shutil.rmtree(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id)))
+    except FileNotFoundError:
+        pass  # Do nothing if the directory does not exist
+    s.send("BYE".encode())
+    s.close()
+    print('connection closed')
 
 
 def main(config, args):
@@ -117,13 +138,6 @@ def main(config, args):
         collect_agent.send_log(syslog.LOG_ERR, message)
         exit(message)
 
-    # We first purge old D-ITG logs
-    try:
-        subprocess.check_output(['ssh', '{}@{}'.format(args.root_user_dest, args.dest_addr),
-                                 'rm -rf {}'.format(os.path.join(common_prefix, receiver_job_name, 'logs', 'run*'))])
-    except subprocess.CalledProcessError:
-        pass  # No exit code since directories may not exist
-
     # We write into a temp file all VoIP flows to be sent
     with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), config['FILE_TEMP_FLOWS']), "w") as f:
         for port in range(args.starting_port, args.starting_port + args.nb_flows, 1):
@@ -136,15 +150,19 @@ def main(config, args):
             f.write(str_to_write)
             f.flush()
 
-    for run_id in range(1, args.nb_runs + 1, 1):
-        # We remotely create one log directory per run on the receiver instance
-        try:
-            subprocess.check_output(['ssh', '{}@{}'.format(args.root_user_dest, args.dest_addr),
-                                     'mkdir {}'.format(os.path.join(common_prefix, receiver_job_name, 'logs',
-                                                                    'run{}'.format(run_id)))])
-        except subprocess.CalledProcessError as e:
-            collect_agent.send_log(syslog.LOG_ERR, e.output)
-            exit(e.returncode)
+    random.seed()
+
+    for _ in range(1, args.nb_runs + 1, 1):
+        s = socket.socket()
+        host = args.dest_addr
+        port = args.control_port
+
+        s.connect((str(host), port))
+
+        run_id = random.getrandbits(64)
+        s.send(("RUN_ID-"+str(run_id)).encode())
+        os.mkdir(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id)))
+        sleep(2)
 
         # We locally create one log directory per run
         try:
@@ -159,9 +177,9 @@ def main(config, args):
         ref_timestamp = get_timestamp()
         temp_file_name = "{}flows_{}_{}_{}s".format(args.nb_flows, args.codec, args.protocol, args.duration)
         local_log_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id),
-                                      'send_{}.log'.format(temp_file_name))
+                                      'send.log')
         distant_log_file = os.path.join(common_prefix, receiver_job_name, 'logs', 'run{}'.format(run_id),
-                                        'recv_{}.log'.format(temp_file_name))
+                                        'recv.log')
 
         # D-ITG command to send VoIP packets, check documentation at http://www.grid.unina.it/software/ITG/manual/
         d_itg_send_ps = subprocess.Popen([os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -175,20 +193,21 @@ def main(config, args):
         collect_agent.send_log(syslog.LOG_DEBUG, "Finished run {}".format(run_id))
 
         # We remotely retrieve logs
-        try:
-            subprocess.check_output(['scp',
-                                     '{}@{}:{}'.format(args.root_user_dest, args.dest_addr, distant_log_file),
-                                     os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs',
-                                                  'run{}'.format(run_id))])
-        except subprocess.CalledProcessError as e:
-            collect_agent.send_log(syslog.LOG_ERR, e.output)
-            exit(e.returncode)
+        s.send("GET_LOG_FILE".encode())
+        with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id),'recv.log'), 'wb') as f:
+            print('file opened')
+            while True:
+                data = s.recv(1024)
+                if data == "TRANSFERT_FINISHED".encode():
+                    break
+                f.write(data)
+        sleep(2)
 
         # Thanks to ITGDec, we print all average metrics to file every args.granularity (in ms)
         d_itg_dec = subprocess.Popen([os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                                    'D-ITG-2.8.1-r1023', 'bin', 'ITGDec'),
                                       os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs',
-                                                   'run{}'.format(run_id), 'recv_{}.log'.format(temp_file_name)),
+                                                   'run{}'.format(run_id), 'recv.log'),
                                       '-f', '1',
                                       '-c', str(args.granularity),
                                       os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs',
@@ -232,6 +251,9 @@ def main(config, args):
                     'packet_loss (%)': stat_pkt_loss
                 }
                 collect_agent.send_stat(timestamp_line, **statistics)
+
+        # We purge D-ITG logs
+        clean(s,run_id)
 
         sleep(args.waiting_time)
 
