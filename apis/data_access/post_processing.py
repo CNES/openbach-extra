@@ -78,7 +78,12 @@ def save(figure, filename, use_pickle=False):
         with open(filename, 'wb') as storage:
             pickle.dump(figure, storage)
     else:
-        figure.savefig(filename)
+        artists = [
+                axis.legend(loc='center left', bbox_to_anchor=(1., .5))
+                for axis in figure.axes
+                if axis.get_legend()
+        ]
+        figure.savefig(filename, additional_artists=[artists], bbox_inches='tight')
 
 
 class Statistics(InfluxDBCommunicator):
@@ -93,7 +98,6 @@ class Statistics(InfluxDBCommunicator):
                 influx.get('query', 8086),
                 influx.get('database', 'openbach'),
                 influx.get('precision', 'ms'))
-
 
     @property
     def origin(self):
@@ -148,7 +152,10 @@ class Statistics(InfluxDBCommunicator):
 
             df.set_index(['@job_instance_id', '@scenario_instance_id', '@agent_name', '@suffix'], inplace=True)
             for index in df.index.unique():
-                section = df.xs(index).reset_index(drop=True).dropna(axis=1, how='all')
+                extract = df.xs(index)
+                if isinstance(extract, pd.Series):
+                    extract = pd.DataFrame(extract.to_dict(), index=[0])
+                section = extract.reset_index(drop=True).dropna(axis=1, how='all')
                 section['time'] -= section.time[0] if offset is None else offset
                 section.set_index('time', inplace=True)
                 section.index.name = 'Time (ms)'
