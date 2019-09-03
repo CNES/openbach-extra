@@ -28,7 +28,7 @@
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios.RT_AQM_scenarios import RT_AQM_global
+from scenario_builder.scenarios.RT_AQM_scenarios import generate_service_traffic_mix
 
 """This scenario launches the *RT_AGM_global* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
@@ -68,7 +68,7 @@ def main():
         print("Cannot open args file, exiting")
         return
 
-    scenario = RT_AQM_global.build(
+    scenario = generate_service_traffic_mix.build(
             args.gateway_scheduler,
             args.interface_scheduler,
             args.path_scheduler,

@@ -45,12 +45,13 @@ def initialize_core(scenario, gateway, interface, path, iptables):
             'iptables', gateway, offset=0,
             rule="-t mangle -F")
 
+    prev_job = [iptables_del]
     for address,src_port,dst_port,protocol,tos in iptables:
         iptable = scenario.add_function(
             'start_job_instance',
-            wait_finished=[iptables_del],
+            wait_finished=prev_job,
             wait_launched=None,
-            wait_delay=2)
+            wait_delay=1)
         if src_port:
             iptable.configure(
                     'iptables', gateway, offset=0,
@@ -59,6 +60,7 @@ def initialize_core(scenario, gateway, interface, path, iptables):
             iptable.configure(
                     'iptables', gateway, offset=0,
                     rule="-t mangle -A PREROUTING -d " + address + " -p " + protocol + " --dport " + str(dst_port) + " -j TOS --set-tos " + str(tos))
+        prev_job = [iptable]
 
     return scenario
 
