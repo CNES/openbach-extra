@@ -42,10 +42,20 @@ import datetime
 
 import requests
 
+from auditorium_scripts.frontend import FrontendBase
+
 
 def date(date, fmt='%d/%m/%Y'):
     """Parse a date to a datetime object"""
     return datetime.datetime.strptime(date, fmt).date()
+
+
+def index_to_datetime(index):
+    """Extract the timestamp of the index creation
+    date out of the index informations.
+    """
+    timestamp = int(index['settings']['index']['creation_date'])
+    return datetime.datetime.utcfromtimestamp(timestamp / 1000).date()
 
 
 def date_past_years(relative_date, year_count):
@@ -72,92 +82,94 @@ def date_past_days(relative_date, days_count):
     return relative_date - datetime.timedelta(days=days_count)
 
 
-def parse_command_line():
-    parser = argparse.ArgumentParser(
-            description='OpenBACH — Reopen Closed Logs in ElasticSearch',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    collector = parser.add_argument_group('collector')
-    collector.add_argument(
-            'collector',
-            help='IP address of the collector running ElasticSearch')
-    collector.add_argument(
-            '-p', '--port', type=int, default=9200,
-            help='port on which ElasticSearch is listening for HTTP requests')
-    dates = parser.add_mutually_exclusive_group(required=True)
-    dates.add_argument(
-            '-d', '--date', nargs=2, type=date,
-            help='dates between which the logs should be reopened. '
-            'Format is DD/MM/YYYY')
-    dates.add_argument(
-            '-l', '--last', nargs=2, metavar=('DURATION', 'UNIT'),
-            help='timespan from now to identify logs to reopen. e.g.: '
-            '20 days, 3 months, or 1 year')
-
-    args = parser.parse_args()
-    last = args.last
-    if last is None:
-        return (args.collector, args.port, *sorted(args.date))
-
-    converter = {
-            'day': date_past_days,
-            'days': date_past_days,
-            'd': date_past_days,
-            'month': date_past_months,
-            'months': date_past_months,
-            'm': date_past_months,
-            'year': date_past_years,
-            'years': date_past_years,
-            'y': date_past_years,
-    }
-
-    duration, unit = last
-    try:
-        duration = int(duration)
-    except ValueError:
-        parser.error('argument -l: invalid duration value: \'{}\''.format(duration))
-
-    now = datetime.datetime.now().date()
-    try:
-        start = converter[unit](now, duration)
-    except KeyError:
-        parser.error('argument -l: invalid unit value: \'{}\''.format(unit))
-
-    return args.collector, args.port, start, now
+CONVERTERS = {
+        'day': date_past_days,
+        'days': date_past_days,
+        'd': date_past_days,
+        'month': date_past_months,
+        'months': date_past_months,
+        'm': date_past_months,
+        'year': date_past_years,
+        'years': date_past_years,
+        'y': date_past_years,
+}
 
 
-def index_to_datetime(index):
-    """Extract the timestamp of the index creation
-    date out of the index informations.
-    """
-    timestamp = int(index['settings']['index']['creation_date'])
-    return datetime.datetime.utcfromtimestamp(timestamp / 1000).date()
+class OpenLogs(FrontendBase):
+    def __init__(self):
+        self.parser = argparse.ArgumentParser(
+                description='OpenBACH — Reopen Closed Logs in ElasticSearch',
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        collector = self.parser.add_argument_group('collector')
+        collector.add_argument(
+                'collector',
+                help='IP address of the collector running ElasticSearch')
+        collector.add_argument(
+                '-p', '--port', type=int, default=9200,
+                help='port on which ElasticSearch is listening for HTTP requests')
+        dates = self.parser.add_mutually_exclusive_group(required=True)
+        dates.add_argument(
+                '-d', '--date', nargs=2, type=date,
+                help='dates between which the logs should be reopened. '
+                'Format is DD/MM/YYYY')
+        dates.add_argument(
+                '-l', '--last', nargs=2, metavar=('DURATION', 'UNIT'),
+                help='timespan from now to identify logs to reopen. e.g.: '
+                '20 days, 3 months, or 1 year')
+
+        self.session = requests.Session()
+
+    def parse(self, args=None):
+        self.args = args = self.parser.parse_args()
+        last = args.last
+        if last is None:
+            args.date = sorted(args.date)
 
 
-def open_logs(collector, port, date_begin, date_end):
-    """Reopen closed logs on the collector that are between two dates"""
-    base_url = 'http://{}:{}/'.format(collector, port)
+        duration, unit = last
+        try:
+            duration = int(duration)
+        except ValueError:
+            self.parser.error('argument -l: invalid duration value: \'{}\''.format(duration))
 
-    # Get the list of all closed logs
-    response = requests.get(
-            base_url + '_all/_settings',
-            params={'expand_wildcards': 'closed'})
-    response.raise_for_status()
-    indices = response.json()
+        now = datetime.datetime.now().date()
+        try:
+            start = CONVERTERS[unit](now, duration)
+        except KeyError:
+            parser.error('argument -l: invalid unit value: \'{}\''.format(unit))
+        else:
+            args.date = [start, now]
 
-    # Check creation date of all
-    to_open = ','.join(
-            index
-            for index, content in indices.items()
-            if date_begin <= index_to_datetime(content) <= date_end
-    )
-    if not to_open:
-        return
+        self.base_url = 'http://{}:{}/'.format(args.collector, args.port)
+        return args
 
-    # Open indexes
-    response = requests.post(base_url + to_open + '/_open')
-    response.raise_for_status()
+    def execute(self, show_response_content=True):
+        """Reopen closed logs on the collector that are between two dates"""
+
+        # Get the list of all closed logs
+        response = self.request(
+                'GET', '_all/_settings',
+                expand_wildcards='closed',
+                show_response_content=False)
+        response.raise_for_status()
+        indices = response.json()
+
+        # Check creation date of all
+        to_open = ','.join(
+                index
+                for index, content in indices.items()
+                if date_begin <= index_to_datetime(content) <= date_end
+        )
+        if not to_open:
+            if show_response_content:
+                print('Nothing to open in this date range')
+            return
+
+        # Open indexes
+        return self.request(
+                'POST', to_open + '/open',
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':
-    collector, port, begin, end = parse_command_line()
-    open_logs(collector, port, begin, end)
+    OpenLogs.autorun()

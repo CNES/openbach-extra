@@ -44,7 +44,7 @@ from auditorium_scripts.frontend import FrontendBase, pretty_print
 
 class ListJobInstances(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — List Instances')
+        super().__init__('OpenBACH — List Job Instances from agents')
         self.parser.add_argument(
                 'agent', nargs='+',
                 help='IP addresses of the agents')

@@ -43,12 +43,12 @@ from auditorium_scripts.frontend import FrontendBase
 class GetJobHelp(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Display Job Help')
-        self.parser.add_argument('name', help='name of the job to query')
+        self.parser.add_argument('job_name', help='name of the job to query')
 
     def execute(self, show_response_content=True):
-        job = self.args.name
+        job_name = self.args.job_name
         return self.request(
-                'GET', 'job/{}/'.format(job), type='help',
+                'GET', 'job/{}/'.format(job_name), type='help',
                 show_response_content=show_response_content)
 
 

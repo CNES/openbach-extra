@@ -36,18 +36,37 @@ __credits__ = '''Contributors:
 '''
 
 
+import pprint
+
 from auditorium_scripts.frontend import FrontendBase
 
 
-class DeleteScenarioInstance(FrontendBase):
+class DeleteScenarioInstances(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Delete a Scenario Instance')
-        self.parser.add_argument('id', type=int, help='scenario instance ID to delete')
+        self.parser.add_argument(
+                'id', nargs='+', type=int,
+                help='scenario instance ID to delete')
 
     def execute(self, show_response_content=True):
-        route = 'scenario_instance/{}/'.format(self.args.id)
-        return self.request('DELETE', route, show_response_content=show_response_content)
+        instance_ids = self.args.id
+        show = show_response_content if len(instance_ids) == 1 else False
+        responses = [
+                self.request(
+                    'DELETE', 'scenario_instance/{}/'.format(id),
+                    show_response_content=show)
+                for id in instance_ids
+        ]
+
+        if len(instance_ids) == 1:
+            return responses[0]
+
+        if show_response_content:
+            for response in responses:
+                pprint.pprint(response.json(), width=120)
+
+        return responses
 
 
 if __name__ == '__main__':
-    DeleteScenarioInstance.autorun()
+    DeleteScenarioInstances.autorun()

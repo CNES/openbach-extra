@@ -46,9 +46,11 @@ from auditorium_scripts.frontend import FrontendBase
 class ModifyScenario(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Modify a Scenario')
-        self.parser.add_argument('name', help='name of the scenario to modify')
         self.parser.add_argument(
-                'scenario', type=FileType('r'),
+                'scenario_name',
+                help='name of the scenario to modify')
+        self.parser.add_argument(
+                'scenario_file', type=FileType('r'),
                 help='path to the definition file of the scenario')
         self.parser.add_argument(
                 '-p', '--project',
@@ -56,16 +58,16 @@ class ModifyScenario(FrontendBase):
 
     def parse(self, args=None):
         super().parse(args)
-        scenario = self.args.scenario
-        with scenario:
+        scenario_file = self.args.scenario_file
+        with scenario_file:
             try:
-                self.args.scenario = json.load(scenario)
+                self.args.scenario = json.load(scenario_file)
             except ValueError:
-                self.parser.error('invalid JSON data in {}'.format(scenario.name))
+                self.parser.error('invalid JSON data in {}'.format(scenario_file.name))
 
     def execute(self, show_response_content=True):
         scenario = self.args.scenario
-        name = self.args.name
+        name = self.args.scenario_name
         project = self.args.project
         route = 'scenario/{}/'.format(name)
         if project is not None:

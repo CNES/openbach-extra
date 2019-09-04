@@ -47,7 +47,7 @@ class CreateScenario(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Create a new Scenario')
         self.parser.add_argument(
-                'scenario', type=FileType('r'),
+                'scenario_file', type=FileType('r'),
                 help='path to the definition file of the scenario')
         self.parser.add_argument(
                 '-p', '--project',
@@ -55,7 +55,7 @@ class CreateScenario(FrontendBase):
 
     def parse(self, args=None):
         super().parse(args)
-        scenario = self.args.scenario
+        scenario = self.args.scenario_file
         with scenario:
             try:
                 self.args.scenario = json.load(scenario)
