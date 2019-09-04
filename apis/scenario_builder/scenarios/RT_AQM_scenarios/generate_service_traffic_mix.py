@@ -30,25 +30,17 @@
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.service.apache2 import apache2
-from scenario_builder.scenarios.RT_AQM_scenarios import generate_network_set_tos, generate_network_scheduler
 from scenario_builder.scenarios.RT_AQM_scenarios import generate_service_data_transfer, generate_service_video_dash, generate_service_web_browsing, generate_service_voip
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
-SCENARIO_DESCRIPTION="""This scenario executes the following in-order:
-        - Load ip_scheduler
-        - Load iptables to set ToS
-        - Launche all the traffics as defined in the configuration file
-        - Reset ip_scheduler if requested
-        - Reset iptables if requested
-        - Post processes generated data
+SCENARIO_DESCRIPTION="""This scenario launches the traffics as defined in the configuration file, then post processes generated data
 """
 SCENARIO_NAME="""generate_service_traffic_mix"""
 
 def load_args(args_list):
     args_main = []
-    map_tos = {}
     id_explored = []
     for args_str in args_list:
         try:
@@ -57,43 +49,32 @@ def load_args(args_list):
             if args_str[0] == '#':
                 continue
             args = args_str.split()
-            if args[0] == "set-tos":
-                if len(args) == 3:
-                    map_tos[args[1]] = int(args[2])
-                else:
-                    print("Wrong argument format, 3 elements needed:", " ".join(args), "... ignoring")
+            for traffic, nb in [("voip",12), ("web",10), ("dash",11), ("iperf",12)]:
+                if args[1] == traffic and len(args) != nb:
+                    print("Wrong argument format,", nb, "elements needed for", traffic, "traffic:", " ".join(args), "... ignoring")
+                    break
             else:
-                for traffic, nb in [("voip",12), ("web",10), ("dash",11), ("iperf",12)]:
-                    if args[1] == traffic and len(args) != nb:
-                        print("Wrong argument format,", nb, "elements needed for", traffic, "traffic:", " ".join(args), "... ignoring")
+                ids = list(map(int,args[5].split("-")) if args[5] != "None" else []) + list(map(int,args[6].split("-")) if args[6] != "None" else [])
+                cur_id = int(args[0])
+                if cur_id in id_explored:
+                    print("Duplicated id:", " ".join(args), "... ignoring")
+                    continue
+                id_explored.append(cur_id)
+                int(args[4])
+                int(args[7])
+                for dependency in ids:
+                    if cur_id <= dependency:
+                        print("This traffic depends on future ones:", " ".join(args), "... ignoring")
+                        break
+                    if dependency not in id_explored:
+                        print("This traffic depends on missing ones:", " ".join(args), "... ignoring")
                         break
                 else:
-                    ids = list(map(int,args[5].split("-")) if args[5] != "None" else []) + list(map(int,args[6].split("-")) if args[6] != "None" else [])
-                    cur_id = int(args[0])
-                    if cur_id in id_explored:
-                        print("Duplicated id:", " ".join(args), "... ignoring")
-                        continue
-                    id_explored.append(cur_id)
-                    int(args[4])
-                    int(args[7])
-                    for dependency in ids:
-                        if cur_id <= dependency:
-                            print("This traffic depends on future ones:", " ".join(args), "... ignoring")
-                            break
-                        if dependency not in id_explored:
-                            print("This traffic depends on missing ones:", " ".join(args), "... ignoring")
-                            break
-                    else:
-                        args_main.append(args)
+                    args_main.append(args)
         except ValueError:
             print("Cannot parse this line:", args_str)
 
-    for traffic in ["voip", "web", "dash", "iperf"]:
-        if traffic not in map_tos:
-            print("tos not set for traffic", traffic, "... exiting")
-            exit()
-
-    return args_main, map_tos
+    return args_main
 
 
 def extract_jobs_to_postprocess(scenarios, traffic):
@@ -120,56 +101,33 @@ def extract_jobs_to_postprocess(scenarios, traffic):
                     yield (start_scenario, function_id, address + " " + str(port))
 
 
-
-def generate_iptables(args_list, map_tos):
-    iptables = []
-
-    for args in args_list:
-        if args[1] == "iperf":
-            address = args[8]
-            port = args[9]
-            iptables.append((address, "", port, "UDP", map_tos["iperf"]))
-        if args[1] == "dash":
-            address = args[9]
-            port = args[10]
-            iptables.append((address, port, "", "TCP", map_tos["dash"]))
-        if args[1] == "web":
-            address = args[9]
-            iptables.append((address, 8082, "", "TCP", map_tos["web"]))
-        if args[1] == "voip":
-            address = args[9]
-            port = args[10]
-            iptables.append((address, "", port, "UDP", map_tos["voip"]))
-
-    return iptables
-
-
-def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processing_entity, args_list, reset_scheduler, reset_iptables, scenario_name=SCENARIO_NAME):
-    # Create top network_global scenario
+def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAME):
+    # Create top network_traffix_mix scenario
     scenario_mix = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     list_wait_finished = []
     list_scenarios = []
     apache_servers = {}
     map_scenarios = {}
+    
+    extra_args = []
+    try:
+        file = open(extra_args_traffic,"r")
+        for line in file:
+            extra_args.append(line)
+        file.close()
+    except (OSError, IOError):
+        print("Cannot open args file, exiting")
+        return
 
-    args_list, map_tos = load_args(args_list)
+    args_list = load_args(extra_args)
 
-    # Add ip_scheduler
-    start_ip_scheduler_init = scenario_mix.add_function('start_scenario_instance')
-    scenario_ip_scheduler_init = generate_network_scheduler.build(gateway_scheduler, interface_scheduler, path_scheduler, "init")
-    start_ip_scheduler_init.configure(scenario_ip_scheduler_init)
-
-    # Add iptables
-    start_iptables_init = scenario_mix.add_function('start_scenario_instance')
-    scenario_iptables_init = generate_network_set_tos.build(gateway_scheduler, generate_iptables(args_list, map_tos), "init")
-    start_iptables_init.configure(scenario_iptables_init)
+    print("loading traffics")
 
     #launching Apache2 servers first
     start_servers = []
     for args in args_list:
         if args[1] == "web" and args[2] not in apache_servers:
-            start_server = apache2(scenario_mix, args[2], "start",
-                    wait_finished=[start_ip_scheduler_init, start_iptables_init], wait_launched=None, wait_delay=5)[0]
+            start_server = apache2(scenario_mix, args[2], "start")[0]
             apache_servers[args[2]] = start_server
             start_servers.append(start_server)
 
@@ -204,30 +162,15 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processin
         
     # stopping all Apache2 servers
     for server_entity,scenario_server in apache_servers.items():
-        stopper = scenario_mix.add_function(
-                'stop_job_instance',
+        stopper = scenario_mix.add_function('stop_job_instance',
                 wait_finished=list_wait_finished, wait_delay=5)
         stopper.configure(scenario_server)
         apache2(scenario_mix, server_entity, "stop",
                 wait_finished=list_wait_finished, wait_delay=5)
 
-    # Removes ip_scheduler
-    if reset_scheduler:
-        start_ip_scheduler_init = scenario_mix.add_function('start_scenario_instance',
-                wait_finished=list_wait_finished, wait_delay=5)
-        scenario_ip_scheduler_init = generate_network_scheduler.build(gateway_scheduler, interface_scheduler, None, "reset")
-        start_ip_scheduler_init.configure(scenario_ip_scheduler_init)
-
-    # Removes iptables
-    if reset_iptables:
-        start_iptables_init = scenario_mix.add_function('start_scenario_instance',
-                wait_finished=list_wait_finished, wait_delay=5)
-        scenario_iptables_init = generate_network_set_tos.build(gateway_scheduler, None, "reset")
-        start_iptables_init.configure(scenario_iptables_init)
-
     # Post processing data
     if post_processing_entity is not None:
-        print("Loading:", "post processing")
+        print("loading:", "post processing")
         for traffic, name, y_axis in [("iperf", "throughput", "Rate (b/s)"),
                                         ("dash", "bitrate", "Rate (b/s)"),
                                         ("web", "page_load_time", "PLT (ms)"),
@@ -241,6 +184,6 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processin
                 time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [[name]], [[y_axis]], [['Rate time series']], legends, list_wait_finished, None, 2)
                 cdf_on_same_graph(scenario_mix, post_processing_entity, post_processed, 100, [[name]], [[y_axis]], [['Rate CDF']], legends, list_wait_finished, None, 2)
 
-    print("All scenarios loaded, launching simulation")
+    print("All traffics loaded")
 
     return scenario_mix
