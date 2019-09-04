@@ -30,19 +30,71 @@
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.service.apache2 import apache2
-from scenario_builder.scenarios.RT_AQM_scenarios import generate_network_iptables, generate_network_scheduler
+from scenario_builder.scenarios.RT_AQM_scenarios import generate_network_set_tos, generate_network_scheduler
 from scenario_builder.scenarios.RT_AQM_scenarios import generate_service_data_transfer, generate_service_video_dash, generate_service_web_browsing, generate_service_voip
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
-SCENARIO_DESCRIPTION="""This scenario launches the following in-order:
-        - RT_AQM_initialization
-        - All the traffics as defined in the configuration file
-        - RT_AQM_reset
-        - Post processing
+SCENARIO_DESCRIPTION="""This scenario executes the following in-order:
+        - Load ip_scheduler
+        - Load iptables to set ToS
+        - Launche all the traffics as defined in the configuration file
+        - Reset ip_scheduler if requested
+        - Reset iptables if requested
+        - Post processes generated data
 """
 SCENARIO_NAME="""generate_service_traffic_mix"""
+
+def load_args(args_list):
+    args_main = []
+    map_tos = {}
+    id_explored = []
+    for args_str in args_list:
+        try:
+            if len(args_str) < 10:
+                continue
+            if args_str[0] == '#':
+                continue
+            args = args_str.split()
+            if args[0] == "set-tos":
+                if len(args) == 3:
+                    map_tos[args[1]] = int(args[2])
+                else:
+                    print("Wrong argument format, 3 elements needed:", " ".join(args), "... ignoring")
+            else:
+                for traffic, nb in [("voip",12), ("web",10), ("dash",11), ("iperf",12)]:
+                    if args[1] == traffic and len(args) != nb:
+                        print("Wrong argument format,", nb, "elements needed for", traffic, "traffic:", " ".join(args), "... ignoring")
+                        break
+                else:
+                    ids = list(map(int,args[5].split("-")) if args[5] != "None" else []) + list(map(int,args[6].split("-")) if args[6] != "None" else [])
+                    cur_id = int(args[0])
+                    if cur_id in id_explored:
+                        print("Duplicated id:", " ".join(args), "... ignoring")
+                        continue
+                    id_explored.append(cur_id)
+                    int(args[4])
+                    int(args[7])
+                    for dependency in ids:
+                        if cur_id <= dependency:
+                            print("This traffic depends on future ones:", " ".join(args), "... ignoring")
+                            break
+                        if dependency not in id_explored:
+                            print("This traffic depends on missing ones:", " ".join(args), "... ignoring")
+                            break
+                    else:
+                        args_main.append(args)
+        except ValueError:
+            print("Cannot parse this line:", args_str)
+
+    for traffic in ["voip", "web", "dash", "iperf"]:
+        if traffic not in map_tos:
+            print("tos not set for traffic", traffic, "... exiting")
+            exit()
+
+    return args_main, map_tos
+
 
 def extract_jobs_to_postprocess(scenarios, traffic):
     for scenario, start_scenario in scenarios:
@@ -58,35 +110,36 @@ def extract_jobs_to_postprocess(scenarios, traffic):
                     #address = function.start_job_instance['dash player&server']['bind']
                     address = "Unknown address..." # TODO
                     yield (start_scenario, function_id, address + " " + str(port))
-                if traffic == "voip" and function.job_name == 'voip_qoe_src':
-                    port = function.start_job_instance['voip_qoe_src']['starting_port']
-                    address = function.start_job_instance['voip_qoe_src']['dest_addr']
-                    yield (start_scenario, function_id, address + " " + str(port))
                 if traffic == "web" and function.job_name == 'web_browsing_qoe':
                     dst = function.start_job_instance['entity_name']
                     port = "Unknown port..." # TODO
                     yield (start_scenario, function_id, dst + " " + str(port))
+                if traffic == "voip" and function.job_name == 'voip_qoe_src':
+                    port = function.start_job_instance['voip_qoe_src']['starting_port']
+                    address = function.start_job_instance['voip_qoe_src']['dest_addr']
+                    yield (start_scenario, function_id, address + " " + str(port))
 
-def generate_iptables(args_list):
+
+
+def generate_iptables(args_list, map_tos):
     iptables = []
 
     for args in args_list:
         if args[1] == "iperf":
             address = args[8]
             port = args[9]
-            iptables.append((address, "", port, "TCP", 16))
-            iptables.append((address, "", port, "UDP", 16))
+            iptables.append((address, "", port, "UDP", map_tos["iperf"]))
         if args[1] == "dash":
             address = args[9]
             port = args[10]
-            iptables.append((address, port, "", "TCP", 24))
+            iptables.append((address, port, "", "TCP", map_tos["dash"]))
         if args[1] == "web":
             address = args[9]
-            iptables.append((address, 8082, "", "TCP", 8))
+            iptables.append((address, 8082, "", "TCP", map_tos["web"]))
         if args[1] == "voip":
             address = args[9]
             port = args[10]
-            iptables.append((address, "", port, "UDP", 0))
+            iptables.append((address, "", port, "UDP", map_tos["voip"]))
 
     return iptables
 
@@ -99,6 +152,8 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processin
     apache_servers = {}
     map_scenarios = {}
 
+    args_list, map_tos = load_args(args_list)
+
     # Add ip_scheduler
     start_ip_scheduler_init = scenario_mix.add_function('start_scenario_instance')
     scenario_ip_scheduler_init = generate_network_scheduler.build(gateway_scheduler, interface_scheduler, path_scheduler, "init")
@@ -106,17 +161,17 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processin
 
     # Add iptables
     start_iptables_init = scenario_mix.add_function('start_scenario_instance')
-    scenario_iptables_init = generate_network_iptables.build(gateway_scheduler, generate_iptables(args_list), "init")
+    scenario_iptables_init = generate_network_set_tos.build(gateway_scheduler, generate_iptables(args_list, map_tos), "init")
     start_iptables_init.configure(scenario_iptables_init)
 
     #launching Apache2 servers first
-    start_RT_AQM_WEB_servers = []
+    start_servers = []
     for args in args_list:
         if args[1] == "web" and args[2] not in apache_servers:
-            start_RT_AQM_WEB_server = apache2(scenario_mix, args[2], "start",
+            start_server = apache2(scenario_mix, args[2], "start",
                     wait_finished=[start_ip_scheduler_init, start_iptables_init], wait_launched=None, wait_delay=5)[0]
-            apache_servers[args[2]] = start_RT_AQM_WEB_server
-            start_RT_AQM_WEB_servers.append(start_RT_AQM_WEB_server)
+            apache_servers[args[2]] = start_server
+            start_servers.append(start_server)
 
     # Creating and launching traffic scenarios
     for args in args_list:
@@ -124,7 +179,7 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processin
         scenario_id = args[0]
         if args[5] == "None" and args[6] == "None":
             wait_finished_list = []
-            wait_launched_list = start_RT_AQM_WEB_servers if start_RT_AQM_WEB_servers else []
+            wait_launched_list = start_servers if start_servers else []
             offset_delay = 5
         else:
             wait_finished_list = [map_scenarios[i] for i in args[6].split('-')] if args[6] != "None" else []
@@ -160,14 +215,14 @@ def build(gateway_scheduler, interface_scheduler, path_scheduler, post_processin
     if reset_scheduler:
         start_ip_scheduler_init = scenario_mix.add_function('start_scenario_instance',
                 wait_finished=list_wait_finished, wait_delay=5)
-        scenario_ip_scheduler_init = generate_network_scheduler.build(gateway_scheduler, interface_scheduler, path_scheduler, "reset")
+        scenario_ip_scheduler_init = generate_network_scheduler.build(gateway_scheduler, interface_scheduler, None, "reset")
         start_ip_scheduler_init.configure(scenario_ip_scheduler_init)
 
     # Removes iptables
     if reset_iptables:
         start_iptables_init = scenario_mix.add_function('start_scenario_instance',
                 wait_finished=list_wait_finished, wait_delay=5)
-        scenario_iptables_init = generate_network_iptables.build(gateway_scheduler, generate_iptables(args_list), "reset")
+        scenario_iptables_init = generate_network_set_tos.build(gateway_scheduler, None, "reset")
         start_iptables_init.configure(scenario_iptables_init)
 
     # Post processing data

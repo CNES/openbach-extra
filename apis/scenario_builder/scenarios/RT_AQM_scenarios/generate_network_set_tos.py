@@ -29,8 +29,8 @@
 from scenario_builder import Scenario
 
 
-SCENARIO_DESCRIPTION="""Initializes or removes iptables"""
-SCENARIO_NAME="""generate_network_iptables"""
+SCENARIO_DESCRIPTION="""Initialize or remove iptables to set ToS field"""
+SCENARIO_NAME="""generate_network_set_tos"""
 
 def reset(scenario, gateway):
     iptables = scenario.add_function('start_job_instance')

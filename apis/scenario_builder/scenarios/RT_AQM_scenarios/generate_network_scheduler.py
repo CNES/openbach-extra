@@ -29,7 +29,7 @@
 from scenario_builder import Scenario
 
 
-SCENARIO_DESCRIPTION="""Initializes or removes ip scheduler"""
+SCENARIO_DESCRIPTION="""Initialize or remove ip scheduler"""
 SCENARIO_NAME="""generate_network_scheduler"""
 
 def reset(scenario, gateway, interface):
