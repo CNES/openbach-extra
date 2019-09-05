@@ -113,7 +113,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
     try:
         file = open(extra_args_traffic,"r")
         for line in file:
-            extra_args.append(line)
+            extra_args.append(line.rstrip())
         file.close()
     except (OSError, IOError):
         print("Cannot open args file, exiting")
