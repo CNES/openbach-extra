@@ -39,6 +39,7 @@ import json
 import sys
 import argparse
 import subprocess
+from collections import OrderedDict
 
 
 def run_command(cmd):
@@ -151,7 +152,7 @@ def create_commands(data,interface):
 
 def add_scheduler(interface,file):
     json_file = open(file,"r")
-    data = json.load(json_file)
+    data = json.load(json_file, object_pairs_hook=OrderedDict)
     json_file.close()
     create_commands(data,interface)
 

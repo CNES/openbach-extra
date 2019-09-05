@@ -30,7 +30,7 @@ general:
   description: >
       This Job allows to create a 3-level scheduler from an input file: WRR by trunk, WRR by terminal inside each trunk, and Strict Priority for each terminal. 
       It needs an input configuration file, with an example given in /opt/openbach/agent/jobs/ip_scheduler/files/example.conf (on the agent where this job is installed)
-  job_version: '1.0'
+  job_version: '1.1'
   keywords:
     - tc
     - qdisc
