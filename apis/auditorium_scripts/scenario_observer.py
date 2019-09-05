@@ -67,7 +67,7 @@ class ScenarioObserver(FrontendBase):
 
         self.scenario_group = self.parser.add_argument_group('scenario arguments')
         self.add_scenario_argument(
-                '-n', '--name', '--scenario-name',
+                '-n', '--name', '--scenario-name', dest='scenario_name',
                 help='name of the scenario to launch')
         self.add_scenario_argument(
                 '-p', '--project', '--project-name', metavar='NAME', required=True,
@@ -157,7 +157,7 @@ class ScenarioObserver(FrontendBase):
 
     def post_processing(self, label, callback, *, subscenario=None, ignore_missing_label=False):
         if subscenario is None:
-            subscenario = self.args.name
+            subscenario = self.args.scenario_name
 
         try:
             function_id = self._scenarios[subscenario][label]
@@ -169,8 +169,8 @@ class ScenarioObserver(FrontendBase):
 
     def parse(self, args=None, default_scenario_name=' *** Generated Scenario *** '):
         args = super().parse(args)
-        if args.name is None:
-            args.name = default_scenario_name
+        if args.scenario_name is None:
+            args.scenario_name = default_scenario_name
         return args
 
     parse_args = parse
@@ -189,7 +189,7 @@ class ScenarioObserver(FrontendBase):
         return instance
 
     def _extract_scenario_json(self, scenario):
-        self._scenarios[self.args.name] = {
+        self._scenarios[self.args.scenario_name] = {
                 function['label']: function['id']
                 for function in scenario.json()['openbach_functions']
                 if 'start_job_instance' in function and function['label']
@@ -214,7 +214,7 @@ class ScenarioObserver(FrontendBase):
             scenario_setter = self._share_state(CreateScenario)
             scenario_modifier = self._share_state(ModifyScenario)
             for scenario in builder.subscenarios:
-                self.args.name = str(scenario)
+                self.args.scenario_name = str(scenario)
                 self.args.scenario = scenario.build()
 
                 try:
@@ -287,9 +287,9 @@ class ScenarioObserver(FrontendBase):
         if self.args.contact_controller:
             self._send_scenario_to_controller(builder)
             scenario_getter = self._share_state(GetScenario)
-            scenarios = [self.args.name] if builder is None else builder.subscenarios
+            scenarios = [self.args.scenario_name] if builder is None else builder.subscenarios
             for scenario in scenarios:
-                self.args.name = str(scenario)
+                self.args.scenario_name = str(scenario)
                 scenario = scenario_getter.execute(False)
                 scenario.raise_for_status()
                 content = scenario.json()
