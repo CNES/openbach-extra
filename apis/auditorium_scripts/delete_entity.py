@@ -27,7 +27,7 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function del_scenario_instances"""
+"""Call the openbach-function delete_entity"""
 
 
 __author__ = 'Viveris Technologies'
@@ -39,15 +39,20 @@ __credits__ = '''Contributors:
 from auditorium_scripts.frontend import FrontendBase
 
 
-class DeleteScenarioInstance(FrontendBase):
+class DeleteEntity(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Delete a Scenario Instance')
-        self.parser.add_argument('id', type=int, help='scenario instance ID to delete')
+        super().__init__('OpenBACH – Modify an Entity from a Project')
+        self.parser.add_argument('entity_name', help='name of the entity')
+        self.parser.add_argument('project_name', help='name of the project')
 
     def execute(self, show_response_content=True):
-        route = 'scenario_instance/{}/'.format(self.args.id)
-        return self.request('DELETE', route, show_response_content=show_response_content)
+        entity_name = self.args.entity_name
+        project_name = self.args.project_name
+
+        return self.request(
+                'GET', 'project/{}/entity/{}/'.format(project_name, entity_name),
+                show_response_content=show_response_content)
 
 
 if __name__ == '__main__':
-    DeleteScenarioInstance.autorun()
+    DeleteEntity.autorun()

@@ -41,8 +41,7 @@ from functools import partial
 
 from auditorium_scripts.frontend import FrontendBase
 
-
-class SetJobStatisticsPolicy(FrontendBase):
+class SetJobStatsPolicy(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Update Statistic Policy of a Job')
         self.parser.add_argument('agent', help='IP address of the agent')
@@ -89,4 +88,4 @@ class SetJobStatisticsPolicy(FrontendBase):
 
 
 if __name__ == '__main__':
-    SetJobStatisticsPolicy.autorun()
+    SetJobStatsPolicy.autorun()

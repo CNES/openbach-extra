@@ -27,13 +27,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+"""This script launches the *network_delay* scenario
+from /openbach-extra/apis/scenario_builder/scenarios/
+"""
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_delay
 
-"""This script launches the *network_delay* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
-def main(scenario_name='generate_network_delay'):
+def main(scenario_name='generate_network_delay', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--client', '--client-entity', required=True,
@@ -46,10 +48,10 @@ def main(scenario_name='generate_network_delay'):
             '--simultaneous', action='store_true',
             help='option whether or not the test is simultaneous. Default sequential')
     observer.add_scenario_argument(
-            '--entity_pp',  help='The entity where the post-processing will '
-            'be performed (histogram/time-series jobs must be installed) if defined')
+            '--entity_pp', help='The entity where the post-processing will be '
+            'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse()
+    args = observer.parse(argv, scenario_name)
 
     scenario = network_delay.build(
                       args.client,

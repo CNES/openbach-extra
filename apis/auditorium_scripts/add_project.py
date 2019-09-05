@@ -46,18 +46,53 @@ from auditorium_scripts.frontend import FrontendBase
 class AddProject(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Add a new Project')
-        self.parser.add_argument(
-                'project', type=FileType('r'),
+        subparsers = self.parser.add_subparsers(
+                dest='action',
+                help='available commands')
+        subparsers.required = True
+
+        add = subparsers.add_parser(
+                'add',
+                help='add a project from an existing JSON file')
+        add.add_argument(
+                'project_file', type=FileType('r'),
                 help='path to the definition file of the project')
+        add.add_argument(
+                '-p', '--public', action='store_true',
+                help='open the project for everyone to use')
+
+        create = subparsers.add_parser(
+                'create',
+                help='create a new empty project')
+        create.add_argument(
+                'project_name',
+                help='name of the new project')
+        create.add_argument(
+                '-d', '--description',
+                help='description of the project')
+        create.add_argument(
+                '-p', '--public', action='store_true',
+                help='open the project for everyone to use')
 
     def parse(self, args=None):
         super().parse(args)
-        project = self.args.project
-        with project:
-            try:
-                self.args.project = json.load(project)
-            except ValueError:
-                self.parser.error('invalid JSON data in {}'.format(project.name))
+
+        if self.args.action == 'add':
+            project_file = self.args.project_file
+            with project_file:
+                try:
+                    self.args.project = json.load(project_file)
+                except ValueError:
+                    self.parser.error('invalid JSON data in {}'.format(project_file.name))
+        elif self.args.action == 'create':
+            self.args.project = {
+                    'name': self.args.project_name,
+                    'description': self.args.description or '',
+            }
+        else:
+            self.parser.error('unrecognized action \'{}\''.format(self.args.action))
+
+        self.args.project['owners'] = [] if self.args.public else [self.args.login]
 
     def execute(self, show_response_content=True):
         project = self.args.project

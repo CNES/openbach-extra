@@ -46,8 +46,8 @@ from auditorium_scripts.frontend import FrontendBase
 
 class AddJob(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Add Job')
-        self.parser.add_argument('name', help='name of the job')
+        super().__init__('OpenBACH — Add Job on the Controller')
+        self.parser.add_argument('job_name', help='name of the job')
         job_options = self.parser.add_mutually_exclusive_group(required=True)
         job_options.add_argument(
                 '-p', '--path', help='path to the folder (on the controller) '
@@ -60,7 +60,7 @@ class AddJob(FrontendBase):
                 'the install and uninstall playbooks of the job')
 
     def execute(self, show_response_content=True):
-        job_name = self.args.name
+        job_name = self.args.job_name
         path = self.args.path
         files = self.args.files
         tarball = self.args.tarball

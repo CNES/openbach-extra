@@ -42,7 +42,7 @@ from auditorium_scripts.frontend import FrontendBase
 
 class AssignCollector(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Assign Collector')
+        super().__init__('OpenBACH — Assign Collector to an agent')
         self.parser.add_argument('agent', help='IP address of the agent')
         self.parser.add_argument(
                 'collector',

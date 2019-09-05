@@ -27,12 +27,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+"""This script launches the *network_one_way_delay* scenario
+from /openbach-extra/apis/scenario_builder/scenarios/
+"""
+
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_one_way_delay
 
-"""This script launches the *network_one_way_delay* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
-def main():
+def main(scenario_name='generate_network_one_way_delay', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--client', '--client-entity', required=True,
@@ -43,9 +47,10 @@ def main():
     observer.add_scenario_argument(
             '--ip_dst', required=True, help='server ip address and target of owamp test')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity name where the post-processing will be performed if defined')
+            '--entity_pp', help='The entity where the post-processing will be '
+            'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse()
+    args = observer.parse(argv, scenario_name)
 
     scenario = network_one_way_delay.build(
                       args.client,
@@ -54,6 +59,7 @@ def main():
                       args.entity_pp)
 
     observer.launch_and_wait(scenario)
+
 
 if __name__ == '__main__':
     main()

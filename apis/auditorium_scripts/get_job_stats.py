@@ -43,12 +43,12 @@ from auditorium_scripts.frontend import FrontendBase
 class GetJobStats(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Display Job Statistics')
-        self.parser.add_argument('name', help='name of the job to query')
+        self.parser.add_argument('job_name', help='name of the job to query')
 
     def execute(self, show_response_content=True):
-        job = self.args.name
+        job_name = self.args.job_name
         return self.request(
-                'GET', 'job/{}/'.format(job), type='statistics',
+                'GET', 'job/{}/'.format(job_name), type='statistics',
                 show_response_content=show_response_content)
 
 

@@ -27,50 +27,52 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function create_scenario"""
+"""Call the openbach-function modify_entity"""
 
 
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
- * Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
 
-import json
-from argparse import FileType
-
 from auditorium_scripts.frontend import FrontendBase
 
 
-class CreateScenario(FrontendBase):
+class ModifyEntity(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Create a new Scenario')
+        super().__init__('OpenBACH – Modify an Entity from a Project')
+        self.parser.add_argument('entity_name', help='name of the entity')
+        self.parser.add_argument('project_name', help='name of the project')
         self.parser.add_argument(
-                'scenario_file', type=FileType('r'),
-                help='path to the definition file of the scenario')
-        self.parser.add_argument(
-                '-p', '--project',
-                help='name of the project to associate the scenario with')
-
-    def parse(self, args=None):
-        super().parse(args)
-        scenario = self.args.scenario_file
-        with scenario:
-            try:
-                self.args.scenario = json.load(scenario)
-            except ValueError:
-                self.parser.error('invalid JSON data in {}'.format(scenario.name))
+                '-d', '--description',
+                help='explanation of the entity role')
+        group = self.parser.add_mutually_exclusive_group()
+        group.add_argument(
+                '-a', '--agent',
+                help='address of an agent to associate with the entity')
+        group.add_argument(
+                '-c', '--clear', action='store_true',
+                help='remove the agent currently associated with the entity')
 
     def execute(self, show_response_content=True):
-        scenario = self.args.scenario
-        project = self.args.project
-        route = 'scenario' if project is None else 'project/{}/scenario/'.format(project)
+        entity_name = self.args.entity_name
+        project_name = self.args.project_name
+        description = self.args.description
+        agent = {'address': self.args.agent} if self.args.agent else None
+        clear = self.args.clear
 
+        url = 'project/{}/entity/{}/'.format(project_name, entity_name)
+        response = self.request('GET', url, show_response_content=False)
+        response.raise_for_status()
+        entity = response.json()
+
+        entity['agent'] = None if clear else agent or entity['agent']
+        entity['description'] = description or entity['description']
         return self.request(
-                'POST', route, **scenario,
+                'PUT', url, **entity,
                 show_response_content=show_response_content)
 
 
 if __name__ == '__main__':
-    CreateScenario.autorun()
+    ModifyEntity.autorun()

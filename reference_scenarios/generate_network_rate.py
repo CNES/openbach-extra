@@ -27,12 +27,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+"""This scenario launches the *network_rate* scenario
+from /openbach-extra/apis/scenario_builder/scenarios/
+"""
+
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_rate
 
-"""This scenario launches the *network_rate* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
-def main():
+def main(scenario_name='generate_network_rate', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--client', '--client-entity', required=True,
@@ -43,11 +47,11 @@ def main():
     observer.add_scenario_argument(
             '--ip_dst', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--port', default = 7000,  help='The iperf3/nuttcp server port for data')
+            '--port', default=7000,  help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
             '--duration', default=30, help='duration of iperf3/nuttcp tests')
     observer.add_scenario_argument(
-            '--command_port', default = 8000, help='The port of nuttcp server for signalling')
+            '--command_port', default=8000, help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
             '--rate', help='Set a higher rate (in kb/s) than what you estimate between server and client '
             'for the UDP test (add m/g to set M/G b/s)', required=True)
@@ -58,10 +62,11 @@ def main():
     observer.add_scenario_argument(
             '--mtu', default=1000-40, help='MTU size (default : 1000-40)')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be performed '
-            '(histogram/time-series jobs must be installed) if defined')
+            '--entity_pp', help='The entity where the post-processing will be '
+            'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse()
+    args = observer.parse(argv, scenario_name)
+
     scenario = network_rate.build(
             args.client,
             args.server,
@@ -75,6 +80,7 @@ def main():
             args.mtu,
             args.entity_pp)
     observer.launch_and_wait(scenario)
+
 
 if __name__ == '__main__':
     main()

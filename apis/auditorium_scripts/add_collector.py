@@ -45,12 +45,12 @@ from auditorium_scripts.frontend import FrontendBase
 
 class AddCollector(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Add Collector')
+        super().__init__('OpenBACH — Add a new Collector and corresponding agent')
         self.parser.add_argument(
                 'collector',
                 help='IP address of the collector')
         self.parser.add_argument(
-                'name',
+                'agent_name',
                 help='name of the agent installed on the collector')
         self.parser.add_argument(
                 '-l', '--logs-port', type=int,
@@ -76,7 +76,7 @@ class AddCollector(FrontendBase):
 
     def execute(self, show_response_content=True):
         collector = self.args.collector
-        name = self.args.name
+        agent_name = self.args.agent_name
         logs_port = self.args.logs_port
         stats_port = self.args.stats_port
         username = self.args.user
@@ -89,7 +89,7 @@ class AddCollector(FrontendBase):
             action = partial(action, stats_port=stats_port)
         action('POST', 'collector', show_response_content=False,
                username=username, password=password,
-               address=collector, name=name)
+               address=collector, name=agent_name)
         self.wait_for_success('add', show_response_content)
 
     def query_state(self):

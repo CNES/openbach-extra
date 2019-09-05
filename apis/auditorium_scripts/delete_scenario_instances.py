@@ -27,42 +27,46 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function list_jobs"""
+"""Call the openbach-function del_scenario_instances"""
 
 
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
- * Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
 
+import pprint
+
 from auditorium_scripts.frontend import FrontendBase
-from functools import partial
 
 
-class ListJobs(FrontendBase):
+class DeleteScenarioInstances(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — List Jobs (all jobs or a filtered list)')
+        super().__init__('OpenBACH — Delete a Scenario Instance')
         self.parser.add_argument(
-                '-s', '--string-to-search',
-                help='the string to search in the job name '
-                'or keywords for filtering purposes')
-        self.parser.add_argument(
-                '-r', '--match-ratio', type=float,
-                help='the threshold to decide if a string '
-                'matches the job name or keywords')
+                'id', nargs='+', type=int,
+                help='scenario instance ID to delete')
 
     def execute(self, show_response_content=True):
-        search = self.args.string_to_search
-        ratio = self.args.match_ratio
+        instance_ids = self.args.id
+        show = show_response_content if len(instance_ids) == 1 else False
+        responses = [
+                self.request(
+                    'DELETE', 'scenario_instance/{}/'.format(id),
+                    show_response_content=show)
+                for id in instance_ids
+        ]
 
-        action = self.request
-        if search:
-            action = partial(action, ratio=ratio, string_to_search=search)
+        if len(instance_ids) == 1:
+            return responses[0]
 
-        return action('GET', 'job', show_response_content=show_response_content)
+        if show_response_content:
+            for response in responses:
+                pprint.pprint(response.json(), width=120)
+
+        return responses
 
 
 if __name__ == '__main__':
-    ListJobs.autorun()
+    DeleteScenarioInstances.autorun()

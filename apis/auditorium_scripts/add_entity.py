@@ -27,7 +27,7 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function del_scenario_instances"""
+"""Call the openbach-function add_entity"""
 
 
 __author__ = 'Viveris Technologies'
@@ -36,33 +36,36 @@ __credits__ = '''Contributors:
 '''
 
 
-import pprint
-
 from auditorium_scripts.frontend import FrontendBase
 
 
-class DeleteScenarioInstances(FrontendBase):
+class AddEntity(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Delete a Scenario Instance')
+        super().__init__('OpenBACH – Add a new Entity into a Project')
+        self.parser.add_argument('entity_name', help='name of the entity')
+        self.parser.add_argument('project_name', help='name of the project')
         self.parser.add_argument(
-                'id', nargs='+', type=int,
-                help='scenario instance ID to delete')
+                '-d', '--description',
+                help='explanation of the entity role')
+        self.parser.add_argument(
+                '-a', '--agent',
+                help='address of an agent to associate with the entity')
 
     def execute(self, show_response_content=True):
-        responses = [
-                self.request(
-                    'DELETE',
-                    'scenario_instance/{}'.format(scenario_instance_id),
-                    show_response_content=False)
-                for scenario_instance_id in self.args.id
-        ]
+        project_name = self.args.project_name
+        description = self.args.description
+        agent = self.args.agent
 
-        if show_response_content:
-            for response in responses:
-                pprint.pprint(response.json(), width=120)
+        entity = {'name': self.args.entity_name}
+        if description:
+            entity['description'] = description
+        if agent:
+            entity['agent'] = {'address': agent}
 
-        return responses
+        return self.request(
+                'POST', 'project/{}/entity/'.format(project_name),
+                **entity, show_response_content=show_response_content)
 
 
 if __name__ == '__main__':
-    DeleteScenarioInstances.autorun()
+    AddEntity.autorun()

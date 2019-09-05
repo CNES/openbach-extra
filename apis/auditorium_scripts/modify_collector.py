@@ -47,13 +47,13 @@ class ModifyCollector(FrontendBase):
         super().__init__('OpenBACH — Modify Collector')
         self.parser.add_argument(
                 'collector',
-                help='IP address of the collector')
+                help='new IP address of the collector')
         self.parser.add_argument(
                 '-l', '--logs-port', type=int,
-                help='port for the logs')
+                help='new port for the logs')
         self.parser.add_argument(
                 '-s', '--stats-port', type=int,
-                help='port for the stats')
+                help='new port for the stats')
 
     def execute(self, show_response_content=True):
         collector = self.args.collector

@@ -48,15 +48,15 @@ class ChangeCollectorAddress(FrontendBase):
                 'collector',
                 help='current IP address of the collector')
         self.parser.add_argument(
-                'address',
+                'new_collector',
                 help='new IP address of the collector')
 
     def execute(self, show_response_content=True):
         collector = self.args.collector
-        address = self.args.address
+        new_collector = self.args.new_collector
 
         return self.request(
-                'POST', 'collector/{}'.format(collector), address=address,
+                'POST', 'collector/{}'.format(collector), address=new_collector,
                 show_response_content=show_response_content)
 
 

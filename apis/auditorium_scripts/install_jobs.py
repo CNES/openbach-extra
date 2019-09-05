@@ -45,9 +45,9 @@ from auditorium_scripts.frontend import FrontendBase
 from auditorium_scripts.state_job import StateJob
 
 
-class InstallJob(FrontendBase):
+class InstallJobs(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Install Jobs')
+        super().__init__('OpenBACH — Install Jobs on agents')
         self.parser.add_argument(
                 '-j', '--job-name', metavar='NAME', action='append', nargs='+',
                 required=True, help='Name of the Jobs to install on the next '
@@ -108,4 +108,4 @@ def check_install_state(session, base_url, job_name, agent_address, show=True):
 
 
 if __name__ == '__main__':
-    InstallJob.autorun()
+    InstallJobs.autorun()

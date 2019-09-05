@@ -27,12 +27,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+"""This scenario launches the *transport_tcp_one_flow* scenario
+from /openbach-extra/apis/scenario_builder/scenarios/
+"""
+
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import transport_tcp_one_flow
 
-"""This scenario launches the *transport_tcp_one_flow* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
-def main():
+def main(scenario_name='generate_tcp_one_flow', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--client', '--client-entity', required=True,
@@ -43,18 +47,21 @@ def main():
     observer.add_scenario_argument(
             '--ip_dst', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--port', default = 7000,  help='The iperf3 server port for data')
+            '--port', default=7000,  help='The iperf3 server port for data')
     observer.add_scenario_argument(
-            '--transmitted_size', required=True, help='The iperf3 transmitted_size (in bytes - you can use [K/M/G]: set 100M to send 100 MBytes)')
+            '--transmitted_size', required=True, help='The iperf3 '
+            'transmitted_size (in bytes - you can use [K/M/G]: '
+            'set 100M to send 100 MBytes)')
     observer.add_scenario_argument(
             '--tos', default=0, help='Type of Service of the trafic (default : 0)')
     observer.add_scenario_argument(
             '--mtu', default=1000-40, help='MTU size (default : 1000-40)')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be performed '
-            '(histogram/time-series jobs must be installed) if defined')
+            '--entity_pp', help='The entity where the post-processing will be '
+            'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse()
+    args = observer.parse(argv, scenario_name)
+
     scenario = transport_tcp_one_flow.build(
             args.client,
             args.server,
@@ -65,6 +72,7 @@ def main():
             args.mtu,
             args.entity_pp)
     observer.launch_and_wait(scenario)
+
 
 if __name__ == '__main__':
     main()

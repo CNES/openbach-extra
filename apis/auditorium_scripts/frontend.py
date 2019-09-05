@@ -170,12 +170,12 @@ class FrontendBase:
         backend = self.parser.add_argument_group('backend')
         backend.add_argument(
                 '--controller', default=controller,
-                help='address at which the contoller is listening')
+                help='Controller IP address')
         backend.add_argument(
                 '--login', '--username', default=login,
-                help='username used to authenticate as')
+                help='OpenBACH username')
         backend.add_argument(
-                '--password', help='password used to authenticate as')
+                '--password', help='OpenBACH password')
         self._default_password = password
         self._default_controller = controller if unspecified else None
 
