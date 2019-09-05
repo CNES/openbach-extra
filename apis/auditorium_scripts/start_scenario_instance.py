@@ -45,7 +45,9 @@ from auditorium_scripts.frontend import FrontendBase
 class StartScenarioInstance(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Start a Scenario')
-        self.parser.add_argument('name', help='name of the scenario to start')
+        self.parser.add_argument(
+                'scenario_name',
+                help='name of the scenario to start')
         self.parser.add_argument(
                 '-p', '--project',
                 help='name of the project the scenario is associated with')
@@ -58,7 +60,7 @@ class StartScenarioInstance(FrontendBase):
                 help='date of the execution')
 
     def execute(self, show_response_content=True):
-        scenario = self.args.name
+        scenario = self.args.scenario_name
         project = self.args.project
         arguments = dict(self.args.argument)
         date = self.date_to_timestamp()
