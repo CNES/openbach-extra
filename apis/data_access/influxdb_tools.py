@@ -476,7 +476,11 @@ class InfluxDBConnection(InfluxDBCommunicator):
         """
         _condition = tags_to_condition(scenario, agent, job_instance, suffix, condition)
         response = self.sql_query(select_query(job, fields, _condition))
-        if scenario is not None:
+        if scenario is None:
+            # Try fetching sub-scenarios
+            _condition = tags_to_condition(scenario, agent, job_instance, suffix, condition, subscenarios=True)
+            response = self.sql_query(select_query(job, fields, _condition))
+        else:
             for scenario_instance in parse_statistics(response):
                 if scenario_instance.instance_id == scenario:
                     owner = scenario_instance.owner_instance_id
