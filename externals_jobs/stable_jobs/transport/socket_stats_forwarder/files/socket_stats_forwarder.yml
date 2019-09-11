@@ -1,0 +1,46 @@
+---
+
+general:
+  name: socket_stats_forwarder
+  description: >
+      This Job listens to an UDP socket, parses the data received using regular expressions and forwards the parsed data to the OpenBACH Collector.
+  job_version: '1.0'
+  keywords: [socket, udp, parse, regexp, forward]
+  persistent: true
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: 'python3 /opt/openbach/agent/jobs/socket_stats_forwarder/socket_stats_forwarder.py'
+    command_stop:
+
+arguments:
+  required:
+  optional:
+    - name: stats
+      type: 'str'
+      count: 2
+      flag: '-s'
+      repeatable: True
+      description: REQUIRED 1st arg = comma-separated list of stats names / 2nd arg = associated regexp.
+    - name: ip
+      type: 'str'
+      count: '1'
+      flag: '-a'
+      description: IP address to listen to (default=0.0.0.0).
+    - name: port
+      type: int
+      count: 1
+      flag: '-p'
+      description: Port number to listen to (default=8321).
+    - name: buffersize
+      type: int
+      count: 1
+      flag: '-b'
+      description: Buffer size (bytes) for data reception (default=1024).
+
+statistics:
+  - name: anyone
+    description: The generated statistics depend on the parameters of the Job.
+    frequency: Depends on the frequency of the datagrams reception.
