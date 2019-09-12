@@ -179,7 +179,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
             legends = []
             for scenario_id, function_id, legend in extract_jobs_to_postprocess(list_scenarios, traffic):
                 post_processed.append([scenario_id, function_id])
-                legends.append([legend])
+                legends.append([traffic + " - " + legend])
             if post_processed:
                 time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [[name]], [[y_axis]], [['Rate time series']], legends, list_wait_finished, None, 2)
                 cdf_on_same_graph(scenario_mix, post_processing_entity, post_processed, 100, [[name]], [[y_axis]], [['Rate CDF']], legends, list_wait_finished, None, 2)

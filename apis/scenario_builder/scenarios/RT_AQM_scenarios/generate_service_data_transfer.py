@@ -61,7 +61,7 @@ def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
         legends = []
         for function_id, legend in extract_jobs_to_postprocess(scenario):
             post_processed.append([function_id])
-            legends.append([legend])
+            legends.append(["iperf - " + legend])
         if post_processed:
             time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['throughput']], [['Rate (b/s)']], [['Rate time series']], legends, start_scenario, None, 2)
             cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['throughput']], [['Rate (b/s)']], [['Rate CDF']], legends, start_scenario, None, 2)
