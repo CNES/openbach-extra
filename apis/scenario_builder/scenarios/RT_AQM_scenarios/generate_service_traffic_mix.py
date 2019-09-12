@@ -138,7 +138,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
         if args[5] == "None" and args[6] == "None":
             wait_finished_list = []
             wait_launched_list = start_servers if start_servers else []
-            offset_delay = 5
+            offset_delay = 5 if start_servers else 0
         else:
             wait_finished_list = [map_scenarios[i] for i in args[6].split('-')] if args[6] != "None" else []
             wait_launched_list = [map_scenarios[i] for i in args[5].split('-')] if args[5] != "None" else []

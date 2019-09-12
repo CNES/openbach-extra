@@ -38,11 +38,13 @@ def reset(scenario, gateway):
                 'iptables', gateway, offset=0,
                 rule="-t mangle -F")
 
+    return iptables
+
 def initialize(scenario, gateway, iptables):
 
-    reset(scenario, gateway)
+    rst = reset(scenario, gateway)
 
-    prev_job = []
+    prev_job = [rst]
     for address,src_port,dst_port,protocol,tos in iptables:
         iptable = scenario.add_function('start_job_instance',
             wait_finished=prev_job, wait_launched=None, wait_delay=1)
