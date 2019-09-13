@@ -22,13 +22,15 @@ arguments:
       count:        1
       description: >
           The destination IP address
-  optional:
-    - name:        port
-      type:        'int'
-      count:       1
-      flag:        '-p'
+    - name:        protocol
+      type:        'str'
+      count:        1
+      choices:
+        - http/1.1
+        - http/2      
       description: >
-          The dst port number (Default: 80)
+          The protocol to use by server to stream video
+  optional:
     - name:        duration
       type:        'int'
       count:       1

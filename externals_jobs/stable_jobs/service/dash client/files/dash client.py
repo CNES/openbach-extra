@@ -50,16 +50,23 @@ from selenium.webdriver.support import expected_conditions as expected
 from selenium.webdriver.support.wait import WebDriverWait
 
 
-DEFAULT_URL='http://{}:{}/vod-dash/'
-DEFAULT_PORT=80
+DEFAULT_URL='{}://{}:{}/vod-dash/'
 DEFAULT_PATH='/vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd'
+HTTP1 = 'http/1.1'
+HTTP2 = 'http/2'
 
+# The following variables *_PORT must have the same values as in installation file of the job 
+# 'dash payer&server'. So don't change, unless you also change them in un/installation files 
+# requiring to reinstall both jobs: 'dash client' and 'dash player&server'  on agents.
+
+HTTP1_PORT = 8083
+HTTP2_PORT = 8084
 
 def close_firefox(driver, signum, frame):
     """ Closes the browser if open """
     driver.quit()
 
-def main(dst_ip, port, path, time):
+def main(dst_ip, proto, path, time):
     # Connect to collect agent
     conffile = '/opt/openbach/agent/jobs/dash client/dash client.conf'
     collect_agent.register_collect(conffile)
@@ -74,7 +81,8 @@ def main(dst_ip, port, path, time):
     
     # Get page
     try:
-        driver.get(DEFAULT_URL.format(dst_ip, port))
+        url_proto, port = ('http', HTTP1_PORT) if (proto == HTTP1) else ('https', HTTP2_PORT)
+        driver.get(DEFAULT_URL.format(url_proto, dst_ip, port))
 
         # Update path
         wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR,
@@ -109,8 +117,8 @@ if __name__ == "__main__":
             "dst_ip", type=str,
             help='The destination IP address')
     parser.add_argument(
-            '-p', '--port', type=int, default=DEFAULT_PORT,
-            help="The dst port")
+            "protocol",  choices=[HTTP1, HTTP2],
+             help='The protocol to use by server to stream video')
     parser.add_argument(
             '-d', '--dir', type=str, default=DEFAULT_PATH,
             help='The path of the dir containing the video to stream')
@@ -121,8 +129,8 @@ if __name__ == "__main__":
     # Get arguments
     args = parser.parse_args()
     dst_ip = args.dst_ip
+    proto = args.protocol
     path = args.dir
     time = args.time
-    port = args.port
     
-    main(dst_ip, port, path, time)
+    main(dst_ip, proto, path, time)
