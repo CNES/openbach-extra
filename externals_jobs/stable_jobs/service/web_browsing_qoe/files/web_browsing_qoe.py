@@ -46,6 +46,20 @@ from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import FirefoxOptions
+import signal
+from functools import partial
+import psutil
+
+
+
+def connect_to_collect_agent():
+    conffile = ('/opt/openbach/agent/jobs/web_browsing_qoe/'
+                'web_browsing_qoe_rstats_filter.conf')
+    success = collect_agent.register_collect(conffile)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        exit(message)
 
 
 # TODO: Add support for other web browsers
@@ -61,10 +75,9 @@ def init_driver(binary_path, binary_type):
     driver = None
     if binary_type == "FirefoxBinary":
         binary = FirefoxBinary(binary_path)
-        opts = FirefoxOptions()
-        opts.add_argument("--headless")
-        driver = webdriver.Firefox(firefox_binary=binary, firefox_options=opts)
-        driver.wait = WebDriverWait(driver, 5)
+        options = FirefoxOptions()
+        options.add_argument("--headless")
+        driver = webdriver.Firefox(firefox_binary=binary, firefox_options=options)
     return driver
 
 
@@ -83,6 +96,7 @@ def compute_qos_metrics(driver, url_to_fetch, qos_metrics):
     for key, value in qos_metrics.items():
         results[key] = driver.execute_script(value)
     return results
+
     
 def print_qos_metrics(dict_to_print, config):
     """
@@ -97,14 +111,30 @@ def print_qos_metrics(dict_to_print, config):
         print("{}: {} {}".format(config['qos_metrics'][key]['pretty_name'], value, config['qos_metrics'][key]['unit']))
 
 
+def kill_children(parent_pid):
+    """ kill children processes including geckodriver and firefox"""
+    parent = psutil.Process(parent_pid)
+    for child in parent.children(recursive=True):
+        try:
+          child.kill()
+        except putil.NoSuchProcess as ex:
+          pass
+
+
+def kill_all(parent_pid, signum, frame):
+    """ kill all children processes as well as parent process"""
+    kill_children(parent_pid)
+    parent = psutil.Process(parent_pid)
+    parent.kill()
+
+
 def main(nb_runs):
     # Connect to collect agent
-    conffile = '/opt/openbach/agent/jobs/web_browsing_qoe/web_browsing_qoe_rstats_filter.conf'
-    success = collect_agent.register_collect(conffile)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
+    connect_to_collect_agent()
+    # Set signal handler
+    signal_handler_partial = partial(kill_all, os.getpid())
+    signal.signal(signal.SIGTERM, signal_handler_partial)
+    signal.signal(signal.SIGINT, signal_handler_partial)
     # Init local variables
     qos_metrics_lists = dict()
     qos_metrics = dict()
@@ -113,36 +143,42 @@ def main(nb_runs):
     for metric in config['qos_metrics']:
         qos_metrics[metric] = config['qos_metrics'][metric]['js']
     # Compute qos metrics for each url 'nb_runs' times
-    for i in range(1, args.nb_runs + 1, 1):
-        for url in config['web_pages_to_fetch']:
-            binary_path = config['driver']['binary_path']
-            binary_type =  config['driver']['binary_type']
-            try:
-                my_driver = init_driver(binary_path, binary_type)
-            except Exception as ex:
-                message = 'ERROR when initializing the web driver: {}'
-                collect_agent.send_log(syslog.LOG_ERR, message.format(ex))
-                exit(message)
-            if my_driver is not None:
-                s = "# Report for web page " + url + " #"
-                print('\n' + s)
-                timestamp = int(time.time() * 1000)
-                my_qos_metrics = compute_qos_metrics(my_driver, url, qos_metrics)
-                print_qos_metrics(my_qos_metrics, config)
-                my_driver.quit()
-                statistics = {'url':url}
-                for key, value in my_qos_metrics.items():
-                    statistics.update({key:value})
-                collect_agent.send_stat(timestamp, **statistics)
+    try:
+       for i in range(1, args.nb_runs + 1, 1):
+           for url in config['web_pages_to_fetch']:
+               binary_path = config['driver']['binary_path']
+               binary_type =  config['driver']['binary_type']
+               try:
+                   my_driver = init_driver(binary_path, binary_type)
+               except Exception as ex:
+                   message = 'ERROR when initializing the web driver: {}'.format(ex)
+                   collect_agent.send_log(syslog.LOG_ERR, message)
+                   exit(message)
+               if my_driver is not None:
+                   s = "# Report for web page " + url + " #"
+                   print('\n' + s)
+                   timestamp = int(time.time() * 1000)
+                   my_qos_metrics = compute_qos_metrics(my_driver, url, qos_metrics)
+                   print_qos_metrics(my_qos_metrics, config)
+                   my_driver.quit()
+                   statistics = {'url':url}
+                   for key, value in my_qos_metrics.items():
+                       statistics.update({key:value})
+                   collect_agent.send_stat(timestamp, **statistics)
                 
-            else:
-                message = 'Sorry, specified driver is not available. For now, only Firefox driver is supported'
-                collect_agent.send_log(syslog.LOG_ERR, message)
-                exit(message)                
-            time.sleep(5)
+               else:
+                   message = 'Sorry, specified driver is not available. For now, only Firefox driver is supported'
+                   collect_agent.send_log(syslog.LOG_ERR, message)
+                   exit(message)                
+               time.sleep(5)
+    except Exception as ex:
+        message = 'An unexpected error occured: {}'.format(ex)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        exit(message)
+    finally:
+        kill_children(os.getpid())
 
 if __name__ == "__main__":
-    
     # Argument parsing
     parser = argparse.ArgumentParser()
     parser.add_argument("nb_runs", help="The number of fetches to perform for each website", type=int)
