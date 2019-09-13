@@ -21,7 +21,7 @@ angular.module('DashContributorsService', ['ngResource']).factory('contributors'
 
 app.controller('DashController', function($scope, sources, contributors) {
 
-    var websocket = new WebSocket('ws://' + '{{ inventory_hostname }}' + ':' + window.location.port + '/websocket/')
+    var websocket = new WebSocket((window.location.protocol === 'http:' ? 'ws://' : 'wss://') + '{{ inventory_hostname }}' + ':' + window.location.port + '/websocket/')
     
     $scope.selectedItem = {url:"/vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd"};
 
