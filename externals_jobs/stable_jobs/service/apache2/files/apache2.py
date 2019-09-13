@@ -41,12 +41,18 @@ import sys
 import argparse
 import subprocess
 import time
+import signal
+from functools import partial
+import psutil
 
-DESCRIPTION = ("This job  starts or stops the web server apache2 that provides " 
-               "HTTP services in standard http/1.1 and http2")
 
-DEFAULT_HTTP_PORT = 8081
-DEFAULT_HTT2_PORT = 8082
+HTTP_PORT = 8081
+HTT2_PORT = 8082
+
+DESCRIPTION = ("This job launchs the web server apache2 that provides " 
+               "HTTP services in standard http/1.1 and http2 on ports {} and {} "
+               "respectively").format(HTTP_PORT, HTT2_PORT)
+
 
 def connect_to_collect_agent():
     success = collect_agent.register_collect(
@@ -56,35 +62,16 @@ def connect_to_collect_agent():
         message = 'Error connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
-    
-def start():
-    """
-    Start apache2 which will listen http/1.1 requests on port 8081 and http2 on port 8082
-    Args:
-    Returns:
-        NoneType
-    """
-    cmd = ["systemctl", "start", "apache2"]
-    try:
-        p = subprocess.Popen(cmd, stderr=subprocess.PIPE)
-    except Exception as ex:
-        message = "Error when starting apache2: {}".format(ex)
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    # Wait for status to change to active
-    status = 0
-    while (status == 0):
-        time.sleep(5)
-        status = os.system('systemctl is-active --quiet apache2')
 
 
-def stop():
+def stop(signalNumber, frame):
     """
     Stop apache2
     Args: 
     Returns:
        NoneType
     """
+    connect_to_collect_agent()
     cmd = ["systemctl", "stop", "apache2"]
     try:
         p = subprocess.Popen(cmd, stderr=subprocess.PIPE)
@@ -93,23 +80,38 @@ def stop():
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
 
+    
+def start():
+    """
+    Start apache2 which will listen http/1.1 requests on port 8081 and http2 on port 8082
+    Args:
+    Returns:
+        NoneType
+    """
+    connect_to_collect_agent()
+    cmd = ["systemctl", "start", "apache2"]
+    try:
+        p = subprocess.Popen(cmd, stderr=subprocess.PIPE)
+    except Exception as ex:
+        message = "Error when starting apache2: {}".format(ex)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    
+    # Set signal handler
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+    # Wait for status to change to active
+    status = 0
+    while (status == 0):
+        time.sleep(5)
+        status = os.system('systemctl is-active --quiet apache2')
+
+
+
 if __name__ == "__main__":
     # Argument parsing
     parser = argparse.ArgumentParser(description=DESCRIPTION, 
                  formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
      
-    # Choose to start or stop apache2
-    parser.add_argument('operation', choices=['start', 'stop'], 
-                        help='Choose an operation to start or stop apache2)'
-    )
-    # Parse arguments
-    args = parser.parse_args()
-    operation = args.operation
-
-    # Run the appropiate function depending of the choosed operation
-    if operation == 'start':
-       start()
-    else:
-       stop() 
- 
+    start() 

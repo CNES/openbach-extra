@@ -13,18 +13,10 @@ platform_configuration:
     ansible_distribution:  'Ubuntu'
     ansible_distribution_version: '16.04'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/apache2/apache2.py'
-    command_stop: '/usr/bin/env python3 /opt/openbach/agent/jobs/apache2/apache2.py stop' 
+    command_stop:  
 
 arguments:
   required:
-    - name: operation
-      type: 'str'
-      count: 1
-      choices: 
-        - start
-        - stop
-      description: > 
-          Choose an operation
   optional:
  
 statistics:

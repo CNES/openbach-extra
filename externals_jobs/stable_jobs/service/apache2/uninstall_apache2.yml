@@ -35,8 +35,6 @@
 
 - name: Init global variables  
   set_fact:
-    http_port: 8080
-    http2_port: 8082
     domain: apache2.openbach.com
     ServerName_http: http.apache2.openbach.com
     ServerName_http2: http2.apache2.openbach.com
