@@ -37,6 +37,7 @@ __credits__ = '''Contributors:
 import collect_agent
 import syslog
 import os
+import sys
 import yaml
 import time
 import argparse
@@ -48,6 +49,9 @@ from selenium.common.exceptions import WebDriverException
 from selenium.common.exceptions import InvalidArgumentException
 from selenium.webdriver import FirefoxOptions
 import random
+import signal 
+from functools import partial
+import psutil
 
 
 # TODO: Add support for other web browsers
@@ -64,12 +68,11 @@ def init_driver(binary_path, binary_type):
     if binary_type == "FirefoxBinary":
         try:
            binary = FirefoxBinary(binary_path)
-           opts = FirefoxOptions()
+           options = FirefoxOptions()
            # Disable notifications
-           opts.add_argument("--disable-notifications")
-           opts.add_argument("--headless")
-           driver = webdriver.Firefox(firefox_binary=binary, firefox_options=opts)
-           driver.wait = WebDriverWait(driver, 5)    
+           options.add_argument("--disable-notifications")
+           options.add_argument("--headless")
+           driver = webdriver.Firefox(firefox_binary=binary, firefox_options=options)
         except Exception as ex:
            message = 'ERROR when initializing the web driver: {}'.format(ex)
            collect_agent.send_log(syslog.LOG_ERR, message)
@@ -88,10 +91,18 @@ def compute_qos_metrics(driver, url_to_fetch, qos_metrics):
         results(dict(str,object)): a dictionary containing the different metrics/values.
     """
     results = dict()
-    driver.get(url_to_fetch)
-    for key, value in qos_metrics.items():
-        results[key] = driver.execute_script(value)
-    return results
+    try:
+      driver.get(url_to_fetch)
+      for key, value in qos_metrics.items():
+          results[key] = driver.execute_script(value)
+    except Exception as ex:
+           print(type(ex))
+           message = 'An unexpected error occured: {}'.format(ex)
+           collect_agent.send_log(syslog.LOG_WARNING, message)
+           print(message)
+    finally:
+           return results
+   
     
 def print_qos_metrics(dict_to_print, config):
     """
@@ -105,18 +116,41 @@ def print_qos_metrics(dict_to_print, config):
     for key, value in dict_to_print.items():
         print("{}: {} {}".format(config['qos_metrics'][key]['pretty_name'], value, config['qos_metrics'][key]['unit']))
 
+
 def choose_page_to_visit(driver):
     """
     Randomly select a page url from the list of url of clickable elements on current page
     """
-    urls = [clickable_element.get_attribute('href') for clickable_element in driver.find_elements_by_xpath('.//a')]
+    urls= list()
+    for clickable_element in driver.find_elements_by_xpath('.//a'):
+        try:
+           url = clickable_element.get_attribute('href')
+           urls.append(url)
+        # Handle StaleElementReferenceException
+        except Exception as ex:
+               pass     
     selected_page = None
     notselected_pages = list()
     if urls:
        selected_page = random.choice(urls)
        notselected_pages = [url for url in urls if url != selected_page]
     return selected_page, notselected_pages
+
     
+def kill_children(parent_pid):
+    parent = psutil.Process(parent_pid)
+    for child in parent.children(recursive=True):
+        try:
+           child.kill()
+        except putil.NoSuchProcess as ex:
+           pass
+
+
+def kill_all(parent_pid, signum, frame):
+    """ kill geckodriver and firefox processes, finally kill current process""" 
+    kill_children(parent_pid)
+    parent = psutil.Process(parent_pid)
+    parent.kill()
 
 
 def main(page_visit_duration):
@@ -124,9 +158,13 @@ def main(page_visit_duration):
     conffile = '/opt/openbach/agent/jobs/random_web_browsing_qoe/random_web_browsing_qoe_rstats_filter.conf'
     success = collect_agent.register_collect(conffile)
     if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
+       message = 'ERROR connecting to collect-agent'
+       collect_agent.send_log(syslog.LOG_ERR, message)
+       exit(message)
+    # Set signal handler
+    signal_handler_partial = partial(kill_all, os.getpid())
+    signal.signal(signal.SIGTERM, signal_handler_partial)
+    signal.signal(signal.SIGINT, signal_handler_partial)
     # Load config from config.yaml
     config = yaml.safe_load(open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config.yaml')))
     binary_path = config['driver']['binary_path']
@@ -143,34 +181,42 @@ def main(page_visit_duration):
        start_page = random.choice(web_pages_root)
        selected_page = start_page
        prev_notselected_pages = list()
-       while True:
-          s = "# Consulting web page " + selected_page + " #"
-          print('\n' + s)
-          timestamp = int(time.time() * 1000)
-          try:
-             my_qos_metrics = compute_qos_metrics(my_driver, selected_page, qos_metrics)
-          # Handling malformed url
-          except InvalidArgumentException:
-                 selected_page = random.choice(web_pages_root)
-                 continue
-          print_qos_metrics(my_qos_metrics, config)
-          statistics = {'url':selected_page}
-          for key, value in my_qos_metrics.items():
-              statistics.update({key:value})
-          collect_agent.send_stat(timestamp, **statistics)
-          time.sleep(page_visit_duration)
-          selected_page, notselected_pages = choose_page_to_visit(my_driver)
-          # Handle pages with no clickable element
-          if selected_page is None:
-             if not prev_notselected_pages:
-                selected_page = random.choice(web_pages_root)
-                while selected_page == start_page:
-                   selected_page = random.choice(web_pages_root)
-                start_page = selected_page
-             else:
-                selected_page = random.choice(prev_notselected_pages)
-                notselected_pages = [page for page in prev_notselected_pages if page != selected_page]
-          prev_notselected_pages = notselected_pages
+       try:
+         while True:
+            s = "# Consulting web page " + selected_page + " #"
+            print('\n' + s)
+            timestamp = int(time.time() * 1000)
+            my_qos_metrics = compute_qos_metrics(my_driver, selected_page, qos_metrics)
+            if not my_qos_metrics:
+               selected_page = random.choice(web_pages_root)
+               continue
+            print_qos_metrics(my_qos_metrics, config)
+            statistics = {'url':selected_page}
+            for key, value in my_qos_metrics.items():
+                statistics.update({key:value})
+            collect_agent.send_stat(timestamp, **statistics)
+            time.sleep(page_visit_duration)
+            selected_page, notselected_pages = choose_page_to_visit(my_driver)
+            # Handle pages with no clickable element
+            if selected_page is None:
+               if not prev_notselected_pages:
+                  selected_page = random.choice(web_pages_root)
+                  while selected_page == start_page:
+                     selected_page = random.choice(web_pages_root)
+                  start_page = selected_page
+               else:
+                  selected_page = random.choice(prev_notselected_pages)
+                  notselected_pages = [page for page in prev_notselected_pages if page != selected_page]
+            prev_notselected_pages = notselected_pages
+       # Handle exceptions such as network timeout exception
+       except Exception as ex:
+              message = 'An unexpected exception occured: {}'.format(ex)
+              collect_agent.send_log(syslog.LOG_ERR, message)
+              print(message)
+              exit(message)
+       finally:
+             # Kill children processes including geckodriver and firefox
+             kill_children(os.getpid()) 
     else:
         message = 'Sorry, specified driver is not available. For now, only Firefox driver is supported'
         collect_agent.send_log(syslog.LOG_ERR, message)
@@ -184,4 +230,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     main(args.page_visit_duration)
-
