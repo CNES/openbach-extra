@@ -46,11 +46,55 @@ from selenium import webdriver
 from selenium.webdriver.support import expected_conditions as EC 
 from selenium.webdriver.support.ui import WebDriverWait 
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 import random
 import math
+import psutil
+import signal 
+from functools import partial
 
 URL = "https://facebook.com"
+
+
+def kill_children(parent_pid):
+    """ KIll all subprocesses including firefox and geckodriver"""
+    parent = psutil.Process(parent_pid)
+    for child in parent.children(recursive=True):
+        try:
+           child.kill()
+        except psutil.NoSuchProcess as ex:
+           pass
+
+def kill_all(parent_pid, signum, frame):
+    """ Kill all children processes before killing parent process"""
+    kill_children(parent_pid)
+    parent = psutil.Process(parent_pid)
+    parent.kill()
+
+def set_signal_handler():
+    signal_handler_partial = partial(kill_all, os.getpid())
+    signal.signal(signal.SIGTERM, signal_handler_partial)
+    signal.signal(signal.SIGINT, signal_handler_partial)
+
+def connect_to_collect_agent():
+    conffile = '/opt/openbach/agent/jobs/facebook/facebook_rstats_filter.conf'
+    success = collect_agent.register_collect(conffile)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        handle_exception(message)
+
+def handle_exception(message):
+    collect_agent.send_log(syslog.LOG_ERR, message)
+    exit(message)
+
+def check_exists_by_xpath(web_driver, xpath):
+    try:
+        web_driver.find_element_by_xpath(xpath)
+    except NoSuchElementException:
+        return False
+    return True
+
     
 class Facebook:
   
@@ -64,14 +108,6 @@ class Facebook:
         """
           Launch the browser and fetch the web page for login to facebook                 
         """ 
-        # Connect to collect agent
-        conffile = '/opt/openbach/agent/jobs/facebook/facebook_rstats_filter.conf'
-        success = collect_agent.register_collect(conffile)
-        if not success:
-            message = 'ERROR when connecting to collect-agent'
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            exit(message)
-            
         # Initialize a Selenium driver. Only support googe-chrome for now.
         try:
             # Load config from config.yaml
@@ -106,17 +142,16 @@ class Facebook:
                 chrome_options.add_argument("--disable-notifications")
                 # Runs Chrome in headless mode
                 chrome_options.add_argument("--headless")
+                # To make elements visible in headless mode
+                chrome_options.add_argument("window-size=1200,1100")
+                chrome_options.add_argument("--no-sandbox")
+                chrome_options.add_argument("--disable-dev-shm-usage")
                 self.driver = webdriver.Chrome(executable_path=chromedriver_path,
                                                chrome_options=chrome_options
                 )
-              
         except Exception as ex:
             message = 'ERROR when initializing the web driver: {}'.format(ex)
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            print(message)
-            self.close_browser()
-            exit(message)
-        
+            handle_exception(message)        
         # Launch the browser and fetch the login web page
         try:
             self.driver.delete_all_cookies()
@@ -127,10 +162,7 @@ class Facebook:
          # Catch: WebDriveException, InvalideSelectorExeception, NoSuchElementException, TimeoutException
         except Exception as ex:
             message = 'ERROR when launching the browser: {}'.format(ex)
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            print(message)
-            self.close_browser()
-            exit(message)
+            handle_exception(message)
            
     def login_in_facebook(self):
         """
@@ -153,10 +185,7 @@ class Facebook:
         # Catch: WebDriveException, InvalideSelectorExeception, NoSuchElementException
         except Exception as ex:
             message = 'ERROR when login: {}'.format(ex)
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            print(message)
-            self.close_browser()
-            sys.exit(message)
+            handle_exception(message)
     
     def search_friend(self, friend_name):
         """
@@ -166,12 +195,11 @@ class Facebook:
             self.driver.find_element_by_name("mercurymessages").click()
             self.wait.until(EC.element_to_be_clickable((
                     By.XPATH,
-                    "//*[@id='MercuryJewelFooter']/a[1]"
+                    "//*[@id='MercuryJewelFooter']/div/a[1]"
             )))
-            self.driver.find_element_by_xpath("//*[@id='MercuryJewelFooter']/a[1]").click()
+            self.driver.find_element_by_xpath("//*[@id='MercuryJewelFooter']/div/a[1]").click()
             element = self.wait.until(EC.visibility_of_element_located((
                     By.XPATH,
-                    #"//*[@id='js_k']/div/div/div[1]/span[1]/label/input"
                     "//input[@placeholder='Rechercher dans Messenger']"
                    
             )))
@@ -180,37 +208,46 @@ class Facebook:
             element.send_keys(friend_name)
             time.sleep(5)
             element = self.wait.until(EC.visibility_of_element_located((By.XPATH, 
-            #"//div[@class='_364g'][text()='{}']".format(friend_name))))
-            "//span/span[text()='{}']".format(friend_name))))
+            "//div[text()='{}']".format(friend_name))))
             element.click()      
         except Exception as ex:
             message = "ERROR when finding friend '{}' : {}".format(friend_name, ex)
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            print(message)
-            self.close_browser()
-            sys.exit(message)
-         
-    def call_friend(self, call_type):
+            handle_exception(message)
+ 
+    def call_friend(self, friend_name, call_type, call_duration):
+        """ Launch *call_type* call and stop communication after *call_duration* seconds"""
         xpath = "//div[@data-testid='{}']"
         if call_type == 'video':
             xpath = xpath.format('startVideoCall')
         else:
             xpath = xpath.format('startVoiceCall')
-        call_element = self.driver.find_element_by_xpath(xpath)
         try:
+            call_element = self.driver.find_element_by_xpath(xpath)
             call_element.click()
+            self.wait.until(EC.number_of_windows_to_be(2))
         except Exception as ex:
-            message = "ERROR when calling friend '{}' : {}".format(friend_name, ex)
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            print(message)
-            self.close_browser()
-            sys.exit(message)
+            message = "ERROR when launching call: {}".format(ex)
+            handle_exception(message)
         
-    def end_call(self, call_duration):
+        xpath1 = "//div[@connectionstatus='{}']".format('DISCONNECTED')
+        xpath2 = "//div[text()='{}']".format('injoignable')
+        self.wait.until(EC.number_of_windows_to_be(2))
+        window_before = self.driver.window_handles[0]
+        window_after = self.driver.window_handles[1]
+        self.driver.switch_to.window(window_after)
+        # Wait for window to be ready
+        time.sleep(2)
+        while not check_exists_by_xpath(self.driver, xpath1)  and not check_exists_by_xpath(self.driver, xpath2)  and call_duration > 0:
+           time.sleep(1)
+           call_duration -= 1  
+        if call_duration != 0:
+           message = '{} is not available'.format(friend_name)
+           handle_exception(message)
+        
+    def end_call(self):
         """
-        End call after *call_duration*
+        End call
         """
-        time.sleep(call_duration)        
         try:
             end_call_element = self.driver.find_element_by_xpath("//*[@id='fbRTC/container']/div[2]/div/div[5]"
             "/div/div/div/div/div/footer/section/button[4]")
@@ -224,63 +261,76 @@ class Facebook:
     
 def call(email_address, password, call_type, timeout, friend_name, call_duration):
     """
-    Scenario for audio or video call. Launch the browser, log in facebook using specified user parameters, 
+    Launch the browser, log in facebook using specified user parameters, 
     find the contact, make call and close the browser after *call_duration* seconds.
     """
-    facebook = Facebook(email_address, password, timeout)
-    print('########## Launch the browser and load login page #############')
-    facebook.open_browser()
-    print('########## Sign In  #############')
-    facebook.login_in_facebook()
-    print('########## Open Facebook Chat and Search the friend #############')
-    time.sleep(2)
-    facebook.search_friend(friend_name)
-    print('########## Call friend #############')
-    facebook.call_friend(call_type)
-    facebook.end_call(call_duration)
-    print('########## Call Ended #############')
-    facebook.close_browser()
+    # Connect to collect agent
+    connect_to_collect_agent()
+    # Set signal handler
+    set_signal_handler()
+    try:
+       facebook = Facebook(email_address, password, timeout)
+       print('########## Launch the browser and fetch login page #############')
+       facebook.open_browser()
+       print('########## Sign In  #############')
+       facebook.login_in_facebook()
+       print('########## Open Facebook Chat and find the friend #############')
+       time.sleep(2)
+       facebook.search_friend(friend_name)
+       print('########## Start Call #############')
+       facebook.call_friend(friend_name, call_type, call_duration)
+       print('########## End Call ##############')
+       facebook.end_call()
+       print('########## Call Ended #############')
+    except Exception as ex:
+       message = 'An unexpected error occured: {}'.format(ex)
+       handle_exception(message)
+    finally:
+       kill_children(os.getpid())
+
     
 def receive(email_address, password, call_type, timeout):
     """
     Launch the browser, log in facebook and wait for incoming call.
     """
-    # Connect to collect agent
-    conffile = '/opt/openbach/agent/jobs/facebook/facebook_rstats_filter.conf'
-    success = collect_agent.register_collect(conffile)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
-    facebook = Facebook(email_address, password, timeout)
-    print('########## Launch browser and download the login page #############')
-    facebook.open_browser()
-    print('########## Sign In  #############')
-    facebook.login_in_facebook()
-    print('########## Wait for incoming call #############')
-    # Wait for incoming call
-    answer_call_element = facebook.persistent_wait.until(EC.element_to_be_clickable((
-            By.XPATH, 
-            "//button[@data-testid='answerCallButton']"
-    )))           
-    # Answer and wait until the caller ends the call
-    answer_call_element.click()
-    print('########## Answer call #############')
-    facebook.wait.until(EC.number_of_windows_to_be(2))
-    window_before = facebook.driver.window_handles[0]
-    window_after = facebook.driver.window_handles[1]
-    facebook.driver.switch_to.window(window_after)
-    facebook.wait.until(EC.presence_of_element_located((
-            By.XPATH, 
-            "//button[@data-testid='endCallButton']"
-    )))
-    facebook.persistent_wait.until_not(EC.presence_of_element_located((
-            By.XPATH, 
-            "//button[@data-testid='endCallButton']"
-    )))
-    facebook.driver.switch_to.window(window_before)
-    print('########## call Ended #############')
-    
+    # Connect to collect_agent 
+    connect_to_collect_agent()
+    # Set signal hanlder
+    set_signal_handler()
+    try:
+       facebook = Facebook(email_address, password, timeout)
+       print('########## Launch browser and fetch login page #############')
+       facebook.open_browser()
+       print('########## Sign In  #############')
+       facebook.login_in_facebook()
+       print('########## Wait for incoming call #############')
+       # Wait for incoming call
+       answer_call_element = facebook.persistent_wait.until(EC.element_to_be_clickable((
+               By.XPATH, 
+               "//button[@data-testid='answerCallButton']"
+       )))           
+       # Answer and wait until the caller ends the call
+       answer_call_element.click()
+       print('########## Answer call #############')
+       facebook.wait.until(EC.number_of_windows_to_be(2))
+       window_before = facebook.driver.window_handles[0]
+       window_after = facebook.driver.window_handles[1]
+       facebook.driver.switch_to.window(window_after)
+       facebook.wait.until(EC.presence_of_element_located((
+               By.XPATH, 
+               "//button[@data-testid='endCallButton']"
+       )))
+       facebook.persistent_wait.until_not(EC.presence_of_element_located((
+               By.XPATH, 
+               "//button[@data-testid='endCallButton']"
+       )))
+       facebook.driver.switch_to.window(window_before)
+       print('########## call Ended #############')
+    except Exception as ex:
+       message = 'An unexpected error occured: {}'.format(ex)
+       handled_exception(message)
+    finally:
+       kill_children(os.getpid())
     
 if __name__ == "__main__":
     # Define usage
