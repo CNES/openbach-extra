@@ -1,1 +1,15 @@
+Examples:
+========
+Example1: Launch dash server on entity called 'server.
+-In the web interface of the openbach controller: 
+ 1. create a new scenario
+ 2. add a start_job_instance to run the job dash on a agent on which it is installed, 
+ 3. then run the scenario using 'Launch' button
 
+-Or launch the job manually from CLI of the Agent as follows: 
+    JOB_NAME=dash sudo -E python3 /opt/openbach/agent/jobs/apache2/apache2.py 
+
+Note that, apache2 daemon will start for listening to HTTP requests on ports 8083 and 8084 
+for http/1.1 and http/2 respectively. Client must specify protocol http or https in url like that:
+For http/1.1: http://server_ip:8083/vod_dash/
+For http/2: https://server_ip:8084/vod_dash

@@ -34,6 +34,7 @@ __author__ = 'Mathias ETTINGER <mettinger@toulouse.viveris.com>'
 __all__ = ['save', 'Statistics']
 
 import pickle
+import itertools
 from functools import partial
 from contextlib import suppress
 
@@ -129,7 +130,7 @@ class Statistics(InfluxDBCommunicator):
             _condition = ConditionAnd(conditions, ConditionOr(*instances))
         return self.sql_query(select_query(job, fields, _condition))
 
-    def _parse_dataframes(self, response, columns=None):
+    def _parse_dataframes(self, response, job_instances=(), columns=None):
         if columns is None:
             columns = iter([])
         else:
@@ -151,7 +152,14 @@ class Statistics(InfluxDBCommunicator):
             df = pd.concat(converted, axis=1)
 
             df.set_index(['@job_instance_id', '@scenario_instance_id', '@agent_name', '@suffix'], inplace=True)
-            for index in df.index.unique():
+            unique_index = df.index.unique()
+            if job_instances:
+                sorted_index = itertools.chain.from_iterable(
+                        unique_index[unique_index.get_loc(id)]
+                        for id in job_instances)
+            else:
+                sorted_index = unique_index.sort_values()
+            for index in sorted_index:
                 extract = df.xs(index)
                 if isinstance(extract, pd.Series):
                     extract = pd.DataFrame(extract.to_dict(), index=[0])
@@ -173,13 +181,13 @@ class Statistics(InfluxDBCommunicator):
             self, job=None, scenario=None, agent=None, job_instances=(),
             suffix=None, fields=None, condition=None, columns=None):
         data = self._raw_influx_data(job, scenario, agent, job_instances, suffix, fields, condition)
-        yield from (_Plot(df) for df in self._parse_dataframes(data, columns))
+        yield from (_Plot(df) for df in self._parse_dataframes(data, job_instances, columns))
 
     def fetch_all(
             self, job=None, scenario=None, agent=None, job_instances=(),
             suffix=None, fields=None, condition=None, columns=None):
         data = self._raw_influx_data(job, scenario, agent, job_instances, suffix, fields, condition)
-        df = pd.concat(self._parse_dataframes(data, columns), axis=1)
+        df = pd.concat(self._parse_dataframes(data, job_instances, columns), axis=1)
         return _Plot(df)
 
 

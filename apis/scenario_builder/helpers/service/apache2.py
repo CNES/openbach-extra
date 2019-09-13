@@ -29,15 +29,13 @@
 """ Helpers of apache2 job """
 
 def apache2(
-       scenario, server_entity, start_stop, wait_finished=None, 
+       scenario, server_entity, wait_finished=None, 
        wait_launched=None, wait_delay=0):
     launch_apache2 = scenario.add_function(
                          'start_job_instance',
                          wait_finished=wait_finished,
                          wait_launched=wait_launched,
                          wait_delay=wait_delay)
-    launch_apache2.configure(
-                       'apache2', server_entity, offset=0,
-                       operation=start_stop)
+    launch_apache2.configure('apache2', server_entity, offset=0)
 
     return [launch_apache2]

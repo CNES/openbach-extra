@@ -42,14 +42,60 @@ import collect_agent
 import webbrowser
 from selenium import webdriver 
 from selenium.webdriver.support import expected_conditions as EC 
+from selenium.common.exceptions import NoSuchElementException 
 from selenium.webdriver.support.ui import WebDriverWait 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 import random
 import math
+import psutil
+import signal 
+from functools import partial
 
 URL = "https://web.skype.com"
-    
+
+
+
+def kill_children(parent_pid):
+    """ KIll all subprocesses including firefox and geckodriver"""
+    parent = psutil.Process(parent_pid)
+    for child in parent.children(recursive=True):
+        try:
+           child.kill()
+        except psutil.NoSuchProcess as ex:
+           pass
+
+def kill_all(parent_pid, signum, frame):
+    """ Kill all children processes before killing parent process"""
+    kill_children(parent_pid)
+    parent = psutil.Process(parent_pid)
+    parent.kill()
+
+def set_signal_handler():
+    signal_handler_partial = partial(kill_all, os.getpid())
+    signal.signal(signal.SIGTERM, signal_handler_partial)
+    signal.signal(signal.SIGINT, signal_handler_partial)
+
+def handle_exception(message):
+    collect_agent.send_log(syslog.LOG_ERR, message)
+    exit(message)
+
+def connect_to_collect_agent():
+    # Connect to collect agent
+    conffile = '/opt/openbach/agent/jobs/skype/skype_rstats_filter.conf'
+    success = collect_agent.register_collect(conffile)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        handle_exception(message)
+
+def check_exists_by_xpath(web_driver, xpath):
+    try:
+        web_driver.find_element_by_xpath(xpath)
+    except NoSuchElementException:
+        return False
+    return True
+
+
 class Skype:
   
     def __init__(self, email_address, password, timeout):
@@ -62,14 +108,6 @@ class Skype:
         """
           Launch the browser and fetch the web page for login to skype                 
         """ 
-        # Connect to collect agent
-        conffile = '/opt/openbach/agent/jobs/skype/skype_rstats_filter.conf'
-        success = collect_agent.register_collect(conffile)
-        if not success:
-            message = 'ERROR when connecting to collect-agent'
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            exit(message)
-            
         # Initialize a Selenium driver. Only support googe-chrome for now.
         try:
             # Load config from config.yaml
@@ -102,16 +140,16 @@ class Skype:
                 chrome_options.add_argument("--use-file-for-fake-audio-capture={}".format(audio))
                 # Runs Chrome in headless mode
                 chrome_options.add_argument("--headless")
+                # To make elements visible in headless mode
+                chrome_options.add_argument("window-size=1200,1100")
+                chrome_options.add_argument("--no-sandbox")
+                chrome_options.add_argument("--disable-dev-shm-usage")
                 self.driver = webdriver.Chrome(executable_path=chromedriver_path,
                                                chrome_options=chrome_options
                 )
         except Exception as ex:
             message = 'ERROR when initializing the web driver: {}'.format(ex)
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            print( message)
-            self.close_browser()
-            exit(message)
-        
+            handle_exception(message)
         # Launch the browser and fetch the login web page
         try:
             self.driver.delete_all_cookies()
@@ -125,12 +163,12 @@ class Skype:
             )
          # Catch: WebDriveException, InvalideSelectorExeception, NoSuchElementException, TimeoutException
         except Exception as ex:
-            message = 'ERROR when launching the browser: {}'.format(ex)
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            print( message)
-            self.close_browser()
-            exit(message)
-           
+            message = ('ERROR when loading login page: {}' 
+                       'It is probably due to either no internet connection or {} '
+                       'is unreachable'.format(ex, URL)
+            )
+            handle_exception(message)
+
     def login_in_skype(self):
         """
           Sign in to user skype account using specified email_address and password                  
@@ -157,23 +195,21 @@ class Skype:
         # Catch: WebDriveException, InvalideSelectorExeception, NoSuchElementException
         except Exception as ex:
             message = 'ERROR when login: {}'.format(ex)
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            print(message)
-            self.close_browser()
-            sys.exit(message)
+            handle_exception(message)
     
     def search_contact(self, contact_name):
         """
         Find the person to contact by its name from contacts list             
         """
         try:
+            # Wait for contact refresh
+            time.sleep(10)
             # Launch search
             element = self.wait.until(EC.element_to_be_clickable((
                                   By.XPATH,
                                   "//button[@title='People, groups & messages']/div"))
             )
             self.driver.execute_script("arguments[0].click();", element)
-            #self.driver.find_element_by_xpath("//button[@title='People, groups & messages']/div").click()
             self.wait.until(EC.visibility_of_element_located((
                                   By.XPATH,
                                   "//input[@placeholder='Search Skype']"))
@@ -184,24 +220,25 @@ class Skype:
             # Wait for first contact is clickable then open conversation
             self.wait.until(EC.element_to_be_clickable((
                                   By.XPATH,
-                                  "//div[@role='group'][@aria-label='PEOPLE']/div[2]"))
+                                  "//div[@role='group'][@aria-label='PEOPLE']/div[contains(@aria-label, '{}')]".format(contact_name)))
             ).click()
-            
-            # Get the first contact
-            #self.driver.find_element_by_xpath("//div[@role='group'][@aria-label='PEOPLE']/div[2]").click()
         except Exception as ex:
             message = 'ERROR when finding contact {} : {}'.format(contact_name, ex)
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            print(message)
-            self.close_browser()
-            sys.exit(message)
-         
-    def call_person(self, call_type):
-        if call_type == 'video':
-            xpath = "//button[@title='Video Call']"
-        else:
-            xpath = "//button[@title='Audio Call']"
-        call_element = self.driver.find_element_by_xpath(xpath)
+            handle_exception(message)
+
+    def call_person(self, contact_name, call_type, call_duration):
+        """ Launch *call_type* call and stop communication after *call_duration* seconds"""
+        xpath = "//button[@title='{}']"
+        try:
+           if call_type == 'video':
+              xpath = xpath.format('Video Call')
+           else:
+               xpath = xpath.format('Audio Call')
+           call_element = self.driver.find_element_by_xpath(xpath)
+        except Exception as ex:
+            message = 'ERROR when launching call: {}'.format(ex)
+            handle_exception(message) 
+
         try:
             #Select Skype call if the contact can be reachable by another way such as via its mobile number
             call_element = self.driver.find_element_by_xpath("/html/body/ul/li[1]")
@@ -209,12 +246,23 @@ class Skype:
           pass
         finally:
           call_element.click()
-           
-    def end_call(self, call_duration):
+          xpath = "//button[@title='End Call']"
+          self.wait.until(EC.presence_of_element_located((
+                                  By.XPATH, 
+                                  xpath))
+          )
+          while check_exists_by_xpath(self.driver, xpath) and call_duration > 0:
+             time.sleep(1)
+             call_duration -= 1   
+          if call_duration != 0:
+             message = '{} is not available'.format(contact_name)
+             handle_exception(message)
+                    
+
+    def end_call(self):
         """
-        End call after *call_duration*
+        End the communication
         """
-        time.sleep(call_duration)        
         try:
             end_call_element = self.driver.find_element_by_xpath("//button[@title='End Call']")
             end_call_element.click()
@@ -227,69 +275,80 @@ class Skype:
     
 def call(email_address, password, call_type, timeout, contact_name, call_duration):
     """
-    Scenario for audio or video call. Launch the browser, login in skype using specified user parameters, 
+    Launch the browser, login in skype using specified user parameters, 
     find the contact, make call and close the browser after *call_duration* seconds.
     """
-    skype = Skype(email_address, password, timeout)
-    print('########## Launch the browser and load login page #############')
-    skype.open_browser()
-    print('########## Sign In  #############')
-    skype.login_in_skype()
-    print('########## Search the contact #############')
-    time.sleep(2)
-    skype.search_contact(contact_name)
-    # Wait for DOM to refresh
-    time.sleep(5)
-    print('########## Call person #############')
-    skype.call_person(call_type)
-    skype.end_call(call_duration)
-    print('########## Call Ended #############')
-    skype.close_browser()
+    # Connect to collect agent
+    connect_to_collect_agent()
+    # Set signal handler
+    set_signal_handler()
+    try:
+       skype = Skype(email_address, password, timeout)
+       print('########## Launch the browser and fetch login page #############')
+       skype.open_browser()
+       print('########## Sign In  #############')
+       skype.login_in_skype()
+       print('########## Find the contact #############')
+       time.sleep(2)
+       skype.search_contact(contact_name)
+       # Wait for DOM to refresh
+       time.sleep(5)
+       print('########## Start Call #############')
+       skype.call_person(call_type, call_duration)
+       skype.end_call()
+       print('########## Call Ended #############')
+       skype.close_browser()
+    except Exception as ex:
+       message = 'An unexpected error occured: {}'.format(ex)
+       handle_exception(message)
+    finally:
+       kill_children(os.getpid())
+
     
 def receive(email_address, password, call_type, timeout):
     """
-    Scenario for receiveing audio or video calling. Launch the browser, login in skype, 
-    and wait for incoming call.
+    Launch the browser, login in skype, and wait for incoming call.
     """
-    # Connect to collect agent
-    conffile = '/opt/openbach/agent/jobs/skype/skype_rstats_filter.conf'
-    success = collect_agent.register_collect(conffile)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
-    skype = Skype(email_address, password, timeout)
-    print('########## Launch the browser and load login page #############')
-    skype.open_browser()
-    print('########## Sign In  #############')
-    skype.login_in_skype()
-    print('########## Wait for incoming call #############')
-    # Wait for incoming call
-    if call_type == 'audio':
-        answer_call_element = skype.persistent_wait.until(EC.presence_of_element_located((
-                                      By.XPATH, 
-                                      "//button[contains(@title, 'Answer call') "
-                                      "and contains(@title, 'voice only')]"))
-                              )
-    else:
-        answer_call_element = skype.persistent_wait.until(EC.presence_of_element_located((
-                                      By.XPATH, 
-                                      "//button[contains(@title, 'Answer call') " 
-                                      "and contains(@title, 'video')]"))
-                              )
-    # Answer and wait until the caller end the call
-    time.sleep(2)
-    answer_call_element.click()
-    skype.persistent_wait.until(EC.presence_of_element_located((
-            By.XPATH,
-            "//button[@title='End Call']",
-    )))
-    skype.persistent_wait.until_not(EC.presence_of_element_located((
-            By.XPATH, 
-            "//button[@title='End Call']",
-    )))
-    skype.close_browser()
-    print('########## call Ended #############')
+    connect_to_collect_agent()
+    set_signal_handler()
+    try:
+       skype = Skype(email_address, password, timeout)
+       print('########## Launch the browser and fetch login page #############')
+       skype.open_browser()
+       print('########## Sign In  #############')
+       skype.login_in_skype()
+       print('########## Wait for incoming call #############')
+       # Wait for incoming call
+       if call_type == 'audio':
+           answer_call_element = skype.persistent_wait.until(EC.presence_of_element_located((
+                                         By.XPATH, 
+                                         "//button[contains(@title, 'Answer call') "
+                                         "and contains(@title, 'voice only')]"))
+                                 )
+       else:
+           answer_call_element = skype.persistent_wait.until(EC.presence_of_element_located((
+                                         By.XPATH, 
+                                         "//button[contains(@title, 'Answer call') " 
+                                         "and contains(@title, 'video')]"))
+                                 )
+       # Answer and wait until the caller end the call
+       time.sleep(2)
+       answer_call_element.click()
+       skype.persistent_wait.until(EC.presence_of_element_located((
+               By.XPATH,
+               "//button[@title='End Call']",
+       )))
+       skype.persistent_wait.until_not(EC.presence_of_element_located((
+               By.XPATH, 
+               "//button[@title='End Call']",
+       )))
+       skype.close_browser()
+       print('########## call Ended #############')
+    except Exception as ex:
+       message = 'An unexpected error occured: {}'.format(ex)
+       handle_exception(message)
+    finally:
+       kill_children(os.getpid())       
     
     
 if __name__ == "__main__":
