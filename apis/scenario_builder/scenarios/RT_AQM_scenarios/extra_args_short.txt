@@ -4,7 +4,7 @@
 
 # extra_args:
 # iperf -> dst_ip dst_port rate tos
-# dash  -> src_ip dst_ip src_port
+# dash  -> src_ip dst_ip protocol
 # voip  -> src_ip dst_ip dst_port codecs
 # web  -> nb_runs dst_ip								(do not forget to edit the config file with correct address)
 
@@ -12,6 +12,6 @@
 
 1 iperf A1 A3 30 None None 0 192.168.2.9 5201 2M 0
 2 iperf A1 A3 30 1 None 10 192.168.2.10 5201 2M 0
-3 dash A1 A3 60 None None 0 192.168.1.4 192.168.2.9 3001
+3 dash A1 A3 60 None None 0 192.168.1.4 192.168.2.9 http/2
 4 voip A1 A3 30 None 1 15 192.168.1.4 192.168.2.9 8001 G.711.1
 5 web A1 A3 60 None None 0 10 192.168.2.9

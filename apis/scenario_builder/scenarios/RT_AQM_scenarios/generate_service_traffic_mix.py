@@ -87,9 +87,10 @@ def extract_jobs_to_postprocess(scenarios, traffic):
                         address = function.start_job_instance['iperf3']['server']['bind']
                         yield (start_scenario, function_id, address + " " + str(port))
                 if traffic == "dash" and function.job_name == 'dash player&server':
-                    port = function.start_job_instance['dash player&server']['port']
+                    #port = function.start_job_instance['dash player&server']['port']
                     #address = function.start_job_instance['dash player&server']['bind']
                     address = "Unknown address..." # TODO
+                    port = "Unknown port..." # TODO
                     yield (start_scenario, function_id, address + " " + str(port))
                 if traffic == "web" and function.job_name == 'web_browsing_qoe':
                     dst = function.start_job_instance['entity_name']
@@ -127,7 +128,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
     start_servers = []
     for args in args_list:
         if args[1] == "web" and args[2] not in apache_servers:
-            start_server = apache2(scenario_mix, args[2], "start")[0]
+            start_server = apache2(scenario_mix, args[2])[0]
             apache_servers[args[2]] = start_server
             start_servers.append(start_server)
 
@@ -165,8 +166,6 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
         stopper = scenario_mix.add_function('stop_job_instance',
                 wait_finished=list_wait_finished, wait_delay=5)
         stopper.configure(scenario_server)
-        apache2(scenario_mix, server_entity, "stop",
-                wait_finished=list_wait_finished, wait_delay=5)
 
     # Post processing data
     if post_processing_entity is not None:

@@ -39,9 +39,10 @@ def extract_jobs_to_postprocess(scenario):
     for function_id, function in enumerate(scenario.openbach_functions):
         if isinstance(function, StartJobInstance):
             if function.job_name == 'dash player&server':
-                port = function.start_job_instance['dash player&server']['port']
+                #port = function.start_job_instance['dash player&server']['port']
                 #address = function.start_job_instance['dash player&server']['bind']
                 address = "Unknown address..." # TODO
+                port = "Unknown port..." # TODO
                 yield (function_id, address + " " + str(port))
 
 
