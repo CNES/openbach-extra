@@ -59,7 +59,6 @@ def load_args(args_list):
                 if cur_id in id_explored:
                     print("Duplicated id:", " ".join(args), "... ignoring")
                     continue
-                id_explored.append(cur_id)
                 int(args[4])
                 int(args[7])
                 for dependency in ids:
@@ -71,6 +70,7 @@ def load_args(args_list):
                         break
                 else:
                     args_main.append(args)
+                    id_explored.append(cur_id)
         except ValueError:
             print("Cannot parse this line:", args_str)
 
@@ -143,14 +143,26 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
     for args in args_list:
         traffic = args[1]
         scenario_id = args[0]
-        if args[5] == "None" and args[6] == "None":
+
+        wait_launched_list = []
+        wait_finished_list = []
+        if args[5] != "None" or args[6] != "None":
+            if args[5] != "None":
+                for i in args[5].split('-'):
+                    if i in map_scenarios:
+                        wait_finished_list.append(map_scenarios[i])
+            if args[6] != "None":
+                for i in args[6].split('-'):
+                    if i in map_scenarios:
+                        wait_launched_list.append(map_scenarios[i])
+
+        if not wait_launched_list and not wait_finished_list:
             wait_finished_list = []
             wait_launched_list = start_servers if start_servers else []
             offset_delay = 5 if start_servers else 0
         else:
-            wait_finished_list = [map_scenarios[i] for i in args[6].split('-')] if args[6] != "None" else []
-            wait_launched_list = [map_scenarios[i] for i in args[5].split('-')] if args[5] != "None" else []
             offset_delay = 0
+
 
         start_scenario = scenario_mix.add_function('start_scenario_instance',
                     wait_finished=wait_finished_list, wait_launched=wait_launched_list, wait_delay=int(args[7]) + offset_delay)
