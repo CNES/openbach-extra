@@ -46,7 +46,7 @@ def extract_jobs_to_postprocess(scenario):
 
 
 def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
-    print("loading:",scenario_name)
+    print("Loading:",scenario_name)
 
     # Create top network_global scenario
     scenario = Scenario(scenario_name + "_" + args[0], SCENARIO_DESCRIPTION)

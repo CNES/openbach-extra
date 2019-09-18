@@ -51,28 +51,28 @@ def load_args(args_list):
             args = args_str.split()
             for traffic, nb in [("voip",12), ("web",10), ("dash",11), ("iperf",12)]:
                 if args[1] == traffic and len(args) != nb:
-                    print("Wrong argument format,", nb, "elements needed for", traffic, "traffic:", " ".join(args), "... ignoring")
+                    print("\033[91mWARNING:", "Wrong argument format,", nb, "elements needed for", traffic, "traffic:", " ".join(args), "but got", len(args), "... ignoring", "\033[0m")
                     break
             else:
                 ids = list(map(int,args[5].split("-")) if args[5] != "None" else []) + list(map(int,args[6].split("-")) if args[6] != "None" else [])
                 cur_id = int(args[0])
                 if cur_id in id_explored:
-                    print("Duplicated id:", " ".join(args), "... ignoring")
+                    print("\033[91mWARNING:", "Duplicated id:", " ".join(args), "... ignoring")
                     continue
                 int(args[4])
                 int(args[7])
                 for dependency in ids:
                     if cur_id <= dependency:
-                        print("This traffic depends on future ones:", " ".join(args), "... ignoring")
+                        print("\033[91mWARNING:", "This traffic depends on future ones:", " ".join(args), "... ignoring", "\033[0m")
                         break
                     if dependency not in id_explored:
-                        print("This traffic depends on missing ones:", " ".join(args), "... ignoring")
+                        print("\033[91mWARNING:", "This traffic depends on missing ones:", " ".join(args), "... ignoring", "\033[0m")
                         break
                 else:
                     args_main.append(args)
                     id_explored.append(cur_id)
         except ValueError:
-            print("Cannot parse this line:", args_str)
+            print("\033[91mWARNING:", "Cannot parse this line:", args_str, "\033[0m")
 
     return args_main
 
@@ -117,12 +117,12 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
             extra_args.append(line.rstrip())
         file.close()
     except (OSError, IOError):
-        print("Cannot open args file, exiting")
+        print("\033[91mERROR:", "Cannot open args file, exiting", "\033[0m")
         return
 
     args_list = load_args(extra_args)
 
-    print("loading traffics")
+    print("Loading traffics")
 
     #launching Apache2 servers first
     start_servers = []
@@ -182,7 +182,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
 
     # Post processing data
     if post_processing_entity is not None:
-        print("loading:", "post processing")
+        print("Loading:", "post processing")
         for traffic, name, y_axis in [("iperf", "throughput", "Rate (b/s)"),
                                         ("dash", "bitrate", "Rate (b/s)"),
                                         ("web", "page_load_time", "PLT (ms)"),
@@ -195,7 +195,5 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
             if post_processed:
                 time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [[name]], [[y_axis]], [['Rate time series']], legends, list_wait_finished, None, 2)
                 cdf_on_same_graph(scenario_mix, post_processing_entity, post_processed, 100, [[name]], [[y_axis]], [['Rate CDF']], legends, list_wait_finished, None, 2)
-
-    print("All traffics loaded")
 
     return scenario_mix
