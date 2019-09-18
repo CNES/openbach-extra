@@ -91,7 +91,7 @@ def extract_jobs_to_postprocess(scenarios, traffic):
                     #address = function.start_job_instance['dash player&server']['bind']
                     address = "Unknown address..." # TODO
                     port = "Unknown port..." # TODO
-                    yield (start_scenario, function_id, address + " " + str(port))
+                    yield (None, function_id, address + " " + str(port))
                 if traffic == "web" and function.job_name == 'web_browsing_qoe':
                     dst = function.start_job_instance['entity_name']
                     port = "Unknown port..." # TODO
@@ -126,6 +126,13 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
 
     #launching Apache2 servers first
     start_servers = []
+    for args in args_list:
+        if args[1] == "dash" and args[2] not in apache_servers:
+            start_server = scenario_mix.add_function('start_job_instance')
+            start_server.configure('dash player&server', args[2], offset=0)
+            apache_servers[args[2]] = start_server
+            start_servers.append(start_server)
+            list_scenarios.append((scenario_mix, None))
     for args in args_list:
         if args[1] == "web" and args[2] not in apache_servers:
             start_server = apache2(scenario_mix, args[2])[0]
@@ -177,7 +184,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
             post_processed = []
             legends = []
             for scenario_id, function_id, legend in extract_jobs_to_postprocess(list_scenarios, traffic):
-                post_processed.append([scenario_id, function_id])
+                post_processed.append([scenario_id, function_id] if scenario_id is not None else [function_id])
                 legends.append([traffic + " - " + legend])
             if post_processed:
                 time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [[name]], [[y_axis]], [['Rate time series']], legends, list_wait_finished, None, 2)
