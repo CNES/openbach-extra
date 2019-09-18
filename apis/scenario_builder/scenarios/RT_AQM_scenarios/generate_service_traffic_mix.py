@@ -148,21 +148,15 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
         wait_finished_list = []
         if args[5] != "None" or args[6] != "None":
             if args[5] != "None":
-                for i in args[5].split('-'):
-                    if i in map_scenarios:
-                        wait_finished_list.append(map_scenarios[i])
+                wait_launched_list = [map_scenarios[i] for i in args[5].split('-')]
             if args[6] != "None":
-                for i in args[6].split('-'):
-                    if i in map_scenarios:
-                        wait_launched_list.append(map_scenarios[i])
+                wait_finished_list = [map_scenarios[i] for i in args[6].split('-')]
 
         if not wait_launched_list and not wait_finished_list:
-            wait_finished_list = []
             wait_launched_list = start_servers if start_servers else []
             offset_delay = 5 if start_servers else 0
         else:
             offset_delay = 0
-
 
         start_scenario = scenario_mix.add_function('start_scenario_instance',
                     wait_finished=wait_finished_list, wait_launched=wait_launched_list, wait_delay=int(args[7]) + offset_delay)
