@@ -28,7 +28,7 @@
 
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
-from scenario_builder.helpers.transport.iperf3 import iperf3_rate_udp
+from scenario_builder.helpers.transport.iperf3 import iperf3_send_file_tcp
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
@@ -53,7 +53,7 @@ def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name + "_" + args[0], SCENARIO_DESCRIPTION)
 
     # launching traffic
-    start_scenario = iperf3_rate_udp(scenario, args[2], args[3], args[8], args[9], 1, int(args[4]), args[11], args[10])
+    start_scenario = iperf3_send_file_tcp(scenario, args[2], args[3], args[8], args[9], args[10], args[11], args[12])
     
     # Post processing data
     if post_processing_entity is not None:

@@ -49,9 +49,9 @@ def load_args(args_list):
             if args_str[0] == '#':
                 continue
             args = args_str.split()
-            for traffic, nb in [("voip",12), ("web",10), ("dash",11), ("iperf",12)]:
+            for traffic, nb in [("voip",12), ("web",10), ("dash",11), ("iperf",13)]:
                 if args[1] == traffic and len(args) != nb:
-                    print("\033[91mWARNING:", "Wrong argument format,", nb, "elements needed for", traffic, "traffic:", " ".join(args), "but got", len(args), "... ignoring", "\033[0m")
+                    print("\033[91mWARNING:", "Wrong argument format,", nb, "elements needed for", traffic, "traffic:", "\"" + " ".join(args) + "\"", "but got", len(args), "... ignoring", "\033[0m")
                     break
             else:
                 ids = list(map(int,args[5].split("-")) if args[5] != "None" else []) + list(map(int,args[6].split("-")) if args[6] != "None" else [])
