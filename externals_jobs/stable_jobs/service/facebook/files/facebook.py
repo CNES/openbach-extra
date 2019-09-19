@@ -207,7 +207,7 @@ class Facebook:
             # Launch search and wait
             element.send_keys(friend_name)
             time.sleep(5)
-            element = self.wait.until(EC.visibility_of_element_located((By.XPATH, 
+            element = self.wait.until(EC.element_to_be_clickable((By.XPATH, 
             "//div[text()='{}']".format(friend_name))))
             element.click()      
         except Exception as ex:
