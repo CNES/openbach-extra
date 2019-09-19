@@ -294,7 +294,7 @@ def call(email_address, password, call_type, timeout, contact_name, call_duratio
        # Wait for DOM to refresh
        time.sleep(5)
        print('########## Start Call #############')
-       skype.call_person(call_type, call_duration)
+       skype.call_person(contact_name, call_type, call_duration)
        skype.end_call()
        print('########## Call Ended #############')
        skype.close_browser()
