@@ -1,0 +1,93 @@
+---
+
+general:
+  name:            openvpn
+  description: > 
+      This job relies on OpenVPN program to launch openvpn daemon as server or client. 
+      Its is used to build a routed VPN tunnel between two remote hosts in p2p mode. 
+      This job supports conventionnal encryption using a pre-shared secret key. 
+      It also allows to setup non-encrypted TCP/UDP tunnels"
+               )
+  job_version:     '1.0'
+  keywords:        [OpenVPN, VPN, SSL/TLS]
+  persistent:      True
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/openvpn/openvpn.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        local_ip
+      type:        ip
+      count:        1
+      description: The IP address used to communicate with peer
+  optional:
+    - name:        protocol
+      type:        str
+      count:       1
+      flag:        '-proto' 
+      description: The transport protocol to use to communicate with peer. 
+                   (It must be same on server and client. Default udp)
+      choices:
+                   - udp
+                   - tcp
+    - name:        local_port
+      type:        int
+      count:       1
+      flag:        '-lport'
+      description: The port number for bind (default 1194)
+    - name:        tun_device
+      type:        str
+      count:       1
+      flag:        '-dev'
+      description:  The name of virtual TUN device acting as VPN endpoint
+                    (default tun0)
+    - name:         local_tun_ip
+      type:         ip
+      count:        1
+      flag:         '-ltun_ip'
+      description:  The IP address of the local VPN endpoint 
+                    (default 10.8.0.1 if server mode and 10.8.0.2 for client mode)
+    - name:         remote_tun_ip
+      type:         ip
+      count:        1
+      flag:         '-rtun_ip'
+      description:  The IP address of the remote VPN endpoint
+                    (default 10.8.0.2 if server mode and 10.8.0.1 for client mode)
+    - name:         pass_tos
+      type:         None
+      count:        0
+      flag:         '-pass_tos'
+      description:  Set the TOS field of the tunnel packet to what the payload TOS is
+    - name:         no_security
+      type:         None
+      count:        0
+      flag:         '-no_sec'
+      description:  Disable authentification and encryption. 
+                    (It must be same on server and client)
+  subcommand:
+    - group_name:  mode
+      optional: no
+      choices:
+         - name:            server
+           required:
+           optional:
+         - name:            client
+           required:
+             - name:        server_ip
+               type:        ip
+               count:       1
+               description: The IP address of the server
+           optional:
+             - name:        server_port
+               type:        int
+               count:       1
+               flag:        '-rport'
+               description: The port number that the server is bound to
+                            (default 1194)
+  
+statistics:

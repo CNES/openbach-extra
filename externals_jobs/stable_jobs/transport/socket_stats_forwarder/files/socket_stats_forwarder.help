@@ -1,0 +1,31 @@
+Job Description
+===============
+This Job listens to an UDP socket, parses the data received using regular expressions and fowards the parsed data to the OpenBACH Collector.
+It can take several regexps and several lists of stats names.
+ATTENTION : the data received must match only 1 regexp.
+
+
+Examples
+======== 
+We suppose the job receives the following datagrams periodically:
+PACKET_1 : 'id : 12345  rtt : 512 ms'
+PACKET_2 : 'id : 12346  rate: 12 mbps'
+
+You can launch the job using the graphical interface or manually from command line if needed :
+
+-In the graphical interface, set the following parameters :
+  --> "Stats names or Regexp" ARE REQUIRED. It is composed by 2 elements : 1st is a comma-separated list of stats names, 2nd is the corresponding regular expression.
+      The regular expression follows typical python matching rules. The extracted elements are between parenthesis and are associated to a statistic name.
+      Several pairs of arguments can be set, just be sure each regexp match exclusively the data you want.
+      Example according to the packets described above: 
+      'id,rtt'      'id : ([0-9]+)  rtt : ([0-9]+) ms'
+      'id,rate'     'id : ([0-9]+)  rate : ([0-9]+) mbps'
+      (DO NOT PUT THE QUOTES)
+      
+  --> IP, Port and buffer size are optional. They have the following default values : 0.0.0.0, 8321, 1024(Bytes)
+
+
+-Manual launching from the Agent:
+  Each pair of 'Stats names - Regexp' is set using the '-s' flag
+  Example : ./socket_parse.py -a 192.168.1.1 -p 5236 -b 2048 -s 'id,rtt' 'id : ([0-9]+)  rtt : ([0-9]+) ms' -s 'id,rate' 'id : ([0-9]+)  rate : ([0-9]+) mbps' (QUOTES RECOMMENDED FOR -s)
+
