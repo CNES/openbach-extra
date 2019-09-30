@@ -60,6 +60,12 @@ def _column_name_serializer(name):
     return '_'.join(map(str, name))
 
 
+def _prepare_columns(df, columns):
+    df = df.sort_values(['suffix', 'statistic'], axis=1)
+    df.columns = [next(columns, name) or name for name in df.columns]
+    return df
+
+
 def influx_to_pandas(response):
     for result in response.get('results', []):
         for serie in result.get('series', []):
@@ -130,12 +136,7 @@ class Statistics(InfluxDBCommunicator):
             _condition = ConditionAnd(conditions, ConditionOr(*instances))
         return self.sql_query(select_query(job, fields, _condition))
 
-    def _parse_dataframes(self, response, job_instances=(), columns=None):
-        if columns is None:
-            columns = iter([])
-        else:
-            columns = iter(columns)
-
+    def _parse_dataframes(self, response):
         offset = self.origin
         names = ['job', 'scenario', 'agent', 'suffix', 'statistic']
         for df in influx_to_pandas(response):
@@ -152,14 +153,7 @@ class Statistics(InfluxDBCommunicator):
             df = pd.concat(converted, axis=1)
 
             df.set_index(['@job_instance_id', '@scenario_instance_id', '@agent_name', '@suffix'], inplace=True)
-            unique_index = df.index.unique()
-            if job_instances:
-                sorted_index = itertools.chain.from_iterable(
-                        unique_index[unique_index.get_loc(id)]
-                        for id in job_instances)
-            else:
-                sorted_index = unique_index.sort_values()
-            for index in sorted_index:
+            for index in df.index.unique():
                 extract = df.xs(index)
                 if isinstance(extract, pd.Series):
                     extract = pd.DataFrame(extract.to_dict(), index=[0])
@@ -168,27 +162,24 @@ class Statistics(InfluxDBCommunicator):
                 section.set_index('time', inplace=True)
                 section.index.name = 'Time (ms)'
                 section.reindex(columns=section.columns.sort_values())
-
-                column_names = [next(columns, None) for _ in range(len(section.columns))]
-                if all(name is None for name in column_names):
-                    renamed = [index + (name,) for name in section.columns]
-                    section.columns = pd.MultiIndex.from_tuples(renamed, names=names)
-                else:
-                    section.columns = column_names
+                section.columns = pd.MultiIndex.from_tuples([index + (name,) for name in section.columns], names=names)
                 yield section
 
     def fetch(
             self, job=None, scenario=None, agent=None, job_instances=(),
-            suffix=None, fields=None, condition=None, columns=None):
+            suffix=None, fields=None, condition=None):
         data = self._raw_influx_data(job, scenario, agent, job_instances, suffix, fields, condition)
-        yield from (_Plot(df) for df in self._parse_dataframes(data, job_instances, columns))
+        yield from (_Plot(df) for df in self._parse_dataframes(data))
 
     def fetch_all(
             self, job=None, scenario=None, agent=None, job_instances=(),
             suffix=None, fields=None, condition=None, columns=None):
         data = self._raw_influx_data(job, scenario, agent, job_instances, suffix, fields, condition)
-        df = pd.concat(self._parse_dataframes(data, job_instances, columns), axis=1)
-        return _Plot(df)
+        df = pd.concat(self._parse_dataframes(data), axis=1)
+        if not job_instances or columns is None:
+            return _Plot(df)
+        columns = iter(columns)
+        return _Plot(pd.concat([_prepare_columns(df[id], columns) for id in job_instances], axis=1))
 
 
 class _Plot:
