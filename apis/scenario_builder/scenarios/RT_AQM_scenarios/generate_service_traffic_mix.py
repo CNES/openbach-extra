@@ -94,7 +94,7 @@ def extract_jobs_to_postprocess(scenarios, traffic):
                     yield (None, function_id, address + " " + str(port))
                 if traffic == "web" and function.job_name == 'web_browsing_qoe':
                     dst = function.start_job_instance['entity_name']
-                    port = "Unknown port..." # TODO
+                    port = "" # FIXME
                     yield (start_scenario, function_id, dst + " " + str(port))
                 if traffic == "voip" and function.job_name == 'voip_qoe_src':
                     port = function.start_job_instance['voip_qoe_src']['starting_port']
@@ -191,7 +191,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
             legends = []
             for scenario_id, function_id, legend in extract_jobs_to_postprocess(list_scenarios, traffic):
                 post_processed.append([scenario_id, function_id] if scenario_id is not None else [function_id])
-                legends.append([traffic + " - " + legend])
+                legends.append([] if traffic == "dash" else [traffic + " - " + legend])
             if post_processed:
                 time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [[name]], [[y_axis]], [['Rate time series']], legends, list_wait_finished, None, 2)
                 cdf_on_same_graph(scenario_mix, post_processing_entity, post_processed, 100, [[name]], [[y_axis]], [['Rate CDF']], legends, list_wait_finished, None, 2)
