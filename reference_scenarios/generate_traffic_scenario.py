@@ -28,7 +28,7 @@
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios.RT_AQM_scenarios import generate_service_traffic_mix
+from scenario_builder.scenarios import service_traffic_mix
 
 """This scenario launches the *RT_AGM_global* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
@@ -42,7 +42,7 @@ def main():
 
     args = observer.parse()
 
-    scenario = generate_service_traffic_mix.build(
+    scenario = service_traffic_mix.build(
             args.entity_pp,
             args.extra_args_traffic)
 

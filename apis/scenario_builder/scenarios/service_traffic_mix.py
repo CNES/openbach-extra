@@ -30,14 +30,14 @@
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.service.apache2 import apache2
-from scenario_builder.scenarios.RT_AQM_scenarios import generate_service_data_transfer, generate_service_video_dash, generate_service_web_browsing, generate_service_voip
+from scenario_builder.scenarios import service_data_transfer, service_video_dash, service_web_browsing, service_voip
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
 SCENARIO_DESCRIPTION="""This scenario launches the traffics as defined in the configuration file, then post processes generated data
 """
-SCENARIO_NAME="""generate_service_traffic_mix"""
+SCENARIO_NAME="""service_traffic_mix"""
 
 def load_args(args_list):
     args_main = []
@@ -49,7 +49,7 @@ def load_args(args_list):
             if args_str[0] == '#':
                 continue
             args = args_str.split()
-            for traffic, nb in [("voip",12), ("web",10), ("dash",11), ("iperf",13)]:
+            for traffic, nb in [("voip",12), ("web",10), ("dash",11), ("iperf3",13)]:
                 if args[1] == traffic and len(args) != nb:
                     print("\033[91mWARNING:", "Wrong argument format,", nb, "elements needed for", traffic, "traffic:", "\"" + " ".join(args) + "\"", "but got", len(args), "... ignoring", "\033[0m")
                     break
@@ -81,25 +81,22 @@ def extract_jobs_to_postprocess(scenarios, traffic):
     for scenario, start_scenario in scenarios:
         for function_id, function in enumerate(scenario.openbach_functions):
             if isinstance(function, StartJobInstance):
-                if traffic == "iperf" and function.job_name == 'iperf3':
+                if traffic == "iperf3" and function.job_name == 'iperf3':
                     if 'server' in function.start_job_instance['iperf3']:
                         port = function.start_job_instance['iperf3']['port']
                         address = function.start_job_instance['iperf3']['server']['bind']
-                        yield (start_scenario, function_id, address + " " + str(port))
+                        dst = function.start_job_instance['entity_name']
+                        yield (start_scenario, function_id, dst + " " + address + " " + str(port))
                 if traffic == "dash" and function.job_name == 'dash player&server':
-                    #port = function.start_job_instance['dash player&server']['port']
-                    #address = function.start_job_instance['dash player&server']['bind']
-                    address = "Unknown address..." # TODO
-                    port = "Unknown port..." # TODO
-                    yield (None, function_id, address + " " + str(port))
+                    yield (None, function_id, "")
                 if traffic == "web" and function.job_name == 'web_browsing_qoe':
                     dst = function.start_job_instance['entity_name']
-                    port = "" # FIXME
-                    yield (start_scenario, function_id, dst + " " + str(port))
+                    yield (start_scenario, function_id, dst)
                 if traffic == "voip" and function.job_name == 'voip_qoe_src':
                     port = function.start_job_instance['voip_qoe_src']['starting_port']
                     address = function.start_job_instance['voip_qoe_src']['dest_addr']
-                    yield (start_scenario, function_id, address + " " + str(port))
+                    dst = function.start_job_instance['entity_name']
+                    yield (start_scenario, function_id, dst + " " + address + " " + str(port))
 
 
 def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAME):
@@ -124,7 +121,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
 
     print("Loading traffics")
 
-    #launching Apache2 servers first
+    # Launching Apache2 servers first (via apache2 or dash player&server job)
     start_servers = []
     for args in args_list:
         if args[1] == "dash" and args[2] not in apache_servers:
@@ -160,21 +157,21 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
 
         start_scenario = scenario_mix.add_function('start_scenario_instance',
                     wait_finished=wait_finished_list, wait_launched=wait_launched_list, wait_delay=int(args[7]) + offset_delay)
-        if traffic == "iperf":
-            scenario = generate_service_data_transfer.build(post_processing_entity, args)
+        if traffic == "iperf3":
+            scenario = service_data_transfer.build(post_processing_entity, args)
         if traffic == "dash":
-            scenario = generate_service_video_dash.build(post_processing_entity, args)
+            scenario = service_video_dash.build(post_processing_entity, args)
         if traffic == "web":
-            scenario = generate_service_web_browsing.build(post_processing_entity, args)
+            scenario = service_web_browsing.build(post_processing_entity, args)
         if traffic == "voip":
-            scenario = generate_service_voip.build(post_processing_entity, args)
+            scenario = service_voip.build(post_processing_entity, args)
 
         start_scenario.configure(scenario)
         list_wait_finished += [start_scenario]
         map_scenarios[scenario_id] = start_scenario
         list_scenarios.append((scenario, start_scenario))
         
-    # stopping all Apache2 servers
+    # Stopping all Apache2 servers
     for server_entity,scenario_server in apache_servers.items():
         stopper = scenario_mix.add_function('stop_job_instance',
                 wait_finished=list_wait_finished, wait_delay=5)
@@ -183,7 +180,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
     # Post processing data
     if post_processing_entity is not None:
         print("Loading:", "post processing")
-        for traffic, name, y_axis in [("iperf", "throughput", "Rate (b/s)"),
+        for traffic, name, y_axis in [("iperf3", "throughput", "Rate (b/s)"),
                                         ("dash", "bitrate", "Rate (b/s)"),
                                         ("web", "page_load_time", "PLT (ms)"),
                                         ("voip", "instant_mos", "MOS")]:

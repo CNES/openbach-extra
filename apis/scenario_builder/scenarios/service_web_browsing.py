@@ -28,23 +28,20 @@
 
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
-# from scenario_builder.helpers.transport.iperf3 import iperf3_rate_udp
-from scenario_builder.helpers.transport.iperf3 import iperf3_send_file_tcp
+from scenario_builder.helpers.service.web_browsing_qoe import web_browsing_qoe
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
-SCENARIO_DESCRIPTION="""This scenario launches one iperf3 transfert"""
-SCENARIO_NAME="""generate_service_data_transfer"""
+SCENARIO_DESCRIPTION="""This scenario launches one web transfert"""
+SCENARIO_NAME="""service_web_browsing"""
 
 def extract_jobs_to_postprocess(scenario):
     for function_id, function in enumerate(scenario.openbach_functions):
         if isinstance(function, StartJobInstance):
-            if function.job_name == 'iperf3':
-                if 'server' in function.start_job_instance['iperf3']:
-                    port = function.start_job_instance['iperf3']['port']
-                    address = function.start_job_instance['iperf3']['server']['bind']
-                    yield (function_id, address + " " + str(port))
+            if function.job_name == 'web_browsing_qoe':
+                dst = function.start_job_instance['entity_name']
+                yield (function_id, dst)
 
 
 def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
@@ -54,8 +51,7 @@ def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name + "_" + args[0], SCENARIO_DESCRIPTION)
 
     # launching traffic
-    # start_scenario = iperf3_rate_udp(scenario, args[2], args[3], args[8], args[9], 1, 60, 0, "5M")
-    start_scenario = iperf3_send_file_tcp(scenario, args[2], args[3], args[8], args[9], args[10], args[11], args[12])
+    start_scenario = web_browsing_qoe(scenario, args[3], args[8], int(args[4]))
     
     # Post processing data
     if post_processing_entity is not None:
@@ -63,9 +59,9 @@ def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
         legends = []
         for function_id, legend in extract_jobs_to_postprocess(scenario):
             post_processed.append([function_id])
-            legends.append(["iperf - " + legend])
+            legends.append(["web - " + legend])
         if post_processed:
-            time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['throughput']], [['Rate (b/s)']], [['Rate time series']], legends, start_scenario, None, 2)
-            cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['throughput']], [['Rate (b/s)']], [['Rate CDF']], legends, start_scenario, None, 2)
+            time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['page_load_time']], [['PLT (ms)']], [['Rate time series']], legends, start_scenario, None, 2)
+            cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['page_load_time']], [['PLT (ms)']], [['Rate CDF']], legends, start_scenario, None, 2)
 
     return scenario
