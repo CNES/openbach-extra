@@ -88,7 +88,7 @@ def nuttcp_rate_tcp(
                 'port': port,
                 'dscp':'{0}'.format(tos),
                 'n_streams': num_flows,
-                'receiver': format(False),
+                'receiver': False,
                 'duration': duration,
                 'tcp': {'mss':'{0}'.format(mtu)},
             })
