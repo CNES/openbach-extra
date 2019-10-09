@@ -101,16 +101,32 @@ if __name__ == '__main__':
             description=__doc__,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('action', choices=['add','del'], help='Action to perform : add or delete the rule to mark the packets')
-    parser.add_argument('chain', choices=['PREROUTING', 'POSTROUTING', 'FORWARD'], help='Chain to apply the rule')
     parser.add_argument('tos', help='ToS value to set. Support decimal and hexadecimal values.')
-    parser.add_argument('-i', '--in-interface', type=str, help='Name of the interface receiving the packet')
-    parser.add_argument('-o', '--out-interface', type=str, help='Name of the interface delivering the packet')
-    parser.add_argument('-p', '--protocol', type=str, help='')
-    parser.add_argument('-d', '--destination', type=str, help='Destination IP address')
-    parser.add_argument('-s', '--source', type=str, help='Source IP address')
-    parser.add_argument('--dport', type=int, help='Destination port')
-    parser.add_argument('--sport', type=int, help='Source port')
+
+    subparsers = parser.add_subparsers(
+            title='Subcommand mode', dest='chain',
+            help='Chain to apply the rule')
+    subparsers.required = True
+    parser_prerouting = subparsers.add_parser('PREROUTING', help='Apply ToS to PREROUTING chain')
+    parser_postrouting = subparsers.add_parser('POSTROUTING', help='Apply ToS to POSTROUTING chain')
+    parser_forward = subparsers.add_parser('FORWARD', help='Apply ToS to FORWARD chain')
+
+    parser_prerouting.add_argument('-i', '--in-interface', type=str, help='Name of the interface receiving the packet')
+    parser_postrouting.add_argument('-o', '--out-interface', type=str, help='Name of the interface delivering the packet')
+    parser_forward.add_argument('-i', '--in-interface', type=str, help='Name of the interface receiving the packet')
+    parser_forward.add_argument('-o', '--out-interface', type=str, help='Name of the interface delivering the packet')
+
+    parser.add_argument('-p', '--protocol', help='Set the protocol to filter if the prtotocol choice is other. '
+                'If nothing, the flag is set to all protocols')
+    parser.add_argument('-s', '--source', type=str, help='Source IP address. Can be a whole network using IP/netmask.')
+    parser.add_argument('-d', '--destination', type=str, help='Destination IP address. Can be a whole network using IP/netmask.')
+    parser.add_argument('--sport', type=str, help='Source port (if TCP or UDP). Can be a range using ":" as in 5000:5300.')
+    parser.add_argument('--dport', type=str, help='Destination port (if TCP or UDP). Can be a range using ":" as in 5000:5300.')
 
     args = vars(parser.parse_args())
-    main(**args)
 
+    if not args['protocol'] or args['protocol'].upper() not in ['TCP', 'UDP']:
+        del args['sport']
+        del args['dport']
+
+    main(**args)

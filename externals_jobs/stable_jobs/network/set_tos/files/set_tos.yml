@@ -24,59 +24,82 @@ arguments:
       choices:     ['add','del']
       description: >
           Action to perform (add or delete the rule to mark the packets)
-    - name:        chain
-      type:        'str'
-      count:       1
-      choices:     ['PREROUTING', 'POSTROUTING', 'FORWARD']
-      description: >
-          Chain to apply the rule
     - name:        tos
       type:        'str'
       count:       1
       description: >
           Supports decimal and hexadecimal values
+  subcommand:
+    - group_name: chain
+      optional: no
+      description: >
+          Chain to apply the rule
+      choices:
+        - name: PREROUTING
+          required:
+          optional:
+            - name:        in_interface
+              type:        'str'
+              count:       1
+              flag:        '-i'
+              description: >
+                  Name of the interface receiving the packet.
+        - name: POSTROUTING
+          required:
+          optional:
+            - name:        out_interface
+              type:        'str'
+              count:       1
+              flag:        '-o'
+              description: >
+                  Name of the interface delivering the packet.
+        - name: FORWARD
+          required:
+          optional:
+            - name:        in_interface
+              type:        'str'
+              count:       1
+              flag:        '-i'
+              description: >
+                  Name of the interface receiving the packet.
+            - name:        out_interface
+              type:        'str'
+              count:       1
+              flag:        '-o'
+              description: >
+                  Name of the interface delivering the packet.
 
   optional:
-    - name:        in_interface
-      type:        'str'
-      count:       1
-      flag:        '-i'
-      description: >
-          Name of the interface receiving the packet.
-    - name:        out_interface
-      type:        'str'
-      count:       1
-      flag:        '-o'
-      description: >
-          Name of the interface delivering the packet.
-    - name:        protocol 
+    - name:        protocol
       type:        'str'
       count:       1
       flag:        '-p'
-    - name:        ip_dest
-      type:        'str'
-      count:       1
-      flag:        '-d'
       description: >
-          Destination IP address
+          Set the protocol to filter. If nothing, the flag is set to all.
     - name:        ip_src
       type:        'str'
       count:       1
       flag:        '-s'
       description: >
-          Source IP address
-    - name:        port_dest
-      type:        int
+          Source IP address. Can be a whole network using IP/netmask.
+    - name:        ip_dest
+      type:        'str'
       count:       1
-      flag:        '--dport'
+      flag:        '-d'
       description: >
-          Destination port
+          Destination IP address. Can be a whole network using IP/netmask.
     - name:        port_src
-      type:        int
+      type:        str
       count:       1
       flag:        '--sport'
       description: >
-          Source port
+          Source port (only used if protocol is TCP or UDP). Can be a range using ":" as in 5000:5300.
+    - name:        port_dest
+      type:        str
+      count:       1
+      flag:        '--dport'
+      description: >
+          Destination port (only used if protocol is TCP or UDP). Can be a range using ":" as in 5000:5300.
           
 statistics:
 
