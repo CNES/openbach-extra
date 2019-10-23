@@ -51,7 +51,12 @@ def configure_link_loss(
             wait_delay=wait_delay)
     function.configure(
             'configure_link', entity,
-            interface_name=interface, loss=loss)
+            interface_name=interface,
+            apply={
+            'mode': 'egress',
+            'loss_model': 'random',
+            'loss_model_params': loss
+            })
     return function
 
 
