@@ -51,7 +51,7 @@ def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name + "_" + args[0], SCENARIO_DESCRIPTION)
 
     # launching traffic
-    start_scenario = web_browsing_qoe(scenario, args[3], args[8], int(args[4]))
+    start_scenario = web_browsing_qoe(scenario, args[3], args[8], args[9], int(args[4]), )
     
     # Post processing data
     if post_processing_entity is not None:

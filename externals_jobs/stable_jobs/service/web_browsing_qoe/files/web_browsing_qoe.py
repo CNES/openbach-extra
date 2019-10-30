@@ -49,7 +49,7 @@ from selenium.webdriver import FirefoxOptions
 import signal
 from functools import partial
 import psutil
-
+import threading
 
 
 def connect_to_collect_agent():
@@ -128,7 +128,34 @@ def kill_all(parent_pid, signum, frame):
     parent.kill()
 
 
-def main(nb_runs):
+def launch_thread(collect_agent, url, config, qos_metrics):
+    binary_path = config['driver']['binary_path']
+    binary_type =  config['driver']['binary_type']
+    try:
+        my_driver = init_driver(binary_path, binary_type)
+    except Exception as ex:
+        message = 'ERROR when initializing the web driver: {}'.format(ex)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        exit(message)
+    if my_driver is not None:
+        timestamp = int(time.time() * 1000)
+        my_qos_metrics = compute_qos_metrics(my_driver, url, qos_metrics)
+        s = "# Report for web page " + url + " #"
+        print('\n' + s)
+        print_qos_metrics(my_qos_metrics, config)
+        my_driver.quit()
+        statistics = {}
+        for key, value in my_qos_metrics.items():
+            statistics.update({key:value})
+        collect_agent.send_stat(timestamp, **statistics, suffix=url)
+
+    else:
+        message = 'Sorry, specified driver is not available. For now, only Firefox driver is supported'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        exit(message)
+
+
+def main(nb_runs, max_threads):
     # Connect to collect agent
     connect_to_collect_agent()
     # Set signal handler
@@ -143,46 +170,31 @@ def main(nb_runs):
     for metric in config['qos_metrics']:
         qos_metrics[metric] = config['qos_metrics'][metric]['js']
     # Compute qos metrics for each url 'nb_runs' times
+    thread_list = []
     try:
-       for i in range(1, args.nb_runs + 1, 1):
-           for url in config['web_pages_to_fetch']:
-               binary_path = config['driver']['binary_path']
-               binary_type =  config['driver']['binary_type']
-               try:
-                   my_driver = init_driver(binary_path, binary_type)
-               except Exception as ex:
-                   message = 'ERROR when initializing the web driver: {}'.format(ex)
-                   collect_agent.send_log(syslog.LOG_ERR, message)
-                   exit(message)
-               if my_driver is not None:
-                   s = "# Report for web page " + url + " #"
-                   print('\n' + s)
-                   timestamp = int(time.time() * 1000)
-                   my_qos_metrics = compute_qos_metrics(my_driver, url, qos_metrics)
-                   print_qos_metrics(my_qos_metrics, config)
-                   my_driver.quit()
-                   statistics = {'url':url}
-                   for key, value in my_qos_metrics.items():
-                       statistics.update({key:value})
-                   collect_agent.send_stat(timestamp, **statistics)
-                
-               else:
-                   message = 'Sorry, specified driver is not available. For now, only Firefox driver is supported'
-                   collect_agent.send_log(syslog.LOG_ERR, message)
-                   exit(message)                
-               time.sleep(5)
+        for i in range(1, args.nb_runs + 1, 1):
+            for url in config['web_pages_to_fetch']:
+                while threading.active_count() > max_threads:
+                    time.sleep(1)
+                t = threading.Thread(target=launch_thread, args=(collect_agent, url, config, qos_metrics))
+                thread_list.append(t)
+                t.start()
+                time.sleep(2)
     except Exception as ex:
         message = 'An unexpected error occured: {}'.format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
         exit(message)
     finally:
+        for t in thread_list:
+            t.join()
         kill_children(os.getpid())
 
 if __name__ == "__main__":
     # Argument parsing
     parser = argparse.ArgumentParser()
     parser.add_argument("nb_runs", help="The number of fetches to perform for each website", type=int)
+    parser.add_argument("-p", "--nb_parallel_runs", help="The number of fetches that can work simultaneously (default = 1)", type=int, default=1)
     args = parser.parse_args()
     
-    main(args.nb_runs)
+    main(args.nb_runs, args.nb_parallel_runs)
     
