@@ -8,7 +8,7 @@
 # voip  -> src_ip dst_ip dst_port codecs				(Warning: it is impossible to launch several voip_src at same time... should be fixed later)
 # web   -> nb_runs dst_ip								(do not forget to edit the config file with correct address)
 
-# Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 generate_traffic_scenario.py -o -p my_project --entity_pp ST1 --extra_args_traffic ./extra_args_generate_traffic.txt run
+# Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 generate_traffic_scenario.py -o -p my_project --entity_pp ST1 --extra_args_traffic ./generate_service_traffic_mix_arg.txt run
 
 1 iperf3 SRC ST1 60 None None 0 10.42.14.3 5201 10M 0 1500
 2 dash SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2
