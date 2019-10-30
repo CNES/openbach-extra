@@ -27,7 +27,7 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function create_scenario with an empty scenario"""
+"""Call the openbach-function add_project with an empty project"""
 
 
 __author__ = 'Viveris Technologies'
@@ -36,40 +36,33 @@ __credits__ = '''Contributors:
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
-
-import json
-from argparse import FileType
-
 from auditorium_scripts.frontend import FrontendBase
 
 
-class CreateScenario(FrontendBase):
+class CreateProject(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Create a new Scenario')
-        self.parser.add_argument('scenario_name', help='name of the new scenario')
+        super().__init__('OpenBACH — Create a new Project')
+        self.parser.add_argument('project_name', help='name of the new project')
         self.parser.add_argument(
                 '-d', '--description', default='',
-                help='flavor text to describe what the scenario is doing')
+                help='flavor text to describe the purpose of the project')
         self.parser.add_argument(
-                '-p', '--project',
-                help='name of the project to associate the scenario with')
+                '-p', '--public', action='store_true',
+                help='open the project for everyone to use')
 
     def parse(self, args=None):
         super().parse(args)
-        self.args.scenario = {
-                'name': self.args.scenario_name,
+        self.args.project = {
+                'name': self.args.project_name,
                 'description': self.args.description,
+                'owners': [] if self.args.public else [self.args.login],
         }
 
     def execute(self, show_response_content=True):
-        scenario = self.args.scenario
-        project = self.args.project
-        route = 'scenario' if project is None else 'project/{}/scenario/'.format(project)
-
         return self.request(
-                'POST', route, **scenario,
+                'POST', 'project', **self.args.project,
                 show_response_content=show_response_content)
 
 
 if __name__ == '__main__':
-    CreateScenario.autorun()
+    CreateProject.autorun()
