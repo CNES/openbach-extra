@@ -1,26 +1,26 @@
 # arguments format:
-# id traffic_type src_entity dst_entity duration wait_launched wait_finished wait_delay extra_args
+# id traffic_type src_entity dst_entity duration wait_launched wait_finished wait_delay src_ip dst_ip extra_args
 # wait_launched and wait_finished can contain several elements -> they must be separated by a '-'. If no element, put None
 
 # extra_args:
-# iperf3 -> dst_ip dst_port file_size tos mtu
-# dash  -> src_ip dst_ip protocol
-# voip  -> src_ip dst_ip dst_port codecs				(Warning: it is impossible to launch several voip_src at same time... should be fixed later)
-# web   -> nb_runs dst_ip								(do not forget to edit the config file with correct address)
+# iperf3 			-> dst_port file_size tos mtu
+# dash  			-> protocol
+# voip  			-> dst_port codecs						(Warning: it is impossible to launch several voip_src at same time... should be fixed later)
+# web_browsing_qoe	-> nb_runs nb_parallel_runs				(do not forget to edit the config file with correct address)
 
-# Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 generate_traffic_scenario.py -o -p my_project --entity_pp ST1 --extra_args_traffic ./generate_service_traffic_mix_arg.txt run
+# Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 generate_service_traffic.py -o -p my_project --entity_pp ST1 --extra_args_traffic ./generate_service_traffic_mix_arg.txt run
 
-1 iperf3 SRC ST1 60 None None 0 10.42.14.3 5201 10M 0 1500
+1 iperf3 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 5201 10M 0 1500
 2 dash SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2
-3 web SRC ST1 60 None None 0 10 10.42.14.3
+3 web_browsing_qoe SRC ST1 60 None None 0 10.42.42.11 10.42.14.3 10 2
 4 voip SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 8011 G.711.1
 
-5 iperf3 SRC ST2 60 4 None 5 10.42.15.3 5201 10M 0 1500
+5 iperf3 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 5201 10M 0 1500
 6 dash SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 http/2
-7 web SRC ST2 60 4 None 5 10 10.42.15.3
+7 web_browsing_qoe SRC ST2 60 4 None 5 10.42.42.11 10.42.15.3 10 2
 8 voip SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 8012 G.711.1
 
-9 iperf3 SRC ST3 60 8 None 5 10.42.16.3 5201 10M 0 1500
+9 iperf3 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 5201 10M 0 1500
 10 dash SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 http/2
-11 web SRC ST3 60 8 None 5 10 10.42.16.3
+11 web_browsing_qoe SRC ST3 60 8 None 5 10.42.42.11 10.42.16.3 10 2
 12 voip SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 8013 G.711.1

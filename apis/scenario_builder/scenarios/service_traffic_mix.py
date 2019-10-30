@@ -49,7 +49,7 @@ def load_args(args_list):
             if args_str[0] == '#':
                 continue
             args = args_str.split()
-            for traffic, nb in [("voip",12), ("web",11), ("dash",11), ("iperf3",13)]:
+            for traffic, nb in [("voip",12), ("web_browsing_qoe",12), ("dash",11), ("iperf3",14)]:
                 if args[1] == traffic and len(args) != nb:
                     print("\033[91mWARNING:", "Wrong argument format,", nb, "elements needed for", traffic, "traffic:", "\"" + " ".join(args) + "\"", "but got", len(args), "... ignoring", "\033[0m")
                     break
@@ -89,7 +89,7 @@ def extract_jobs_to_postprocess(scenarios, traffic):
                         yield (start_scenario, function_id, dst + " " + address + " " + str(port))
                 if traffic == "dash" and function.job_name == 'dash player&server':
                     yield (None, function_id, "")
-                if traffic == "web" and function.job_name == 'web_browsing_qoe':
+                if traffic == "web_browsing_qoe" and function.job_name == 'web_browsing_qoe':
                     dst = function.start_job_instance['entity_name']
                     yield (start_scenario, function_id, dst)
                 if traffic == "voip" and function.job_name == 'voip_qoe_src':
@@ -131,7 +131,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
             start_servers.append(start_server)
             list_scenarios.append((scenario_mix, None))
     for args in args_list:
-        if args[1] == "web" and args[2] not in apache_servers:
+        if args[1] == "web_browsing_qoe" and args[2] not in apache_servers:
             start_server = apache2(scenario_mix, args[2])[0]
             apache_servers[args[2]] = start_server
             start_servers.append(start_server)
@@ -161,7 +161,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
             scenario = service_data_transfer.build(post_processing_entity, args)
         if traffic == "dash":
             scenario = service_video_dash.build(post_processing_entity, args)
-        if traffic == "web":
+        if traffic == "web_browsing_qoe":
             scenario = service_web_browsing.build(post_processing_entity, args)
         if traffic == "voip":
             scenario = service_voip.build(post_processing_entity, args)
@@ -182,7 +182,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
         print("Loading:", "post processing")
         for traffic, name, y_axis in [("iperf3", "throughput", "Rate (b/s)"),
                                         ("dash", "bitrate", "Rate (b/s)"),
-                                        ("web", "page_load_time", "PLT (ms)"),
+                                        ("web_browsing_qoe", "page_load_time", "PLT (ms)"),
                                         ("voip", "instant_mos", "MOS")]:
             post_processed = []
             legends = []

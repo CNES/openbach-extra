@@ -54,7 +54,7 @@ def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name + "_" + args[0], SCENARIO_DESCRIPTION)
 
     # launching traffic
-    start_scenario = iperf3_send_file_tcp(scenario, args[2], args[3], args[8], args[9], args[10], args[11], args[12])
+    start_scenario = iperf3_send_file_tcp(scenario, args[2], args[3], args[9], args[10], args[11], args[12], args[13])
     
     # Post processing data
     if post_processing_entity is not None:
