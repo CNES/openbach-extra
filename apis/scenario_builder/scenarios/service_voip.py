@@ -63,7 +63,7 @@ def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
             post_processed.append([function_id])
             legends.append(["voip - " + legend])
         if post_processed:
-            time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['instant_mos']], [['MOS']], [['Rate time series']], legends, start_scenario, None, 2)
-            cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['instant_mos']], [['MOS']], [['Rate CDF']], legends, start_scenario, None, 2)
+            time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['instant_mos']], [['MOS']], [['MOS time series']], legends, start_scenario, None, 2)
+            cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['instant_mos']], [['MOS']], [['MOS CDF']], legends, start_scenario, None, 2)
 
     return scenario
