@@ -188,9 +188,9 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
             legends = []
             for scenario_id, function_id, legend in extract_jobs_to_postprocess(list_scenarios, traffic):
                 post_processed.append([scenario_id, function_id] if scenario_id is not None else [function_id])
-                legends.append([] if traffic == "dash" else [traffic + " - " + legend])
+                legends.append([] if traffic in ["dash", "web_browsing_qoe"] else [traffic + " - " + legend])
             if post_processed:
-                time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [[name]], [[y_axis]], [['Rate time series']], legends, list_wait_finished, None, 2)
-                cdf_on_same_graph(scenario_mix, post_processing_entity, post_processed, 100, [[name]], [[y_axis]], [['Rate CDF']], legends, list_wait_finished, None, 2)
+                time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [[name]], [[y_axis]], [[y_axis.split()[0] + ' time series']], legends, list_wait_finished, None, 2)
+                cdf_on_same_graph(scenario_mix, post_processing_entity, post_processed, 100, [[name]], [[y_axis]], [[y_axis.split()[0] + ' CDF']], legends, list_wait_finished, None, 2)
 
     return scenario_mix

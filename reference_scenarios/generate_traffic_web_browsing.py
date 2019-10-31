@@ -28,27 +28,30 @@
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios import service_video_dash
+from scenario_builder.scenarios import service_web_browsing
 
-"""This scenario launches one DASH flow with the specified parameters"""
+"""This scenario launches one web_browsing flow with the specified parameters"""
 
 def main():
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--src_entity', required=True,
-            help='name of the source entity for the DASH traffic')
+            help='name of the source entity for the web_browsing traffic')
     observer.add_scenario_argument(
             '--dst_entity', required=True,
-            help='name of the destination entity for the DASH traffic')
+            help='name of the destination entity for the web_browsing traffic')
     observer.add_scenario_argument(
             '--src_ip', required=True,
-            help='source ip address for the DASH traffic')
+            help='source ip address for the web_browsing traffic')
     observer.add_scenario_argument(
             '--dst_ip', required=True,
-            help='destination ip address for the DASH traffic')
+            help='destination ip address for the web_browsing traffic')
     observer.add_scenario_argument(
-            '--protocol', required=True,
-            help='protocol used by DASH. Possible values are http/1.1 and http/2')
+            '--nb_runs', required=True,
+            help='the number of fetches to perform for each website')
+    observer.add_scenario_argument(
+            '--nb_parallel_runs', required=True,
+            help='the maximum number of fetches that can work simultaneously')
     observer.add_scenario_argument(
             '--duration', required=True,
             help='duration of VoIP transmission')
@@ -59,8 +62,8 @@ def main():
     args = observer.parse()
 
     extra_args = []
-    extra_args.append("dash")
-    extra_args.append("dash")
+    extra_args.append("web_browsing")
+    extra_args.append("web_browsing_qoe")
     extra_args.append(args.src_entity)
     extra_args.append(args.dst_entity)
     extra_args.append(args.duration)
@@ -69,9 +72,10 @@ def main():
     extra_args.append("0")
     extra_args.append(args.src_ip)
     extra_args.append(args.dst_ip)
-    extra_args.append(args.protocol)
+    extra_args.append(args.nb_runs)
+    extra_args.append(args.nb_parallel_runs)
 
-    scenario = service_video_dash.build(
+    scenario = service_web_browsing.build(
             args.entity_pp,
             extra_args,
             True,

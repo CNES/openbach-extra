@@ -50,10 +50,9 @@ def build(post_processing_entity, args, launch_server=False, scenario_name=SCENA
         # launching server
         start_server = scenario.add_function('start_job_instance')
         start_server.configure('dash player&server', args[2], offset=0)
-        delay = 5
 
         # launching traffic
-        start_scenario = scenario.add_function('start_job_instance', wait_launched=[start_server], wait_delay=delay)
+        start_scenario = scenario.add_function('start_job_instance', wait_launched=[start_server], wait_delay=5)
         start_scenario.configure(
                 'dash client', args[3], offset=0,
                  dst_ip=args[8], protocol=args[10], duration=int(args[4]))
