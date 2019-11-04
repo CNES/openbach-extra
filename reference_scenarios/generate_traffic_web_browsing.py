@@ -57,7 +57,7 @@ def main():
 
     extra_args = []
     extra_args.append("web_browsing")
-    extra_args.append("web_browsing_qoe")
+    extra_args.append("web_browsing")
     extra_args.append(args.src_entity)
     extra_args.append(args.dst_entity)
     extra_args.append(args.duration)

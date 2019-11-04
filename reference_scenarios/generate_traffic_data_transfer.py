@@ -66,7 +66,7 @@ def main():
 
     extra_args = []
     extra_args.append("data_transfer")
-    extra_args.append("iperf3")
+    extra_args.append("data_transfer")
     extra_args.append(args.src_entity)
     extra_args.append(args.dst_entity)
     extra_args.append("60")
