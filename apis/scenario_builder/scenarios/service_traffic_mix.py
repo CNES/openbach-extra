@@ -49,7 +49,7 @@ def load_args(args_list):
             if args_str[0] == '#':
                 continue
             args = args_str.split()
-            for traffic, nb in [("voip",12), ("web_browsing_qoe",12), ("dash",11), ("iperf3",14)]:
+            for traffic, nb in [("voip",12), ("web_browsing",12), ("dash",11), ("data_transfer",14)]:
                 if args[1] == traffic and len(args) != nb:
                     print("\033[91mWARNING:", "Wrong argument format,", nb, "elements needed for", traffic, "traffic:", "\"" + " ".join(args) + "\"", "but got", len(args), "... ignoring", "\033[0m")
                     break
@@ -81,7 +81,7 @@ def extract_jobs_to_postprocess(scenarios, traffic):
     for scenario, start_scenario in scenarios:
         for function_id, function in enumerate(scenario.openbach_functions):
             if isinstance(function, StartJobInstance):
-                if traffic == "iperf3" and function.job_name == 'iperf3':
+                if traffic == "data_transfer" and function.job_name == 'iperf3':
                     if 'server' in function.start_job_instance['iperf3']:
                         port = function.start_job_instance['iperf3']['port']
                         address = function.start_job_instance['iperf3']['server']['bind']
@@ -89,7 +89,7 @@ def extract_jobs_to_postprocess(scenarios, traffic):
                         yield (start_scenario, function_id, dst + " " + address + " " + str(port))
                 if traffic == "dash" and function.job_name == 'dash player&server':
                     yield (None, function_id, "")
-                if traffic == "web_browsing_qoe" and function.job_name == 'web_browsing_qoe':
+                if traffic == "web_browsing" and function.job_name == 'web_browsing_qoe':
                     dst = function.start_job_instance['entity_name']
                     yield (start_scenario, function_id, dst)
                 if traffic == "voip" and function.job_name == 'voip_qoe_src':
@@ -131,7 +131,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
             start_servers.append(start_server)
             list_scenarios.append((scenario_mix, None))
     for args in args_list:
-        if args[1] == "web_browsing_qoe" and args[2] not in apache_servers:
+        if args[1] == "web_browsing" and args[2] not in apache_servers:
             start_server = apache2(scenario_mix, args[2])[0]
             apache_servers[args[2]] = start_server
             start_servers.append(start_server)
@@ -157,11 +157,11 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
 
         start_scenario = scenario_mix.add_function('start_scenario_instance',
                     wait_finished=wait_finished_list, wait_launched=wait_launched_list, wait_delay=int(args[7]) + offset_delay)
-        if traffic == "iperf3":
+        if traffic == "data_transfer":
             scenario = service_data_transfer.build(post_processing_entity, args)
         if traffic == "dash":
             scenario = service_video_dash.build(post_processing_entity, args)
-        if traffic == "web_browsing_qoe":
+        if traffic == "web_browsing":
             scenario = service_web_browsing.build(post_processing_entity, args)
         if traffic == "voip":
             scenario = service_voip.build(post_processing_entity, args)
@@ -180,15 +180,15 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
     # Post processing data
     if post_processing_entity is not None:
         print("Loading:", "post processing")
-        for traffic, name, y_axis in [("iperf3", "throughput", "Rate (b/s)"),
+        for traffic, name, y_axis in [("data_transfer", "throughput", "Rate (b/s)"),
                                         ("dash", "bitrate", "Rate (b/s)"),
-                                        ("web_browsing_qoe", "page_load_time", "PLT (ms)"),
+                                        ("web_browsing", "page_load_time", "PLT (ms)"),
                                         ("voip", "instant_mos", "MOS")]:
             post_processed = []
             legends = []
             for scenario_id, function_id, legend in extract_jobs_to_postprocess(list_scenarios, traffic):
                 post_processed.append([scenario_id, function_id] if scenario_id is not None else [function_id])
-                legends.append([] if traffic in ["dash", "web_browsing_qoe"] else [traffic + " - " + legend])
+                legends.append([] if traffic in ["dash", "web_browsing"] else [traffic + " - " + legend])
             if post_processed:
                 time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [[name]], [[y_axis]], [[y_axis.split()[0] + ' time series']], legends, list_wait_finished, None, 2)
                 cdf_on_same_graph(scenario_mix, post_processing_entity, post_processed, 100, [[name]], [[y_axis]], [[y_axis.split()[0] + ' CDF']], legends, list_wait_finished, None, 2)
