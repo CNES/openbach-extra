@@ -3,7 +3,7 @@
 # wait_launched and wait_finished can contain several elements -> they must be separated by a '-'. If no element, put None
 
 # extra_args:
-# data_transfer	-> dst_port file_size tos mtu 	(if file_size is 0, the transfer will last duration seconds. Otherwise, it will transfer the whole specified file_size, regardless the duration)
+# data_transfer	-> dst_port file_size tos mtu 	(if file_size is 0, the transfer will last duration seconds. Otherwise, it will transfer the whole specified file_size, regardless of the duration)
 # dash  		-> protocol
 # voip  		-> dst_port codecs				(Warning: it is impossible to launch several voip_src at same time... should be fixed later)
 # web_browsing	-> nb_runs nb_parallel_runs		(do not forget to edit the config file with correct address)

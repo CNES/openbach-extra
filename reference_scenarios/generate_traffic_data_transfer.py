@@ -55,9 +55,9 @@ def main():
     observer.add_scenario_argument(
             '--mtu', required=True,
             help='set the MTU of the TCP iperf3 traffic, in bytes')
-    #observer.add_scenario_argument(
-    #        '--duration', required=True,
-    #        help='duration of iperf3 transmission')
+    observer.add_scenario_argument(
+            '--duration', required=True,
+            help='duration of iperf3 transmission')
     observer.add_scenario_argument(
             '--entity_pp', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
@@ -69,8 +69,7 @@ def main():
     extra_args.append("data_transfer")
     extra_args.append(args.src_entity)
     extra_args.append(args.dst_entity)
-    extra_args.append("60")
-    #extra_args.append(args.duration)
+    extra_args.append(args.duration)
     extra_args.append("None")
     extra_args.append("None")
     extra_args.append("0")
