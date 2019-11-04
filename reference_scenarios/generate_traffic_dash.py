@@ -44,9 +44,6 @@ def main():
             '--src_ip', required=True,
             help='source ip address for the DASH traffic')
     observer.add_scenario_argument(
-            '--dst_ip', required=True,
-            help='destination ip address for the DASH traffic')
-    observer.add_scenario_argument(
             '--protocol', required=True,
             help='protocol used by DASH. Possible values are http/1.1 and http/2')
     observer.add_scenario_argument(
@@ -68,7 +65,7 @@ def main():
     extra_args.append("None")
     extra_args.append("0")
     extra_args.append(args.src_ip)
-    extra_args.append(args.dst_ip)
+    extra_args.append(".")
     extra_args.append(args.protocol)
 
     scenario = service_video_dash.build(

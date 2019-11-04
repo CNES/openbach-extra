@@ -41,12 +41,6 @@ def main():
             '--dst_entity', required=True,
             help='name of the destination entity for the web_browsing traffic')
     observer.add_scenario_argument(
-            '--src_ip', required=True,
-            help='source ip address for the web_browsing traffic')
-    observer.add_scenario_argument(
-            '--dst_ip', required=True,
-            help='destination ip address for the web_browsing traffic')
-    observer.add_scenario_argument(
             '--nb_runs', required=True,
             help='the number of fetches to perform for each website')
     observer.add_scenario_argument(
@@ -70,8 +64,8 @@ def main():
     extra_args.append("None")
     extra_args.append("None")
     extra_args.append("0")
-    extra_args.append(args.src_ip)
-    extra_args.append(args.dst_ip)
+    extra_args.append(".")
+    extra_args.append(".")
     extra_args.append(args.nb_runs)
     extra_args.append(args.nb_parallel_runs)
 

@@ -38,7 +38,7 @@ def extract_jobs_to_postprocess(scenario):
     for function_id, function in enumerate(scenario.openbach_functions):
         if isinstance(function, StartJobInstance):
             if function.job_name == 'dash player&server':
-                yield (function_id)
+                yield function_id
 
 def build(post_processing_entity, args, launch_server=False, scenario_name=SCENARIO_NAME):
     print("Loading:",scenario_name)
@@ -67,7 +67,7 @@ def build(post_processing_entity, args, launch_server=False, scenario_name=SCENA
             legends = []
             for function_id in extract_jobs_to_postprocess(scenario):
                 post_processed.append([function_id])
-                legends.append(["dash from " + args[8] + " to " + args[9]])
+                legends.append(["dash from " + args[2] + " to " + args[3]])
             if post_processed:
                 time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['bitrate']], [['Rate (b/s)']], [['Rate time series']], legends, [start_scenario], None, 2)
                 cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['bitrate']], [['Rate (b/s)']], [['Rate CDF']], legends, [start_scenario], None, 2)

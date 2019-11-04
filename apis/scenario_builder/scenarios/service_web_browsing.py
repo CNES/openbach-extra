@@ -41,8 +41,7 @@ def extract_jobs_to_postprocess(scenario):
     for function_id, function in enumerate(scenario.openbach_functions):
         if isinstance(function, StartJobInstance):
             if function.job_name == 'web_browsing_qoe':
-                dst = function.start_job_instance['entity_name']
-                yield (function_id, dst)
+                yield function_id
 
 
 def build(post_processing_entity, args, launch_server=False, scenario_name=SCENARIO_NAME):
@@ -71,7 +70,7 @@ def build(post_processing_entity, args, launch_server=False, scenario_name=SCENA
     if post_processing_entity:
         post_processed = []
         legends = []
-        for function_id, legend in extract_jobs_to_postprocess(scenario):
+        for function_id in extract_jobs_to_postprocess(scenario):
             post_processed.append([function_id])
             legends.append([])
         if post_processed:

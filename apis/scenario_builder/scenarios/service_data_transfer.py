@@ -41,10 +41,7 @@ def extract_jobs_to_postprocess(scenario):
         if isinstance(function, StartJobInstance):
             if function.job_name == 'iperf3':
                 if 'server' in function.start_job_instance['iperf3']:
-                    port = function.start_job_instance['iperf3']['port']
-                    address = function.start_job_instance['iperf3']['server']['bind']
-                    dst = function.start_job_instance['entity_name']
-                    yield (function_id, dst + " " + address + " " + str(port))
+                    yield function_id
 
 
 def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
@@ -60,9 +57,9 @@ def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
     if post_processing_entity is not None:
         post_processed = []
         legends = []
-        for function_id, legend in extract_jobs_to_postprocess(scenario):
+        for function_id in extract_jobs_to_postprocess(scenario):
             post_processed.append([function_id])
-            legends.append(["iperf3 - " + legend])
+            legends.append(["iperf3 from " + args[2] + " to " + args[3] + ", port " + args[10]])
         if post_processed:
             time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['throughput']], [['Rate (b/s)']], [['Rate time series']], legends, start_scenario, None, 2)
             cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['throughput']], [['Rate (b/s)']], [['Rate CDF']], legends, start_scenario, None, 2)
