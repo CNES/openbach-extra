@@ -62,8 +62,8 @@ def configure_link_apply_loss(
     return [function]
 
 def configure_link_apply(
-        scenario, entity, interface, mode, bandwidth=None, delay_distribution='normal', delay=None, jitter=None, 
-        loss_model=None, loss_model_params=None, wait_finished=None, 
+        scenario, entity, interface, mode, bandwidth=None, delay_distribution='normal', delay=0, jitter=0, 
+        loss_model='random', loss_model_params=[0.0], wait_finished=None, 
         wait_launched=None, wait_delay=0):
     function = scenario.add_function(
             'start_job_instance',
@@ -71,13 +71,12 @@ def configure_link_apply(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     
-    apply_params={'mode':mode,'delay_distribution':delay_distribution}
-    if delay:
-       apply_params.update({'delay':delay})
-       if jitter:
-          apply_params.update({'jitter':jitter})
-    if loss_model and loss_model_params:
-       apply_params.update({'loss_model':loss_model, 'loss_model_params':loss_model_params})
+    apply_params={'mode':mode,
+                  'delay_distribution':delay_distribution,
+                  'delay':delay,
+                  'jitter':jitter,
+                  'loss_model':loss_model,
+                  'loss_model_params':loss_model_params}
     if bandwidth:
        apply_params.update({'bandwidth':bandwidth})
     function.configure(
