@@ -83,7 +83,7 @@ def main():
     scenario = service_data_transfer.build(
             args.entity_pp,
             extra_args,
-            scenario_name="service_traffic")
+            scenario_name="service")
 
     observer.launch_and_wait(scenario)
 
