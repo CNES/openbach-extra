@@ -1,43 +1,61 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#
+#
+#   Copyright © 2016−2019 CNES
+#
+#
+#   This file is part of the OpenBACH testbed.
+#
+#
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
 from scenario_builder import Scenario
 from scenario_builder.helpers.transport.tcp_conf_linux import tcp_conf_linux_repetitive_tests
 from scenario_builder.helpers.transport.ethtool import ethtool_disable_segmentation_offload
 from scenario_builder.helpers.network.ip_route import ip_route
+from inspect import signature
 
 
-
-SCENARIO_DESCRIPTION=""""""
+SCENARIO_DESCRIPTION="""This *transport_configuration_tcp_stack* scenario allows to configure:
+     - TCP congestion control, 
+     - route including TCP parameters like initial congestion and receive windows 
+     - TCP segmentation offloading on a network interface.
+"""
 SCENARIO_NAME="""transport_configuration_tcp_stack"""
 
 
-def configure_tcp_stack(scenario, entity, dev, route):
-    tcp_conf_linux_repetitive_tests(scenario, entity, '$cc')
-    if dev:
-       ethtool_disable_segmentation_offload(scenario, entity, dev)
-    if route:
-       ip_route(scenario, entity, 'change', **route, initcwnd='$initcwnd')
-    
-    return scenario   
-
-
-def tcp_stack_configuration(server, dev=None, route=None):
-    scenario = Scenario('TCP stack configuration on {0}'.format(server), 'Configure TCP stack')
-    scenario.add_argument('cc', 'The congestion control to apply')
-    if route:
-       scenario.add_argument('initcwnd', 'The initial congestion window to appy')
-    configure_tcp_stack(scenario, server, dev, route)
-
-    return scenario
-
-def build(server, interface, cc, initcwnd, scenario_name=SCENARIO_NAME):
-    route = {'destination_ip':'192.168.0.0/24', 'gateway_ip':'192.168.0.42'}
-     # Create scenario and subscenario core
+def build(entity, cc=None, interface=None, route=None, scenario_name=SCENARIO_NAME):
+    # Create scenario and add scenario arguments if needed
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    start_tcp_conf = scenario.add_function(
-            'start_scenario_instance')
-    scenario_tcp_conf = tcp_stack_configuration(server, interface, route) 
-    start_tcp_conf.configure(
-            scenario_tcp_conf,
-            cc=cc,
-            initcwnd=initcwnd)
-
+    args = {'entity': entity, 'cc':cc, 'interface':interface}
+    args.update(route if route else {})
+    for arg, value in args.items():
+        if str(value).startswith('$'):
+           scenario.add_argument(value[1:], '')
+    if cc:
+       tcp_conf_linux_repetitive_tests(scenario, entity, cc)
+    if interface:
+       ethtool_disable_segmentation_offload(scenario, entity, interface)
+    if route:
+       ip_route(scenario, entity, 'change', **route)
+      
     return scenario
+
+
