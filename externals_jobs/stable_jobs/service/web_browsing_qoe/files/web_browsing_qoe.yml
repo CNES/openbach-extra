@@ -4,7 +4,7 @@ general:
   name:            web_browsing_qoe
   description: >
       Monitor performances timing of HTTP Service. 
-  job_version:     '1.0'
+  job_version:     '1.1'
   keywords:        [web, performance, HTTP, QoE]
   persistent:      False
 
@@ -22,6 +22,13 @@ arguments:
       count:        1
       description: >
           The number of fetches to perform for each website
+  optional:
+    - name:        nb_parallel_runs
+      type:        'int'
+      count:        1
+      flag:        '-p'
+      description: >
+          The number of fetches that can work simultaneously (default = 1)
 statistics:
     - name: "dns_lookup_start_time"
       description: >

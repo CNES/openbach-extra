@@ -1,9 +1,10 @@
 This job allows to:
-- remove all qdisc rules on an interface
-- change the qdisc rules on an interface using a configuration file
+  * remove all qdisc rules on an interface
+  * change the qdisc rules on an interface using a configuration file
 
 The configuration file must be organized as follows:
 
+<code>
 {
     "destinations": [
     {
@@ -46,23 +47,24 @@ The configuration file must be organized as follows:
         "2": "0.5M"
     }
 }
+</code>
 
 This file contains two main sections: trunks and destinations
 
 In the trunks section, we set a maximum rate allowed. A WRR rule in set between the trunks with a weight proportional to the rate.
 
 For each destination, we need to specify:
-- the address of the terminal
-- the trunk id to which belongs this terminal
-- the maximum rate allowed. A WRR rule is set between all the destinations of a same trunk (the weight is proportional to the rate)
+  * the address of the terminal
+  * the trunk id to which belongs this terminal
+  * the maximum rate allowed. A WRR rule is set between all the destinations of a same trunk (the weight is proportional to the rate)
 
 We need also to set the qos rule for each terminal if we need one. If not, leave this field empty and specify the queue size in bytes in the limit field.
 If we need a qos scheduler, we need to specify for each priority:
-- the maximum rate
-- the queue size in bytes
-- an AQM if needed
+  * the maximum rate
+  * the queue size in bytes
+  * an AQM if needed
 A strict priority scheduling is applied between these four priorities. The scheduling is made according to the ToS field:
-- prio_0 : ToS = 0x0
-- prio_1 : ToS = 0x8
-- prio_2 : ToS = 0x18
-- prio_3 : ToS = 0x10
+  * prio_0 : ToS = 0x0
+  * prio_1 : ToS = 0x8
+  * prio_2 : ToS = 0x18
+  * prio_3 : ToS = 0x10

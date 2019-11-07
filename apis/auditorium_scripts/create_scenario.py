@@ -27,7 +27,7 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function create_scenario"""
+"""Call the openbach-function create_scenario with an empty scenario"""
 
 
 __author__ = 'Viveris Technologies'
@@ -46,21 +46,20 @@ from auditorium_scripts.frontend import FrontendBase
 class CreateScenario(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Create a new Scenario')
+        self.parser.add_argument('scenario_name', help='name of the new scenario')
         self.parser.add_argument(
-                'scenario_file', type=FileType('r'),
-                help='path to the definition file of the scenario')
+                '-d', '--description', default='',
+                help='flavor text to describe what the scenario is doing')
         self.parser.add_argument(
                 '-p', '--project',
                 help='name of the project to associate the scenario with')
 
     def parse(self, args=None):
         super().parse(args)
-        scenario = self.args.scenario_file
-        with scenario:
-            try:
-                self.args.scenario = json.load(scenario)
-            except ValueError:
-                self.parser.error('invalid JSON data in {}'.format(scenario.name))
+        self.args.scenario = {
+                'name': self.args.scenario_name,
+                'description': self.args.description,
+        }
 
     def execute(self, show_response_content=True):
         scenario = self.args.scenario
