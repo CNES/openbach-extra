@@ -40,10 +40,7 @@ def extract_jobs_to_postprocess(scenario):
     for function_id, function in enumerate(scenario.openbach_functions):
         if isinstance(function, StartJobInstance):
             if function.job_name == 'voip_qoe_src':
-                port = function.start_job_instance['voip_qoe_src']['starting_port']
-                address = function.start_job_instance['voip_qoe_src']['dest_addr']
-                dst = function.start_job_instance['entity_name']
-                yield (function_id, dst + " " + address + " " + str(port))
+                yield function_id
 
 
 def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
@@ -59,11 +56,11 @@ def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
     if post_processing_entity is not None:
         post_processed = []
         legends = []
-        for function_id, legend in extract_jobs_to_postprocess(scenario):
+        for function_id in extract_jobs_to_postprocess(scenario):
             post_processed.append([function_id])
-            legends.append(["voip - " + legend])
+            legends.append(["voip from " + args[2] + " to " + args[3]])
         if post_processed:
-            time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['instant_mos']], [['MOS']], [['Rate time series']], legends, start_scenario, None, 2)
-            cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['instant_mos']], [['MOS']], [['Rate CDF']], legends, start_scenario, None, 2)
+            time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['instant_mos']], [['MOS']], [['MOS time series']], legends, start_scenario, None, 2)
+            cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['instant_mos']], [['MOS']], [['MOS CDF']], legends, start_scenario, None, 2)
 
     return scenario

@@ -76,7 +76,8 @@ def configure_link_apply(
                   'delay':delay,
                   'jitter':jitter,
                   'loss_model':loss_model,
-                  'loss_model_params':loss_model_params}
+                  'loss_model_params':loss_model_params
+                 }
     if bandwidth:
        apply_params.update({'bandwidth':bandwidth})
     function.configure(
