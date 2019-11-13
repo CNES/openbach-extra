@@ -32,14 +32,41 @@
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
  * Bastien TAURAN <bastien.tauran@viveris.com>
+ * Francklin SIMO <francklin.simo@viveris.com>
 '''
 
 import sys
 import syslog
 import argparse
 import subprocess
+from subprocess import check_output
 import collect_agent
 import time
+
+
+def run_command(command, debug_log, exit=False):
+    try:
+        subprocess.call(command)
+        collect_agent.send_log(syslog.LOG_DEBUG, debug_log)
+    except Exception as ex:
+        message = '{}:{}'.format(command, ex)
+        collect_agent.send_log(
+                syslog.LOG_WARNING,
+                message)
+        if exit:
+           sys.exit(message)
+
+def check_cc(congestion_control_name):
+    out = check_output(["sysctl", "net.ipv4.tcp_allowed_congestion_control"])
+    out = out.decode('utf-8')
+    allowed_ccs = out.split('=')[1].rstrip().split()
+    if congestion_control_name not in allowed_ccs:
+       message = ('Specified congestion control \'{}\' is not allowed. May be its kernel module is not loaded or not installed. \n'
+                  'You can choose one from this list: {}.'.format(congestion_control_name, allowed_ccs))
+       collect_agent.send_log(
+                syslog.LOG_ERR,
+                message)
+       sys.exit(message)
 
 def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
@@ -53,14 +80,11 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
     # reset to defaults config if asked
     if reset:
         # removing conf files
-        rc = subprocess.call("rm -f /etc/sysctl.d/60-openbach-job.conf", shell=True)
-        if rc:
-            message = "WARNING \'{}\' exited with non-zero code".format(cmd)
-            collect_agent.send_log(syslog.LOG_ERR, message)
-        rc = subprocess.call("rm -f /etc/sysctl.d/60-openbach-job-cubic.conf", shell=True)
-        if rc:
-            message = "WARNING \'{}\' exited with non-zero code".format(cmd)
-            collect_agent.send_log(syslog.LOG_ERR, message)
+        command = ['rm', '-f', '/etc/sysctl.d/60-openbach-job.conf']
+        debug_log = 'removing config files'
+        run_command(command, debug_log)
+        command = ['rm', '-f', '/etc/sysctl.d/60-openbach-job-cubic.conf']
+        run_command(command, debug_log)
         # loading default config
         src = open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux.conf","r")
         for line in src:
@@ -138,11 +162,10 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
     conf_file.close()
 
     # loading new configuration
+    command = ['systemctl', 'restart', 'procps.service']
+    debug_log = 'Loading new configuration'
+    run_command(command, debug_log, exit=True)
     rc = subprocess.call("systemctl restart procps", shell=True)
-    if rc:
-        message = "WARNING \'{}\' exited with non-zero code".format(cmd)
-        collect_agent.send_log(syslog.LOG_ERR, message)
-
     # retrieving new values
     statistics = {}
     for param in ["tcp_congestion_control", "tcp_slow_start_after_idle",
@@ -164,6 +187,7 @@ def cubic(reset, tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
     tcp_wmem_max,tcp_fastopen,beta,fast_convergence,hystart_ack_delta,
     hystart_low_window,tcp_friendliness,hystart,hystart_detect,initial_ssthresh):
+    check_cc('cubic')
     set_main_args(reset, "cubic", tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
     tcp_wmem_max,tcp_fastopen)
@@ -252,7 +276,8 @@ def cubic(reset, tcp_slow_start_after_idle,
 def other_CC(reset, tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
     tcp_wmem_max,tcp_fastopen,congestion_control_name):
-    set_main_args(reset, congestion_control_name, tcp_slow_start_after_idle,
+    check_cc(congestion_control_name)
+    set_main_args(reset, congestion_control_name.lower(), tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
     tcp_wmem_max,tcp_fastopen)
 
