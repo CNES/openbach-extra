@@ -276,8 +276,9 @@ def cubic(reset, tcp_slow_start_after_idle,
 def other_CC(reset, tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
     tcp_wmem_max,tcp_fastopen,congestion_control_name):
+    congestion_control_name = congestion_control_name.lower()
     check_cc(congestion_control_name)
-    set_main_args(reset, congestion_control_name.lower(), tcp_slow_start_after_idle,
+    set_main_args(reset, congestion_control_name, tcp_slow_start_after_idle,
     tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
     tcp_wmem_max,tcp_fastopen)
 
