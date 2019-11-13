@@ -33,7 +33,7 @@ from inspect import signature
 
 
 SCENARIO_DESCRIPTION="""This scenario allows to:
-     - Apply/Clear a configuration on network interfaces in ingress, egress or both directions 
+     - {} a configuration on network interfaces in ingress, egress or both directions 
        in order to emulate/stop emulation of a network link like WIFI link. 
        Many link characteristiscs can be emulated including: bandwidth, delay, jitter and losses
 """
@@ -45,7 +45,7 @@ def build(entity, ifaces, mode, operation, bandwidth=None, delay=0, jitter=0,
           scenario_name=SCENARIO_NAME):
 
     # Create scenario and add scenario arguments if needed
-    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format(operation))
     args = signature(build).parameters
     for arg in args:
         value = locals()[arg] 
