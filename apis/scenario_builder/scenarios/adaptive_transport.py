@@ -94,8 +94,9 @@ def build(scenario_name, post_processing_entity, traffic_type, desired_test, los
               
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format(traffic_type))   
     route = {'destination_ip':'192.168.19.0/24', 'gateway_ip':'192.168.42.1', 'initcwnd':'$initcwnd'}
-    scenario_tcp_conf = transport_configuration_tcp_stack.build('$server', '$cc', 'ens4', route)
-    scenario_wifi_loss = configure_link.build('$entity', '$ifaces', 'egress', 'apply', loss_model_params='$loss')
+    scenario_tcp_conf = transport_configuration_tcp_stack.build('$entity', '$cc', 'ens4', route)
+    scenario_wifi_loss_apply = configure_link.build('$entity', '$ifaces', 'egress', 'apply', loss_model_params='$loss', scenario_name='apply_wifi_loss')
+    scenario_wifi_loss_clear = configure_link.build('$entity', '$ifaces', 'egress', 'clear', scenario_name='clear_wifi_loss')
        
     network_conditions = list(itertools.product(losses, congestions))
     tcp_configurations = compute_tcp_confs(traffic_type, ccs_web_browsing, ccs_dash, initcwnds)
@@ -113,10 +114,21 @@ def build(scenario_name, post_processing_entity, traffic_type, desired_test, los
                      'start_scenario_instance')                                                             
                                                                                                        
                start_wifi_loss.configure(                                                               
-                     scenario_wifi_loss,
+                     scenario_wifi_loss_apply,
                      entity=entity,
                      ifaces=ifaces,
                      loss=loss)
+               wait_finished.append(start_wifi_loss)
+        else:
+           ### Clear WIFI loss
+           for entity, ifaces in [('client1', 'ens4'), ('client2', 'ens4'), ('ST', 'ens5')]:
+               start_wifi_loss = subscenario.add_function(                                                 
+                     'start_scenario_instance')                                                             
+                                                                                                       
+               start_wifi_loss.configure(                                                               
+                     scenario_wifi_loss_clear,
+                     entity=entity,
+                     ifaces=ifaces)
                wait_finished.append(start_wifi_loss)
 
         if congestion:
