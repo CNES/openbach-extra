@@ -10,7 +10,7 @@ TRAFFIC_TYPE = TrafficType.WEB_BROWSING
 
 def desired_test(traffic_type, loss, congestion, cc_web_browsing, cc_dash, initcwnd):
     if traffic_type is TrafficType.MIX:
-       if (congestion, cc_web_browsing, cc_dash) not in [('cubic', 'cubic', 'cubic'), ('ledbat', 'bbr', 'bbr'), ('ledbat', 'cubic', 'bbr')]:
+       if (congestion, cc_web_browsing, cc_dash) not in [('cubic', 'cubic', 'cubic'), ('ledbat', 'bbr2', 'bbr2'), ('ledbat', 'cubic', 'bbr2')]:
           return False
 
     return True
@@ -27,8 +27,8 @@ def main(scenario_name='{} tests under various network conditions'.format(TRAFFI
     # eg. congestions = (None, 'cubic'))
     # A network condition corresponds to a combination of both loss and congestion.
     # Set of network conditions equals to product between losses and congestions  
-    losses = (0.0,)
-    congestions = (None,)
+    losses = (0.0, 1.0)
+    congestions = (None, 'cubic')
     
     # Init tcp configurations are specified using following three parameters: 
     # 1. ccs_web_browsing: congestion controls for web_browsing
@@ -38,8 +38,8 @@ def main(scenario_name='{} tests under various network conditions'.format(TRAFFI
     # 3. inicwnds: initial congestion windowns. eg. = (10, 30))
     # A tcp configuration corresponds to a combination of ccs and initcwnd.
     # Set of tcp configurations equals to product between ccs and initcwnds  
-    ccs_web_browsing = ('cubic', 'bbr')
-    ccs_dash = ('cubic', 'bbr')
+    ccs_web_browsing = ('cubic', 'bbr2')
+    ccs_dash = ('cubic', 'bbr2')
     initcwnds = (10, 30)
 
     # Finally the set of tests equals to product between the network conditions and tcp configurations
