@@ -37,6 +37,19 @@ def extract_jobs_to_postprocess(scenario, start_scenario_function, traffic):
                         if 'server' in function.start_job_instance['iperf3']:
                             yield [start_scenario_function, subscenario_id, function_id]
 
+def extract_jobs_to_postprocess_recursively(scenario, traffic, hierarchies=[]):
+    for function_id, function in enumerate(scenario.openbach_functions):
+        if isinstance(function, StartJobInstance):
+           if traffic is TrafficType.WEB_BROWSING and function.job_name == 'web_browsing_qoe':
+              yield hierarchies + [function_id]
+           elif traffic is TrafficType.DASH and function.job_name == 'dash player&server':
+              print('dash:' + str(hierarchies + [function_id]))
+              yield hierarchies + [function_id]
+           elif traffic is TrafficType.BACKGROUNG and function.job_name == 'iperf3':
+                if 'server' in function.start_job_instance['iperf3']:
+                   yield hierarchies + [function_id]
+        elif isinstance(function, StartScenarioInstance) and isinstance(function.scenario_name, Scenario):
+             yield from extract_jobs_to_postprocess_recursively(function.scenario_name, traffic, hierarchies + [function_id]) 
 
 def compute_tcp_confs(traffic_type, ccs_web_browsing, ccs_dash, initcwnds):
     if traffic_type is TrafficType.MIX:
@@ -92,7 +105,7 @@ def get_traffic_infos(traffic_type, congestion):
 def build(scenario_name, post_processing_entity, traffic_type, desired_test, losses=(0.0,), congestions=('None',), 
           ccs_web_browsing=('cubic',), ccs_dash=('cubic',), initcwnds=(10,)):
               
-    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format(traffic_type))   
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format(traffic_type.value))   
     route = {'destination_ip':'192.168.19.0/24', 'gateway_ip':'192.168.42.1', 'initcwnd':'$initcwnd'}
     scenario_tcp_conf = transport_configuration_tcp_stack.build('$entity', '$cc', 'ens4', route)
     scenario_wifi_loss_apply = configure_link.build('$entity', '$ifaces', 'egress', 'apply', loss_model_params='$loss', scenario_name='apply_wifi_loss')
@@ -200,8 +213,10 @@ def build(scenario_name, post_processing_entity, traffic_type, desired_test, los
                 (TrafficType.DASH, 'bitrate', 'Bitrate (b/s)', 'Comparison of measured Bitrates', 'CDF of Bitrate'),]:
             post_processed, legends = [], []
             for start_scenario_traffic, scenario_traffic, legend_web_browsing, legend_dash in post_processing_infos:
-                post_processed.extend(extract_jobs_to_postprocess(scenario_traffic, start_scenario_traffic, traffic))
+                #post_processed.extend(extract_jobs_to_postprocess(scenario_traffic, start_scenario_traffic, traffic))
+                post_processed.extend(extract_jobs_to_postprocess_recursively(scenario_traffic, traffic, [start_scenario_traffic]))
                 legends.append(legend_web_browsing if traffic is TrafficType.WEB_BROWSING else legend_dash)
+            print(post_processed)   
             if post_processed:
                wait_finished = time_series_on_same_graph(subscenario, post_processing_entity, post_processed, [[stat_name]], [[y_axis]], [[title_ts]],
                                                          legends, wait_finished, None, 2) 
