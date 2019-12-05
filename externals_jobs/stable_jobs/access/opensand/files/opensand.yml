@@ -40,8 +40,8 @@ arguments:
                       type: str
                       count: 1
                       choices:
-                        - IP_TYPE
-                        - ETH_TYPE
+                        - ip
+                        - eth
                       flag: '-t'
                       description: The type of terrestrial network
                     - name: network interface
@@ -85,8 +85,8 @@ arguments:
                       type: str
                       count: 1
                       choices:
-                        - IP_TYPE
-                        - ETH_TYPE
+                        - ip
+                        - eth
                       flag: '-t'
                       description: The type of terrestrial network
                     - name: network interface
@@ -147,8 +147,8 @@ arguments:
                       type: str
                       count: 1
                       choices:
-                        - IP_TYPE
-                        - ETH_TYPE
+                        - ip
+                        - eth
                       flag: '-t'
                       description: The type of terrestrial network
                     - name: network interface

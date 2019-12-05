@@ -66,7 +66,6 @@ LEVELS = {
 def run_entity(command, addr, logs_port, stats_port):
     global LOG_RCV
     global STAT_RCV
-    global OPB_FWD
     global PROC
 
     if command is None:
@@ -77,8 +76,7 @@ def run_entity(command, addr, logs_port, stats_port):
     signal.signal(signal.SIGTERM, stop_entity)
 
     collect_agent.register_collect(
-        '/opt/openbach/agent/jobs/opensand/',
-        'opensand_rstats_filter.conf',
+        '/opt/openbach/agent/jobs/opensand/opensand_rstats_filter.conf',
     )
     LOG_RCV = MessageReceiver(addr, logs_port, forward_log)
     STAT_RCV = MessageReceiver(addr, stats_port, forward_stat)
@@ -88,9 +86,6 @@ def run_entity(command, addr, logs_port, stats_port):
     PROC = subprocess.Popen(command.split())
 
     PROC.wait()
-    PROC = None
-    STAT_RCV.stop()
-    LOG_RCV.stop()
 
 
 def stop_entity(signum, frame):
@@ -99,12 +94,12 @@ def stop_entity(signum, frame):
     if PROC is not None:
         PROC.send_signal(signum)
 
-    if LOG is not None:
-        LOG.stop()
-        LOG = None
-    if STAT is not None:
-        STAT.stop()
-        STAT = None
+    if LOG_RCV is not None:
+        LOG_RCV.stop()
+        LOG_RCV = None
+    if STAT_RCV is not None:
+        STAT_RCV.stop()
+        STAT_RCV = None
 
 
 def grouper(iterable, n):
@@ -140,6 +135,7 @@ class MessageReceiver(threading.Thread):
     DEFAULT_BUFFERLEN = 4096
 
     def __init__(self, addr, port, on_reception, timeout=DEFAULT_TIMEOUT, bufferlen=DEFAULT_BUFFERLEN):
+        super().__init__()
         self.addr = addr
         self.port = port
 
@@ -147,18 +143,18 @@ class MessageReceiver(threading.Thread):
         self._timeout = timeout
         self._bufferlen = bufferlen
 
-        self._stop = threading.Event()
+        self._stop_evt = threading.Event()
 
     def stop(self):
-        self._stop.set()
+        self._stop_evt.set()
         self.join()
 
     def run(self):
         rcv_sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-        rcv_sock.setopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        rcv_sock.bind(self.addr, self.port)
+        rcv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        rcv_sock.bind((self.addr, self.port))
         
-        while not self._stop.is_set():
+        while not self._stop_evt.is_set():
             readable, _, _ = select.select([ rcv_sock ], [], [], self._timeout)
             for sock in readable:
                 payload, (src_addr, src_port) = sock.recvfrom(self._bufferlen)
@@ -242,11 +238,11 @@ if __name__ == '__main__':
         help='Satellite',
     )
     net_gw_net_acc_parser = net_entity_cmd.add_parser(
-        'gw_net_acc',
+        'gw-net-acc',
         help='Gateway (network and access layers)',
     )
     net_gw_phy_parser = net_entity_cmd.add_parser(
-        'gw_phy',
+        'gw-phy',
         help='Gateway (physical layer)',
     )
 
@@ -275,11 +271,11 @@ if __name__ == '__main__':
         help='Satellite',
     )
     run_gw_net_acc_parser = run_entity_cmd.add_parser(
-        'gw_net_acc',
+        'gw-net-acc',
         help='Gateway (network and access layers)',
     )
     run_gw_phy_parser = run_entity_cmd.add_parser(
-        'gw_phy',
+        'gw-phy',
         help='Gateway (physical layer)',
     )
 
@@ -426,22 +422,22 @@ if __name__ == '__main__':
                 args.id,
                 args.conf,
             )
-        elif args.entity == 'gw_net_acc':
+        elif args.entity == 'gw-net-acc':
             command = '{}/{} -i {} -t {}tap -w {} -c {}'.format(
                 args.bin_dir,
                 args.entity,
                 args.id,
                 args.id,
-                args.interconnect_addr,
+                args.interco_addr,
                 args.conf,
             )
-        elif args.entity == 'gw_phy':
+        elif args.entity == 'gw-phy':
             command = '{}/{} -i {} -a {} -w {} -c {}'.format(
                 args.bin_dir,
                 args.entity,
                 args.id,
                 args.emu_addr,
-                args.interconnect_addr,
+                args.interco_addr,
                 args.conf,
             )
 
@@ -480,7 +476,7 @@ if __name__ == '__main__':
             else:
                 raise ValueError('Unexpected type value "{}"'.format(args.type))
 
-        elif args.entity == 'gw_net_acc':
+        elif args.entity == 'gw-net-acc':
             if args.type == onu.IP_TYPE:
                 onu.host_ground_net_acc_ip(
                     '{}{}'.format(args.entity, args.id),
@@ -504,7 +500,7 @@ if __name__ == '__main__':
             else:
                 raise ValueError('Unexpected type value "{}"'.format(args.type))
 
-        elif args.entity == 'gw_phy':
+        elif args.entity == 'gw-phy':
             onu.host_ground_phy(
                 '{}{}'.format(args.entity, args.id),
                 args.emu_iface,
