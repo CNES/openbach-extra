@@ -20,76 +20,389 @@ platform_configuration:
 # maybe 'ip' as ipv4 and ipv6 type
 
 arguments:
-  required:
-    - name:        entity-type
-      type:        str
-      count:       1
-      description: The type of the entity ("gw", "st", sat", "gw-phy", "gw-net-acc" or "none")
-    - name:        ctrl-iface
-      type:        str
-      count:       1
-      description: The interface used to control the OpenSAND Daemon
-  optional:
-    - name:        emu-iface
-      type:        str
-      flag:        '--emu-iface'
-      count:       1
-      description: The interface used to emulate the satellite network
-    - name:        emu-ipv4
-      type:        str
-      flag:        '--emu-ipv4'
-      count:       1
-      description: The IPv4 address to set to the "emu-iface" interface (format X.X.X.X/X)
-    - name:        platform-id
-      type:        str
-      flag:        '--platform-id'
-      count:       1
-      description: The plateform id (default is none)
-    - name:        entity-id
-      type:        int
-      flag:        '--entity-id'
-      count:       1
-      description: The entity id (0 or 6 for "gw", 1-5 or 7-10 for "st", none otherwise)
-    - name:        lan-iface
-      type:        str
-      flag:        '--lan-iface'
-      count:       1
-      description: The interface used to receive/send traffic
-    - name:        lan-ipv4
-      type:        str
-      flag:        '--lan-ipv4'
-      count:       1
-      description: The IPv4 address to set to the "lan-iface" interface (format X.X.X.X/X)
-    - name:        lan-ipv6
-      type:        str
-      flag:        '--lan-ipv6'
-      count:       1
-      description: The IPv6 address to set to the "lan-iface" interface (format X::X/X)
-    - name:        service-port
-      type:        int
-      flag:        '--service-port'
-      count:       1
-      description: 'The port to receive information about other entitites (default: 3141)'
-    - name:        command-port
-      type:        int
-      flag:        '--command-port'
-      count:       1
-      description: 'The port to receive command from the manager (default: 5926)'
-    - name:        status-port
-      type:        int
-      flag:        '--status-port'
-      count:       1
-      description: 'The port to receive status requestes from the manager (default: 5358)'
-    - name:        interconnect-iface
-      type:        str
-      flag:        '--interconnect-iface'
-      count:       1
-      description: The interface used to interconnect between split-gateway components
-    - name:        interconnect-ipv4
-      type:        str
-      flag:        '--interconnect-ipv4'
-      count:       1
-      description: The IPv4 address to set to the "interconnect-iface" interface (format X.X.X.X/X)
+  subcommands:
+    - group_name: action
+      optional: no
+      choices:
+        - name: network
+          subcommands:
+            - group_name: entity
+              optional: no
+              choices:
+                - name: st
+                  optional:
+                    - name: id
+                      type: int
+                      count: 1
+                      flag: '-i'
+                      description: The OpenSAND entity identifier
+                    - name: type
+                      type: str
+                      count: 1
+                      choices:
+                        - IP_TYPE
+                        - ETH_TYPE
+                      flag: '-t'
+                      description: The type of terrestrial network
+                    - name: network interface
+                      type: str
+                      count: 1
+                      flag: '-n'
+                      description: The terrestrial network interface
+                    - name: network address
+                      type: ip
+                      count: 1
+                      flag: '--net-addr'
+                      description: The terrestrial network address
+                    - name: emulation interface
+                      type: str
+                      count: 1
+                      flag: '-e'
+                      description: The emulation interface
+                    - name: emulation address
+                      type: ip
+                      count: 1
+                      flag: '-a'
+                      description: The emulation address (format "ADDRESS/NET_DIGIT")
+                    - name: internal address
+                      type: ip
+                      count: 1
+                      flag: '--int-addr'
+                      description: The internal address (format "ADDRESS/NET_DIGIT")
+                    - name: revert
+                      type: None
+                      count: 0
+                      flag: '-r'
+                      description: Revert the current network configuration
+                - name: gw
+                  optional:
+                    - name: id
+                      type: int
+                      count: 1
+                      flag: '-i'
+                      description: The OpenSAND entity identifier
+                    - name: type
+                      type: str
+                      count: 1
+                      choices:
+                        - IP_TYPE
+                        - ETH_TYPE
+                      flag: '-t'
+                      description: The type of terrestrial network
+                    - name: network interface
+                      type: str
+                      count: 1
+                      flag: '-n'
+                      description: The terrestrial network interface
+                    - name: network address
+                      type: ip
+                      count: 1
+                      flag: '--net-addr'
+                      description: The terrestrial network address
+                    - name: emulation interface
+                      type: str
+                      count: 1
+                      flag: '-e'
+                      description: The emulation interface
+                    - name: emulation address
+                      type: ip
+                      count: 1
+                      flag: '-a'
+                      description: The emulation address (format "ADDRESS/NET_DIGIT")
+                    - name: internal address
+                      type: ip
+                      count: 1
+                      flag: '--int-addr'
+                      description: The internal address (format "ADDRESS/NET_DIGIT")
+                    - name: revert
+                      type: None
+                      count: 0
+                      flag: '-r'
+                      description: Revert the current network configuration
+                - name: sat
+                  optional:
+                    - name: emulation interface
+                      type: str
+                      count: 1
+                      flag: '-e'
+                      description: The emulation interface
+                    - name: emulation address
+                      type: ip
+                      count: 1
+                      flag: '-a'
+                      description: The emulation address (format "ADDRESS/NET_DIGIT")
+                    - name: revert
+                      type: None
+                      count: 0
+                      flag: '-r'
+                      description: Revert the current network configuration
+                - name: gw_net_acc
+                  optional:
+                    - name: id
+                      type: int
+                      count: 1
+                      flag: '-i'
+                      description: The OpenSAND entity identifier
+                    - name: type
+                      type: str
+                      count: 1
+                      choices:
+                        - IP_TYPE
+                        - ETH_TYPE
+                      flag: '-t'
+                      description: The type of terrestrial network
+                    - name: network interface
+                      type: str
+                      count: 1
+                      flag: '-n'
+                      description: The terrestrial network interface
+                    - name: network address
+                      type: ip
+                      count: 1
+                      flag: '--net-addr'
+                      description: The terrestrial network address
+                    - name: interconnection interface
+                      type: str
+                      count: 1
+                      flag: '-o'
+                      description: The interconnection interface
+                    - name: interconnection address
+                      type: ip
+                      count: 1
+                      flag: '--interco-addr'
+                      description: The interconnection address (format: "ADDRESS/NET_DIGIT")
+                    - name: internal address
+                      type: ip
+                      count: 1
+                      flag: '--int-addr'
+                      description: The internal address (format "ADDRESS/NET_DIGIT")
+                    - name: revert
+                      type: None
+                      count: 0
+                      flag: '-r'
+                      description: Revert the current network configuration
+                - name: gw_phy
+                  optional:
+                    - name: id
+                      type: int
+                      count: 1
+                      flag: '-i'
+                      description: The OpenSAND entity identifier
+                    - name: emulation address
+                      type: ip
+                      count: 1
+                      flag: '-a'
+                      description: The emulation address (format "ADDRESS/NET_DIGIT")
+                    - name: interconnection interface
+                      type: str
+                      count: 1
+                      flag: '-o'
+                      description: The interconnection interface
+                    - name: interconnection address
+                      type: ip
+                      count: 1
+                      flag: '--interco-addr'
+                      description: The interconnection address (format: "ADDRESS/NET_DIGIT")
+                    - name: revert
+                      type: None
+                      count: 0
+                      flag: '-r'
+                      description: Revert the current network configuration
+        - name: run
+          subcommands:
+            - group_name: entity
+              optional: no
+              choices:
+                - name: st
+                  optional:
+                    - name: id
+                      type: int
+                      count: 1
+                      flag: '-i'
+                      description: The OpenSAND entity identifier
+                    - name: emulation address
+                      type: ip
+                      count: 1
+                      flag: '-a'
+                      description: The emulation address (format "ADDRESS/NET_DIGIT")
+                    - name: configuration
+                      type: str
+                      count: 1
+                      flag: '-c'
+                      description: The directory of the OpenSAND entity configuration
+                    - name: output
+                      type: ip
+                      count: 1
+                      flag: '--output-addr'
+                      description: The output address
+                    - name: logs port
+                      type: int
+                      count: 1
+                      flag: '--logs-port'
+                      description: UDP port to send logs to
+                    - name: stats port
+                      type: int
+                      count: 1
+                      flag: '--stats-port'
+                      description: UDP port to send stats to
+                    - name: binaries
+                      type: str
+                      count: 1
+                      flag: '--bin-dir'
+                      description: The directory containing entities binaries for OpenSAND
+                - name: gw
+                  optional:
+                    - name: id
+                      type: int
+                      count: 1
+                      flag: '-i'
+                      description: The OpenSAND entity identifier
+                    - name: emulation address
+                      type: ip
+                      count: 1
+                      flag: '-a'
+                      description: The emulation address (format "ADDRESS/NET_DIGIT")
+                    - name: configuration
+                      type: str
+                      count: 1
+                      flag: '-c'
+                      description: The directory of the OpenSAND entity configuration
+                    - name: output
+                      type: ip
+                      count: 1
+                      flag: '--output-addr'
+                      description: The output address
+                    - name: logs port
+                      type: int
+                      count: 1
+                      flag: '--logs-port'
+                      description: UDP port to send logs to
+                    - name: stats port
+                      type: int
+                      count: 1
+                      flag: '--stats-port'
+                      description: UDP port to send stats to
+                    - name: binaries
+                      type: str
+                      count: 1
+                      flag: '--bin-dir'
+                      description: The directory containing entities binaries for OpenSAND
+                - name: sat
+                  optional:
+                    - name: emulation address
+                      type: ip
+                      count: 1
+                      flag: '-a'
+                      description: The emulation address (format "ADDRESS/NET_DIGIT")
+                    - name: configuration
+                      type: str
+                      count: 1
+                      flag: '-c'
+                      description: The directory of the OpenSAND entity configuration
+                    - name: output
+                      type: ip
+                      count: 1
+                      flag: '--output-addr'
+                      description: The output address
+                    - name: logs port
+                      type: int
+                      count: 1
+                      flag: '--logs-port'
+                      description: UDP port to send logs to
+                    - name: stats port
+                      type: int
+                      count: 1
+                      flag: '--stats-port'
+                      description: UDP port to send stats to
+                    - name: binaries
+                      type: str
+                      count: 1
+                      flag: '--bin-dir'
+                      description: The directory containing entities binaries for OpenSAND
+                - name: gw_net_acc
+                  optional:
+                    - name: id
+                      type: int
+                      count: 1
+                      flag: '-i'
+                      description: The OpenSAND entity identifier
+                    - name: emulation address
+                      type: ip
+                      count: 1
+                      flag: '-a'
+                      description: The emulation address (format "ADDRESS/NET_DIGIT")
+                    - name: interconnection address
+                      type: ip
+                      count: 1
+                      flag: '--interco-addr'
+                      description: The remote interconnection address
+                    - name: configuration
+                      type: str
+                      count: 1
+                      flag: '-c'
+                      description: The directory of the OpenSAND entity configuration
+                    - name: output
+                      type: ip
+                      count: 1
+                      flag: '--output-addr'
+                      description: The output address
+                    - name: logs port
+                      type: int
+                      count: 1
+                      flag: '--logs-port'
+                      description: UDP port to send logs to
+                    - name: stats port
+                      type: int
+                      count: 1
+                      flag: '--stats-port'
+                      description: UDP port to send stats to
+                    - name: binaries
+                      type: str
+                      count: 1
+                      flag: '--bin-dir'
+                      description: The directory containing entities binaries for OpenSAND
+                - name: gw_phy
+                  optional:
+                    - name: id
+                      type: int
+                      count: 1
+                      flag: '-i'
+                      description: The OpenSAND entity identifier
+                    - name: emulation address
+                      type: ip
+                      count: 1
+                      flag: '-a'
+                      description: The emulation address (format "ADDRESS/NET_DIGIT")
+                    - name: interconnection address
+                      type: ip
+                      count: 1
+                      flag: '--interco-addr'
+                      description: The remote interconnection address
+                    - name: configuration
+                      type: str
+                      count: 1
+                      flag: '-c'
+                      description: The directory of the OpenSAND entity configuration
+                    - name: output
+                      type: ip
+                      count: 1
+                      flag: '--output-addr'
+                      description: The output address
+                    - name: logs port
+                      type: int
+                      count: 1
+                      flag: '--logs-port'
+                      description: UDP port to send logs to
+                    - name: stats port
+                      type: int
+                      count: 1
+                      flag: '--stats-port'
+                      description: UDP port to send stats to
+                    - name: binaries
+                      type: str
+                      count: 1
+                      flag: '--bin-dir'
+                      description: The directory containing entities binaries for OpenSAND
 
 statistics:
 
