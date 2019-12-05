@@ -47,7 +47,6 @@ import select
 import syslog
 import collect_agent
 import json
-import grouper
 import re
 
 PROC = None
@@ -106,6 +105,11 @@ def stop_entity(signum, frame):
     if STAT is not None:
         STAT.stop()
         STAT = None
+
+
+def grouper(iterable, n):
+    args = [iter(iterable)] * n
+    return itertools.izip(*args)
 
 
 def forward_stat(payload, src_addr, src_port):
