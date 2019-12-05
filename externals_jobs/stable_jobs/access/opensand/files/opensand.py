@@ -58,7 +58,7 @@ LEVELS = {
     'INFO': syslog.LOG_INFO,
     'NOTICE': syslog.LOG_NOTICE,
     'WARNING': syslog.LOG_WARNING,
-    'ERROR': syslog.LOG_ERROR,
+    'ERROR': syslog.LOG_ERR,
     'CRITICAL': syslog.LOG_CRIT,
 }
 
