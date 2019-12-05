@@ -457,7 +457,7 @@ if __name__ == '__main__':
             )
 
         elif args.entity in [ 'gw', 'st' ]:
-            if args.type == IP_TYPE:
+            if args.type == onu.IP_TYPE:
                 onu.host_ground_ip(
                     '{}{}'.format(args.entity, args.id),
                     args.emu_iface,
@@ -468,7 +468,7 @@ if __name__ == '__main__':
                     args.configure,
                 )
 
-            elif args.type == ETH_TYPE:
+            elif args.type == onu.ETH_TYPE:
                 onu.host_ground_eth(
                     '{}{}'.format(args.entity, args.id),
                     args.emu_iface,
@@ -481,7 +481,7 @@ if __name__ == '__main__':
                 raise ValueError('Unexpected type value "{}"'.format(args.type))
 
         elif args.entity == 'gw_net_acc':
-            if args.type == IP_TYPE:
+            if args.type == onu.IP_TYPE:
                 onu.host_ground_net_acc_ip(
                     '{}{}'.format(args.entity, args.id),
                     args.interco_iface,
@@ -492,7 +492,7 @@ if __name__ == '__main__':
                     args.configure,
                 )
 
-            elif args.type == ETH_TYPE:
+            elif args.type == onu.ETH_TYPE:
                 onu.host_ground_net_acc_eth(
                     '{}{}'.format(args.entity, args.id),
                     args.interco_iface,
