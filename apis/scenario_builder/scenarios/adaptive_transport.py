@@ -77,9 +77,12 @@ def get_traffic_infos(traffic_type, congestion):
           filename, scenario_name = FILENAME.format('traffic_web'), SCENARIO_NAME.format('web_browsing', 'PLT') 
 
     if traffic_type is TrafficType.DASH:
-       if congestion:
+       if congestion=='cubic':
           filename, scenario_name = (FILENAME.format('traffic_dash_congestion'), 
                                      SCENARIO_NAME.format('background traffic then dash', 'bitrate'))
+       elif congestion=='bbr2':
+          filename, scenario_name = (FILENAME.format('traffic_dash_congestion_bbr2'), 
+                                     SCENARIO_NAME.format('background traffic bbr2 then dash', 'bitrate'))
        else:
           filename, scenario_name = FILENAME.format('traffic_dash'), SCENARIO_NAME.format('dash', 'bitrate') 
 
@@ -94,13 +97,13 @@ def get_traffic_infos(traffic_type, congestion):
     return filename, scenario_name
 
 def compute_legend(traffic_type, cc_web_browsing, cc_dash, initcwnd):
-    legend = 'cc_{0} initcwnd_' + str(initcwnd)
+    LEGEND = 'cc_{0} initcwnd_' + str(initcwnd)
     if traffic_type == TrafficType.MIX:
        return 'cc_web_{0} cc_dash_{1} initcwnd_{2}'.format(cc_web_browsing, cc_dash, initcwnd)
     elif traffic_type == TrafficType.WEB_BROWSING:
-         return legend.format(cc_web_browsing)
+         return LEGEND.format(cc_web_browsing)
     else:
-         return legend.format(cc_dash)
+         return LEGEND.format(cc_dash)
 
 def build(scenario_name, post_processing_entity, traffic_type, desired_test, losses=(0.0,), congestions=('None',), 
           ccs_web_browsing=('cubic',), ccs_dash=('cubic',), initcwnds=(10,)):
@@ -253,7 +256,9 @@ def build(scenario_name, post_processing_entity, traffic_type, desired_test, los
         for job_name, stat_name, y_axis, title_ts, title_cdf in [
                 ('web_browsing_qoe', 'page_load_time', 'PLT (ms)', 'Comparison of measured PLTs', 'CDF of PLT'),
                 ('dash player&server', 'bitrate', 'Bitrate (b/s)', 'Comparison of measured Bitrates', 'CDF of Bitrate'),
-	        ('iperf3', 'throughput', 'throughput (b/s)', 'Comparison of measured throughput (bg traffic)', 'CDF of Throughput (bg traffic)')]:
+                ('dash player&server', 'buffer_length', 'Video buffer size (s)', 'Comparison of measured Video buffer sizes', 'CDF of Video buffer size'),
+	        ('iperf3', 'throughput', 'throughput (b/s)', 'Comparison of measured throughput (bg traffic)', 'CDF of Throughput (bg traffic)'), 
+                ('iperf3', 'download_time', ' download_time(s)', 'Comparison of download time (bg traffic)', 'CDF of Download time (bg traffic)')]:
             post_processed, legends = [], []
             for start_scenario_traffic, scenario_traffic, legend in pp_scenario_traffic_infos:
                 post_processed.extend(extract_jobs_to_postprocess_recursively(scenario_traffic, job_name, [start_scenario_traffic]))
