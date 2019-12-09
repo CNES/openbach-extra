@@ -179,7 +179,7 @@ class Statistics(InfluxDBCommunicator):
         if not job_instances or columns is None:
             return _Plot(df)
         columns = iter(columns)
-        return _Plot(pd.concat([_prepare_columns(df[id], columns) for id in job_instances], axis=1))
+        return _Plot(pd.concat([_prepare_columns(df[id], columns) for id in job_instances if id in df], axis=1))
 
 
 class _Plot:
