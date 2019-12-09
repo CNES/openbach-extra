@@ -45,16 +45,14 @@ class GetScenario(FrontendBase):
         super().__init__('OpenBACH — Get the Content of a Scenario')
         self.parser.add_argument('scenario_name', help='name of the scenario to fetch')
         self.parser.add_argument(
-                '-p', '--project',
+                'project_name',
                 help='name of the project the scenario is associated with')
 
     def execute(self, show_response_content=True):
         scenario_name = self.args.scenario_name
-        project = self.args.project
-        route = 'scenario/{}/'.format(scenario_name)
-        if project is not None:
-            route = 'project/{}/{}'.format(project, route)
+        project = self.args.project_name
 
+        route = 'project/{}/scenario/{}/'.format(project, scenario_name)
         return self.request('GET', route, show_response_content=show_response_content)
 
 

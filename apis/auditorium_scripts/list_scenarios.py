@@ -44,15 +44,11 @@ class ListScenarios(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — List all Scenarios of a Project')
         self.parser.add_argument(
-                '-p', '--project',
+                'project_name',
                 help='name of the project whose scenarios should be listed')
 
     def execute(self, show_response_content=True):
-        project = self.args.project
-        route = 'scenario/'
-        if project is not None:
-            route = 'project/{}/{}'.format(project, route)
-
+        route = 'project/{}/scenario/'.format(self.args.project_name)
         return self.request('GET', route, show_response_content=show_response_content)
 
 

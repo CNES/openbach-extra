@@ -43,23 +43,20 @@ from auditorium_scripts.frontend import FrontendBase
 class ListScenarioInstances(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — List Instances of a Scenario')
+        self.parser.add_argument('project_name', help='name of the project')
         self.parser.add_argument(
                 '-s', '--scenario',
-                help='name of the scenario whose instances should be listed')
-        self.parser.add_argument(
-                '-p', '--project',
-                help='name of the project the scenario is associated with')
+                help='name of the scenario whose instances should be listed'
+                '. Defaults to all scenarios.')
 
     def execute(self, show_response_content=True):
         scenario = self.args.scenario
-        project = self.args.project
+        project = self.args.project_name
 
-        route = 'scenario_instance/'
-        if project is not None:
-            prepend = 'project/{}/'.format(project)
-            if scenario is not None:
-                prepend = '{}scenario/{}/'.format(prepend, scenario)
-            route = prepend + route
+        if scenario is None:
+            route = 'project/{}/scenario_instance/'.format(project)
+        else:
+            route = 'project/{}/scenario/{}/scenario_instance/'.format(project, scenario)
 
         return self.request('GET', route, show_response_content=show_response_content)
 

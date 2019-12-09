@@ -49,7 +49,7 @@ class StartScenarioInstance(FrontendBase):
                 'scenario_name',
                 help='name of the scenario to start')
         self.parser.add_argument(
-                '-p', '--project',
+                'project_name',
                 help='name of the project the scenario is associated with')
         self.parser.add_argument(
                 '-a', '--argument', nargs=2, default={},
@@ -61,7 +61,7 @@ class StartScenarioInstance(FrontendBase):
 
     def execute(self, show_response_content=True):
         scenario = self.args.scenario_name
-        project = self.args.project
+        project = self.args.project_name
         arguments = dict(self.args.argument)
         date = self.date_to_timestamp()
 
@@ -69,15 +69,8 @@ class StartScenarioInstance(FrontendBase):
         if date is not None:
             action = partial(action, date=date)
 
-        if project is None:
-            response = action(
-                    'POST', 'scenario_instance', scenario_name=scenario,
-                    show_response_content=show_response_content)
-        else:
-            response = action(
-                    'POST', 'project/{}/scenario/{}/scenario_instance/'.format(project, scenario),
-                    show_response_content=show_response_content)
-        return response
+        route = 'project/{}/scenario/{}/scenario_instance/'.format(project, scenario)
+        return action('POST', route, show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

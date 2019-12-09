@@ -45,16 +45,14 @@ class DeleteScenario(FrontendBase):
         super().__init__('OpenBACH — Delete a Scenario')
         self.parser.add_argument('name', help='name of the scenario to delete')
         self.parser.add_argument(
-                '-p', '--project',
+                'project_name',
                 help='name of the project the scenario is associated with')
 
     def execute(self, show_response_content=True):
         scenario = self.args.name
-        project = self.args.project
-        route = 'scenario/{}/'.format(scenario)
-        if project is not None:
-            route = 'project/{}/{}'.format(project, route)
+        project = self.args.project_name
 
+        route = 'project/{}/scenario/{}/'.format(project, scenario)
         return self.request('DELETE', route, show_response_content=show_response_content)
 
 

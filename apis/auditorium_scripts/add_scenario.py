@@ -50,7 +50,7 @@ class AddScenario(FrontendBase):
                 'scenario_file', type=FileType('r'),
                 help='path to the definition file of the scenario')
         self.parser.add_argument(
-                '-p', '--project',
+                'project_name',
                 help='name of the project to associate the scenario with')
 
     def parse(self, args=None):
@@ -64,9 +64,9 @@ class AddScenario(FrontendBase):
 
     def execute(self, show_response_content=True):
         scenario = self.args.scenario
-        project = self.args.project
-        route = 'scenario' if project is None else 'project/{}/scenario/'.format(project)
+        project = self.args.project_name
 
+        route = 'project/{}/scenario/'.format(project)
         return self.request(
                 'POST', route, **scenario,
                 show_response_content=show_response_content)

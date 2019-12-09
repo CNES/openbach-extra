@@ -50,11 +50,11 @@ class ModifyScenario(FrontendBase):
                 'scenario_name',
                 help='name of the scenario to modify')
         self.parser.add_argument(
+                'project_name',
+                help='name of the project the scenario is associated with')
+        self.parser.add_argument(
                 'scenario_file', type=FileType('r'),
                 help='path to the definition file of the scenario')
-        self.parser.add_argument(
-                '-p', '--project',
-                help='name of the project the scenario is associated with')
 
     def parse(self, args=None):
         super().parse(args)
@@ -68,11 +68,9 @@ class ModifyScenario(FrontendBase):
     def execute(self, show_response_content=True):
         scenario = self.args.scenario
         name = self.args.scenario_name
-        project = self.args.project
-        route = 'scenario/{}/'.format(name)
-        if project is not None:
-            route = 'project/{}/{}'.format(project, route)
+        project = self.args.project_name
 
+        route = 'project/{}/scenario/{}/'.format(project, name)
         return self.request(
                 'PUT', route, **scenario,
                 show_response_content=show_response_content)
