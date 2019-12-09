@@ -59,6 +59,7 @@ class CreateScenario(FrontendBase):
         self.args.scenario = {
                 'name': self.args.scenario_name,
                 'description': self.args.description,
+                'openbach_functions': [],
         }
 
     def execute(self, show_response_content=True):

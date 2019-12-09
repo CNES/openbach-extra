@@ -46,10 +46,10 @@ from auditorium_scripts.frontend import FrontendBase
 class AddProject(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Add a new Project')
-        add.add_argument(
+        self.parser.add_argument(
                 'project_file', type=FileType('r'),
                 help='path to the definition file of the project')
-        add.add_argument(
+        self.parser.add_argument(
                 '-p', '--public', action='store_true',
                 help='open the project for everyone to use')
 
