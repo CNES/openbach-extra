@@ -1,0 +1,1 @@
+data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 12 12%22%3E %3Cpath fill=%22%230645ad%22 d=%22M10.5 4.7l1.3-1.3c.3-.3.3-.7 0-.9L9.6.2c-.3-.3-.7-.3-.9 0L7.3 1.5l3.2 3.2zM6.6 2.2L0 8.8V12h3.2l6.6-6.6-3.2-3.2z%22/%3E %3C/svg%3E
