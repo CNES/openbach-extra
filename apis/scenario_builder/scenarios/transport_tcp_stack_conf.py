@@ -33,12 +33,12 @@ from scenario_builder.helpers.network.ip_route import ip_route
 from inspect import signature
 
 
-SCENARIO_DESCRIPTION="""This *transport_configuration_tcp_stack* scenario allows to configure:
+SCENARIO_DESCRIPTION="""This *transport_tcp_stack_conf* scenario allows to configure:
      - TCP congestion control, 
      - route including TCP parameters like initial congestion and receive windows 
      - TCP segmentation offloading on a network interface.
 """
-SCENARIO_NAME="""transport_configuration_tcp_stack"""
+SCENARIO_NAME="""transport_tcp_stack_conf"""
 
 
 def build(entity, cc=None, interface=None, route=None, scenario_name=SCENARIO_NAME):

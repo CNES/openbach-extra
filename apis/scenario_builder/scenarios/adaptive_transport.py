@@ -1,5 +1,5 @@
 from scenario_builder import Scenario
-import scenario_builder.scenarios.transport_configuration_tcp_stack as transport_configuration_tcp_stack
+import scenario_builder.scenarios.transport_tcp_stack_conf as transport_tcp_stack_conf
 import scenario_builder.scenarios.configure_link as configure_link
 import scenario_builder.scenarios.rate_monitoring as rate_monitoring
 import scenario_builder.scenarios.service_traffic_mix as service_traffic_mix
@@ -110,7 +110,7 @@ def build(scenario_name, post_processing_entity, traffic_type, desired_test, los
               
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format(traffic_type.value))   
     route = {'destination_ip':'192.168.19.0/24', 'gateway_ip':'192.168.42.1', 'initcwnd':'$initcwnd'}
-    scenario_tcp_conf = transport_configuration_tcp_stack.build('$entity', '$cc', 'ens4', route)
+    scenario_tcp_conf = transport_tcp_stack_conf.build('$entity', '$cc', 'ens4', route)
     scenario_wifi_loss_apply = configure_link.build('$entity', '$ifaces', 'egress', 'apply', loss_model_params='$loss', scenario_name='apply_wifi_loss')
     scenario_wifi_loss_clear = configure_link.build('$entity', '$ifaces', 'egress', 'clear', scenario_name='clear_wifi_loss')
     if traffic_type is TrafficType.MIX: 

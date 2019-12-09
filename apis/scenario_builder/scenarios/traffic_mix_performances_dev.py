@@ -28,7 +28,7 @@
 
 
 from scenario_builder import Scenario
-from scenario_builder.scenarios import transport_configuration_tcp_stack, service_traffic_mix 
+from scenario_builder.scenarios import transport_tcp_stack_conf, service_traffic_mix 
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 import itertools
 
@@ -48,7 +48,7 @@ def build(server, interface, cc, init_cwnd, extra_args_traffic, post_processing_
         # Launch transport configuration tcp stack scenario
         start_conf_tcp = scenario.add_function(
                     'start_scenario_instance', wait_finished=wait_finished, wait_delay=5)
-        scenario_tcp_conf = transport_configuration_tcp_stack.build(server, interface, cc, initcwnd)
+        scenario_tcp_conf = transport_tcp_stack_conf.build(server, interface, cc, initcwnd)
         start_conf_tcp.configure(
                     scenario_tcp_conf)
         wait_finished.append(start_conf_tcp) 

@@ -27,13 +27,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario builds and launches the *configure_tcp_stack* scenario
+"""This scenario builds and launches the *transport_tcp_stack_conf* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
 """
 
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios import transport_configuration_tcp_stack
+from scenario_builder.scenarios import transport_tcp_stack_conf
 
 
 def main(scenario_name=None, argv=None):
@@ -71,7 +71,7 @@ def main(scenario_name=None, argv=None):
              'initrwnd':args.irwnd,
              }
 
-    scenario = transport_configuration_tcp_stack.build(
+    scenario = transport_tcp_stack_conf.build(
                 args.entity,
                 args.cc,
                 args.iface,
