@@ -27,35 +27,41 @@
 #   this program. If not, see http://www.gnu.org/licenses/.
 
 from scenario_builder import Scenario
-from scenario_builder.helpers.transport.tcp_conf_linux import tcp_conf_linux_repetitive_tests
-from scenario_builder.helpers.transport.ethtool import ethtool_disable_segmentation_offload
-from scenario_builder.helpers.network.ip_route import ip_route
+from scenario_builder.helpers.metrology.rate_monitoring import tcp_rate_monitoring
+from scenario_builder.helpers.metrology.rate_monitoring import udp_rate_monitoring
+from scenario_builder.helpers.metrology.rate_monitoring import icmp_rate_monitoring
+from scenario_builder.helpers.metrology.rate_monitoring import rate_monitoring
 from inspect import signature
 
 
-SCENARIO_DESCRIPTION="""This *transport_configuration_tcp_stack* scenario allows to configure:
-     - TCP congestion control, 
-     - route including TCP parameters like initial congestion and receive windows 
-     - TCP segmentation offloading on a network interface.
+SCENARIO_DESCRIPTION="""This scenario allows to monitor a given flow, including:
+     - bit rate
+     - volume of sent data 
 """
-SCENARIO_NAME="""transport_configuration_tcp_stack"""
+SCENARIO_NAME="""rate_monitoring"""
 
 
-def build(entity, cc=None, interface=None, route=None, scenario_name=SCENARIO_NAME):
+def build(entity, interval, chain_name, source_ip=None, destination_ip=None, in_iface=None, out_iface=None, protocol=None, 
+          sport=None, dport=None, scenario_name=SCENARIO_NAME):
+
     # Create scenario and add scenario arguments if needed
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    args = {'entity': entity, 'cc':cc, 'interface':interface}
-    args.update(route if route else {})
-    for arg, value in args.items():
+    args = signature(build).parameters
+    for arg in args:
+        value = locals()[arg] 
         if str(value).startswith('$'):
            scenario.add_argument(value[1:], '')
-    if cc:
-       tcp_conf_linux_repetitive_tests(scenario, entity, cc)
-    if interface:
-       ethtool_disable_segmentation_offload(scenario, entity, interface)
-    if route:
-       ip_route(scenario, entity, 'change', **route)
-      
+
+    if protocol == 'tcp':
+       tcp_rate_monitoring(scenario, entity, interval, chain_name, source_ip, destination_ip, in_iface, out_iface, sport, dport)
+    elif protocol == 'udp':
+       udp_rate_monitoring(scenario, entity, interval, chain_name, source_ip, destination_ip, in_iface, out_iface, sport, dport)
+    elif protocol== 'icmp':
+       icmp_rate_monitoring(scenario, entity, interval, chain_name, source_ip, destination_ip, in_iface, out_iface)
+    else:
+       rate_monitoring(scenario, entity, interval, chain_name, source_ip, destination_ip, in_iface)
+       
+       
     return scenario
 
 

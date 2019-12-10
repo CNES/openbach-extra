@@ -27,38 +27,35 @@
 #   this program. If not, see http://www.gnu.org/licenses/.
 
 from scenario_builder import Scenario
-from scenario_builder.helpers.network.configure_link import configure_link_apply
-from scenario_builder.helpers.network.configure_link import configure_link_clear
+from scenario_builder.helpers.transport.tcp_conf_linux import tcp_conf_linux_repetitive_tests
+from scenario_builder.helpers.transport.ethtool import ethtool_disable_segmentation_offload
+from scenario_builder.helpers.network.ip_route import ip_route
 from inspect import signature
 
 
-SCENARIO_DESCRIPTION="""This scenario allows to:
-     - {} a configuration on network interfaces in ingress, egress or both directions 
-       in order to emulate/stop emulation of a network link like WIFI link. 
-       Many link characteristiscs can be emulated including: bandwidth, delay, jitter and losses
+SCENARIO_DESCRIPTION="""This *transport_tcp_stack_conf* scenario allows to configure:
+     - TCP congestion control, 
+     - route including TCP parameters like initial congestion and receive windows 
+     - TCP segmentation offloading on a network interface.
 """
-SCENARIO_NAME="""configure_link"""
+SCENARIO_NAME="""transport_tcp_stack_conf"""
 
 
-def build(entity, ifaces, mode, operation, bandwidth=None, delay=0, jitter=0,
-          delay_distribution='normal', loss_model='random', loss_model_params=[0.0], 
-          scenario_name=SCENARIO_NAME):
-
+def build(entity, cc=None, interface=None, route=None, scenario_name=SCENARIO_NAME):
     # Create scenario and add scenario arguments if needed
-    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format(operation))
-    args = signature(build).parameters
-    for arg in args:
-        value = locals()[arg] 
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    args = {'entity': entity, 'cc':cc, 'interface':interface}
+    args.update(route if route else {})
+    for arg, value in args.items():
         if str(value).startswith('$'):
            scenario.add_argument(value[1:], '')
-
-    if operation == 'apply':
-       configure_link_apply(scenario, entity, ifaces, mode, bandwidth, delay_distribution,
-                            delay, jitter, loss_model, loss_model_params)
-    else:
-       configure_link_clear(scenario, entity, ifaces, mode)
-
+    if cc:
+       tcp_conf_linux_repetitive_tests(scenario, entity, cc)
+    if interface:
+       ethtool_disable_segmentation_offload(scenario, entity, interface)
+    if route:
+       ip_route(scenario, entity, 'change', **route)
+      
     return scenario
-
 
 

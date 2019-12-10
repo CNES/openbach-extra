@@ -27,7 +27,7 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function create_scenario with an empty scenario"""
+"""Call the openbach-function create_scenario"""
 
 
 __author__ = 'Viveris Technologies'
@@ -43,23 +43,24 @@ from argparse import FileType
 from auditorium_scripts.frontend import FrontendBase
 
 
-class CreateScenario(FrontendBase):
+class AddScenario(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Create a new Scenario')
-        self.parser.add_argument('scenario_name', help='name of the new scenario')
+        super().__init__('OpenBACH — Add a new Scenario')
         self.parser.add_argument(
-                '-d', '--description', default='',
-                help='flavor text to describe what the scenario is doing')
+                'scenario_file', type=FileType('r'),
+                help='path to the definition file of the scenario')
         self.parser.add_argument(
                 '-p', '--project',
                 help='name of the project to associate the scenario with')
 
     def parse(self, args=None):
         super().parse(args)
-        self.args.scenario = {
-                'name': self.args.scenario_name,
-                'description': self.args.description,
-        }
+        scenario = self.args.scenario_file
+        with scenario:
+            try:
+                self.args.scenario = json.load(scenario)
+            except ValueError:
+                self.parser.error('invalid JSON data in {}'.format(scenario.name))
 
     def execute(self, show_response_content=True):
         scenario = self.args.scenario
@@ -72,4 +73,4 @@ class CreateScenario(FrontendBase):
 
 
 if __name__ == '__main__':
-    CreateScenario.autorun()
+    AddScenario.autorun()

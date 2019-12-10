@@ -30,7 +30,7 @@
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_traffic_mix
 
-"""This scenario launches the *RT_AGM_global* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
+"""This scenario launches the *service_traffic_mix* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
 
 def main():
     observer = ScenarioObserver()
