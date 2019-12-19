@@ -92,7 +92,7 @@ def stop_entity(signum, frame):
     global LOG_RCV
     global STAT_RCV
     if PROC is not None:
-        PROC.send_signal(signum)
+        PROC.send_signal(signal.SIGKILL)
 
     if LOG_RCV is not None:
         LOG_RCV.stop()
@@ -104,7 +104,7 @@ def stop_entity(signum, frame):
 
 def grouper(iterable, n):
     args = [iter(iterable)] * n
-    return itertools.izip(*args)
+    return zip(*args)
 
 
 def forward_stat(payload, src_addr, src_port):
@@ -163,6 +163,17 @@ class MessageReceiver(threading.Thread):
                 self._on_reception(payload, src_addr, src_port)
 
         rcv_sock.close()
+
+
+def ipv4_address(text):
+    '''
+    Check a text represents an IPv4 address
+
+    Args:
+        text   text to check
+    '''
+    addr = ipaddress.ip_address(text)
+    return text
 
 
 def ipv4_address_netdigit(text):
@@ -320,14 +331,22 @@ if __name__ == '__main__':
             help='the emulation interface',
         )
 
-    for p in [ net_st_parser, net_gw_parser, net_gw_phy_parser, net_sat_parser,
-               run_st_parser, run_gw_parser, run_gw_phy_parser, run_sat_parser ]:
+    for p in [ net_st_parser, net_gw_parser, net_gw_phy_parser, net_sat_parser]:
         p.add_argument(
             '-a',
             '--emu-addr',
             type=ipv4_address_netdigit,
             required=True,
             help='the emulation address (format: "ADDRESS/NET_DIGIT")',
+        )
+
+    for p in [ run_st_parser, run_gw_parser, run_gw_phy_parser, run_sat_parser ]:
+        p.add_argument(
+            '-a',
+            '--emu-addr',
+            type=ipv4_address,
+            required=True,
+            help='the emulation address (format: "ADDRESS")',
         )
 
     for p in [ net_gw_net_acc_parser, net_gw_phy_parser ]:
@@ -348,7 +367,7 @@ if __name__ == '__main__':
     for p in [ run_gw_net_acc_parser, run_gw_phy_parser ]:
         p.add_argument(
             '--interco-addr',
-            type=ipv4_address_netdigit,
+            type=ipv4_address,
             required=True,
             help='the remote interconnection address (format: "ADDRESS")',
         )
@@ -414,19 +433,21 @@ if __name__ == '__main__':
                 args.conf,
             )
         elif args.entity in [ 'st', 'gw' ]:
-            command = '{}/{} -i {} -a {} -t {}tap -c {}'.format(
+            command = '{}/{} -i {} -a {} -t {}{}tap -c {}'.format(
                 args.bin_dir,
                 args.entity,
                 args.id,
                 args.emu_addr,
+                args.entity,
                 args.id,
                 args.conf,
             )
         elif args.entity == 'gw-net-acc':
-            command = '{}/{} -i {} -t {}tap -w {} -c {}'.format(
+            command = '{}/{} -i {} -t {}{}tap -w {} -c {}'.format(
                 args.bin_dir,
                 args.entity,
                 args.id,
+                args.entity,
                 args.id,
                 args.interco_addr,
                 args.conf,
