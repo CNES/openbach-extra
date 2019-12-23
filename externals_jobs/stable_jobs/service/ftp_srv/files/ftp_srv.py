@@ -31,7 +31,6 @@
 
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
- * Bastien TAURAN <bastien.tauran@toulouse.viveris.com>
  * Matthieu PETROU <matthieu.petrou@toulouse.viveris.com>
 
 '''
@@ -59,7 +58,9 @@ class MyHandler(FTPHandler):
         if time_up != 0:
                 collect_agent.send_stat(timestamp,
                         throughput_received = self.data_channel.get_transmitted_bytes()*8/time_up)
-        os.system('rm ' + file)
+                print(self.data_channel.get_transmitted_bytes()*8/time_up)
+
+        os.system('rm -r /srv/' + file.split('/')[2])
 
     def on_file_sent(self, file):
         timestamp = int(time.time() * 1000)
@@ -73,7 +74,7 @@ class MyHandler(FTPHandler):
         timestamp = int(time.time() * 1000)
         failed_received += 1
         collect_agent.send_stat(timestamp, failed_file_received = failed_received)
-        os.system('rm ' + file)
+        os.system('rm -r /srv/' + file.split('/')[2])
 
     def on_incomplete_file_sent(self, file):
         global failed_sent

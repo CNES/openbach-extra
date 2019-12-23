@@ -1,0 +1,115 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#
+#
+#   Copyright © 2016−2019 CNES
+#
+#
+#   This file is part of the OpenBACH testbed.
+#
+#
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+---
+
+general:
+  name: ftp_clt
+  description: >
+      This Job launches a ftp client to
+      exchange files via FTP. It measures
+      block exchange. 
+  job_version: '1.1'
+  keywords:
+    - ftp
+  persistent: no
+  need_privileges: yes
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/ftp_clt/ftp_clt.py'
+    command_stop:
+
+arguments:
+  required:
+    - name: server_ip
+      type: str
+      count: 1
+      description: Server IP
+    - name: port
+      type: int
+      count: 1
+      description: Set server port to listen
+    - name: mode
+      type: str
+      count: 1
+      choices:
+        - upload
+        - download
+  optional:
+    - name: user
+      type: str
+      count: 1
+      flag: '-u'
+      description: Set server authorized user (default = openbach)
+    - name: password
+      type: str
+      count: 1
+      flag: '-p'
+      description: Set server authorized user's password (default = openbach)
+    - name: blocksize
+      type: int
+      count: 1
+      flag: '-b'
+      description: Set maximum chunk size  (default = 8192)
+  subcommand:
+    - group_name: file
+      optional: no
+      choices:
+        - name: existing
+          description: Existing file
+          required:
+            - name: file_choice
+              type: str
+              count: 1
+              choices:
+                - 500K_file.txt
+                - 1M_file.txt
+                - 10M_file.txt
+                - 100M_file.txt
+        - name: own
+          description: Own file
+          required:
+            - name: file_path
+              type: str
+              count: 1
+              description: 'Path of the file to download or upload (be sure the file exists)'
+
+statistics:
+    - name: throughput_upload
+      description: The throughput for a file sent (bit/sec)
+      frequency: "Every second"      
+    - name: throughput_download
+      description: The throughput for a file received (bit/sec)
+      frequency: "Every second"
+    - name: total_blocksize_downloaded
+      description: The size of the uploaded file (bit)
+      frequency: "Every downloaded file"
+    - name: total_blocksize_uploaded
+      description: The size of the downloaded file (bit)
+      frequency: "Every uploaded file"
+
