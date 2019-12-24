@@ -58,8 +58,6 @@ class MyHandler(FTPHandler):
         if time_up != 0:
                 collect_agent.send_stat(timestamp,
                         throughput_received = self.data_channel.get_transmitted_bytes()*8/time_up)
-                print(self.data_channel.get_transmitted_bytes()*8/time_up)
-
         os.system('rm -r /srv/' + file.split('/')[2])
 
     def on_file_sent(self, file):
@@ -95,7 +93,6 @@ def build_parser():
         help = 'Limit of connexion on the server (default = 512)')
     parser.add_argument('--max_cons_ip', type = int, default = 0,
         help = 'Limit of connexion on the server per ip (default = 0 (unlimited))')
-
     return parser
 
 
@@ -115,10 +112,8 @@ def main(server_ip, port, user, password, max_cons, max_cons_ip,):
 
     address = (server_ip, port)
     server = ThreadedFTPServer(address, handler)
-
     server.max_cons = max_cons
     server.max_cons_per_ip = max_cons_ip
-
 
     server.serve_forever()
 
@@ -127,4 +122,3 @@ if __name__ == '__main__':
     args = build_parser().parse_args()
     main(args.server_ip, args.port, args.user, args.password, args.max_cons,
         args.max_cons_ip)
-

@@ -1,6 +1,6 @@
 Exemples
 ========
-Exemple 1: A FTP client which download a pre-existing file (1M_file.txt) on a server (IP: 192.168.1.4, port: 2121) which needs authentification (user name: admin, password: admin) with a specific blocksize send (100).
+Exemple 1: A FTP client which downloads a pre-existing file (1M_file.txt) on a server (IP: 192.168.1.4, port: 2121) which needs authentification (user name: admin, password: admin) with a specific blocksize (100).
 -In the web interface, set the following parameters:
   server_ip = 192.168.1.4
   port = 2121
@@ -11,7 +11,7 @@ Exemple 1: A FTP client which download a pre-existing file (1M_file.txt) on a se
   password = admin
   blocksize = 100
 
-Exemple 1: A FTP client which upload a no pre-existing file (/srv/own_file.txt) on a server (IP: 192.168.1.4, port: 2121) which needs authentification (user name: admin, password: admin) with a specific blocksize send (10000).
+Exemple 2: A FTP client which uploads a specific file (/srv/own_file.txt) on a server (IP: 192.168.1.4, port: 2121) which needs authentification (user name: admin, password: admin) with a specific blocksize (10000).
 -In the web interface, set the following parameters:
   server_ip = 192.168.1.4
   port = 2121
