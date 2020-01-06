@@ -56,7 +56,7 @@ def main(scenario_name='generate_network_rate', argv=None):
             '--rate', help='Set a higher rate (in kb/s) than what you estimate between server and client '
             'for the UDP test (add m/g to set M/G b/s)', required=True)
     observer.add_scenario_argument(
-            '--num_flows', default=1, help='Number of iperf3 flows generated (default : 1)')
+            '--num_flows', default=20, help='Number of iperf3 flows generated (default : 1)')
     observer.add_scenario_argument(
             '--tos', default=0, help='Type of Service of the trafic (default : 0)')
     observer.add_scenario_argument(
