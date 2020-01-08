@@ -69,7 +69,7 @@ def generate_path():
     return path + '/'
 
 def download(server_ip, port, user, password, blocksize, file_name):
-    global timer, total_blocksize_downloaded, block_dwnld
+    global timer, total_block_dwnld, block_dwnld
     ftp = FTP()
     ftp.connect(server_ip,port)
     ftp.login(user,password)
@@ -85,18 +85,20 @@ def download(server_ip, port, user, password, blocksize, file_name):
             if timestamp - timer >= 1000:
                collect_agent.send_stat(int(timestamp), 
                  throughput_download = (block_dwnld*8000/(timestamp - timer)))
-            file_download.write(block)
+               file_download.write(block)
+               timer = timestamp
+               block_dwnld = 0
         timer = time.time() * 1000
         ftp.retrbinary('RETR ' + file_name, handleDownload, blocksize)
     timestamp = time.time() * 1000
-    collect_agent.send_stat(int(timestamp), throughput_download = (total_block_dwnld*8000/(timestamp-timer)))
+    collect_agent.send_stat(int(timestamp), throughput_download = (block_dwnld*8000/(timestamp-timer)))
     collect_agent.send_stat(int(timestamp), total_blocksize_downloaded = total_block_dwnld * 8)
     ftp.close()
     os.remove(file_path +file_name.split('/')[-1])
     os.system('rm -r ' + file_path)
 
 def upload(server_ip, port, user, password, blocksize, file_name):
-    global timer
+    global timer, block_upld
     ftp = FTP()
     ftp.connect(server_ip,port)
     ftp.login(user,password)
@@ -109,7 +111,7 @@ def upload(server_ip, port, user, password, blocksize, file_name):
     ftp.storbinary('STOR ' + file_path + file_name.split('/')[-1], file_upload,
             blocksize, handleUpload)
     timestamp = time.time() * 1000
-    collect_agent.send_stat(int(timestamp), throughput_upload = (total_block_upld*8000/(timestamp-timer)))
+    collect_agent.send_stat(int(timestamp), throughput_upload = (block_upld*8000/(timestamp-timer)))
     collect_agent.send_stat(int(timestamp), total_blocksize_uploaded = total_block_upld * 8)
     ftp.close()
 
@@ -173,3 +175,4 @@ if __name__ == '__main__':
         message = 'No mode chosen'
         collect_agent.send_log(syslog.LOG_ERR, message)
         exit(message)
+

@@ -28,10 +28,13 @@
 
 """ Helpers of ftp_srv and ftp_clt jobs """
 
-""" Make the client downloads a single file once, after that the server stops.
-The path file needs to consider /srv/ as root """
-def ftp_single_download(scenario, client_entity, server_entity, server_ip, port,
+def ftp_single(scenario, client_entity, server_entity, server_ip, port, mode, 
 		file_path, user = None, password = None, blocksize = None):
+	"""File transfer (upload or download) between FTP server and client.
+	Create the server, then the client. The client uploads or downlaods
+	a single file, then the server stops.
+	The path file needs to consider /srv/ as root or home directory
+	"""
 	server = scenario.add_function('start_job_instance')
 	server.configure('ftp_srv', server_entity, server_ip = server_ip, 
 		port = port, user = user, password = password)
@@ -40,86 +43,43 @@ def ftp_single_download(scenario, client_entity, server_entity, server_ip, port,
 		wait_launched = [server], wait_delay = 1)
 	client.configure('ftp_clt', client_entity, server_ip = server_ip, 
 		port = port, user = user, password = password, 	
-		blocksize = blocksize, mode = 'download', 
+		blocksize = blocksize, mode = mode, 
 		own = { 'file_path': file_path })
 
 	stopper = scenario.add_function('stop_job_instance', 
 		wait_finished=[client])
-	stopper = configure(server)
+	stopper.configure(server)
 
 	return [server]
 
-""" Make the client uploads a single file once, after that the server stops.
-The path file needs to consider /srv/ as the home directory """
-def ftp_single_upload(scenario, client_entity, server_entity, server_ip, port,
-		file_path, user = None, password = None, blocksize = None):
+def ftp_multiple(scenario, client_entity, server_entity, server_ip, port, mode, 
+		file_path, multiple, user = None, password = None, 
+		blocksize = None):
+	"""Multiple file transfer (upload or download) between FTP server and client.
+	Create the server, then the client. The client uploads or downlaods
+	a single file multiple times, then the server stops.
+	The path file needs to consider /srv/ as root or home directory
+	"""
 	server = scenario.add_function('start_job_instance')
 	server.configure('ftp_srv', server_entity, server_ip = server_ip, 
 		port = port, user = user, password = password)
 
 	client = scenario.add_function('start_job_instance', 
 		wait_launched = [server], wait_delay = 1)
-	client.configure('ftp_clt', client_entity, server_ip = server_ip, 
-		port = port, user = user, password = password,
-		blocksize = blocksize, mode = 'upload',
+	client.configure('ftp_clt', client_entity, server_ip = server_ip, port = port, 
+		user = user, password = password, blocksize = blocksize, mode = mode,
 		own = { 'file_path': file_path })
 
-	stopper = scenario.add_function('stop_job_instance', 
-		wait_finished=[client])
-	stopper = configure(server)
+	for n in range(1, multiple):
+		client = scenario.add_function('start_job_instance',
+			wait_finished = [client])
+		client.configure('ftp_clt', client_entity, server_ip = server_ip, 
+			port = port, user = user, password = password, 
+			blocksize = blocksize, mode = mode, 
+			own = { 'file_path': file_path })
 
-	return [server]
-
-""" Make the client downloads a single file multiple time every interval
-during the predetermined duration, then it stops the client and the server. 
-The path file needs to consider /srv/ as root """
-def ftp_multiple_download(scenario, client_entity, server_entity, server_ip,
-		port, duration, interval, file_path, user = None, 
-		password = None, blocksize = None):
-	server = scenario.add_function('start_job_instance')
-	server.configure('ftp_srv', server_entity, server_ip = server_ip, 
-		port = port, user = user, password = password)
-
-	client = scenario.add_function('start_job_instance', 
-		wait_launched = [server], wait_delay = 1)
-	client.configure('ftp_clt', client_entity, Interval = interval,  
-		server_ip = server_ip, port = port, user = user, 
-		password = password, blocksize = blocksize, mode = 'download',
-		own = { 'file_path': file_path })
-
-	stop_clt = scenario.add_function('stop_job_instance', 
-		wait_delay = duration, wait_launcher = [client])
-	stop_clt.configure(client)
-
-	stop_srv = scenario.add_function('stop_job_instance', 
-		wait_finished=[stop_clt]) 
-	stop_srv.configure(server)
+	stopper = scenario.add_function('stop_job_instance',
+		wait_finished = [client])
+	stopper.configure(server)
 	
-	return [server]
-
-""" Make the client uploads a single file multiple time every interval during 
-the predetermined duration, then it stops the client and then the server.
-The path file needs to consider /srv/ as the home directory  """
-def ftp_multiple_download(scenario, client_entity, server_entity, server_ip, 
-		port, duration, interval, file_path, user = None, 
-		password = None, blocksize = None):
-	server = scenario.add_function('start_job_instance')
-	server.configure('ftp_srv', server_entity, server_ip = server_ip, 
-		port = port, user = user, password = password)
-
-	client = scenario.add_function('start_job_instance', 
-		wait_launched = [server],wait_delay = 1)
-	client.configure('ftp_clt', client_entity, Interval = interval,  
-		server_ip = server_ip, port = port, user = user,
-		password = password, blocksize = blocksize, mode = 'upload',
-		own = { 'file_path': file_path })
-
-	stop_clt = scenario.add_function('stop_job_instance', 
-		wait_delay = duration, wait_launcher = [client])
-	stop_clt.configure(client)
-
-	stop_srv = scenario.add_function('stop_job_instance', 
-		wait_finished=[stop_clt])
-	stop_srv.configure(server)
-
 	return [server]
