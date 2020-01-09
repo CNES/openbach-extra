@@ -42,24 +42,33 @@ from ftplib import FTP
 import time
 import os
 import random
-
 import collect_agent
 
-total_block_upld = 0
-block_upld = 0
-total_block_dwnld = 0
-block_dwnld = 0
-timer = 0
+class Stat_data:
+    block_len = 0
+    total_block_len = 0
+    timer = 0
 
-def handleUpload(block):
-    global timer, total_block_upld, block_upld
+def handleUpload(block, stat_data):
     timestamp = time.time() * 1000
-    total_block_upld += len(block)
-    block_upld += len(block)
-    if timestamp - timer >= 1000:
-       collect_agent.send_stat(int(timestamp), throughput_upload  = (block_upld*8000/(timestamp - timer)))
-       timer = timestamp
-       block_upld = 0
+    stat_data.block_len += len(block)
+    if timestamp - stat_data.timer >= 1000:
+        collect_agent.send_stat(int(timestamp), throughput_upload  = 
+            (stat_data.block_len*8000/(timestamp - stat_data.timer)))
+        stat_data.timer = timestamp
+        stat_data.total_block_len += stat_data.block_len
+        stat_data.block_len = 0
+
+def handleDownload(block, stat_data, file_download):
+    timestamp = time.time() * 1000
+    stat_data.block_len += len(block)
+    file_download.write(block)
+    if timestamp - stat_data.timer >= 1000:
+        collect_agent.send_stat(int(timestamp), throughput_download  = 
+            (stat_data.block_len*8000/(timestamp - stat_data.timer)))
+        stat_data.timer = timestamp
+        stat_data.total_block_len += stat_data.block_len
+        stat_data.block_len = 0
 
 def generate_path():
     #generate a random directory
@@ -69,36 +78,30 @@ def generate_path():
     return path + '/'
 
 def download(server_ip, port, user, password, blocksize, file_name):
-    global timer, total_block_dwnld, block_dwnld
+    stat_data = Stat_data()
     ftp = FTP()
     ftp.connect(server_ip,port)
     ftp.login(user,password)
     file_path = '/srv/' + generate_path()
     os.mkdir(file_path)
-
-    with open(file_path + file_name.split('/')[-1], 'wb') as file_download:
-        def handleDownload(block):
-            timestamp = time.time() * 1000
-            global timer, total_block_dwnld, block_dwnld
-            total_block_dwnld += len(block)
-            block_dwnld += len(block)
-            if timestamp - timer >= 1000:
-               collect_agent.send_stat(int(timestamp), 
-                 throughput_download = (block_dwnld*8000/(timestamp - timer)))
-               file_download.write(block)
-               timer = timestamp
-               block_dwnld = 0
-        timer = time.time() * 1000
-        ftp.retrbinary('RETR ' + file_name, handleDownload, blocksize)
+    
+    stat_data.timer = time.time() * 1000
+    file_download = open(file_path + file_name.split('/')[-1], 'wb')
+    ftp.retrbinary('RETR ' + file_name, lambda block: handleDownload(block, stat_data, file_download), blocksize)
+    
     timestamp = time.time() * 1000
-    collect_agent.send_stat(int(timestamp), throughput_download = (block_dwnld*8000/(timestamp-timer)))
-    collect_agent.send_stat(int(timestamp), total_blocksize_downloaded = total_block_dwnld * 8)
+    stat_data.total_block_len += stat_data.block_len
+    collect_agent.send_stat(int(timestamp), throughput_download = 
+        (stat_data.block_len*8000/(timestamp-stat_data.timer)))
+    collect_agent.send_stat(int(timestamp), total_blocksize_downloaded = 
+        (stat_data.total_block_len * 8))
+    
     ftp.close()
     os.remove(file_path +file_name.split('/')[-1])
     os.system('rm -r ' + file_path)
 
 def upload(server_ip, port, user, password, blocksize, file_name):
-    global timer, block_upld
+    stat_data = Stat_data()
     ftp = FTP()
     ftp.connect(server_ip,port)
     ftp.login(user,password)
@@ -107,12 +110,17 @@ def upload(server_ip, port, user, password, blocksize, file_name):
 
     ftp.mkd(file_path)
     file_upload = open('/srv/' + file_name, 'rb')
-    timer = time.time() * 1000
+    stat_data.timer = time.time() * 1000
+
     ftp.storbinary('STOR ' + file_path + file_name.split('/')[-1], file_upload,
-            blocksize, handleUpload)
+            blocksize, lambda block: handleUpload(block, stat_data))
+
     timestamp = time.time() * 1000
-    collect_agent.send_stat(int(timestamp), throughput_upload = (block_upld*8000/(timestamp-timer)))
-    collect_agent.send_stat(int(timestamp), total_blocksize_uploaded = total_block_upld * 8)
+    stat_data.total_block_len += stat_data.block_len
+    collect_agent.send_stat(int(timestamp), throughput_upload = 
+        (stat_data.block_len*8000/(timestamp-stat_data.timer)))
+    collect_agent.send_stat(int(timestamp), total_blocksize_uploaded = 
+        (stat_data.total_block_len * 8))
     ftp.close()
 
 def build_parser():

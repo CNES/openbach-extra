@@ -83,26 +83,31 @@ def build(client, server, server_ip, port, mode, file_path, multiple,
     start_scenario_core = scenario.add_function('start_scenario_instance')
     if mode == 'download':
         name_stat = 'throughput_sent'
-    else: 
+        server_leg = 'sent'
+        client_leg = 'received'
+    elif mode == 'upload': 
         name_stat = 'throughput_received'
-
+        server_leg = 'received'
+        client_leg = 'sent'
+    else :
+        raise ValueError('Mode must be "upload" or "download"')
 
     if multiple > 1:
-        legend = [["Server's throughput"]]
+        legend = [["Server throughput " + server_leg]]
         for n in range(1, multiple + 1) :
-            legend.append(["Client_" + str(n) + "' throughput"])
+            legend.append(["Client_" + str(n) + " throughput " + client_leg])
         scenario_core = service_m(client, server, multiple)
         start_scenario_core.configure(scenario_core, server_ip = server_ip, port = port,
             mode = mode, file_path = file_path, user = user, password = password, 
             blocksize = blocksize)
     elif multiple == 1 :
-        legend = [["Server's throughput"], ["Client's throughput"]]
+        legend = [["Server throughput " + server_leg], ["Client throughput " + client_leg]]
         scenario_core = service_s(client, server)
         start_scenario_core.configure(scenario_core, server_ip = server_ip, port = port,
             mode = mode, file_path = file_path, user = user, password = password, 
             blocksize = blocksize)
     else :
-        raise ValueError("Number of transfered file needs to be > 0")
+        raise ValueError("Multiple must be > 0")
 
     #Post processing part
     if post_processing_entity is not None:
