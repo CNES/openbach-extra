@@ -48,10 +48,11 @@ import syslog
 import collect_agent
 import json
 import re
+import sys
 
-PROC = None
-LOG_RCV = None
-STAT_RCV = None
+
+DFLT_TAPNAME = 'opensand_tap'
+DFLT_BRNAME = 'opensand_br'
 PATTERN = re.compile(r'\[(?P<timestamp>[^\]]+)\]\[\s*(?P<log_level>\w+)\] (?P<log_name>[^:]+): (?P<log_message>.*)')
 LEVELS = {
     'DEBUG': syslog.LOG_DEBUG,
@@ -61,6 +62,9 @@ LEVELS = {
     'ERROR': syslog.LOG_ERR,
     'CRITICAL': syslog.LOG_CRIT,
 }
+PROC = None
+LOG_RCV = None
+STAT_RCV = None
 
 
 def run_entity(command, addr, logs_port, stats_port):
@@ -70,20 +74,21 @@ def run_entity(command, addr, logs_port, stats_port):
 
     if command is None:
         return
-    command += ' -r {} -l {} -s {}'.format(addr, logs_port, stats_port)
+    command.extend([
+        '-r', addr,
+        '-l', str(logs_port),
+        '-s', str(stats_port),
+    ])
 
     signal.signal(signal.SIGINT, stop_entity)
     signal.signal(signal.SIGTERM, stop_entity)
 
-    collect_agent.register_collect(
-        '/opt/openbach/agent/jobs/opensand/opensand_rstats_filter.conf',
-    )
     LOG_RCV = MessageReceiver(addr, logs_port, forward_log)
     STAT_RCV = MessageReceiver(addr, stats_port, forward_stat)
 
     LOG_RCV.start()
     STAT_RCV.start()
-    PROC = subprocess.Popen(command.split())
+    PROC = subprocess.Popen(command)
 
     PROC.wait()
 
@@ -165,9 +170,9 @@ class MessageReceiver(threading.Thread):
         rcv_sock.close()
 
 
-def ipv4_address(text):
+def ip_address(text):
     '''
-    Check a text represents an IPv4 address
+    Check a text represents an IP address
 
     Args:
         text   text to check
@@ -176,9 +181,9 @@ def ipv4_address(text):
     return text
 
 
-def ipv4_address_netdigit(text):
+def ip_address_mask(text):
     '''
-    Check a text represents an IPv4 address and a net digit
+    Check a text represents an IP address and a net digit
 
     Args:
         text   text to check
@@ -218,9 +223,9 @@ if __name__ == '__main__':
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     action_cmd = parser.add_subparsers(
-        dest='action',
-        metavar='action',
-        help='the OpenSAND action',
+        dest='action_type',
+        metavar='action_type',
+        help='the OpenSAND action type',
     )
     action_cmd.required = True
 
@@ -229,32 +234,51 @@ if __name__ == '__main__':
         'network',
         help='Configure the network for an OpenSAND entity',
     )
-    net_entity_cmd = net_parser.add_subparsers(
-        dest='entity',
-        metavar='entity',
-        help='the OpenSAND entity type',
+    net_parser.add_argument(
+        '-t',
+        '--tap-name',
+        type=str,
+        default=DFLT_TAPNAME,
+        help='the TAP interface name (default: {})'.format(DFLT_TAPNAME),
     )
-    net_entity_cmd.required = True
+    net_parser.add_argument(
+        '-b',
+        '--bridge-name',
+        type=str,
+        default=DFLT_BRNAME,
+        help='the bridge name (default: {})'.format(DFLT_BRNAME),
+    )
 
-    net_st_parser = net_entity_cmd.add_parser(
-        'st',
-        help='Satellite Terminal',
+    subaction_cmd = net_parser.add_subparsers(
+        dest='action',
+        metavar='action',
+        help='the action to perform',
     )
-    net_gw_parser = net_entity_cmd.add_parser(
-        'gw',
-        help='Gateway',
+    subaction_cmd.required = True
+
+    ip_parser = subaction_cmd.add_parser(
+        onu.IP_TYPE,
+        help='create interfaces to connect an IP terrestrial network',
     )
-    net_sat_parser = net_entity_cmd.add_parser(
-        'sat',
-        help='Satellite',
+    ip_parser.add_argument(
+        'address_mask',
+        type=ip_address_mask,
+        help='the terrestrial network address (format: "ADDRESS/NET_DIGIT")',
     )
-    net_gw_net_acc_parser = net_entity_cmd.add_parser(
-        'gw-net-acc',
-        help='Gateway (network and access layers)',
+
+    eth_parser = subaction_cmd.add_parser(
+        onu.ETH_TYPE,
+        help='create interfaces to connect an Ethernet terrestrial network',
     )
-    net_gw_phy_parser = net_entity_cmd.add_parser(
-        'gw-phy',
-        help='Gateway (physical layer)',
+    eth_parser.add_argument(
+        'interface',
+        type=existing_iface,
+        help='the terrestrial network interface',
+    )
+
+    clear_parser = subaction_cmd.add_parser(
+        'clear',
+        help='clear interfaces to connect terrestrial network',
     )
 
     # Run parsers
@@ -262,6 +286,31 @@ if __name__ == '__main__':
         'run',
         help='Run an OpenSAND entity',
     )
+    run_parser.add_argument(
+        '--output-addr',
+        type=str,
+        default='127.0.0.1',
+        help='The internal output address (format: "ADDRESS")',
+    )
+    run_parser.add_argument(
+        '--logs-port',
+        type=udp_port,
+        default=63000,
+        help='The internal logs UDP port',
+    )
+    run_parser.add_argument(
+        '--stats-port',
+        type=udp_port,
+        default=63001,
+        help='The internal stats UDP port',
+    )
+    run_parser.add_argument(
+        '--bin-dir',
+        type=str,
+        default='/usr/bin/',
+        help='The directory of OpenSAND binaries',
+    )
+
     run_entity_cmd = run_parser.add_subparsers(
         dest='entity',
         metavar='entity',
@@ -290,243 +339,110 @@ if __name__ == '__main__':
         help='Gateway (physical layer)',
     )
 
-    for p in [ net_st_parser, net_gw_parser, net_gw_net_acc_parser, net_gw_phy_parser,
-               run_st_parser, run_gw_parser, run_gw_net_acc_parser, run_gw_phy_parser ]:
+    for p in [ run_st_parser, run_gw_parser, run_gw_net_acc_parser, run_gw_phy_parser ]:
         p.add_argument(
-            '-i',
-            '--id',
+            'id',
             type=int,
-            required=True,
             help='the OpenSAND entity identifier',
-        )
-
-    for p in [ net_st_parser, net_gw_parser, net_gw_net_acc_parser ]:
-        p.add_argument(
-            '-t',
-            '--type',
-            choices=onu.ALL_TYPES,
-            default=onu.DEFAULT_TYPE,
-            help='the type of the terrestrial network',
-        )
-        p.add_argument(
-            '-n',
-            '--net-iface',
-            type=existing_iface,
-            required=True,
-            help='the terrestrial network interface',
-        )
-        p.add_argument(
-            '--net-addr',
-            type=ipv4_address_netdigit,
-            default=None,
-            help='the terrestrial network address (format: "ADDRESS/NET_DIGIT")',
-        )
-
-    for p in [ net_st_parser, net_gw_parser, net_gw_phy_parser, net_sat_parser ]:
-        p.add_argument(
-            '-e',
-            '--emu-iface',
-            type=existing_iface,
-            required=True,
-            help='the emulation interface',
-        )
-
-    for p in [ net_st_parser, net_gw_parser, net_gw_phy_parser, net_sat_parser]:
-        p.add_argument(
-            '-a',
-            '--emu-addr',
-            type=ipv4_address_netdigit,
-            required=True,
-            help='the emulation address (format: "ADDRESS/NET_DIGIT")',
         )
 
     for p in [ run_st_parser, run_gw_parser, run_gw_phy_parser, run_sat_parser ]:
         p.add_argument(
-            '-a',
-            '--emu-addr',
-            type=ipv4_address,
-            required=True,
+            'emu_addr',
+            type=ip_address,
             help='the emulation address (format: "ADDRESS")',
-        )
-
-    for p in [ net_gw_net_acc_parser, net_gw_phy_parser ]:
-        p.add_argument(
-            '-o',
-            '--interco-iface',
-            type=existing_iface,
-            required=True,
-            help='the interconnection interface',
-        )
-        p.add_argument(
-            '--interco-addr',
-            type=ipv4_address_netdigit,
-            required=True,
-            help='the interconnection address (format: "ADDRESS/NET_DIGIT")',
         )
 
     for p in [ run_gw_net_acc_parser, run_gw_phy_parser ]:
         p.add_argument(
-            '--interco-addr',
-            type=ipv4_address,
-            required=True,
+            'interco_addr',
+            type=ip_address,
             help='the remote interconnection address (format: "ADDRESS")',
-        )
-
-    for p in [ net_st_parser, net_gw_parser, net_gw_net_acc_parser ]:
-        p.add_argument(
-            '--int-addr',
-            type=ipv4_address_netdigit,
-            default=None,
-            help='the internal address (format: "ADDRESS/NET_DIGIT")',
-        )
-
-    for p in [ net_st_parser, net_gw_parser, net_gw_net_acc_parser, net_gw_phy_parser, net_sat_parser ]:
-        p.add_argument(
-            '-r',
-            '--revert',
-            action='store_false',
-            dest='configure',
-            help='revert the current network configuration',
         )
 
     for p in [ run_st_parser, run_gw_parser, run_gw_net_acc_parser, run_gw_phy_parser, run_sat_parser ]:
         p.add_argument(
-            '-c',
-            '--conf',
+            'conf',
             type=str,
-            required=True,
             help='The directory of the OpenSAND entity configuration',
         )
+
+    for p in [ run_st_parser, run_gw_parser, run_gw_net_acc_parser ]:
         p.add_argument(
-            '--output-addr',
+            '-t',
+            '--tap-name',
             type=str,
-            default='127.0.0.1',
-            help='The output address (format: "ADDRESS")',
-        )
-        p.add_argument(
-            '--logs-port',
-            type=udp_port,
-            default=63000,
-            help='The logs UDP port',
-        )
-        p.add_argument(
-            '--stats-port',
-            type=udp_port,
-            default=63001,
-            help='The stats UDP port',
-        )
-        p.add_argument(
-            '--bin-dir',
-            type=str,
-            default='/usr/bin/',
-            help='The directory of OpenSAND entities binaries',
+            default=DFLT_TAPNAME,
+            help='the TAP interface name (default: {})'.format(DFLT_TAPNAME),
         )
 
     args = parser.parse_args()
-    if args.action == 'run':
+
+    collect_agent.register_collect(
+        '/opt/openbach/agent/jobs/opensand/opensand_rstats_filter.conf',
+    )
+
+    if args.action_type == 'network':
+
+        try:
+            if args.action == onu.IP_TYPE:
+                onu.create_tap_iface(args.tap_name)
+                onu.set_up(args.tap_name)
+                onu.create_bridge(args.bridge_name, [ args.tap_name ])
+                onu.set_up(args.bridge_name)
+
+                onu.add_address(args.bridge_name, args.address_mask)
+
+            elif args.action == onu.ETH_TYPE:
+                onu.create_tap_iface(args.tap_name)
+                onu.set_up(args.tap_name)
+                onu.create_bridge(args.bridge_name, [ args.tap_name, args.interface ])
+                onu.set_up(args.bridge_name)
+
+            elif args.action == 'clear':
+                onu.delete_iface(args.bridge_name)
+                onu.delete_iface(args.tap_name)
+        except onu.NetworkUtilsError as err:
+            collect_agent.send_message(syslog.LOG_ERR, str(err))
+            sys.exit(-1)
+
+    elif args.action_type == 'run':
         command = None
         if args.entity == 'sat':
-            command = '{}/{} -a {} -c {}'.format(
-                args.bin_dir,
-                args.entity,
-                args.emu_addr,
-                args.conf,
-            )
+            command = [
+                '{}/{}'.format(args.bin_dir, args.entity),
+                '-a', args.emu_addr,
+                '-c', args.conf,
+            ]
         elif args.entity in [ 'st', 'gw' ]:
-            command = '{}/{} -i {} -a {} -t {}{}tap -c {}'.format(
-                args.bin_dir,
-                args.entity,
-                args.id,
-                args.emu_addr,
-                args.entity,
-                args.id,
-                args.conf,
-            )
+            command = [
+                '{}/{}'.format(args.bin_dir, args.entity),
+                '-i', args.id,
+                '-a', args.emu_addr,
+                '-t', args.tap_name,
+                '-c', args.conf,
+            ]
         elif args.entity == 'gw-net-acc':
-            command = '{}/{} -i {} -t {}{}tap -w {} -c {}'.format(
-                args.bin_dir,
-                args.entity,
-                args.id,
-                args.entity,
-                args.id,
-                args.interco_addr,
-                args.conf,
-            )
+            command = [
+                '{}/{}'.format(args.bin_dir, args.entity),
+                '-i', args.id,
+                '-t', args.tap_name,
+                '-w', args.interco_addr,
+                '-c', args.conf,
+            ]
         elif args.entity == 'gw-phy':
-            command = '{}/{} -i {} -a {} -w {} -c {}'.format(
-                args.bin_dir,
-                args.entity,
-                args.id,
-                args.emu_addr,
-                args.interco_addr,
-                args.conf,
+            command = [
+                '{}/{}'.format(args.bin_dir, args.entity),
+                '-i', args.id,
+                '-a', args.emu_addr,
+                '-w', args.interco_addr,
+                '-c', args.conf,
+            ]
+        else:
+            collect_agent.send_message(
+                syslog.LOG_ERR,
+                'The OpenSAND entity "{}" is not handled by this script'.format(args.entity)
             )
+            sys.exit(-1)
 
         run_entity(command, args.output_addr, args.logs_port, args.stats_port)
-
-    elif args.action == 'network':
-        if args.entity == 'sat':
-            onu.host_sat(
-                args.entity,
-                args.emu_iface,
-                args.emu_addr,
-                args.configure,
-            )
-
-        elif args.entity in [ 'gw', 'st' ]:
-            if args.type == onu.IP_TYPE:
-                onu.host_ground_ip(
-                    '{}{}'.format(args.entity, args.id),
-                    args.emu_iface,
-                    args.net_iface,
-                    args.emu_addr,
-                    args.net_addr,
-                    args.int_addr,
-                    args.configure,
-                )
-
-            elif args.type == onu.ETH_TYPE:
-                onu.host_ground_eth(
-                    '{}{}'.format(args.entity, args.id),
-                    args.emu_iface,
-                    args.net_iface,
-                    args.emu_addr,
-                    args.configure,
-                )
-
-            else:
-                raise ValueError('Unexpected type value "{}"'.format(args.type))
-
-        elif args.entity == 'gw-net-acc':
-            if args.type == onu.IP_TYPE:
-                onu.host_ground_net_acc_ip(
-                    '{}{}'.format(args.entity, args.id),
-                    args.interco_iface,
-                    args.net_iface,
-                    args.interco_addr,
-                    args.net_addr,
-                    args.int_addr,
-                    args.configure,
-                )
-
-            elif args.type == onu.ETH_TYPE:
-                onu.host_ground_net_acc_eth(
-                    '{}{}'.format(args.entity, args.id),
-                    args.interco_iface,
-                    args.net_iface,
-                    args.interco_addr,
-                    args.configure,
-                )
-
-            else:
-                raise ValueError('Unexpected type value "{}"'.format(args.type))
-
-        elif args.entity == 'gw-phy':
-            onu.host_ground_phy(
-                '{}{}'.format(args.entity, args.id),
-                args.emu_iface,
-                args.interco_iface,
-                args.emu_addr,
-                args.interco_addr,
-                args.configure,
-            )

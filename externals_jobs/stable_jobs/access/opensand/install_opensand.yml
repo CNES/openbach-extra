@@ -40,7 +40,7 @@
   set_fact:
     opensand_repository_url: "{{ opensand_repository_url | default('http://packages.net4sat.org/opensand/') }}"
     opensand_repository_distribution: "{{ opensand_repository_distribution | default('xenial') }}"
-    opensand_repository_component: "{{ opensand_repository_component | default('stable') }}"
+    opensand_repository_component: "{{ opensand_repository_component | default('dev') }}"
 
 - name: Create OpenSAND Job directory
   file:
@@ -84,14 +84,8 @@
     update_cache: yes
   with_items:
     - opensand-core
+    - opensand-network
     - libopensand-gse-encap-plugin
     - libopensand-rle-encap-plugin
   register: install
   become: yes
-
-- name: Set rsyslog configuration
-  template: src=rsyslog.j2 dest=/etc/rsyslog.d/10-{{ job_name }}.conf
-  become: yes
-  vars:
-    - syslogseverity: 4
-    - collector_ip: "{{ openbach_collector }}"

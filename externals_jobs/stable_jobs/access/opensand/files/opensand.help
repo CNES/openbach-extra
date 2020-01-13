@@ -7,7 +7,7 @@ Read the documentation and more at http://opensand.org/support/wiki/doku.php?id=
 
 Design Principles
 =================
-The Job opensand will install the package opensand-daemon. When launched, it configures the network or starts the emulator as the expected entity (ST, GW, SAT or NONE).
+The Job opensand will install the package opensand-core and dependencies. It permits to configure a connection with a terrestrial network and to run the emulation of a Satcom entity.
 
 Get Involved
 ============

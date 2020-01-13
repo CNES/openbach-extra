@@ -39,7 +39,7 @@
   set_fact:
     opensand_repository_url: "{{ opensand_repository_url | default('http://packages.net4sat.org/opensand/') }}"
     opensand_repository_distribution: "{{ opensand_repository_distribution | default('xenial') }}"
-    opensand_repository_component: "{{ opensand_repository_component | default('stable') }}"
+    opensand_repository_component: "{{ opensand_repository_component | default('dev') }}"
 
 - name: Delete OpenSAND Job repository
   file:
@@ -57,6 +57,7 @@
     - libopensand-gse-encap-plugin
     - libopensand-rle-encap-plugin
     - opensand-core
+    - opensand-network
     - libopensand-plugin
     - libopensand-rt
     - libopensand-conf
@@ -70,10 +71,4 @@
     repo: "deb {{ opensand_repository_url }} {{ opensand_repository_distribution }} {{ opensand_repository_component }}"
     state: absent
     update_cache: yes
-  become: yes
-
-- name: Delete Rsyslog configuration
-  file:
-    path: /etc/rsyslog.d/10-{{ job_name }}.conf
-    state: absent
   become: yes
