@@ -51,7 +51,7 @@ def main(scenario_name='generate_network_rate', argv=None):
     observer.add_scenario_argument(
             '--duration', default=30, help='duration of iperf3/nuttcp tests')
     observer.add_scenario_argument(
-            '--command_port', default=8000, help='The port of nuttcp server for signalling')
+            '--command_port', default=7001, help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
             '--rate', help='Set a higher rate (in kb/s) than what you estimate between server and client '
             'for the UDP test (add m/g to set M/G b/s)', required=True)
