@@ -53,7 +53,7 @@ import sys
 
 DFLT_TAPNAME = 'opensand_tap'
 DFLT_BRNAME = 'opensand_br'
-PATTERN = re.compile(r'\[(?P<timestamp>[^\]]+)\]\[\s*(?P<log_level>\w+)\] (?P<log_name>[^:]+): (?P<log_message>.*)')
+PATTERN = re.compile(r'\[(?P<timestamp>[^\]]+)\]\[\s*(?P<log_level>\w+)\]\[(?P<log_name>[^:]+)\](?P<log_message>.*)')
 LEVELS = {
     'DEBUG': syslog.LOG_DEBUG,
     'INFO': syslog.LOG_INFO,
@@ -88,9 +88,24 @@ def run_entity(command, addr, logs_port, stats_port):
 
     LOG_RCV.start()
     STAT_RCV.start()
-    PROC = subprocess.Popen(command)
+    PROC = subprocess.Popen(command, stderr=subprocess.PIPE)
 
     PROC.wait()
+    if PROC.returncode:
+        error = PROC.stderr.read().decode()
+        if any(
+                err in error
+                for err in {'File exists', 'No such process'}
+                ):
+            message = 'WARNING: {} exited with non-zero return value ({}): {}'.format(
+                command, PROC.returncode, error)
+            collect_agent.send_log(syslog.LOG_WARNING, message)
+            sys.exit(0)
+        else:
+            message = 'ERROR: {} exited with non-zero return value ({})'.format(
+                command, PROC.returncode)
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            sys.exit(message)
 
 
 def stop_entity(signum, frame):
@@ -121,16 +136,16 @@ def forward_stat(payload, src_addr, src_port):
 
 def forward_log(payload, src_addr, src_port):
     global PATTERN
-    
-    match = PATTERN.match(payload.decode())
+
+    match = PATTERN.match(payload.decode().rstrip())
     if not match:
         return
-    level = LEVELS.get(match.group(1))
+    level = LEVELS.get(match.group(2))
     if level is None:
         return
-    collect_agent.send_message(
+    collect_agent.send_log(
         level, 
-        '{}: {}'.format(match.group(2), match.group(3)),
+        '[{}]{}'.format(match.group(3), match.group(4)),
     )
 
 
@@ -417,7 +432,7 @@ if __name__ == '__main__':
         elif args.entity in [ 'st', 'gw' ]:
             command = [
                 '{}/{}'.format(args.bin_dir, args.entity),
-                '-i', args.id,
+                '-i', str(args.id),
                 '-a', args.emu_addr,
                 '-t', args.tap_name,
                 '-c', args.conf,
@@ -425,7 +440,7 @@ if __name__ == '__main__':
         elif args.entity == 'gw-net-acc':
             command = [
                 '{}/{}'.format(args.bin_dir, args.entity),
-                '-i', args.id,
+                '-i', str(args.id),
                 '-t', args.tap_name,
                 '-w', args.interco_addr,
                 '-c', args.conf,
@@ -433,7 +448,7 @@ if __name__ == '__main__':
         elif args.entity == 'gw-phy':
             command = [
                 '{}/{}'.format(args.bin_dir, args.entity),
-                '-i', args.id,
+                '-i', str(args.id),
                 '-a', args.emu_addr,
                 '-w', args.interco_addr,
                 '-c', args.conf,
