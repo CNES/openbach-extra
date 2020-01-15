@@ -28,7 +28,7 @@
 
 """ Helpers of histogram job """
 
-def cdf_on_same_graph (scenario, pp_entity, jobs_to_pp, bins, statistics, label, title, legend, wait_finished=None, wait_launched=None, wait_delay=0):
+def cdf_on_same_graph (scenario, pp_entity, jobs_to_pp, bins, statistics, label, title, legend, no_suffix=False, wait_finished=None, wait_launched=None, wait_delay=0):
 
     histogram = scenario.add_function(
             'start_job_instance',
@@ -40,6 +40,7 @@ def cdf_on_same_graph (scenario, pp_entity, jobs_to_pp, bins, statistics, label,
             jobs=[jobs_to_pp],
             bins=bins,
             statistics=statistics,
+            no_suffix=no_suffix,
             label=label,
             title=title,
             legend=legend,
@@ -47,7 +48,7 @@ def cdf_on_same_graph (scenario, pp_entity, jobs_to_pp, bins, statistics, label,
 
     return [histogram]
 
-def pdf_on_same_graph (scenario, pp_entity, jobs_to_pp, bins, statistics, label, title, legend, wait_finished=None, wait_launched=None, wait_delay=0):
+def pdf_on_same_graph (scenario, pp_entity, jobs_to_pp, bins, statistics, label, title, legend, no_suffix=False, wait_finished=None, wait_launched=None, wait_delay=0):
 
     histogram = scenario.add_function(
             'start_job_instance',
@@ -59,6 +60,7 @@ def pdf_on_same_graph (scenario, pp_entity, jobs_to_pp, bins, statistics, label,
             jobs=[jobs_to_pp],
             bins=bins,
             statistics=statistics,
+            no_suffix=no_suffix,
             label=label,
             title=title,
             legend=legend,
