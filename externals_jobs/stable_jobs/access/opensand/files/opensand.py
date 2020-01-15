@@ -302,6 +302,12 @@ if __name__ == '__main__':
         help='Run an OpenSAND entity',
     )
     run_parser.add_argument(
+        '--conf-dir',
+        type=str,
+        default='/etc/opensand/',
+        help='The directory of the OpenSAND entity configuration',
+    )
+    run_parser.add_argument(
         '--output-addr',
         type=str,
         default='127.0.0.1',
@@ -375,13 +381,6 @@ if __name__ == '__main__':
             help='the remote interconnection address (format: "ADDRESS")',
         )
 
-    for p in [ run_st_parser, run_gw_parser, run_gw_net_acc_parser, run_gw_phy_parser, run_sat_parser ]:
-        p.add_argument(
-            'conf',
-            type=str,
-            help='The directory of the OpenSAND entity configuration',
-        )
-
     for p in [ run_st_parser, run_gw_parser, run_gw_net_acc_parser ]:
         p.add_argument(
             '-t',
@@ -427,7 +426,7 @@ if __name__ == '__main__':
             command = [
                 '{}/{}'.format(args.bin_dir, args.entity),
                 '-a', args.emu_addr,
-                '-c', args.conf,
+                '-c', args.conf_dir,
             ]
         elif args.entity in [ 'st', 'gw' ]:
             command = [
@@ -435,7 +434,7 @@ if __name__ == '__main__':
                 '-i', str(args.id),
                 '-a', args.emu_addr,
                 '-t', args.tap_name,
-                '-c', args.conf,
+                '-c', args.conf_dir,
             ]
         elif args.entity == 'gw-net-acc':
             command = [
@@ -443,7 +442,7 @@ if __name__ == '__main__':
                 '-i', str(args.id),
                 '-t', args.tap_name,
                 '-w', args.interco_addr,
-                '-c', args.conf,
+                '-c', args.conf_dir,
             ]
         elif args.entity == 'gw-phy':
             command = [
@@ -451,7 +450,7 @@ if __name__ == '__main__':
                 '-i', str(args.id),
                 '-a', args.emu_addr,
                 '-w', args.interco_addr,
-                '-c', args.conf,
+                '-c', args.conf_dir,
             ]
         else:
             collect_agent.send_message(

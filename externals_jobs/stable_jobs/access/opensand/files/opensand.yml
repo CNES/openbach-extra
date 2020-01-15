@@ -65,6 +65,11 @@ arguments:
         - name: run
           required:
           optional:
+            - name: configuration
+              type: str
+              count: 1
+              flag: '--conf-dir'
+              description: 'The directory of the OpenSAND entity configuration (default: /etc/opensand)'
             - name: output_address
               type: ip
               count: 1
@@ -95,10 +100,6 @@ arguments:
                       type: ip
                       count: 1
                       description: 'The emulation address (format: "ADDRESS")'
-                    - name: configuration
-                      type: str
-                      count: 1
-                      description: The directory of the OpenSAND entity configuration
                   optional:
                 - name: gw
                   required:
@@ -110,10 +111,6 @@ arguments:
                       type: ip
                       count: 1
                       description: 'The emulation address (format: "ADDRESS")'
-                    - name: configuration
-                      type: str
-                      count: 1
-                      description: The directory of the OpenSAND entity configuration
                   optional:
                 - name: gw-phy
                   required:
@@ -129,10 +126,6 @@ arguments:
                       type: ip
                       count: 1
                       description: 'The remote interconnection address (format: "ADDRESS")'
-                    - name: configuration
-                      type: str
-                      count: 1
-                      description: The directory of the OpenSAND entity configuration
                   optional:
                 - name: gw-net-acc
                   required:
@@ -144,10 +137,6 @@ arguments:
                       type: ip
                       count: 1
                       description: 'The remote interconnection address (format: "ADDRESS")'
-                    - name: configuration
-                      type: str
-                      count: 1
-                      description: The directory of the OpenSAND entity configuration
                   optional:
                 - name: st
                   required:
@@ -159,10 +148,6 @@ arguments:
                       type: ip
                       count: 1
                       description: 'The emulation address (format: "ADDRESS")'
-                    - name: configuration
-                      type: str
-                      count: 1
-                      description: The directory of the OpenSAND entity configuration
                   optional:
 
 statistics:
