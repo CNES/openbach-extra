@@ -410,13 +410,11 @@ if __name__ == '__main__':
                 try:
                     ipaddress.IPv4Network(args.address_mask, False)
                     onu.enable_ipv4_forward()
-                    onu.enable_ipv4_forwarding(args.bridge_name)
                 except ipaddress.AddressValueError:
                     pass
                 try:
                     ipaddress.IPv6Network(args.address_mask, False)
                     onu.enable_ipv6_forward()
-                    onu.enable_ipv6_forwarding(args.bridge_name)
                 except ipaddress.AddressValueError:
                     pass
               
