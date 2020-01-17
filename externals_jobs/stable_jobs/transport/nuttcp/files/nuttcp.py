@@ -33,6 +33,7 @@ __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
  * Alban FRICOT <africot@toulouse.viveris.com>
  * David PRADAS <david.pradas@toulouse.viveris.com>
+ * Matthieu PETROU <matthieu.petrou@toulouse.viveris.com>
 '''
 
 
@@ -47,10 +48,48 @@ from collections import defaultdict
 
 import collect_agent
 
-TCP_STAT = re.compile(r'megabytes=(?P<data_sent>[0-9\.]+) real_sec=(?P<time>[0-9\.]+) rate_Mbps=(?P<rate>[0-9\.]+)( retrans=(?P<retransmissions>[0-9]+))?( cwnd=(?P<cwnd>[0-9]+))? total_megabytes=(?P<total_data_sent>[0-9\.]+) total_real_sec=(?P<total_time>[0-9\.]+) total_rate_Mbps=(?P<mean_rate>[0-9\.]+)( retrans=(?P<total_retransmissions>[0-9]+))?')
-TCP_END_STAT = re.compile(r'megabytes=[0-9\.]+ real_seconds=[0-9\.]+ rate_Mbps=[0-9\.]+')
-UDP_STAT = re.compile(r'megabytes=(?P<data_sent>[0-9\.]+) real_sec=(?P<time>[0-9\.]+) rate_Mbps=(?P<rate>[0-9\.]+) drop=(?P<lost_pkts>[0-9]+) pkt=(?P<sent_pkts>[0-9]+) data_loss=(?P<data_loss>[0-9\.]+) total_megabytes=(?P<total_data_sent>[0-9\.]+) total_real_sec=(?P<total_time>[0-9\.]+) total_rate_Mbps=(?P<total_rate>[0-9\.]+) drop=(?P<total_lost_pkts>[0-9]+) pkt=(?P<total_sent_pkts>[0-9]+) data_loss=(?P<total_data_loss>[0-9\.]+)')
-UDP_END_STAT = re.compile(r'megabytes=[0-9\.]+ real_seconds=[0-9\.]+ rate_Mbps=[0-9\.]+')
+TCP_STAT = re.compile(
+    r"""megabytes=(?P<data_sent>[0-9\.]+) """
+    """real_sec=[0-9\.]+ """
+    """rate_Mbps=(?P<rate>[0-9\.]+)( """
+    """retrans=(?P<retransmissions>[0-9]+))?( """
+    """cwnd=(?P<cwnd>[0-9]+))? """
+    """total_megabytes=(?P<total_data_sent>[0-9\.]+) """
+    """total_real_sec=[0-9\.]+ """
+    """total_rate_Mbps=([0-9\.]+)( """
+    """retrans=(?P<total_retransmissions>[0-9]+))?""")
+TCP_END_STAT = re.compile(
+    r"""megabytes=(?P<total_data_sent>[0-9\.]+) """
+    """real_seconds=[0-9\.]+ """
+    """rate_Mbps=[0-9\.]+ """
+    """tx_cpu=[0-9\.]+ """
+    """rx_cpu=[0-9\.]+ """
+    """retrans=(?P<retransmissions>[0-9]+) """
+    """cwnd=(?P<cwnd>[0-9]+) """
+    """rtt_ms=(?P<rtt>[0-9\.]+)""")
+
+UDP_STAT = re.compile(
+    r"""megabytes=(?P<data_sent>[0-9\.]+) """
+    """real_sec=[0-9\.]+ """
+    """rate_Mbps=(?P<rate>[0-9\.]+) """
+    """drop=(?P<lost_pkts>[0-9]+) """
+    """pkt=(?P<sent_pkts>[0-9]+) """
+    """data_loss=(?P<data_loss>[0-9\.]+) """
+    """total_megabytes=(?P<total_data_sent>[0-9\.]+) """
+    """total_real_sec=[0-9\.]+ """
+    """total_rate_Mbps=[0-9\.]+ """
+    """drop=(?P<total_lost_pkts>[0-9]+) """
+    """pkt=(?P<total_sent_pkts>[0-9]+) """
+    """data_loss=(?P<total_data_loss>[0-9\.]+)""")
+UDP_END_STAT = re.compile(
+    r"""megabytes=(?P<total_data_sent>[0-9\.]+) """
+    """real_seconds=[0-9\.]+ """
+    """rate_Mbps=[0-9\.]+ """
+    """tx_cpu=[0-9\.]+ """
+    """rx_cpu=[0-9\.]+ """
+    """drop=(?P<total_lost_pkts>[0-9]+) """
+    """pkt=(?P<total_sent_pkts>[0-9]+) """
+    """data_loss=(?P<total_data_loss>[0-9\.]+)""")
 
 def _command_build_helper(flag, value):
     if value is not None:
@@ -96,11 +135,12 @@ def client(
     else:
         STAT = TCP_STAT
         END_STAT = TCP_END_STAT
-
+    
     # Launch client
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
-    while True:
+    check_end = True
+    while check_end:
         # Iterate while process is running
         if p.poll() is not None:
                 break
@@ -109,9 +149,9 @@ def client(
         line = p.stdout.readline().decode()
         # Check for last line
         if END_STAT.search(line):
-            break
-
-        # Else, get stats and send them
+            check_end = False
+            STAT = END_STAT
+        # Get stats and send them
         try:
             statistics = STAT.search(line).groupdict()
         except AttributeError:
@@ -123,12 +163,12 @@ def client(
         statistics = {
                 k: (
                     float(v)*1024*1024 if k in
-                    {'data_sent', 'rate', 'mean_rate', 'total_data_sent'}
+                    {'data_sent', 'total_data_sent'}
+                    else float(v)*1000*1000 if k in {'rate'}
                     else float(v))
                 for k, v in statistics.items()
         }
         collect_agent.send_stat(timestamp, **statistics)
-
 
 if __name__ == "__main__":
     # Define Usage
