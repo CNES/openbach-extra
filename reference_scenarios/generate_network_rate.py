@@ -49,7 +49,7 @@ def main(scenario_name='generate_network_rate', argv=None):
     observer.add_scenario_argument(
             '--port', default=7000,  help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
-            '--duration', default=20, help='duration of iperf3/nuttcp tests')
+            '--duration', default=30, help='duration of iperf3/nuttcp tests')
     observer.add_scenario_argument(
             '--command_port', default=8000, help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
