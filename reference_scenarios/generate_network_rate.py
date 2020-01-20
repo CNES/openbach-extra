@@ -49,14 +49,14 @@ def main(scenario_name='generate_network_rate', argv=None):
     observer.add_scenario_argument(
             '--port', default=7000,  help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
-            '--duration', default=30, help='duration of iperf3/nuttcp tests')
+            '--duration', default=20, help='duration of iperf3/nuttcp tests')
     observer.add_scenario_argument(
             '--command_port', default=8000, help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
             '--rate', help='Set a higher rate (in kb/s) than what you estimate between server and client '
             'for the UDP test (add m/g to set M/G b/s)', required=True)
     observer.add_scenario_argument(
-            '--num_flows', default=30, help='Number of iperf3/nuttcp flows generated')
+            '--num_flows', default=10, help='Number of iperf3/nuttcp flows generated')
     observer.add_scenario_argument(
             '--tos', default=0, help='Type of Service of the trafic (default : 0)')
     observer.add_scenario_argument(
