@@ -4,7 +4,7 @@ general:
   name:            nuttcp
   description: >
       This Job launches the nuttcp tool (client or server mode) to generate UDP/TCP traffic with configured parameters (duration, bandwidth, parallel flows, ToS, MSS, etc.). It measures throughput, sent/lost packets, etc.  
-  job_version:     '2.0'
+  job_version:     '2.1'
   keywords:        [nuttcp, udp, tcp, throughput, loss]
   persistent:      True
   need_privileges: True
@@ -105,3 +105,43 @@ arguments:
                           The MSS for TCP data connection.
                                 
 statistics:
+    - name: data_sent
+      description: Data sent (in Bytes)
+      frequency: "Every *interval*"    
+    - name: total_data_sent
+      description: Total data sent (in Bytes)
+      frequency: "Every *interval*"
+    - name: data_loss
+      description: % of data lost
+      frequency: "Every *interval*"
+    - name: total_data_loss
+      description: % of total data lost
+      frequency: "Every *interval*"
+    - name: rate
+      description: The throughput (bits/sec)
+      frequency: "Every *interval*"      
+    - name: retransmissions
+      description: retransmissions
+      frequency: "Every *interval*"      
+    - name: total_retransmissions
+      description: Total retransmissions
+      frequency: "Every *interval*"
+    - name: cwnd
+      description: Congestion Window
+      frequency: "Every *interval*"
+    - name: rtt
+      description: rtt
+      frequency: "Every *interval*"
+    - name: lost_pkts
+      description: Packets lost
+      frequency: "Every *interval*"
+    - name: total_lost_pkts
+      description: Total packets lost
+      frequency: "Every *interval*"
+    - name: sent_pkts
+      description: Packets sent
+      frequency: "Every *interval*"
+    - name: total_sent_pkts
+      description: Total packets sent
+      frequency: "Every *interval*"
+
