@@ -92,7 +92,7 @@ def build(client, server, ip_dst, port, command_port, duration, rate, num_flows,
                 [start_scenario_core, function_id]
                 for function_id in extract_jobs_to_postprocess(scenario_core)
         ]
-        time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rate', 'throughput']], [['Rate (b/s)']], [['Rate time series']], [['{} TCP flow with iperf3'.format(num_flows)], ['{} TCP flows with nuttcp'.format(num_flows)], ['1 UDP flow with nuttcp']], True, [start_scenario_core], None, 2)
-        cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rate', 'throughput']], [['Rate (b/s)']], [['Rate CDF']], [['{} TCP flow with iperf3'.format(num_flows)], ['{} TCP flow with nuttcp'.format(num_flows)], ['1 UDP flow with nuttcp']], True, [start_scenario_core], None, 2)
+        time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rate', 'throughput']], [['Rate (b/s)']], [['Rate time series']], [['{} TCP flow with iperf3'.format(num_flows)], ['{} TCP flows with nuttcp'.format(num_flows)], ['1 UDP flow with nuttcp']], [start_scenario_core], None, 2, True)
+        cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rate', 'throughput']], [['Rate (b/s)']], [['Rate CDF']], [['{} TCP flow with iperf3'.format(num_flows)], ['{} TCP flow with nuttcp'.format(num_flows)], ['1 UDP flow with nuttcp']], [start_scenario_core], None, 2, True)
 
     return scenario

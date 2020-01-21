@@ -95,6 +95,6 @@ def build(client, ip_dst, duration, simultaneous, post_processing_entity, scenar
             for function_id in extract_jobs_to_postprocess(scenario_core)
        ]
        time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rtt']], [['RTT delay (ms)']], [['RTTs time series']], [['fping'],['hping']], [start_scenario_core], None, 2)
-       cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rtt']], [['RTT delay (ms)']], [['RTT CDFsssss']], [['fping'],['hping']], [start_scenario_core], None, 2)
+       cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rtt']], [['RTT delay (ms)']], [['RTT CDF']], [['fping'],['hping']], [start_scenario_core], None, 2)
 
     return scenario

@@ -28,7 +28,7 @@
 
 """ Helpers of time_series job """
 
-def time_series_on_same_graph (scenario, pp_entity, jobs_to_pp, statistics, label, title, legend, no_suffix=False, wait_finished=None, wait_launched=None, wait_delay=0):
+def time_series_on_same_graph (scenario, pp_entity, jobs_to_pp, statistics, label, title, legend, wait_finished=None, wait_launched=None, wait_delay=0, no_suffix=False):
 
     time_series = scenario.add_function(
             'start_job_instance',
