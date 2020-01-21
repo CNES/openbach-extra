@@ -112,10 +112,10 @@ statistics:
       description: Total data sent (in Bytes)
       frequency: "Every *interval*"
     - name: data_loss
-      description: % of data lost
+      description: Percentage of data lost
       frequency: "Every *interval*"
     - name: total_data_loss
-      description: % of total data lost
+      description: Percentage of total data lost
       frequency: "Every *interval*"
     - name: rate
       description: The throughput (bits/sec)
