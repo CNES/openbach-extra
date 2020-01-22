@@ -1,3 +1,7 @@
+Job Description
+===============
+The job uses the Python library "pyftpdlib" to create a ftp server. Each file received is deleted at the end of the download.
+
 Examples
 ========
 Example 1: Launch a FTP server on your agent (IP address 192.168.1.4) with a listenning port (2121) and an authorized user (user name: admin, and the password: admin). 
