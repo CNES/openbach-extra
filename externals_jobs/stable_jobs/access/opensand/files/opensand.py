@@ -414,7 +414,7 @@ if __name__ == '__main__':
                     pass
                 try:
                     ipaddress.IPv6Network(args.address_mask, False)
-                    onu.enable_ipv6_forward()
+                    onu.enable_ipv6_forwarding('all')
                 except ipaddress.AddressValueError:
                     pass
               
