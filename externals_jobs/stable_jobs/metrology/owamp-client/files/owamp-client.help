@@ -1,3 +1,5 @@
+Job description
+===============
 This Job measures the owe-way delay of a group of UDP packets between two hosts. A TCP control connection is open before the packets sending and requires a client who launch the command and a server on which a daemon (owamp-server) is running.
 When the connection is ready, both client and server independently send test packets on each side, following independent schedules.
 
@@ -21,7 +23,13 @@ NTP must be running on both server and client machines.
 Interval between packets option: two distribution functions can be used (exponential e or constant f, see example below)
 If sum of owd is required, be aware of using constant interval. If not, packets on both links (from/to testhost) may not be sent using the same timestamps: sum would have no meaning.
 
-Command line examples:
- - owping "destination_ip"
- - owping "destination_ip" -c "packets_number_to_send" (default = 100)
- - owping "destination_ip" -i 0.01f -> sends test packets with constant distribution every 10ms (default = 0.1e)
+Examples
+========
+Example 1: To send 100 test packets to the server (IP: 192.168.1.1) every 10ms (constant distribution)
+-In the web interface, set the following parameters:
+    destination_address = 192.168.1.1
+    count = 100
+    interval = 0.01f
+
+-Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id): 
+    JOB_NAME=owamp-client sudo -E python3 /opt/openbach/agent/jobs/owamp-client/owamp-client.py 192.168.1.1 -c 100 -i 0.01f

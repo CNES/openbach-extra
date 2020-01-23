@@ -1,3 +1,5 @@
+Job description
+===============
 This job allows to:
   * remove all qdisc rules on an interface
   * change the qdisc rules on an interface using a configuration file
@@ -68,3 +70,22 @@ A strict priority scheduling is applied between these four priorities. The sched
   * prio_1 : ToS = 0x8
   * prio_2 : ToS = 0x18
   * prio_3 : ToS = 0x10
+
+Examples
+========
+Example 1: Clear all qdisc rules on the interface "ens4"
+-In the web interface, set the following parameters:
+    interface_name = ens4
+    action = remove
+
+-Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id): 
+    JOB_NAME=ip_scheduler sudo -E python3 /opt/openbach/agent/jobs/ip_scheduler/ip_scheduler.py ens4 remove
+
+Example 2: Apply the configuration file (/path/of/the/file) on qdisc of the interface "ens4"
+-In the web interface, set the following parameters:
+    interface_name = ens4
+    action = add
+    file_path = /path/of/the/file
+
+-Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id):
+    JOB_NAME=ip_scheduler sudo -E python3 /opt/openbach/agent/jobs/ip_scheduler/ip_scheduler.py ens4 add /path/of/the/file

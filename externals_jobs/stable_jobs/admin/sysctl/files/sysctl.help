@@ -1,0 +1,14 @@
+Job description
+===============
+This Job configures one sysctl parameter.
+
+Examples
+========
+Example 1: Set net.ipv4.ip_forward to 1:
+-In the web interface, set the following parameters:
+    parameter = net.ipv4.ip_forward
+    value = 1
+   
+-Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id): 
+    JOB_NAME=sysctl sudo -E python3 /opt/openbach/agent/jobs/sysctl/sysctl.py net.ipv4.ip_forward 1
+
