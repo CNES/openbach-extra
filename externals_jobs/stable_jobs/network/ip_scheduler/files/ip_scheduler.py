@@ -41,6 +41,8 @@ import argparse
 import subprocess
 from collections import OrderedDict
 
+import collect_agent
+import syslog
 
 def run_command(cmd):
     p = subprocess.run(cmd, stderr=subprocess.PIPE)
