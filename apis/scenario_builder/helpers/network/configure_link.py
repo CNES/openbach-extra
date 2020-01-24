@@ -74,6 +74,7 @@ def configure_link_apply(
     apply_params={'mode':mode,
                   'delay_distribution':delay_distribution,
                   'delay':delay,
+                  'jitter':jitter,
                   'loss_model':loss_model,
                   'loss_model_params':loss_model_params
                  }
