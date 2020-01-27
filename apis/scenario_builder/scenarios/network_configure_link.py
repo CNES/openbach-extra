@@ -37,7 +37,7 @@ SCENARIO_DESCRIPTION="""This scenario allows to:
        in order to emulate/stop emulation of a network link like WIFI link. 
        Many link characteristiscs can be emulated including: bandwidth, delay, jitter and losses
 """
-SCENARIO_NAME="""configure_link"""
+SCENARIO_NAME="""network_configure_link"""
 
 
 def build(entity, ifaces, mode, operation, bandwidth=None, delay=0, jitter=0,

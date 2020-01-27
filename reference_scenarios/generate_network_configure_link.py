@@ -27,13 +27,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario builds and launches the *configure_link* scenario
+"""This scenario builds and launches the *network_configure_link* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
 """
 
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios import configure_link
+from scenario_builder.scenarios import network_configure_link
 
 
 def main(scenario_name='configure_link', argv=None):
@@ -73,7 +73,7 @@ def main(scenario_name='configure_link', argv=None):
         
     args = observer.parse(argv, scenario_name)
 
-    scenario = configure_link.build(
+    scenario = network_configure_link.build(
                 args.entity,
                 args.ifaces,
                 args.mode,
