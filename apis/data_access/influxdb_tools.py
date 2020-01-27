@@ -201,10 +201,9 @@ def escape_field(name, value):
 
 def tags_to_condition(scenario, agent, job_instance, suffix, extra_condition=None, *, subscenarios=False):
     """Concatenate the given tags values into a single condition"""
-    scenario_tag = '@owner_scenario_instance_id' if subscenarios else '@scenario_instance_id'
+
     tags = {
         '@agent_name': agent,
-        scenario_tag: scenario,
         '@job_instance_id': job_instance,
         '@suffix': suffix,
     }
@@ -213,6 +212,14 @@ def tags_to_condition(scenario, agent, job_instance, suffix, extra_condition=Non
             for name, value in tags.items()
             if value is not None
     ]
+
+    if scenario is not None:
+        scenario_condition = ConditionTag('@scenario_instance_id', Operator.Equal, scenario)
+        if subscenarios:
+            owner_condition = ConditionTag('@owner_scenario_instance_id', Operator.Equal, scenario)
+            scenario_condition = ConditionOr(scenario_condition, owner_condition)
+        conditions.append(scenario_condition)
+
     if extra_condition is not None:
         conditions.append(extra_condition)
 
@@ -474,13 +481,10 @@ class InfluxDBConnection(InfluxDBCommunicator):
         """Fetch data from InfluxDB that correspond to the given constraints
         and generate according `Scenario`s instances.
         """
-        _condition = tags_to_condition(scenario, agent, job_instance, suffix, condition)
+        _condition = tags_to_condition(scenario, agent, job_instance, suffix, condition, subscenarios=True)
         response = self.sql_query(select_query(job, fields, _condition))
-        if scenario is None:
-            # Try fetching sub-scenarios
-            _condition = tags_to_condition(scenario, agent, job_instance, suffix, condition, subscenarios=True)
-            response = self.sql_query(select_query(job, fields, _condition))
-        else:
+
+        if scenario is not None:
             for scenario_instance in parse_statistics(response):
                 if scenario_instance.instance_id == scenario:
                     owner = scenario_instance.owner_instance_id
