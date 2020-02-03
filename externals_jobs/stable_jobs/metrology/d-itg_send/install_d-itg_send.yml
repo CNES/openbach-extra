@@ -29,6 +29,16 @@
 
 ---
 
+- name: Update apt packages
+  apt:
+    update_cache: yes
+  become: yes
+
+- name: Install d-itg
+  apt:
+    name=d-itg
+    state=present
+  become: yes
 
 - name: Create d-itg_send repository
   file: path=/opt/openbach-jobs/d-itg_send state=directory mode=0755

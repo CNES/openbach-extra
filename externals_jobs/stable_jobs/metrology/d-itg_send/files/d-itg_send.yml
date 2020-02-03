@@ -6,7 +6,7 @@ general:
       This Job principaly launches the executable of D-ITG
       that sends data towards a target. The flow is unilateral.
       It is possible to launch multiple instances of the job at the same time.
-  job_version:     '0.1'
+  job_version:     '0.2'
   keywords:        [d-itg, round, trip, time, rate]
   persistent:      True
   need_privileges: False
@@ -25,11 +25,11 @@ arguments:
       count:       1
       description: >
           Address IP where the flow is sent.
-    - name:        log_address
+    - name:        sender_address
       type:        'ip'
       count:       1
       description: >
-          Address of the sender that is connected to the receiver.
+          Address of the sender to get the receiver's logs.
     - name:        dest_path
       type:        'str'
       count:       1
@@ -77,9 +77,12 @@ arguments:
       flag:        '-m'
       description: >
           Way to compute the time: One Way Delay (owdm) or Round Trip Time (rttm).
-          Default: owdm.
+          Default: rttm
           Careful, if "rttm" is chosen, a bidirectional traffic will be generated for the sender to compute the RTT.
           However, if anykind of synchronization doesn't exist between the equipments, rttm is advised.
+      choices:
+          - owdm
+          - rttm
 statistics:
     - name:        bitrate
       description: >

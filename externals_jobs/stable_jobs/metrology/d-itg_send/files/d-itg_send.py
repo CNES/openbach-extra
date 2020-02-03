@@ -7,7 +7,7 @@
 #  Agents (one for each network entity that wants to be tested).
 #
 #
-#  Copyright © 2018 CNES
+#  Copyright © 2020 CNES
 #
 #
 #  This file is part of the OpenBACH testbed.
@@ -89,10 +89,10 @@ def main(target_address, log_address, dest_path, granularity, traffic_type, pack
         timestamp = int(timestamp[:-3])
         timestamp = timestamp + time_ref
 
-        # Get the bitrate (in Kbps)
+        # Get the bitrate (in bps)
         bitrate = txt[1]
-        bitrate = float(bitrate)
-        statistics = {'bitrate receiver (Kbits/sec)': bitrate}
+        bitrate = float(bitrate)*1024
+        statistics = {'bitrate receiver (bits/sec)': bitrate}
         collect_agent.send_stat(timestamp, **statistics)
 
         # Get the delay (in ms)
@@ -128,30 +128,30 @@ def main(target_address, log_address, dest_path, granularity, traffic_type, pack
         timestamp = int(timestamp[:-3])
         timestamp = timestamp + time_ref
 
-        # Get the bitrate (in Kbps)
+        # Get the bitrate (in bps)
         bitrate = txt[1]
-        bitrate = float(bitrate)
-        statistics = {'bitrate sender (Kbits/sec)': bitrate}
+        bitrate = float(bitrate)*1024
+        statistics = {'bitrate sender (bits/sec)': bitrate}
         collect_agent.send_stat(timestamp, **statistics)
 
-        # Get the delay (in ms)
-        delay = txt[2]
-        delay = float(delay)*1000
-        if meter == "rttm" or "RTTM":
+        if meter == "rttm" or meter == "RTTM":
+            # Get the delay (in ms)
+            delay = txt[2]
+            delay = float(delay)*1000
             statistics = {'rtt sender (ms)': delay}
             collect_agent.send_stat(timestamp, **statistics)
 
-        # Get the jitter (in ms)
-        jitter = txt[3]
-        jitter = float(jitter)*1000
-        statistics = {'jitter sender (ms)': jitter}
-        collect_agent.send_stat(timestamp, **statistics)
+            # Get the jitter (in ms)
+            jitter = txt[3]
+            jitter = float(jitter)*1000
+            statistics = {'jitter sender (ms)': jitter}
+            collect_agent.send_stat(timestamp, **statistics)
 
-        # Get the packetloss
-        pck_loss = txt[4]
-        pck_loss = float(pck_loss)
-        statistics = {'packetloss sender': pck_loss}
-        collect_agent.send_stat(timestamp, **statistics)        
+            # Get the packetloss
+            pck_loss = txt[4]
+            pck_loss = float(pck_loss)
+            statistics = {'packetloss sender': pck_loss}
+            collect_agent.send_stat(timestamp, **statistics)        
 
     stats.close()
    
@@ -162,8 +162,8 @@ if __name__ == "__main__":
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('target_address', type=str, metavar='Target_address',
                         help='Address IP where the flow is sent')
-    parser.add_argument('log_address', type=str,  metavar='LogServer_address',
-                        help='Address of the sender that is connected to the receiver')
+    parser.add_argument('sender_address', type=str,  metavar='sender_address',
+                        help="Address of the sender to get the receiver's logs")
     parser.add_argument('dest_path', type=str, metavar='Destination_path',
                         help='Path where the stats will be located')
     parser.add_argument('granularity', type=int, metavar='Granularity',
@@ -176,13 +176,14 @@ if __name__ == "__main__":
                         help='Number of packets to send in one second (default=1000)')
     parser.add_argument('-t', '--duration', type=int, metavar='DURATION',
                         help='Duration of the traffic in ms (default=10000)')
-    parser.add_argument('-m', '--meter', type=str, metavar='METER',
-                        help='Way to compute the time: One Way Delay (owdm) or Round Trip Time (rttm) (default=owdm)')
+    parser.add_argument('-m', '--meter', type=str, metavar='METER', choices=['owdm', 'rttm'], 
+                        help='Way to compute the time: One Way Delay (owdm) or Round Trip Time (rttm) (default=rttm)',
+                        default = 'rttm')
 
     # get args
     args = parser.parse_args()
     target_address = args.target_address
-    log_address = args.log_address
+    sender_address = args.sender_address
     dest_path = args.dest_path
     granularity = args.granularity
     traffic_type = args.traffic_type
@@ -191,5 +192,5 @@ if __name__ == "__main__":
     duration = args.duration
     meter = args.meter
     
-    main(target_address, log_address, dest_path, granularity, traffic_type, packet_size, packet_rate, duration, meter)
+    main(target_address, sender_address, dest_path, granularity, traffic_type, packet_size, packet_rate, duration, meter)
 

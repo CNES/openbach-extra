@@ -4,7 +4,7 @@
 #  Agents (one for each network entity that wants to be tested).
 #
 #
-#  Copyright © 2018 CNES
+#  Copyright © 2020 CNES
 #
 #
 #  This file is part of the OpenBACH testbed.
@@ -29,6 +29,16 @@
 
 ---
 
+- name: Update apt packages
+  apt:
+    update_cache: yes
+  become: yes
+
+- name: Install d-itg
+  apt:
+    name=d-itg
+    state=present
+  become: yes
 
 - name: Create d-itg_recv repository
   file: path=/opt/openbach-jobs/d-itg_recv state=directory mode=0755
