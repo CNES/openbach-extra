@@ -44,4 +44,16 @@ and all traffic entering via 'ens3' to the PEP.
  - 'redirect_dst_ip': '192.168.20.0/24'
 
 -Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id):
-    JOB_NAME=pep sudo -E python3 /opt/openbach/agent/jobs/pep/pep.py -ifaces ens3 -s '192.168.1.0/24, 192.168.2.0/24' -d 192.168.20.0/24 
+    JOB_NAME=pep sudo -E python3 /opt/openbach/agent/jobs/pep/pep.py -ifaces ens3 -s '192.168.1.0/24, 192.168.2.0/24' -d 192.168.20.0/24
+
+Example 2 (satellite use case) : In a topology like the following one (two PEPs allowing to isolate a satellite network). 
+
+Client <---> PEP1 <---> Terminal <---> Satellite <---> Gateway <---> PEP2 <---> Server
+
+The PEP1 can be launched specifying the Client AND Server IP addresses in the 'redirect_dst_ip' parameter. Same for PEP2. This way the PEP will intercept both TCP flows from client-to-server and server-to-client. 
+Another option is to specify the two interfaces names of the PEP1 (the one going to the Client and the one to the Terminal) on 'redirect_ifaces' parameter. Same for PEP2 (but in this case the interfaces going to the Server and the Gateway)
+
+Additionnal information
+=======================
+<note important>WARNING:When the PEP intercept the TCP flows, it uses its own IP source to create a new TCP connection. This means that the different end and itermediate machines must know how to contact the PEPs using the appropriate routing policies</note>
+ 
