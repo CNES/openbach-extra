@@ -1,3 +1,7 @@
+Job description
+===============
+This job starts a web server apache2. To change the web server's pages, you must do it in the directory : /var/www/*
+
 Examples:
 ========
 Example1: Launch apache2 on entity called 'server.
@@ -8,7 +12,8 @@ Example1: Launch apache2 on entity called 'server.
 -Or launch the job manually from CLI of the Agent as follows: 
     JOB_NAME=apache2 sudo -E python3 /opt/openbach/agent/jobs/apache2/apache2.py 
 
-
+Additionnal information
+=======================
 Note that, apache2 daemon will start for listening to HTTP requests on ports 8081 and 8082 for http/1.1 
 and http/2 respectively. Client must specify protocol http or https in url like follows:
 For http/1.1: http://server_ip:8081

@@ -1,3 +1,8 @@
+Job description
+===============
+This job uses firefox to retrieve web pages, and computes QoE metrics.
+The web pages are specified in the job file "config.yaml", and can be changed.
+
 Examples:
 ========
 Example1: Fetch two times, each webpages listed at section `web_pages_to_fetch` in `config.yaml` and compute W3C metrics as statistics. 

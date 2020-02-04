@@ -1,0 +1,16 @@
+Job Description
+===============
+This Job launches a command line shell.
+
+Additionnal information
+=======================
+This job is launched with root rights, use it with caution.
+
+Examples
+========
+Example 1: Remove a directory with the command "sudo rm -r /directory/path/".
+-In the web interface, set the following parameters:
+    command_line = rm -r /directory/path     
+    
+-Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id of 0):
+    JOB_NAME=command_shell sudo -E python3 /opt/openbach/agent/jobs/command_shell/command_shell.py "rm -r /directory/path"
