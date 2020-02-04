@@ -1,6 +1,6 @@
 Job description
 ===============
-This job starts a web server apache2. To change the web server's pages, you must do it in the directory : /var/www/*
+This job starts a web server apache2 in both HTTP/2 (port 8082) and HTTP/1.1 (port 8081). The jobs deploys web page examples available on /var/www/*. You can add more web pages in the directory.
 
 Examples:
 ========
@@ -19,3 +19,4 @@ and http/2 respectively. Client must specify protocol http or https in url like 
 For http/1.1: http://server_ip:8081
 For http/2: https://server_ip:8082
 
+The available web page examples are amazon.html, lemonde.html, reddit.html, wikipedia1.html, wikipedia2.html and wikipedia3.html. To download them in HTTP/2, you can open any web browser and specify the following web address: https://server_ip:8082/lemonde.html
