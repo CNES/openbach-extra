@@ -20,6 +20,6 @@ For Agent "client":
     JOB_NAME=nuttcp sudo -E python3 /opt/openbach/agent/jobs/nuttcp/nuttcp.py server
     JOB_NAME=nuttcp sudo -E python3 /opt/openbach/agent/jobs/nuttcp/nuttcp.py client 192.168.1.4 -n 2 -d 60 -r 10m udp
 
-Additionnal information
+Additional information
 =======================
 Only the nuttcp client produces statistics.
