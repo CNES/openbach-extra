@@ -1,5 +1,4 @@
-Job description
-===============
+=== Job description ===
 The job 'pep' launches PEPSal, and sets up the routes and iptables
 configurations necessary to perform TCP splitting.
 
@@ -21,39 +20,37 @@ All routes and rules are removed when the job is stopped.
 The 'mark', 'port' and 'table_num' parameters should only be modified by
 advanced users.
 
-Others advanced PEPSal parameters are also available:
-
- - 'address': the address that PEPSal uses to bind the listening socket
-              (default: 0.0.0.0 binds on all interfaces).
- - 'fastopen': enable TCP FastOpen.
- - 'maxconns': the maximum number of simultaneous connections (default: 2112).
- - 'gcc_interval': garbage collector interval, that cleans dead or garbage connections
-                   (default: 54000 seconds, 24 hs)
- - 'pending_lifetime': the pending connections lifetime (default: 18000 seconds).
- - 'log_file': Path for logging all connections to a file.
-
-Examples
-========
-Example 1: launch PEPSal on a host. Redirect all traffic coming from
-'192.168.1.0/24' and '192.168.2.0/24', all traffic going to '192.168.20.0/24',
+=== Examples ===
+== Example 1: ==
+Launch PEPSal on a host. Redirect all traffic coming from '192.168.1.0/24' 
+and '192.168.2.0/24', all traffic going to '192.168.20.0/24',
 and all traffic entering via 'ens3' to the PEP.
 
--In the web interface, set the following parameters:
- - 'redirect_ifaces': 'ens3'
- - 'redirect_src_ip': '192.168.1.0/24, 192.168.2.0/24'
- - 'redirect_dst_ip': '192.168.20.0/24'
+In the web interface, set the following parameters:
+  * 'redirect_ifaces': 'ens3'
+  * 'redirect_src_ip': '192.168.1.0/24, 192.168.2.0/24'
+  * 'redirect_dst_ip': '192.168.20.0/24'
 
--Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id):
-    JOB_NAME=pep sudo -E python3 /opt/openbach/agent/jobs/pep/pep.py -ifaces ens3 -s '192.168.1.0/24, 192.168.2.0/24' -d 192.168.20.0/24
+Or launch the job manually from the Agent as follows (the statistics will be 
+available on the collector with a job_instance_id, scenario_instance_id and 
+owner_scenario_instance_id):
 
-Example 2 (satellite use case) : In a topology like the following one (two PEPs allowing to isolate a satellite network). 
+JOB_NAME=pep sudo -E python3 /opt/openbach/agent/jobs/pep/pep.py -ifaces ens3 -s '192.168.1.0/24, 192.168.2.0/24' -d 192.168.20.0/24
 
-Client <---> PEP1 <---> Terminal <---> Satellite <---> Gateway <---> PEP2 <---> Server
+== Example 2 (satellite use case): == 
+In a topology like the following one (two PEPs allowing to isolate a satellite network).
 
-The PEP1 can be launched specifying the Client AND Server IP addresses in the 'redirect_dst_ip' parameter. Same for PEP2. This way the PEP will intercept both TCP flows from client-to-server and server-to-client. 
-Another option is to specify the two interfaces names of the PEP1 (the one going to the Client and the one to the Terminal) on 'redirect_ifaces' parameter. Same for PEP2 (but in this case the interfaces going to the Server and the Gateway)
+Client <==> PEP1 <==> Terminal <==> Satellite <==> Gateway <==> PEP2 <==> Server
 
-Additional information
-=======================
-<note important>WARNING:When the PEP intercept the TCP flows, it uses its own IP source to create a new TCP connection. This means that the different end and itermediate machines must know how to contact the PEPs using the appropriate routing policies</note>
+The PEP1 can be launched specifying the Client AND Server IP addresses in the 
+'redirect_dst_ip' parameter. Same for PEP2. This way the PEP will intercept both 
+TCP flows from client-to-server and server-to-client. Another option is to specify 
+the two interfaces names of the PEP1 (the one going to the Client and the one to the 
+Terminal) on 'redirect_ifaces' parameter. Same for PEP2 (but in this case the interfaces 
+going to the Server and the Gateway)
+
+=== Additional information ===
+<note important>WARNING: When the PEP intercept the TCP flows, it uses its own IP source 
+to create a new TCP connection. This means that the different end and itermediate machines 
+must know how to contact the PEPs using the appropriate routing policies.</note>
  
