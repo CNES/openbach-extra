@@ -29,19 +29,8 @@
 
 ---
 
-- name: Update apt packages
-  apt:
-    update_cache: yes
-  become: yes
-
-- name: Install d-itg
-  apt:
-    name=d-itg
-    state=present
-  become: yes
-
 - name: Create d-itg_send repository
-  file: path=/opt/openbach-jobs/d-itg_send state=directory mode=0755
+  file: path=/opt/openbach/agent/jobs/d-itg_send state=directory mode=0755
   become: yes
 
 - name: Create d-itg_send stats repository
@@ -49,7 +38,7 @@
   become: yes
   
 - name: Install d-itg_send Job
-  copy: src=files/{{ item.file }} dest=/opt/openbach-jobs/d-itg_send/ mode={{ item.mode }}
+  copy: src=files/{{ item.file }} dest=/opt/openbach/agent/jobs/d-itg_send/ mode={{ item.mode }}
   with_items:
     - { file: 'd-itg_send.py', mode: '0755' }
     - { file: 'd-itg_send.help', mode: '0644' }
@@ -57,13 +46,10 @@
   become: yes
 
 - name: Send d-itg module sources
-  unarchive: src=files/d-itg.tar.gz dest=/opt/openbach-jobs/{{ job_name }}/ 
+  unarchive: src=files/d-itg.tar.gz dest=/opt/openbach/agent/jobs/{{ job_name }}/ 
   become: yes
 
 - name: Build d-itg module 
-  make: chdir=/opt/openbach-jobs/{{ job_name }}/d-itg/src/
+  make: chdir=/opt/openbach/agent/jobs/{{ job_name }}/d-itg/src/
   become: yes
 
-- name: Inform Agent that d-itg_send Job is installed
-  copy: src=files/{{ job_name }}.yml dest=/opt/openbach-agent/jobs/ mode=0644
-  become: yes
