@@ -1,3 +1,7 @@
+Job Description
+===============
+This job executes nuttcp tool to perform network capacity measurements.
+
 Examples
 ========
 Example 1: Generate 2 UDP parallel flows from Agent "client" to Agent "server" (IP address  192.168.1.4)  during 60 seconds. Each flow must send 5 Mb/s of traffic. The statistics must be collected every 2 seconds. 
@@ -15,3 +19,11 @@ For Agent "client":
 -Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id of 0): 
     JOB_NAME=nuttcp sudo -E python3 /opt/openbach/agent/jobs/nuttcp/nuttcp.py server
     JOB_NAME=nuttcp sudo -E python3 /opt/openbach/agent/jobs/nuttcp/nuttcp.py client 192.168.1.4 -n 2 -d 60 -r 10m udp
+
+Additional information
+=======================
+Only the nuttcp client produces statistics.
+
+When using n-streams parameter, nuttcp uses the indicated port and the following ones (one per stream). 
+Therefore, the command-port must be out of the range [port ; port + n]
+

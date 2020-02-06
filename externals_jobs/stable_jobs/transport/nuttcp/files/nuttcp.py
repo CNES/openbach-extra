@@ -170,6 +170,15 @@ def client(
         }
         collect_agent.send_stat(timestamp, **statistics)
 
+    # Check errors
+    error_log = p.stderr.readline()
+    if error_log:
+        error_msg = 'Error when launching nuttcp: {}'.format(error_log)
+        collect_agent.send_log(syslog.LOG_ERR, error_msg)
+        sys.exit(error_msg)
+    p.wait()
+
+
 if __name__ == "__main__":
     # Define Usage
     parser = argparse.ArgumentParser(
