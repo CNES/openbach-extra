@@ -33,9 +33,9 @@ import subprocess
 def main(log_buffer_size):
 
     if log_buffer_size:
-        cmd = '/opt/openbach-jobs/d-itg_recv/d-itg/bin/ITGRecv -q {}'.format(log_buffer_size)
+        cmd = '/opt/openbach/agent/jobs/d-itg_recv/d-itg/bin/ITGRecv -q {}'.format(log_buffer_size)
     else:
-        cmd = '/opt/openbach-jobs/d-itg_recv/d-itg/bin/ITGRecv'
+        cmd = '/opt/openbach/agent/jobs/d-itg_recv/d-itg/bin/ITGRecv'
 
     subprocess.call(cmd, shell=True)
 

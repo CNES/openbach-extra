@@ -32,9 +32,6 @@
 
 
 - name: Uninstall d-itg_recv Job
-  file: path=/opt/openbach-jobs/d-itg_recv state=absent
+  file: path=/opt/openbach/agent/jobs/d-itg_recv state=absent
   become: yes
-    
-- name: Informe Agent that d-itg_recv is uninstalled
-  file: path=/opt/openbach-agent/jobs/{{ job_name }}.yml state=absent
-  become: yes
+
