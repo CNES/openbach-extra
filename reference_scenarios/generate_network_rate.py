@@ -40,21 +40,23 @@ def main(scenario_name='generate_network_rate', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--client', '--client-entity', required=True,
-            help='name of the entity for the client iperf3/nuttcp')
+            help='name of the entity for the client iperf3/nuttcp/d-itg_recv')
     observer.add_scenario_argument(
             '--server', '--server-entity', required=True,
-            help='name of the entity for the server iperf3/nuttcp')
+            help='name of the entity for the server iperf3/nuttcp/d-itg_send')
     observer.add_scenario_argument(
             '--ip_dst', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--port', default=7000,  help='The iperf3/nuttcp server port for data')
+            '--ip_snd', required=True, help='The sender IP address')
     observer.add_scenario_argument(
-            '--duration', default=30, help='duration of iperf3/nuttcp tests')
+            '--port', default=7001,  help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
-            '--command_port', default=7001, help='The port of nuttcp server for signalling')
+            '--duration', default=30, help='duration of iperf3/nuttcp/d-itg tests')
+    observer.add_scenario_argument(
+            '--command_port', default=7000, help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
             '--rate', help='Set a higher rate (in kb/s) than what you estimate between server and client '
-            'for the UDP test (add m/g to set M/G b/s)', required=True)
+            'for the UDP test (add M/G to set M/G b/s)', required=True)
     observer.add_scenario_argument(
             '--num_flows', default=10, help='Number of iperf3/nuttcp flows generated')
     observer.add_scenario_argument(
@@ -71,6 +73,7 @@ def main(scenario_name='generate_network_rate', argv=None):
             args.client,
             args.server,
             args.ip_dst,
+            args.ip_snd,
             args.port,
             args.command_port,
             args.duration,
