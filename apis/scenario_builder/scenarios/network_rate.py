@@ -70,11 +70,13 @@ def network_rate_core(client, server, scenario_name='network_rate_core'):
     scenario.add_argument('rate', 'The rate for the UDP tests and d-itg TCP test')
 
     wait = iperf3_rate_tcp(scenario, client, server, '$ip_dst', '$port', '$duration', '$num_flows', '$tos', '$mtu')
-    wait = nuttcp_rate_tcp(scenario, client, server, '$ip_dst', '$port', '$command_port', '$duration', '$num_flows', '$tos', '$mtu', wait, None, 2)
-    wait = ditg_pcket_rate(scenario, client, server, '$ip_dst', '$ip_snd', 'TCP', '/tmp/', 1000, '$mtu', 100000, '$duration', 'owdm', 50, wait, None, 2)
+    wait = nuttcp_rate_tcp(scenario, client, server, '$ip_dst', '$port', '$command_port', '$duration', '$num_flows', '$tos', 
+                           '$mtu', wait, None, 2)
+    wait = ditg_pcket_rate(scenario, client, server, '$ip_dst', '$ip_snd', 'TCP', '/tmp/', 1000, '$mtu', 100000, '$duration', 
+                           'owdm', 50, '$port', '$command_port', wait, None, 2)
     wait = nuttcp_rate_udp(scenario, client, server, '$ip_dst', '$port', '$command_port', '$duration', '$rate', wait, None, 2)
-    ditg_rate(scenario, client, server, '$ip_dst', '$ip_snd', 'UDP', '/tmp/', 1000, '$mtu', '$rate', '$duration', 'owdm', 50, wait, None, 2)
- 
+    ditg_rate(scenario, client, server, '$ip_dst', '$ip_snd', 'UDP', '/tmp/', 1000, '$mtu', '$rate', '$duration', 'owdm', 
+              50, '$port', '$command_port', wait, None, 2)
     return scenario
 
 
@@ -100,14 +102,14 @@ def build(client, server, ip_dst, ip_snd, port, command_port, duration, rate, nu
                 for function_id in extract_jobs_to_postprocess(scenario_core)
         ]
         time_series_on_same_graph(scenario, post_processing_entity, post_processed,
-            [['bitrate receiver (bps)', 'rate', 'throughput']],
+            [['bitrate_receiver', 'rate', 'throughput']],
             [['Rate (b/s)']], [['Rate time series']],
             [['{} TCP flow with iperf3'.format(num_flows)], ['{} TCP flows with nuttcp'.format(num_flows)],
              ['1 TCP flows with d-itg'], ['1 UDP flow with nuttcp'], ['1 UDP flow with d-itg']],
             [start_scenario_core], None, 2, True)
 
         cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, 
-            [['rate', 'throughput', 'bitrate receiver (bps)']], 
+            [['rate', 'throughput', 'bitrate_receiver']], 
             [['Rate (b/s)']], [['Rate CDF']], 
             [['{} TCP flow with iperf3'.format(num_flows)], ['{} TCP flow with nuttcp'.format(num_flows)], 
              ['1 TCP flows with d-itg'],['1 UDP flow with nuttcp'], ['1 UDP flow with d-itg']], 

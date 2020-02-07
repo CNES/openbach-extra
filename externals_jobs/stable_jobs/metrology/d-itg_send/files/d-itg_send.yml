@@ -6,7 +6,7 @@ general:
       This Job principaly launches the executable of D-ITG
       that sends data towards a target. The flow is unilateral.
       It is possible to launch multiple instances of the job at the same time.
-  job_version:     '0.2'
+  job_version:     '0.3'
   keywords:        [d-itg, round, trip, time, rate]
   persistent:      True
   need_privileges: False
@@ -50,6 +50,18 @@ arguments:
       description: >
           Traffic type (UDP, TCP, ICMP, ...).
           Default: UDP.
+    - name:        port
+      type:        'int'
+      count:       1
+      flag:        '-p'
+      description: >
+          Set server port (default = 8999)
+    - name:        signal_port
+      type:        'int'
+      count:       1
+      flag:        '-P'
+      description: >
+          Set port for signal transmission (default = 9000)
     - name:        packet_size
       type:        'int'
       count:       1
@@ -84,10 +96,10 @@ arguments:
       flag:        '-k'
       description: >
           Set the number of [K/M/G]Bytes to send, if set either duration or data_size will limit the job 
-   - name:        meter
-      type:       'str'
-      count:      1
-      flag:       '-m'
+    - name:        meter
+      type:        'str'
+      count:       1
+      flag:        '-m'
       description: >
           Way to compute the time: One Way Delay (owdm) or Round Trip Time (rttm).
           Default: rttm
