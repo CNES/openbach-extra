@@ -4,7 +4,7 @@
 #  Agents (one for each network entity that wants to be tested).
 #
 #
-#  Copyright © 2018 CNES
+#  Copyright © 2020 CNES
 #
 #
 #  This file is part of the OpenBACH testbed.
@@ -29,26 +29,22 @@
 
 ---
 
-
 - name: Create d-itg_recv repository
-  file: path=/opt/openbach-jobs/d-itg_recv state=directory mode=0755
+  file: path=/opt/openbach/agent/jobs/d-itg_recv state=directory mode=0755
   become: yes
 
 - name: Install d-itg_recv Job
-  copy: src=files/{{ item.file }} dest=/opt/openbach-jobs/d-itg_recv/ mode={{ item.mode }}
+  copy: src=files/{{ item.file }} dest=/opt/openbach/agent/jobs/d-itg_recv/ mode={{ item.mode }}
   with_items:
     - { file: 'd-itg_recv.py', mode: '0755' }
     - { file: 'd-itg_recv.help', mode: '0644' }
   become: yes
 
 - name: Send d-itg module sources
-  unarchive: src=files/d-itg.tar.gz dest=/opt/openbach-jobs/{{ job_name }}/ 
+  unarchive: src=files/d-itg.tar.gz dest=/opt/openbach/agent/jobs/{{ job_name }}/ 
   become: yes
 
 - name: Build d-itg module 
-  make: chdir=/opt/openbach-jobs/{{ job_name }}/d-itg/src/
+  make: chdir=/opt/openbach/agent/jobs/{{ job_name }}/d-itg/src/
   become: yes
 
-- name: Inform Agent that d-itg_recv Job is installed
-  copy: src=files/{{ job_name }}.yml dest=/opt/openbach-agent/jobs/ mode=0644
-  become: yes

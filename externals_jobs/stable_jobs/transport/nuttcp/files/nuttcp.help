@@ -23,3 +23,6 @@ For Agent "client":
 Additional information
 =======================
 Only the nuttcp client produces statistics.
+
+When using n-streams parameter, nuttcp uses the indicated port and the following ones (one per stream). 
+Therefore, the command-port must be out of the range [port ; port + n]
