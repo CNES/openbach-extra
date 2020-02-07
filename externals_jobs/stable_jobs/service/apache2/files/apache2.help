@@ -12,3 +12,6 @@ Note that, apache2 daemon will start listening for HTTP requests on ports 8081 a
   * For http/2: https://server_ip:8082
 
 The available web page examples are amazon.html, lemonde.html, reddit.html, wikipedia1.html, wikipedia2.html and wikipedia3.html. To download them in HTTP/2, you can open any web browser and specify the following web address: https://server_ip:8082/lemonde.html
+
+To download size specific file from the server, four files exist: 500K_file.txt, 1M_file.txt, 10M_file.txt and 100M_file.txt. 
+You can download them at the following web address: http://server_ip:port/[500K_file.txt/1M_file.txt/10M_file.txt/100M_file.txt]
