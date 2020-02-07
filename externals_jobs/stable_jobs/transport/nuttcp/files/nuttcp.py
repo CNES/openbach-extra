@@ -137,7 +137,7 @@ def client(
         END_STAT = TCP_END_STAT
     
     # Launch client
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     check_end = True
     while check_end:
