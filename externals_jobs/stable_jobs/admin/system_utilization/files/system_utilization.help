@@ -1,3 +1,7 @@
+Job description
+===============
+This job gets system's ressources utilization every *interval*.
+
 Examples:
 ========
 Example1: Every 2s, show how much processing power and memory are being used on the system running a given Agent. 

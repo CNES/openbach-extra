@@ -1,6 +1,10 @@
-Exemples
+Job Description
+===============
+This job uses the python library 'ftplib' to create a FTP client which downloads or uploads a single file. Each file downloaded is deleted after the transfer.
+
+Examples
 ========
-Exemple 1: A FTP client which downloads a pre-existing file (1M_file.txt) on a server (IP: 192.168.1.4, port: 2121) which needs authentification (user name: admin, password: admin) with a specific blocksize (100).
+Example 1: A FTP client which downloads a pre-existing file (1M_file.txt) on a server (IP: 192.168.1.4, port: 2121) which needs authentification (user name: admin, password: admin) with a specific blocksize (100).
 -In the web interface, set the following parameters:
   server_ip = 192.168.1.4
   port = 2121
@@ -11,7 +15,7 @@ Exemple 1: A FTP client which downloads a pre-existing file (1M_file.txt) on a s
   password = admin
   blocksize = 100
 
-Exemple 2: A FTP client which uploads a specific file (/srv/own_file.txt) on a server (IP: 192.168.1.4, port: 2121) which needs authentification (user name: admin, password: admin) with a specific blocksize (10000).
+Example 2: A FTP client which uploads a specific file (/srv/own_file.txt) on a server (IP: 192.168.1.4, port: 2121) which needs authentification (user name: admin, password: admin) with a specific blocksize (10000).
 -In the web interface, set the following parameters:
   server_ip = 192.168.1.4
   port = 2121

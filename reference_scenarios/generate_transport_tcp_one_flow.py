@@ -36,7 +36,7 @@ from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import transport_tcp_one_flow
 
 
-def main(scenario_name='generate_tcp_one_flow', argv=None):
+def main(scenario_name='generate_transport_tcp_one_flow', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--client', '--client-entity', required=True,

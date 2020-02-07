@@ -1,3 +1,10 @@
+Job description
+===============
+This job deploys an Apache2 server (listen on all IPs, i.e. 0.0.0.0 on ports 8083 or 8084) with a DASH video in 4 different qualities and a web integrated DASH JS player.
+This JS progamm can be run  by Chrome/Firefox to play video which will be streamed over http/1.1 or http/2 according to the used protocol (http or https) and port (8083 or 8084).
+The job also collects metrics from the player (video quality, bandwidth, rtt, buffer size, etc.)
+
+
 Examples:
 ========
 Example1: Launch dash server on entity called 'server.
