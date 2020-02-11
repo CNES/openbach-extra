@@ -15,7 +15,7 @@ We need to launch the job //voip_qoe_dest// first on the "receiver", which will 
       * **dest_addr** = 192.168.1.5
       * **codec** = G.711.1
       * **duration** = 50000 
-  * Or launch the job manually from the Agent as follows: 
+  * Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a //job_instance_id//, //scenario_instance_id// and //owner_scenario_instance_id//): 
     * From "receiver" Agent:
       * ''JOB_NAME=voip_qoe_dest sudo -E python3 /opt/openbach/agent/jobs/voip_qoe_dest/voip_qoe_dest.py''
     * From "caller" Agent:
