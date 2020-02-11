@@ -1,15 +1,20 @@
-Job description
-===============
+=== Job description ===
+
 This job launches a DASH client on the agent and plays video from a DASH server. 
 
-Examples
-========
-Example 1: Connect to a DASH server on 192.168.1.1 with the protocol http/2 during 2sec the file /
--In the web interface, set the following parameters:
-    dst_ip = 192.168.1.1
-    protocol = http/2
-    duration = 2
-    path = /vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd
+=== Examples ===
 
--Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id): 
-    JOB_NAME='dash client' sudo -E python3 /opt/openbach/agent/jobs/dash\ client/dash\ client.py 192.168.1.1 http/2 -t 2 -d /vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd
+== Example 1 ==
+
+Connect to a DASH server on ''192.168.1.1'' with the protocol http/2 during 2s.
+
+In the web interface, set the following parameters:
+  * **dst_ip** = 192.168.1.1
+  * **protocol** = http/2
+  * **duration** = 2
+  * **path** = /vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME='dash client' sudo -E python3 /opt/openbach/agent/jobs/dash\ client/dash\ client.py 192.168.1.1 http/2 -t 2 -d /vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd
+</code>

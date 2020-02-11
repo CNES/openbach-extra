@@ -1,18 +1,27 @@
-Examples:
-========
-Example1: From Agent "client", generate an email of size 100 Kbytes and send it every 1 seconds to Agent "server" (IP address  192.168.1.4) during 50 seconds.  
+=== Examples ===
 
--In the web interface, set the following parameters:
- For Agent "server":
-     choose server mode
- For Agent "client" (Start 5s after server is launched):
-     choose "client" mode
-     server_ip = 192.168.1.4
-     Size = 100
-     interval = 1
-     duration = 50
+== Example 1 ==
+
+From Agent "client", generate an email of size 100 Kbytes and send it every 1 seconds to Agent "server" (IP address ''192.168.1.4'') during 50 seconds.
+
+In the web interface, set the following parameters:
+  * For Agent "server":
+    * **mode** = server
+  * For Agent "client" (Start 5s after server is launched):
+    * **mode** = client
+    * **server_ip** = 192.168.1.4
+    * **Size** = 100
+    * **interval** = 1
+    * **duration** = 50
      
-     
--Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id of 0): 
-    From server CLI: JOB_NAME=smtp sudo -E python3 /opt/openbach/agent/jobs/smtp/smtp.py -s 
-    From client CLI: JOB_NAME=smtp sudo -E python3 /opt/openbach/agent/jobs/smtp/smtp.py -c 192.168.1.4 -S 100 -i 1 -d 50 
+Or launch the job manually from the Agent as follows:
+
+From server Agent:
+<code>
+JOB_NAME=smtp sudo -E python3 /opt/openbach/agent/jobs/smtp/smtp.py -s
+</code>
+
+From client Agent:
+<code>
+JOB_NAME=smtp sudo -E python3 /opt/openbach/agent/jobs/smtp/smtp.py -c 192.168.1.4 -S 100 -i 1 -d 50
+</code>

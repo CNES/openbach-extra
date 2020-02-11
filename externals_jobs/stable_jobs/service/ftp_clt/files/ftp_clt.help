@@ -1,27 +1,44 @@
-Job Description
-===============
+=== Job Description ===
+
 This job uses the python library 'ftplib' to create a FTP client which downloads or uploads a single file. Each file downloaded is deleted after the transfer.
 
-Examples
-========
-Example 1: A FTP client which downloads a pre-existing file (1M_file.txt) on a server (IP: 192.168.1.4, port: 2121) which needs authentification (user name: admin, password: admin) with a specific blocksize (100).
--In the web interface, set the following parameters:
-  server_ip = 192.168.1.4
-  port = 2121
-  choose "download" mode
-  choose "existing" file
-  choose "1M_file.txt" as "file_choice"
-  user = admin
-  password = admin
-  blocksize = 100
+=== Examples ===
 
-Example 2: A FTP client which uploads a specific file (/srv/own_file.txt) on a server (IP: 192.168.1.4, port: 2121) which needs authentification (user name: admin, password: admin) with a specific blocksize (10000).
--In the web interface, set the following parameters:
-  server_ip = 192.168.1.4
-  port = 2121
-  choose "upload" mode
-  choose "own" file
-  choose "own_file.txt" as "file_path" (consider /srv/ as home directory)
-  user = admin
-  password = admin
-  blocksize = 10000
+== Example 1 ==
+
+A FTP client which downloads a pre-existing file (1M_file.txt) on a server (IP: ''192.168.1.4'', port: ''2121'') which needs authentification (user name: admin, password: admin) with a specific blocksize (100).
+
+In the web interface, set the following parameters:
+
+  * **server_ip** = 192.168.1.4
+  * **port** = 2121
+  * **mode** = download
+  * **file** = existing
+  * **file_choice** = 1M_file.txt
+  * **user** = admin
+  * **password** = admin
+  * **blocksize** = 100
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=ftp_clt sudo -E python3 /opt/openbach/agent/jobs/ftp_clt/ftp_clt.py -u admin -p admin -b 100 192.168.1.4 2121 download existing 1M_file.txt
+</code>
+
+== Example 2 ==
+
+A FTP client which uploads a specific file (''/srv/own_file.txt'') on a server (IP: ''192.168.1.4'', port: ''2121'') which needs authentification (user name: admin, password: admin) with a specific blocksize (10000).
+
+In the web interface, set the following parameters:
+  * **server_ip** = 192.168.1.4
+  * **port** = 2121
+  * **mode** = upload
+  * **file** = own
+  * **file_path** = "own_file.txt" (consider /srv/ as home directory)
+  * **user** = admin
+  * **password** = admin
+  * **blocksize** = 10000
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=ftp_clt sudo -E python3 /opt/openbach/agent/jobs/ftp_clt/ftp_clt.py -u admin -p admin -b 10000 192.168.1.4 2121 upload own own_file.txt
+</code>

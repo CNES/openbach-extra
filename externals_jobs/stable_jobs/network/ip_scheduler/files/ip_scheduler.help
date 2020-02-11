@@ -1,5 +1,5 @@
-Job description
-===============
+=== Job description ===
+
 This job allows to:
   * remove all qdisc rules on an interface
   * change the qdisc rules on an interface using a configuration file
@@ -65,27 +65,38 @@ If we need a qos scheduler, we need to specify for each priority:
   * the maximum rate
   * the queue size in bytes
   * an AQM if needed
-A strict priority scheduling is applied between these four priorities. The scheduling is made according to the ToS field:
-  * prio_0 : ToS = 0x0
-  * prio_1 : ToS = 0x8
-  * prio_2 : ToS = 0x18
-  * prio_3 : ToS = 0x10
 
-Examples
-========
-Example 1: Clear all qdisc rules on the interface "ens4"
--In the web interface, set the following parameters:
-    interface_name = ens4
-    action = remove
+A strict priority scheduling is applied between these four priorities (the priomap used is ''0 0 1 1 2 2 3 3 3 0 0 0 0 0 0 0''). The scheduling is made according to the ToS field:
+  * prio_0 : ToS = 0x0, DSCP = 0x0
+  * prio_1 : ToS = 0x8, DSCP = 0x2
+  * prio_2 : ToS = 0x18, DSCP = 0x6
+  * prio_3 : ToS = 0x10, DSCP = 0x4
 
--Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id): 
-    JOB_NAME=ip_scheduler sudo -E python3 /opt/openbach/agent/jobs/ip_scheduler/ip_scheduler.py ens4 remove
+=== Examples ===
 
-Example 2: Apply the configuration file (/path/of/the/file) on qdisc of the interface "ens4"
--In the web interface, set the following parameters:
-    interface_name = ens4
-    action = add
-    file_path = /path/of/the/file
+== Example 1 ==
 
--Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id):
-    JOB_NAME=ip_scheduler sudo -E python3 /opt/openbach/agent/jobs/ip_scheduler/ip_scheduler.py ens4 add /path/of/the/file
+Clear all qdisc rules on the interface //ens4//.
+
+In the web interface, set the following parameters:
+  * **interface_name** = ens4
+  * **action** = remove
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=ip_scheduler sudo -E python3 /opt/openbach/agent/jobs/ip_scheduler/ip_scheduler.py ens4 remove
+</code>
+
+== Example 2 ==
+
+Apply the configuration file (''/path/of/the/file'') on qdisc of the interface //ens4//.
+
+In the web interface, set the following parameters:
+  * **interface_name** = ens4
+  * **action** = add
+  * **file_path** = /path/of/the/file
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=ip_scheduler sudo -E python3 /opt/openbach/agent/jobs/ip_scheduler/ip_scheduler.py ens4 add /path/of/the/file
+</code>
