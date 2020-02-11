@@ -1,5 +1,6 @@
 The job applies a rule in the mangle table using iptables in order to mark the matched packets setting the ToS field.
 The user can add or delete a rule to start or stop marking the packet.
 
-/!\IMPORTANT INFORMATION
-The job is IDEMPOTENT : the rule is not added if it already exists, and the the running does not fail if the user tries to delete a rule which does not exists.
+=== Warning ===
+
+The job is **IDEMPOTENT** : the rule is not added if it already exists, and the the running does not fail if the user tries to delete a rule which does not exists.
