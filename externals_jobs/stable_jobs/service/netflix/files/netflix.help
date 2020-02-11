@@ -1,15 +1,15 @@
-Examples:
-========
-Example1: From a given Agent, sign in to a netflix user account using 'your_netflix_email_address' and 'your_netflix_password' as email address and password respectively. Then plays a netflix video during 60 seconds.
- 
--In the web interface, set the following parameters:
+=== Examples ===
 
- For Agent:
-    email_address = your_netflix_email_address
-    password = your_netflix_password
-    duration = 60
-    
--Or launch the job manually from the Agents as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id of 0): 
-    From CLI of the Agent: 
-    JOB_NAME=netflix sudo -E -u openbach python3 /opt/openbach/agent/jobs/netflix/netflix.py your_netflix_email_address your_netflix_password 60
+== Example 1 ==
 
+From a given Agent, sign in to a netflix user account using 'your_netflix_email_address' and 'your_netflix_password' as email address and password respectively. Then plays a netflix video during 60 seconds.
+
+In the web interface, set the following parameters:
+  * **email_address** = your_netflix_email_address
+  * **password** = your_netflix_password
+  * **duration** = 60
+
+Or launch the job manually from the Agents as follows:
+<code>
+JOB_NAME=netflix sudo -E -u openbach python3 /opt/openbach/agent/jobs/netflix/netflix.py your_netflix_email_address your_netflix_password 60
+</code>

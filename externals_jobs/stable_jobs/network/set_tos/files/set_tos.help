@@ -1,6 +1,40 @@
 The job applies a rule in the mangle table using iptables in order to mark the matched packets setting the ToS field.
 The user can add or delete a rule to start or stop marking the packet.
 
+=== Examples ===
+
+== Example 1 ==
+
+Add the ToS value ''0x18'' for packets on the interface //ens4// in POSTROUTING. Mark only TCP packets going to ''192.168.1.2'' and coming from port ''5000''.
+
+In the web interface, set the following parameters:
+  * **action** = add
+  * **tos** = 0x18
+  * **chain** = POSTROUTING
+  * **out_interface** = ens4
+  * **protocol** = tcp
+  * **ip_dest** = 192.168.1.2
+  * **port_src** = 5000
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=set_tos sudo -E python3 /opt/openbach/agent/jobs/set_tos/set_tos.py -p tcp -d 192.168.1.2 --sport 5000 add 0x18 POSTROUTING -o ens4
+</code>
+
+You can check the rule is correctly added by entering the following command on the Agent:
+
+<code>
+sudo iptables -t mangle -L
+</code>
+
+The result should contain at least these lines:
+
+<code>
+Chain POSTROUTING (policy ACCEPT)
+target     prot opt source               destination
+TOS        tcp  --  anywhere             192.168.1.2          tcp spt:5000 TOS set 0x18/0xff
+</code>
+
 === Warning ===
 
-The job is **IDEMPOTENT** : the rule is not added if it already exists, and the the running does not fail if the user tries to delete a rule which does not exists.
+<note important>WARNING: The job is **IDEMPOTENT** : the rule is not added if it already exists, and the the running does not fail if the user tries to delete a rule which does not exists.</note>

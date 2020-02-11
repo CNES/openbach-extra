@@ -77,20 +77,26 @@ A strict priority scheduling is applied between these four priorities (the priom
 == Example 1 ==
 
 Clear all qdisc rules on the interface //ens4//.
-  * In the web interface, set the following parameters:
-    * **interface_name** = ens4
-    * **action** = remove
 
-  * Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a //job_instance_id//, //scenario_instance_id// and //owner_scenario_instance_id//):
-    * ''JOB_NAME=ip_scheduler sudo -E python3 /opt/openbach/agent/jobs/ip_scheduler/ip_scheduler.py ens4 remove''
+In the web interface, set the following parameters:
+  * **interface_name** = ens4
+  * **action** = remove
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=ip_scheduler sudo -E python3 /opt/openbach/agent/jobs/ip_scheduler/ip_scheduler.py ens4 remove
+</code>
 
 == Example 2 ==
 
 Apply the configuration file (''/path/of/the/file'') on qdisc of the interface //ens4//.
-  * In the web interface, set the following parameters:
-    * **interface_name** = ens4
-    * **action** = add
-    * **file_path** = /path/of/the/file
 
-  * Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a //job_instance_id//, //scenario_instance_id// and //owner_scenario_instance_id//):
-    * ''JOB_NAME=ip_scheduler sudo -E python3 /opt/openbach/agent/jobs/ip_scheduler/ip_scheduler.py ens4 add /path/of/the/file''
+In the web interface, set the following parameters:
+  * **interface_name** = ens4
+  * **action** = add
+  * **file_path** = /path/of/the/file
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=ip_scheduler sudo -E python3 /opt/openbach/agent/jobs/ip_scheduler/ip_scheduler.py ens4 add /path/of/the/file
+</code>

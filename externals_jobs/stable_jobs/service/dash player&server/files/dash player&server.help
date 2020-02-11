@@ -1,22 +1,27 @@
-Job description
-===============
-This job deploys an Apache2 server (listen on all IPs, i.e. 0.0.0.0 on ports 8083 or 8084) with a DASH video in 4 different qualities and a web integrated DASH JS player.
+=== Job description ===
+
+This job deploys an Apache2 server (listen on all IPs, i.e. ''0.0.0.0'' on ports 8083 or 8084) with a DASH video in 4 different qualities and a web integrated DASH JS player.
 This JS progamm can be run  by Chrome/Firefox to play video which will be streamed over http/1.1 or http/2 according to the used protocol (http or https) and port (8083 or 8084).
 The job also collects metrics from the player (video quality, bandwidth, rtt, buffer size, etc.)
 
+=== Examples ===
 
-Examples:
-========
-Example1: Launch dash server on entity called 'server.
--In the web interface of the openbach controller: 
- 1. create a new scenario
- 2. add a start_job_instance to run the job dash on a agent on which it is installed, 
- 3. then run the scenario using 'Launch' button
+== Example 1 ==
 
--Or launch the job manually from CLI of the Agent as follows: 
-    JOB_NAME=dash sudo -E python3 /opt/openbach/agent/jobs/apache2/apache2.py 
+Launch dash server on entity called 'server'.
 
-Note that, apache2 daemon will start for listening to HTTP requests on ports 8083 and 8084 
-for http/1.1 and http/2 respectively. Client must specify protocol http or https in url like that:
-For http/1.1: http://server_ip:8083/vod-dash/
-For http/2: https://server_ip:8084/vod-dash
+In the web interface of the openbach controller:
+  - create a new scenario
+  - add a start_job_instance to run the job dash on a agent on which it is installed,
+  - then run the scenario using 'Launch' button
+
+Or launch the job manually from CLI of the Agent as follows:
+<code>
+JOB_NAME=dash sudo -E python3 /opt/openbach/agent/jobs/apache2/apache2.py
+</code>
+
+<note>
+Note that, apache2 daemon will start for listening to HTTP requests on ports 8083 and 8084 for http/1.1 and http/2 respectively. Client must specify protocol http or https in url like that:
+  * For http/1.1: http://server_ip:8083/vod-dash/
+  * For http/2: https://server_ip:8084/vod-dash
+</note>

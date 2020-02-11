@@ -1,5 +1,5 @@
-Job description
-===============
+=== Job description ===
+
 This Job starts a daemon on the server machine to compute one-way delay. Must be used with owamp-client.
 
 To measure one-way delay: a TCP control connection is opened before the packets sending and requires a client who launch the command and a server on which a daemon (owamp-server) is running.
@@ -13,13 +13,18 @@ Client Job (owamp-client): executes owping command. Requires to be launched afte
 
 This Job doesn't return any statistics. It only switches on the appropriate daemon and switches it off when job instance has finished.
 
-NTP must be running. If not: synchronization issue.
+<note important>WARNING: NTP must be running. If not: synchronization issue.</note>
 
-Examples
-========
-Example 1: Launche the server on the agent (IP = 192.168.1.1) 
--In the web interface, set the following parameters:
-    server_address = 192.168.1.1
+=== Examples ===
 
--Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id): 
-    JOB_NAME=owamp-server sudo -E python3 /opt/openbach/agent/jobs/owamp-server/owamp-server.py 192.168.1.1
+== Example 1 ==
+
+Launch the server on the agent (IP = ''192.168.1.1'').
+
+In the web interface, set the following parameters:
+  * **server_address** = 192.168.1.1
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=owamp-server sudo -E python3 /opt/openbach/agent/jobs/owamp-server/owamp-server.py 192.168.1.1
+</code>

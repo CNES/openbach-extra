@@ -7,8 +7,10 @@ The web pages are specified in the job file "config.yaml", and can be changed.
 
 Fetch two times, each webpages listed at section //web_pages_to_fetch// in //config.yaml// and compute W3C metrics as statistics.
 
-  * In the web interface, set the following parameters:
-    * **nb_runs** = 2
+In the web interface, set the following parameters:
+  * **nb_runs** = 2
 
-  * Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a //job_instance_id//, //scenario_instance_id// and //owner_scenario_instance_id//):
-    * ''JOB_NAME=web_browsing_qoe sudo -H python3 /opt/openbach/agent/jobs/web_browsing_qoe/web_browsing_qoe.py -nb_runs 2''
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=web_browsing_qoe sudo -H python3 /opt/openbach/agent/jobs/web_browsing_qoe/web_browsing_qoe.py -nb_runs 2
+</code>

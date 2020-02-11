@@ -6,17 +6,25 @@ This job generates a VoIP call to the job //voip_qoe_dest//. Both jobs have to w
 
 We launch a VoIP call from Agent "caller" with IP address ''192.168.1.4'' to agent "receiver" with IP address ''192.168.1.5''. The call lasts 50 seconds using G.711.1 as codec.
 
-We need to launch the job //voip_qoe_dest// first on the "receiver", which will wait for a call from the job //voip_qoe_src// on the "sender" Agent. The configuration of the jobs is as follow:
-  * In the web interface, set the following parameters:
-    * For Agent "receiver", run //voip_qoe_dest// job:
-      * run the job with default parameters
-    * For Agent "caller", run //voip_qoe_src// job (Start 5s after receiver is launched):
-      * **src_addr** = 192.168.1.4
-      * **dest_addr** = 192.168.1.5
-      * **codec** = G.711.1
-      * **duration** = 50000 
-  * Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a //job_instance_id//, //scenario_instance_id// and //owner_scenario_instance_id//):
-    * From "receiver" Agent:
-      * ''JOB_NAME=voip_qoe_dest sudo -E python3 /opt/openbach/agent/jobs/voip_qoe_dest/voip_qoe_dest.py''
-    * From "caller" Agent:
-      * ''JOB_NAME=voip_qoe_src sudo -E python3 /opt/openbach/agent/jobs/voip_qoe_src/voip_qoe_src.py 192.168.1.4 192.168.1.5 G.711.1 50000''
+We need to launch the job //voip_qoe_dest// first on the "receiver", which will wait for a call from the job //voip_qoe_src// on the "sender" Agent.
+
+In the web interface, set the following parameters:
+  * For Agent "receiver", run //voip_qoe_dest// job:
+    * run the job with default parameters
+  * For Agent "caller", run //voip_qoe_src// job (Start 5s after receiver is launched):
+    * **src_addr** = 192.168.1.4
+    * **dest_addr** = 192.168.1.5
+    * **codec** = G.711.1
+    * **duration** = 50000
+
+Or launch the job manually from the Agent as follows:
+
+From "receiver" Agent:
+<code>
+JOB_NAME=voip_qoe_dest sudo -E python3 /opt/openbach/agent/jobs/voip_qoe_dest/voip_qoe_dest.py
+</code>
+
+From "caller" Agent:
+<code>
+JOB_NAME=voip_qoe_src sudo -E python3 /opt/openbach/agent/jobs/voip_qoe_src/voip_qoe_src.py 192.168.1.4 192.168.1.5 G.711.1 50000
+</code>
