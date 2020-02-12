@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2018 CNES
+# Copyright © 2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -32,6 +32,7 @@
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
  * Francklin SIMO <francklin.simo@toulouse.viveris.com>
+ * Matthieu Petrou <matthieu.petrou@viveris.fr>
 '''
 
 import collect_agent
@@ -63,7 +64,7 @@ def connect_to_collect_agent():
 
 
 # TODO: Add support for other web browsers
-def init_driver(binary_path, binary_type):
+def init_driver(binary_path, binary_type, stop_compression, proxy_add, proxy_port):
     """
     Method to initialize a Selenium driver. Only support Firefox browser for now.
     Args:
@@ -77,6 +78,19 @@ def init_driver(binary_path, binary_type):
         binary = FirefoxBinary(binary_path)
         options = FirefoxOptions()
         options.add_argument("--headless")
+        if stop_compression:
+            options.set_preference("network.http.accept-encoding", "")
+            options.set_preference("network.http.accept-encoding.secure", "")
+        if proxy_add and proxy_port:
+            options.set_preference("network.proxy.ftp", proxy_add)
+            options.set_preference("network.proxy.ftp_port", proxy_port)
+            options.set_preference("network.proxy.http", proxy_add)
+            options.set_preference("network.proxy.http_port", proxy_port)
+            options.set_preference("network.proxy.socks", proxy_add)
+            options.set_preference("network.proxy.socks_port", proxy_port)
+            options.set_preference("network.proxy.ssl", proxy_add)
+            options.set_preference("network.proxy.ssl_port", proxy_port)
+            options.set_preference("network.proxy.type", 1)
         driver = webdriver.Firefox(firefox_binary=binary, firefox_options=options)
     return driver
 
@@ -92,7 +106,12 @@ def compute_qos_metrics(driver, url_to_fetch, qos_metrics):
         results(dict(str,object)): a dictionary containing the different metrics/values.
     """
     results = dict()
-    driver.get(url_to_fetch)
+    try:
+        driver.get(url_to_fetch)
+    except WebDriverException as ErrorMessage:
+        print(ErrorMessage)
+        collect_agent.send_log(syslog.LOG_ERR, Erroressage)
+        exit(ErrorMessage)
     for key, value in qos_metrics.items():
         results[key] = driver.execute_script(value)
     return results
@@ -128,11 +147,11 @@ def kill_all(parent_pid, signum, frame):
     parent.kill()
 
 
-def launch_thread(collect_agent, url, config, qos_metrics):
+def launch_thread(collect_agent, url, config, qos_metrics, stop_compression, proxy_add, proxy_port):
     binary_path = config['driver']['binary_path']
     binary_type =  config['driver']['binary_type']
     try:
-        my_driver = init_driver(binary_path, binary_type)
+        my_driver = init_driver(binary_path, binary_type, stop_compression, proxy_add, proxy_port)
     except Exception as ex:
         message = 'ERROR when initializing the web driver: {}'.format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
@@ -155,7 +174,7 @@ def launch_thread(collect_agent, url, config, qos_metrics):
         exit(message)
 
 
-def main(nb_runs, max_threads):
+def main(nb_runs, max_threads, stop_compression, proxy_address, proxy_port):
     # Connect to collect agent
     connect_to_collect_agent()
     # Set signal handler
@@ -176,7 +195,7 @@ def main(nb_runs, max_threads):
             for url in config['web_pages_to_fetch']:
                 while threading.active_count() > max_threads:
                     time.sleep(1)
-                t = threading.Thread(target=launch_thread, args=(collect_agent, url, config, qos_metrics))
+                t = threading.Thread(target=launch_thread, args=(collect_agent, url, config, qos_metrics, stop_compression, proxy_address, proxy_port))
                 thread_list.append(t)
                 t.start()
                 time.sleep(2)
@@ -194,7 +213,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("nb_runs", help="The number of fetches to perform for each website", type=int)
     parser.add_argument("-p", "--nb_parallel_runs", help="The number of fetches that can work simultaneously (default = 1)", type=int, default=1)
+    parser.add_argument('-nc', '--no_compression', action = 'store_true', help = 'Prevent compression for transmission')
+    parser.add_argument('-Pa', '--proxy_address', help = "Set the proxy address (also needs a proxy port)", type = str)
+    parser.add_argument('-Pp', '--proxy_port', help = "Set the proxy port (also needs a proxy address)", type = int)
+
     args = parser.parse_args()
-    
-    main(args.nb_runs, args.nb_parallel_runs)
+
+    main(args.nb_runs, args.nb_parallel_runs, args.no_compression, args.proxy_address, args.proxy_port)
     
