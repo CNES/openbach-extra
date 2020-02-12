@@ -108,12 +108,14 @@ def compute_qos_metrics(driver, url_to_fetch, qos_metrics):
     results = dict()
     try:
         driver.get(url_to_fetch)
+        for key, value in qos_metrics.items():
+            results[key] = driver.execute_script(value)
     except WebDriverException as ErrorMessage:
-        print(ErrorMessage)
-        collect_agent.send_log(syslog.LOG_ERR, Erroressage)
-        exit(ErrorMessage)
-    for key, value in qos_metrics.items():
-        results[key] = driver.execute_script(value)
+        message = 'ERROR when getting url: {}'.format(ErrorMessage)
+        print(message)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        driver.quit()
+        exit(message)
     return results
 
     
