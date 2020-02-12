@@ -67,9 +67,12 @@ def main(scenario_name='configure_link', argv=None):
             '--jitter', type=int, default=0, 
             help='Delay variation, in ms (only for apply operation)')
     observer.add_scenario_argument(
-            '--dd', '--delay_distribution', 
+            '--dd', '--delay_distribution',
             choices=['uniform', 'normal', 'pareto', 'paretonormal'], default='normal', 
             help='Distribution to use to choose delay value (only for apply operation)')
+    observer.add_scenario_argument(
+            '--buffer_size', type=int, default=10000,
+            help='Size of the buffer for qlen and netem limit parameter (default=10000)')
         
     args = observer.parse(argv, scenario_name)
 
@@ -84,6 +87,7 @@ def main(scenario_name='configure_link', argv=None):
                 args.dd,
                 args.lm,
                 args.lmp,
+                args.buffer_size
     )
     observer.launch_and_wait(scenario)
 
