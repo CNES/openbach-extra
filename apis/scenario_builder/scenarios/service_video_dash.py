@@ -31,7 +31,7 @@ from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
-SCENARIO_DESCRIPTION="""This scenario launches one DASH transfert"""
+SCENARIO_DESCRIPTION="""This scenario launches one DASH transfer"""
 SCENARIO_NAME="""service_video_dash"""
 
 def extract_jobs_to_postprocess(scenario):
