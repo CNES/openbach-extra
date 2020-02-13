@@ -31,11 +31,18 @@ at job installation"""
 
 dst = open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux.conf","w")
 for param in ["tcp_congestion_control", "tcp_slow_start_after_idle", 
-		"tcp_no_metrics_save", "tcp_sack", "tcp_recovery", "tcp_wmem", "tcp_fastopen"]:
+		"tcp_no_metrics_save", "tcp_sack", "tcp_recovery", "tcp_wmem",
+		"tcp_rmem", "tcp_fastopen"]:
 	src = open("/proc/sys/net/ipv4/"+param,"r")
 	value = src.readline()
 	src.close()
 	dst.write("net.ipv4."+param+"="+value)
+for param in ["rmem_max", "rmem_default",
+		"wmem_max", "wmem_default"]:
+	src = open("/proc/sys/net/core/"+param,"r")
+	value = src.readline()
+	src.close()
+	dst.write("net.core."+param+"="+value)
 dst.close()
 
 dst = open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux_cubic.conf","w")

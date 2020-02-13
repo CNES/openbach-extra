@@ -111,11 +111,46 @@ arguments:
       count: 1
       flag: '--tcp_wmem_max'
       description: The tcp_wmem_max field (default = between 64K and 4M)
+    - name: tcp_rmem_min
+      type: 'int'
+      count: 1
+      flag: '--tcp_rmem_min'
+      description: The tcp_rmem_min field (default = 4K)
+    - name: tcp_rmem_default
+      type: 'int'
+      count: 1
+      flag: '--tcp_rmem_default'
+      description: The tcp_rmem_default field (default = 87K)
+    - name: tcp_rmem_max
+      type: 'int'
+      count: 1
+      flag: '--tcp_rmem_max'
+      description: The tcp_rmem_max field (default = between 87K and 6M)
     - name: tcp_fastopen
       type: 'int'
       count: 1
       flag: '--tcp_fastopen'
       description: The tcp_fastopen field (possible = {1,2,4,200,400}, default = 1)
+    - name: core_wmem_default
+      type: 'int'
+      count: 1
+      flag: '--core_wmem_default'
+      description: The core_wmem_default field (default = 212992)
+    - name: core_wmem_max
+      type: 'int'
+      count: 1
+      flag: '--core_wmem_max'
+      description: The core_wmem_max field (default = 212992)
+    - name: core_rmem_default
+      type: 'int'
+      count: 1
+      flag: '--core_rmem_default'
+      description: The core_rmem_default field (default = 212992)
+    - name: core_rmem_max
+      type: 'int'
+      count: 1
+      flag: '--core_rmem_max'
+      description: The core_rmem_max field (default = 212992)
 
 statistics:
   - name: "tcp_congestion_control"
@@ -142,8 +177,29 @@ statistics:
   - name: "tcp_wmem_max"
     description: The value of tcp_wmem_max after launching the job
     frequency: 'once'
+  - name: "tcp_rmem_min"
+    description: The value of tcp_rmem_min after launching the job
+    frequency: 'once'
+  - name: "tcp_rmem_default"
+    description: The value of tcp_rmem_default after launching the job
+    frequency: 'once'
+  - name: "tcp_rmem_max"
+    description: The value of tcp_rmem_max after launching the job
+    frequency: 'once'
   - name: "tcp_fastopen"
     description: The value of tcp_fastopen after launching the job
+    frequency: 'once'
+  - name: "core_wmem_default"
+    description: The value of core_wmem_default after launching the job
+    frequency: 'once'
+  - name: "core_wmem_max"
+    description: The value of core_wmem_max after launching the job
+    frequency: 'once'
+  - name: "core_rmem_default"
+    description: The value of core_rmem_default after launching the job
+    frequency: 'once'
+  - name: "core_rmem_max"
+    description: The value of core_rmem_max after launching the job
     frequency: 'once'
   - name: "beta"
     description: The value of tcp_cubic beta after launching the job
