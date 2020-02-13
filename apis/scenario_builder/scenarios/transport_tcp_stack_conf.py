@@ -27,35 +27,42 @@
 #   this program. If not, see http://www.gnu.org/licenses/.
 
 from scenario_builder import Scenario
-from scenario_builder.helpers.transport.tcp_conf_linux import tcp_conf_linux_repetitive_tests
+from scenario_builder.helpers.transport.tcp_conf_linux import tcp_conf_linux_variable_args_number
 from scenario_builder.helpers.transport.ethtool import ethtool_disable_segmentation_offload
 from scenario_builder.helpers.network.ip_route import ip_route
 from inspect import signature
 
 
 SCENARIO_DESCRIPTION="""This *transport_tcp_stack_conf* scenario allows to configure:
-     - TCP congestion control, 
+     - TCP congestion control and associated parameters,
      - route including TCP parameters like initial congestion and receive windows 
      - TCP segmentation offloading on a network interface.
+
+If reset option is set, the sysctl and CUBIC parameters are reset to the value
+they had at the installation of the job of tcp_conf_linux. Then the parameters
+are updated only if a new value is set in the arguments. More information on
+the wiki page of the job tcp_conf_linux.
 """
 SCENARIO_NAME="""transport_tcp_stack_conf"""
 
 
-def build(entity, cc=None, interface=None, route=None, scenario_name=SCENARIO_NAME):
+def build(entity, tcp_params, tcp_subparams, interface=None, route=None, scenario_name=SCENARIO_NAME):
     # Create scenario and add scenario arguments if needed
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    args = {'entity': entity, 'cc':cc, 'interface':interface}
+
+    args = {'entity': entity, 'cc':tcp_params["congestion_control"], 'interface':interface}
+
     args.update(route if route else {})
     for arg, value in args.items():
         if str(value).startswith('$'):
            scenario.add_argument(value[1:], '')
-    if cc:
-       tcp_conf_linux_repetitive_tests(scenario, entity, cc)
+
+    tcp_conf_linux_variable_args_number(scenario, entity, tcp_params, tcp_subparams)
     if interface:
        ethtool_disable_segmentation_offload(scenario, entity, interface)
-    if route:
-       ip_route(scenario, entity, 'change', **route)
+    if route and "destination_ip" in route and route["destination_ip"] is not None:
+      op = route["operation"]
+      del route["operation"]
+      ip_route(scenario, entity, op, **route)
       
     return scenario
-
-
