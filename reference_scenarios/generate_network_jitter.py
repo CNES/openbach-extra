@@ -39,27 +39,27 @@ from scenario_builder.scenarios import network_jitter
 def main(scenario_name='generate_network_jitter', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--client', '--client-entity', required=True,
+            '--clt_entity', '--clt', required=True,
             help='name of the entity for the client of the RTT tests')
     observer.add_scenario_argument(
-            '--server', '--server-entity', required=True,
+            '--srv_entity', '--srv', required=True,
             help='name of the entity for the server of the owamp RTT test')
     observer.add_scenario_argument(
-            '--ip_dst', required=True, help='server ip address and target of the pings')
+            '--srv_ip', required=True, help='server ip address and target of the pings')
     observer.add_scenario_argument(
-            '--port', default=7000, help='the iperf3 server port for data')
+            '--srv_port', default=7000, help='the iperf3 server port for data')
     observer.add_scenario_argument(
             '--duration', default=10,
             help='the duration of iperf3 test')
     observer.add_scenario_argument(
-            '--num_flows', default='1',
+            '--num_flows', default=1,
             help='the number of flows to launch with iperf3')
     observer.add_scenario_argument(
-            '--tos', default='0',
+            '--tos', default=0,
             help='the ToS of iperf3 test')
     observer.add_scenario_argument(
             '--bandwidth', default='1M',
-            help='the bandwidth (bits/s) of iperf3 test')
+            help='the bandwidth (bits/s) of iperf3 test ')
     observer.add_scenario_argument(
             '--entity_pp', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
@@ -67,10 +67,10 @@ def main(scenario_name='generate_network_jitter', argv=None):
     args = observer.parse(argv, scenario_name)
 
     scenario = network_jitter.build(
-                      args.client,
-                      args.server,
-                      args.ip_dst,
-                      args.port,
+                      args.clt_entity,
+                      args.srv_entity,
+                      args.srv_ip,
+                      args.srv_port,
                       args.duration,
                       args.num_flows,
                       args.tos,
