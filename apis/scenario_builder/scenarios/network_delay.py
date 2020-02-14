@@ -69,8 +69,9 @@ def network_delay_sequential_core(clt_entity, scenario_name='network_delay_seque
     scenario.add_argument('duration', 'The duration of each fping/hping tests')
 
     wait = fping_measure_rtt(scenario, clt_entity, '$srv_ip', '$duration')
+    # TODO Check hping performance test with wireshark and remove ?
     wait = hping_measure_rtt(scenario, clt_entity, '$srv_ip', '$duration', wait)
-
+    #TODO Add d-itg delay test ?
     return scenario
 
 
