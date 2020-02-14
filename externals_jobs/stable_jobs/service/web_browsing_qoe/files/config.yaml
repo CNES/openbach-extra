@@ -56,6 +56,16 @@ qos_metrics:
     pretty_name: DNS Lookup Start Time
     js: return window.performance.timing.domainLookupStart - window.performance.timing.navigationStart
     unit: ms
+  transfer_size:
+    id: transfer_size
+    pretty_name: Transfer Size
+    js: return performance.getEntriesByType("navigation")[0].transferSize
+    unit: Bytes
+  bandwidth:
+    id: bandwidth
+    pretty_name: Bandwidth
+    js: return Math.round((performance.getEntriesByType("navigation")[0].transferSize * 8000) / (performance.getEntriesByType("navigation")[0].responseEnd - performance.getEntriesByType("navigation")[0].responseStart))
+    unit: bps
    
 web_pages_to_fetch:
   - https://www.google.com
