@@ -81,6 +81,7 @@ def init_driver(binary_path, binary_type, stop_compression, proxy_add, proxy_por
         if stop_compression:
             options.set_preference("network.http.accept-encoding", "")
             options.set_preference("network.http.accept-encoding.secure", "")
+            options.set_preference("devtools.cache.disabled", True)
         if proxy_add and proxy_port:
             options.set_preference("network.proxy.ftp", proxy_add)
             options.set_preference("network.proxy.ftp_port", proxy_port)
