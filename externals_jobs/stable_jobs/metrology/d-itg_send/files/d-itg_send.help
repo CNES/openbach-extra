@@ -23,6 +23,8 @@ The validated metrics are the following:
   * bitrate
   * rttm
 
+Tool's parameter "packet rate" is not always respected (>100 packets/sec) by d-itg. Therefore the bandwidth and packrate set in the job are not guaranteed.
+
 === Examples ===
 
 == Example 1 ==
