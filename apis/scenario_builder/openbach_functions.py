@@ -89,11 +89,11 @@ class StartJobInstance(OpenBachFunction):
                           the job on the command line when starting it.
         """
 
-        arguments = self.start_job_instance
-        arguments.clear()
-        arguments['entity_name'] = entity_name
-        arguments['offset'] = offset
-        arguments[job_name] = job_arguments
+        self.start_job_instance = {
+                'entity_name': entity_name,
+                'offset': offset,
+                job_name: job_arguments,
+        }
         self.job_name = job_name
 
     def build(self, functions, function_id):
@@ -210,7 +210,7 @@ class StartScenarioInstance(OpenBachFunction):
 
 
 class StopScenarioInstance(OpenBachFunction):
-    """Representation of the stop_scenario_instance openbach functio."""
+    """Representation of the stop_scenario_instance openbach function."""
 
     def __init__(self, launched, finished, delay, label):
         super().__init__(launched, finished, delay, label)
@@ -362,6 +362,41 @@ class While(_Condition):
         name_true = 'openbach_functions_while'
         name_false = 'openbach_functions_end'
         return super().build(functions, function_id, 'while', name_true, name_false)
+
+
+class PushFile(OpenBachFunction):
+    """Representation of the push_file openbach function."""
+
+    def __init__(self, launched, finished, delay, label):
+        super().__init__(launched, finished, delay, label)
+        self.arguments = None
+
+    def configure(self, entity_name, controller_path, agent_path):
+        """Define this openbach function with the mandatory values:
+         - entity_name: name of the entity (hopefully with an agent
+                        installed on) that should receive the file;
+         - controller_path: path of the file to send, on the controller;
+         - agent_path: path where to store the file on the agent;
+        """
+        self.arguments = {
+                'entity_name': entity_name,
+                'local_path': controller_path,
+                'remote_path': agent_path,
+        }
+
+    def build(self, functions, function_id):
+        """Construct a dictionary representing this function.
+
+        This dictionary is suitable to be included in the
+        `openbach_functions` array of the associated scenario.
+        """
+
+        if self.arguments is None:
+            raise ImproperlyConfiguredFunction('push_file')
+
+        context = super().build(functions, function_id)
+        context['push_file'] = self.arguments.copy()
+        return context
 
 
 def safe_indexor(reference, lookup):
