@@ -68,9 +68,23 @@ def check_cc(congestion_control_name):
                 message)
        sys.exit(message)
 
-def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
-    tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
-    tcp_wmem_max,tcp_fastopen):
+def set_main_args(reset,
+        tcp_congestion_control,
+        tcp_slow_start_after_idle,
+        tcp_no_metrics_save,
+        tcp_sack,
+        tcp_recovery,
+        tcp_wmem_min,
+        tcp_wmem_default,
+        tcp_wmem_max,
+        tcp_rmem_min,
+        tcp_rmem_default,
+        tcp_rmem_max,
+        tcp_fastopen,
+        core_wmem_default,
+        core_wmem_max,
+        core_rmem_default,
+        core_rmem_max):
     collect_agent.register_collect(
         '/opt/openbach/agent/jobs/tcp_conf_linux/'
         'tcp_conf_linux_rstats_filter.conf'
@@ -113,30 +127,35 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
         src = open("/proc/sys/net/ipv4/tcp_congestion_control","r")
         conf_file.write("net.ipv4.tcp_congestion_control="+src.readline())
         src.close()
+
     if tcp_slow_start_after_idle is not None:
         conf_file.write("net.ipv4.tcp_slow_start_after_idle="+str(tcp_slow_start_after_idle)+"\n")
     else:
         src = open("/proc/sys/net/ipv4/tcp_slow_start_after_idle","r")
         conf_file.write("net.ipv4.tcp_slow_start_after_idle="+src.readline())
         src.close()
+
     if tcp_no_metrics_save is not None:
         conf_file.write("net.ipv4.tcp_no_metrics_save="+str(tcp_no_metrics_save)+"\n")
     else:
         src = open("/proc/sys/net/ipv4/tcp_no_metrics_save","r")
         conf_file.write("net.ipv4.tcp_no_metrics_save="+src.readline())
         src.close()
+
     if tcp_sack is not None:
         conf_file.write("net.ipv4.tcp_sack="+str(tcp_sack)+"\n")
     else:
         src = open("/proc/sys/net/ipv4/tcp_sack","r")
         conf_file.write("net.ipv4.tcp_sack="+src.readline())
         src.close()
+
     if tcp_recovery is not None:
         conf_file.write("net.ipv4.tcp_recovery="+str(tcp_recovery)+"\n")
     else:
         src = open("/proc/sys/net/ipv4/tcp_recovery","r")
         conf_file.write("net.ipv4.tcp_recovery="+src.readline())
         src.close()
+
     if tcp_wmem_min is not None or tcp_wmem_default is not None or tcp_wmem_max is not None:
         rc = subprocess.Popen("cat /proc/sys/net/ipv4/tcp_wmem", shell=True, 
             stdout=subprocess.PIPE)
@@ -153,12 +172,59 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
         src = open("/proc/sys/net/ipv4/tcp_wmem","r")
         conf_file.write("net.ipv4.tcp_wmem="+src.readline())
         src.close()
+
+    if tcp_rmem_min is not None or tcp_rmem_default is not None or tcp_rmem_max is not None:
+        rc = subprocess.Popen("cat /proc/sys/net/ipv4/tcp_rmem", shell=True,
+            stdout=subprocess.PIPE)
+        rmem_old = [x.decode("utf-8") for x in rc.stdout.read().split()]
+        if tcp_rmem_min is None:
+            tcp_rmem_min = rmem_old[0]
+        if tcp_rmem_default is None:
+            tcp_rmem_default = rmem_old[1]
+        if tcp_rmem_max is None:
+            tcp_rmem_max = rmem_old[2]
+        conf_file.write("net.ipv4.tcp_rmem="+str(tcp_rmem_min)+" "+
+            str(tcp_rmem_default)+" "+str(tcp_rmem_max)+"\n")
+    else:
+        src = open("/proc/sys/net/ipv4/tcp_wmem","r")
+        conf_file.write("net.ipv4.tcp_wmem="+src.readline())
+        src.close()
+
     if tcp_fastopen is not None:
         conf_file.write("net.ipv4.tcp_fastopen="+str(tcp_fastopen)+"\n")
     else:
         src = open("/proc/sys/net/ipv4/tcp_fastopen","r")
         conf_file.write("net.ipv4.tcp_fastopen="+src.readline())
         src.close()
+
+    if core_wmem_default is not None:
+        conf_file.write("net.core.wmem_default="+str(core_wmem_default)+"\n")
+    else:
+        src = open("/proc/sys/net/core/wmem_default","r")
+        conf_file.write("net.core.wmem_default="+src.readline())
+        src.close()
+
+    if core_wmem_max is not None:
+        conf_file.write("net.core.wmem_max="+str(core_wmem_max)+"\n")
+    else:
+        src = open("/proc/sys/net/core/wmem_max","r")
+        conf_file.write("net.core.wmem_max="+src.readline())
+        src.close()
+
+    if core_rmem_default is not None:
+        conf_file.write("net.core.rmem_default="+str(core_rmem_default)+"\n")
+    else:
+        src = open("/proc/sys/net/core/rmem_default","r")
+        conf_file.write("net.core.rmem_default="+src.readline())
+        src.close()
+
+    if core_rmem_max is not None:
+        conf_file.write("net.core.rmem_max="+str(core_rmem_max)+"\n")
+    else:
+        src = open("/proc/sys/net/core/rmem_max","r")
+        conf_file.write("net.core.rmem_max="+src.readline())
+        src.close()
+
     conf_file.close()
 
     # loading new configuration
@@ -166,12 +232,18 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
     debug_log = 'Loading new configuration'
     run_command(command, debug_log, exit=True)
     rc = subprocess.call("systemctl restart procps", shell=True)
+
     # retrieving new values
     statistics = {}
     for param in ["tcp_congestion_control", "tcp_slow_start_after_idle",
-    "tcp_no_metrics_save", "tcp_sack", "tcp_recovery", "tcp_fastopen"]:
+            "tcp_no_metrics_save", "tcp_sack", "tcp_recovery", "tcp_fastopen"]:
         file = open("/proc/sys/net/ipv4/"+param)
         statistics[param] = file.readline()
+        file.close()
+    for param in ["wmem_default", "wmem_max",
+            "rmem_default", "rmem_max"]:
+        file = open("/proc/sys/net/core/"+param)
+        statistics["core_" + param] = file.readline()
         file.close()
 
     file = open("/proc/sys/net/ipv4/tcp_wmem")
@@ -181,16 +253,57 @@ def set_main_args(reset, tcp_congestion_control, tcp_slow_start_after_idle,
     statistics["tcp_wmem_max"] = new_wmem[2]
     file.close()
 
+    file = open("/proc/sys/net/ipv4/tcp_rmem")
+    new_rmem = file.readline().split()
+    statistics["tcp_rmem_min"] = new_rmem[0]
+    statistics["tcp_rmem_default"] = new_rmem[1]
+    statistics["tcp_rmem_max"] = new_rmem[2]
+    file.close()
+
     collect_agent.send_stat(int(time.time() * 1000), **statistics)
 
-def cubic(reset, tcp_slow_start_after_idle,
-    tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
-    tcp_wmem_max,tcp_fastopen,beta,fast_convergence,hystart_ack_delta,
-    hystart_low_window,tcp_friendliness,hystart,hystart_detect,initial_ssthresh):
+def cubic(reset,
+        tcp_slow_start_after_idle,
+        tcp_no_metrics_save,
+        tcp_sack,
+        tcp_recovery,
+        tcp_wmem_min,
+        tcp_wmem_default,
+        tcp_wmem_max,
+        tcp_rmem_min,
+        tcp_rmem_default,
+        tcp_rmem_max,
+        tcp_fastopen,
+        core_wmem_default,
+        core_wmem_max,
+        core_rmem_default,
+        core_rmem_max,
+        beta,
+        fast_convergence,
+        hystart_ack_delta,
+        hystart_low_window,
+        tcp_friendliness,
+        hystart,
+        hystart_detect,
+        initial_ssthresh):
     check_cc('cubic')
-    set_main_args(reset, "cubic", tcp_slow_start_after_idle,
-    tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
-    tcp_wmem_max,tcp_fastopen)
+    set_main_args(reset,
+            "cubic",
+            tcp_slow_start_after_idle,
+            tcp_no_metrics_save,
+            tcp_sack,
+            tcp_recovery,
+            tcp_wmem_min,
+            tcp_wmem_default,
+            tcp_wmem_max,
+            tcp_rmem_min,
+            tcp_rmem_default,
+            tcp_rmem_max,
+            tcp_fastopen,
+            core_wmem_default,
+            core_wmem_max,
+            core_rmem_default,
+            core_rmem_max)
 
     # getting changes to CUBIC parameters in /etc/module/tcp_cubic/parameters and
     # writing changes in /etc/sysctl.d/60-openbach-job-cubic.conf
@@ -273,14 +386,42 @@ def cubic(reset, tcp_slow_start_after_idle,
 
     collect_agent.send_stat(int(time.time() * 1000), **statistics)
 
-def other_CC(reset, tcp_slow_start_after_idle,
-    tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
-    tcp_wmem_max,tcp_fastopen,congestion_control_name):
+def other_CC(reset,
+        tcp_slow_start_after_idle,
+        tcp_no_metrics_save,
+        tcp_sack,
+        tcp_recovery,
+        tcp_wmem_min,
+        tcp_wmem_default,
+        tcp_wmem_max,
+        tcp_rmem_min,
+        tcp_rmem_default,
+        tcp_rmem_max,
+        tcp_fastopen,
+        core_wmem_default,
+        core_wmem_max,
+        core_rmem_default,
+        core_rmem_max,
+        congestion_control_name):
     congestion_control_name = congestion_control_name.lower()
     check_cc(congestion_control_name)
-    set_main_args(reset, congestion_control_name, tcp_slow_start_after_idle,
-    tcp_no_metrics_save,tcp_sack,tcp_recovery,tcp_wmem_min,tcp_wmem_default,
-    tcp_wmem_max,tcp_fastopen)
+    set_main_args(reset,
+            congestion_control_name,
+            tcp_slow_start_after_idle,
+            tcp_no_metrics_save,
+            tcp_sack,
+            tcp_recovery,
+            tcp_wmem_min,
+            tcp_wmem_default,
+            tcp_wmem_max,
+            tcp_rmem_min,
+            tcp_rmem_default,
+            tcp_rmem_max,
+            tcp_fastopen,
+            core_wmem_default,
+            core_wmem_max,
+            core_rmem_default,
+            core_rmem_max)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -295,7 +436,14 @@ if __name__ == "__main__":
     parser.add_argument('--tcp_wmem_min', type=int)
     parser.add_argument('--tcp_wmem_default', type=int)
     parser.add_argument('--tcp_wmem_max', type=int)
+    parser.add_argument('--tcp_rmem_min', type=int)
+    parser.add_argument('--tcp_rmem_default', type=int)
+    parser.add_argument('--tcp_rmem_max', type=int)
     parser.add_argument('--tcp_fastopen', type=int)
+    parser.add_argument('--core_wmem_default', type=int)
+    parser.add_argument('--core_wmem_max', type=int)
+    parser.add_argument('--core_rmem_default', type=int)
+    parser.add_argument('--core_rmem_max', type=int)
 
     subparsers = parser.add_subparsers(
             title='Subcommand mode',

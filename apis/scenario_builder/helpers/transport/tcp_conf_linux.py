@@ -62,6 +62,32 @@ def tcp_conf_linux(
 
     return [function]
 
+def tcp_conf_linux_variable_args_number(
+        scenario, entity, tcp_params, tcp_subparams,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+
+    function = scenario.add_function(
+           'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+
+    congestion_control = tcp_params["congestion_control"]
+    del tcp_params["congestion_control"]
+
+    if congestion_control.upper() == 'CUBIC':
+        function.configure(
+               'tcp_conf_linux', entity,
+               CUBIC=tcp_subparams,
+               **tcp_params)
+    else:
+       function.configure(
+               'tcp_conf_linux', entity,
+               other=tcp_subparams,
+               **tcp_params)
+
+    return [function]
+
 def tcp_conf_linux_repetitive_tests(
         scenario, entity, congestion_control, hystart=0, tcp_slow_start_after_idle=1,
         tcp_no_metrics_save=1, tcp_sack=0, tcp_recovery=1, tcp_fastopen=1,
