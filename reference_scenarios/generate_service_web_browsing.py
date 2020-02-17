@@ -50,6 +50,15 @@ def main():
             '--duration', required=True,
             help='duration of VoIP transmission')
     observer.add_scenario_argument(
+            '--no_compression', action = 'store_true', 
+            help = 'Prevent compression for transmission')
+    observer.add_scenario_argument(
+            '--proxy_address', type = str, required = False,
+            help = 'Set the proxy address (also needs a proxy port)')
+    observer.add_scenario_argument(
+            '--proxy_port', type = int, required = False,
+            help = 'Set the proxy port (also needs a proxy address)')
+    observer.add_scenario_argument(
             '--entity_pp', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
@@ -68,6 +77,9 @@ def main():
     extra_args.append(".")
     extra_args.append(args.nb_runs)
     extra_args.append(args.nb_parallel_runs)
+    extra_args.append(args.no_compression)
+    extra_args.append(args.proxy_address)
+    extra_args.append(args.proxy_port)
 
     scenario = service_web_browsing.build(
             args.entity_pp,

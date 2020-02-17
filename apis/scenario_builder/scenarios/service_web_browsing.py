@@ -55,7 +55,7 @@ def build(post_processing_entity, args, launch_server=False, scenario_name=SCENA
         start_server = apache2(scenario, args[2])
 
         # launching traffic
-        start_scenario = web_browsing_qoe(scenario, args[3], args[10], args[11], int(args[4]), wait_launched=start_server, wait_delay=5)
+        start_scenario = web_browsing_qoe(scenario, args[3], args[10], args[11], int(args[4]), args[12], args[13], args[14], wait_launched=start_server, wait_delay=5)
 
         # stopping server
         stopper = scenario.add_function('stop_job_instance',
@@ -64,7 +64,7 @@ def build(post_processing_entity, args, launch_server=False, scenario_name=SCENA
 
     else:
         # launching traffic
-        start_scenario = web_browsing_qoe(scenario, args[3], args[10], args[11], int(args[4]))
+        start_scenario = web_browsing_qoe(scenario, args[3], args[10], args[11], int(args[4]), args[12], args[13], args[14])
 
     # Post processing data
     if post_processing_entity:
