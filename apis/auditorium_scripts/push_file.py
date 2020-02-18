@@ -45,37 +45,45 @@ from auditorium_scripts.frontend import FrontendBase, pretty_print
 class PushFile(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Push File')
-        self.parser.add_argument('agent', help='IP address of the agent')
-        self.parser.add_argument(
-                'remote_path',
-                help='path where the file should be pushed')
-        group = self.parser.add_mutually_exclusive_group(required=True)
+        subparsers = self.parser.add_subparsers(title='action', help='action to perform')
+        subparsers.required = True
+
+        send = subparsers.add_parser('send', help='send file directly onto an agent')
+        send.add_argument('agent', help='IP address of the agent')
+        send.add_argument('remote_path', help='path where the file should be pushed')
+        group = send.add_mutually_exclusive_group(required=True)
         group.add_argument('--path', help='path of the file on the controller')
         group.add_argument(
                 '--local-file', type=FileType('r'),
                 help='path of a file on the current '
                 'computer to be sent to the agent')
+        send.set_defaults(keep=False)
+
+        keep = subparsers.add_parser('store', help='store file on the controller for future use')
+        keep.add_argument('local_file', type=FileType('r'), help='path of the file to send to the controller')
+        keep.add_argument('remote_path', help='path where the file should be stored')
+        keep.set_defaults(keep=True)
 
     def execute(self, show_response_content=True):
-        agent = self.args.agent
-        remote_path = self.args.remote_path
-        local_path = self.args.path
-
+        keep = self.args.keep
         form_data = {
-                'path': remote_path,
-                'agent_ip': agent,
+                'path': self.args.remote_path,
+                'keep_file': keep,
         }
 
-        if local_path is not None:
-            form_data['local_path'] = local_path
-            response = self.session.post(self.base_url + 'file', data=form_data)
-        else:
-            local_file = self.args.local_file
+        if not keep:
+            form_data['agent_ip'] = self.args.agent
+
+        local_file = self.args.local_file
+        if local_file is not None:
             with local_file:
                 response = self.session.post(
                         self.base_url + 'file',
                         data=form_data,
                         files={'file': local_file})
+        else:
+            form_data['local_path'] = self.args.path
+            response = self.session.post(self.base_url + 'file', data=form_data)
 
         if show_response_content:
             pretty_print(response)
