@@ -44,7 +44,7 @@ def main(scenario_name='generate_network_delay', argv=None):
             '--srv_entity', '--srv', required=True,
             help='name of the entity for the srv of the RTT tests')
     observer.add_scenario_argument(
-            '--clt_ip', required=True, help='Sender of the pings ip address')
+            '--clt_ip', required=True, help='IP address of source of pings and packets')
     observer.add_scenario_argument(
             '--srv_ip', required=True, help='destination ip address and target of the pings')
     observer.add_scenario_argument(
