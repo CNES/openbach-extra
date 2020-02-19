@@ -29,6 +29,7 @@
 from scenario_builder import Scenario
 from scenario_builder.helpers.network.fping import fping_measure_rtt
 from scenario_builder.helpers.network.hping import hping_measure_rtt
+from scenario_builder.helpers.metrology.d_itg import ditg_pcket_rate
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
@@ -50,37 +51,43 @@ def extract_jobs_to_postprocess(scenario):
                 yield function_id
             elif function.job_name == 'hping':
                 yield function_id
+            elif function.job_name == 'd-itg_send':
+                yield function_id
 
 
-def network_delay_simultaneous_core(clt_entity, scenario_name='network_delay_simultaneous_core'):
+def network_delay_simultaneous_core(clt_entity, srv_entity, scenario_name='network_delay_simultaneous_core'):
     scenario = Scenario(scenario_name, 'OpenBACH Network Delay Measurement: Comparison of two RTT measurements simultaneously')
-    scenario.add_argument('srv_ip', 'Target of the pings and server IP adress')
+    scenario.add_argument('srv_ip', 'Target of the pings and server IP address')
+    scenario.add_argument('clt_ip', 'Sender of the pings IP address')
     scenario.add_argument('duration', 'The duration of fping/hping tests')
 
-    fping_measure_rtt(scenario, client, '$srv_ip', '$duration')
-    hping_measure_rtt(scenario, client, '$srv_ip', '$duration')
+    srv = ditg_pcket_rate(scenario, clt_entity, srv_entity, '$srv_ip', '$clt_ip', 'UDP', packet_rate = 1, duration = '$duration', meter = "rttm")
+    fping_measure_rtt(scenario, clt_entity, '$srv_ip', '$duration', wait_launched = srv, wait_delay = 1)
+    hping_measure_rtt(scenario, clt_entity, '$srv_ip', '$duration', wait_launched = srv, wait_delay = 1)
 
     return scenario
 
 
-def network_delay_sequential_core(clt_entity, scenario_name='network_delay_sequential_core'):
+def network_delay_sequential_core(clt_entity, srv_entity, scenario_name='network_delay_sequential_core'):
     scenario = Scenario(scenario_name, 'OpenBACH Network Delay Measurement: Comparison of two RTT measurements one after the other')
     scenario.add_argument('srv_ip', 'Target of the pings and server IP adress')
+    scenario.add_argument('clt_ip', 'Sender of the pings IP address')
     scenario.add_argument('duration', 'The duration of each fping/hping tests')
 
     wait = fping_measure_rtt(scenario, clt_entity, '$srv_ip', '$duration')
     # TODO Check hping performance test with wireshark and remove ?
     wait = hping_measure_rtt(scenario, clt_entity, '$srv_ip', '$duration', wait)
-    #TODO Add d-itg delay test ?
+    wait = ditg_pcket_rate(scenario, clt_entity, srv_entity, '$srv_ip', '$clt_ip', 'UDP', packet_rate = 1, duration = '$duration', meter = "rttm", wait_finished = wait)
+
     return scenario
 
 
-def build(clt_entity, srv_ip, duration, simultaneous, post_processing_entity, scenario_name=SCENARIO_NAME):
+def build(clt_entity, srv_entity, clt_ip, srv_ip, duration, simultaneous, post_processing_entity, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     if simultaneous:
-       scenario_core = network_delay_simultaneous_core(clt_entity)
+       scenario_core = network_delay_simultaneous_core(clt_entity, srv_entity)
     else:
-       scenario_core = network_delay_sequential_core(clt_entity)
+       scenario_core = network_delay_sequential_core(clt_entity, srv_entity)
 
     start_scenario_core = scenario.add_function(
             'start_scenario_instance')
@@ -88,6 +95,7 @@ def build(clt_entity, srv_ip, duration, simultaneous, post_processing_entity, sc
     start_scenario_core.configure(
             scenario_core,
             srv_ip=srv_ip,
+            clt_ip=clt_ip,
             duration=duration)
 
     if post_processing_entity is not None:
@@ -95,7 +103,7 @@ def build(clt_entity, srv_ip, duration, simultaneous, post_processing_entity, sc
             [start_scenario_core, function_id]
             for function_id in extract_jobs_to_postprocess(scenario_core)
        ]
-       time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rtt']], [['RTT delay (ms)']], [['RTTs time series']], [['fping'],['hping']], [start_scenario_core], None, 2)
-       cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rtt']], [['RTT delay (ms)']], [['RTT CDF']], [['fping'],['hping']], [start_scenario_core], None, 2)
+       time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rtt', 'rtt_sender']], [['RTT delay (ms)']], [['RTTs time series']], [['fping'], ['hping'], ['d-itg_send']], [start_scenario_core], None, 2)
+       cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rtt', 'rtt_sender']], [['RTT delay (ms)']], [['RTT CDF']], [['fping'], ['hping'], ['d-itg_send']], [start_scenario_core], None, 2)
 
     return scenario
