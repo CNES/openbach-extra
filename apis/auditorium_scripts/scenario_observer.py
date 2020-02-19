@@ -37,6 +37,8 @@ __credits__ = '''Contributors:
 
 import time
 import json
+import pprint
+import warnings
 from pathlib import Path
 from contextlib import suppress
 
@@ -52,10 +54,12 @@ from auditorium_scripts.status_scenario_instance import StatusScenarioInstance
 from auditorium_scripts.get_scenario_instance_data import GetScenarioInstanceData
 
 
+MAX_RETRIES_STATUS = 5
+
+
 class ScenarioObserver(FrontendBase):
     def __init__(self, **default_run_arguments):
         super().__init__('OpenBACH — Run a scenario and postprocess stats')
-        self._post_processing = {}
         self._scenarios = {}
         self._default_arguments = default_run_arguments
         self.build_parser()
@@ -166,18 +170,6 @@ class ScenarioObserver(FrontendBase):
         action = self.run_group.add_argument(*name_or_flags, **kwargs)
         self._default_arguments[action.dest] = action.default
 
-    def post_processing(self, label, callback, *, subscenario=None, ignore_missing_label=False):
-        if subscenario is None:
-            subscenario = self.args.scenario_name
-
-        try:
-            function_id = self._scenarios[subscenario][label]
-        except KeyError:
-            if not ignore_missing_label:
-                self.parser.error('missing openbach function labeled \'{}\' in scenario \'{}\''.format(label, subscenario))
-        else:
-            self._post_processing[(subscenario, function_id)] = (label, callback)
-
     def parse(self, args=None, default_scenario_name=' *** Generated Scenario *** '):
         args = super().parse(args)
         if args.scenario_name is None:
@@ -205,15 +197,6 @@ class ScenarioObserver(FrontendBase):
                 for function in scenario.json()['openbach_functions']
                 if 'start_job_instance' in function and function['label']
         }
-
-    def _extract_callback(self, scenario_instance):
-        name = scenario_instance['scenario_name']
-        for function in scenario_instance['openbach_functions']:
-            with suppress(KeyError):
-                yield from self._extract_callback(function['scenario'])
-            with suppress(KeyError):
-                callback = self._post_processing[(name, function['id'])]
-                yield function['job']['id'], callback
 
     def _send_scenario_to_controller(self, builder=None):
         scenario_getter = self._share_state(GetScenario)
@@ -250,14 +233,23 @@ class ScenarioObserver(FrontendBase):
 
         scenario_waiter = self._share_state(StatusScenarioInstance)
         scenario_waiter.args.instance_id = scenario_id
+        retries_left = MAX_RETRIES_STATUS
         while True:
             time.sleep(self.WAITING_TIME_BETWEEN_STATES_POLL)
             response = scenario_waiter.execute(False).json()
-            status = response['status']
-            if status in ('Finished KO', 'Stopped'):
+            status = response.get('status')
+            if status is None:
+                retries_left -= 1
+                if not retries_left:
+                    self.parser.error('scenario instance status could not be fetched')
+                warnings.warn('Error while fetching scenario status:\n{}\n\n{} retries left'.format(
+                    pprint.pformat(response, width=250), retries_left))
+            elif status in ('Finished KO', 'Stopped'):
                 self.parser.error('scenario instance failed (status is \'{}\')'.format(status))
-            if status in ('Finished', 'Finished OK'):
+            elif status in ('Finished', 'Finished OK'):
                 break
+            else:
+                retries_left = MAX_RETRIES_STATUS
 
         if self.args.path is not None:
             data_fetcher = self._share_state(GetScenarioInstanceData)
@@ -277,24 +269,7 @@ class ScenarioObserver(FrontendBase):
             }
 
         self._send_scenario_to_controller(builder)
-        scenario_instance = self._run_scenario_to_completion()
-        callbacks = dict(self._extract_callback(scenario_instance))
-        collector = CollectorConnection(
-                self.args.collector,
-                self.args.elasticsearch_port,
-                self.args.influxdb_port,
-                self.args.database_name,
-                self.args.time,
-        )
-        try:
-            scenario, = collector.scenarios(scenario_instance_id=scenario_instance['scenario_instance_id'])
-        except ValueError:
-            self.parser.error('cannot retrieve scenario instance data from database')
-
-        return {
-                callbacks[job.instance_id][0]: callbacks[job.instance_id][1](job)
-                for job in scenario.jobs if job.instance_id in callbacks
-        }
+        return self._run_scenario_to_completion()
 
     def _write_json(self, builder=None):
         path = Path(self.args.json_path).absolute()

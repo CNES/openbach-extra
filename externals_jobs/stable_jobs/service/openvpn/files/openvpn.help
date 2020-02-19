@@ -1,22 +1,26 @@
-Examples:
-========
-Example1: Set up a point to point VPN tunnel between a gateway GW and a satelitte terminal ST. 
-          We consider that this tunnel is built above a satellite link which is emulated using OpenSAND SATCOM emulator.
-          Also GW's subnet (192.168.42.0/24 with 192.168.42.1 as GW's IP address) and ST's subnet (192.168.1.0/24 with 192.168.1.1 as ST's IP address)
-          communicate via VPN tunnel.
+=== Examples ===
 
+== Example 1 ==
 
--In the OpenBACH controller web interface, create a scenario and add two start_job_instance function set as follows:
- For entity GW:
-    local_ip = 192.168.42.1
-    choose server mode
- For entity ST:
-    local_ip = 192.168.1.1
-    choose client mode
-    server_ip = 192.168.42.1
+Set up a point to point VPN tunnel between a gateway GW and a satellite terminal ST. We consider that this tunnel is built above a satellite link which is emulated using OpenSAND SATCOM emulator. Also GW's subnet (''192.168.42.0/24'' with ''192.168.42.1'' as GW's IP address) and ST's subnet (''192.168.1.0/24'' with ''192.168.1.1'' as ST's IP address) communicate via VPN tunnel.
 
--Or launch the job manually 
- from CLI of the GW agent as follows:
-    sudo  python3 /opt/openbach/agent/jobs/openvpn/openvpn.py 192.168.42.1 server
- from CLI of the ST agent as follows:
-    sudo python3 /opt/openbach/agent/jobs/openvpn/openvpn.py 192.168.1.1 client 192.168.42.1
+In the OpenBACH controller web interface, create a scenario and add two start_job_instance function set as follows:
+  * For entity GW:
+    * **local_ip** = 192.168.42.1
+    * **mode** = server
+  * For entity ST:
+    * **local_ip** = 192.168.1.1
+    * **mode** = client
+    * **server_ip** = 192.168.42.1
+
+Or launch the job manually
+
+From the GW Agent:
+<code>
+JOB_NAME=openvpn sudo -E python3 /opt/openbach/agent/jobs/openvpn/openvpn.py 192.168.42.1 server
+</code>
+
+From the ST Agent:
+<code>
+JOB_NAME=openvpn sudo -E python3 /opt/openbach/agent/jobs/openvpn/openvpn.py 192.168.1.1 client 192.168.42.1
+</code>

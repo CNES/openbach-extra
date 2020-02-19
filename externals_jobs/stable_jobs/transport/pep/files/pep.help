@@ -21,23 +21,26 @@ The 'mark', 'port' and 'table_num' parameters should only be modified by
 advanced users.
 
 === Examples ===
-== Example 1: ==
-Launch PEPSal on a host. Redirect all traffic coming from '192.168.1.0/24' 
-and '192.168.2.0/24', all traffic going to '192.168.20.0/24',
-and all traffic entering via 'ens3' to the PEP.
+
+== Example 1 ==
+
+Launch PEPSal on a host. Redirect all traffic coming from ''192.168.1.0/24''
+and ''192.168.2.0/24'', all traffic going to ''192.168.20.0/24'',
+and all traffic entering via ''ens3'' to the PEP.
 
 In the web interface, set the following parameters:
-  * 'redirect_ifaces': 'ens3'
-  * 'redirect_src_ip': '192.168.1.0/24, 192.168.2.0/24'
-  * 'redirect_dst_ip': '192.168.20.0/24'
+  * **redirect_ifaces** = ens3
+  * **redirect_src_ip** = 192.168.1.0/24, 192.168.2.0/24
+  * **redirect_dst_ip** = 192.168.20.0/24
 
-Or launch the job manually from the Agent as follows (the statistics will be 
-available on the collector with a job_instance_id, scenario_instance_id and 
-owner_scenario_instance_id):
+Or launch the job manually from the Agent as follows:
 
+<code>
 JOB_NAME=pep sudo -E python3 /opt/openbach/agent/jobs/pep/pep.py -ifaces ens3 -s '192.168.1.0/24, 192.168.2.0/24' -d 192.168.20.0/24
+</code>
 
-== Example 2 (satellite use case): == 
+== Example 2 (satellite use case) ==
+
 In a topology like the following one (two PEPs allowing to isolate a satellite network).
 
 Client <==> PEP1 <==> Terminal <==> Satellite <==> Gateway <==> PEP2 <==> Server
@@ -50,7 +53,7 @@ Terminal) on 'redirect_ifaces' parameter. Same for PEP2 (but in this case the in
 going to the Server and the Gateway)
 
 === Additional information ===
+
 <note important>WARNING: When the PEP intercepts TCP flows, it uses its own IP source
 to create a new TCP connection. This means that the different end/intermediate machines
 of your platform must know how to reach the PEPs using the appropriate routing rules.</note>
- 

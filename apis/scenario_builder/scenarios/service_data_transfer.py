@@ -33,7 +33,7 @@ from scenario_builder.helpers.postprocessing.time_series import time_series_on_s
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
-SCENARIO_DESCRIPTION="""This scenario launches one iperf3 transfert"""
+SCENARIO_DESCRIPTION="""This scenario launches one iperf3 transfer"""
 SCENARIO_NAME="""service_data_transfer"""
 
 def extract_jobs_to_postprocess(scenario):

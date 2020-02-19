@@ -42,7 +42,7 @@ SCENARIO_NAME="""network_configure_link"""
 
 def build(entity, ifaces, mode, operation, bandwidth=None, delay=0, jitter=0,
           delay_distribution='normal', loss_model='random', loss_model_params=[0.0], 
-          scenario_name=SCENARIO_NAME):
+          buffer_size=10000, scenario_name=SCENARIO_NAME):
 
     # Create scenario and add scenario arguments if needed
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format(operation))
@@ -54,7 +54,7 @@ def build(entity, ifaces, mode, operation, bandwidth=None, delay=0, jitter=0,
 
     if operation == 'apply':
        configure_link_apply(scenario, entity, ifaces, mode, bandwidth, delay_distribution,
-                            delay, jitter, loss_model, loss_model_params)
+                            delay, jitter, loss_model, loss_model_params, buffer_size)
     else:
        configure_link_clear(scenario, entity, ifaces, mode)
 

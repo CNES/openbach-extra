@@ -39,7 +39,7 @@ from scenario_builder.scenarios import network_configure_link
 def main(scenario_name='configure_link', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--entity', '--entity', required=True,
+            '--entity', '-e', required=True,
             help='Name of the entity emulating the link')
     observer.add_scenario_argument(
             '--ifaces', '--network_interfaces', required=True,
@@ -51,26 +51,29 @@ def main(scenario_name='configure_link', argv=None):
             '--operation', choices=['apply', 'clear'], required=True, 
             help='Choose apply to add configuration or clear to delete existing ones')
     observer.add_scenario_argument(
-            '--bandwidth', type=str, 
+            '--bandwidth', type=str,
             help='The link bandwidth in Mbps or Kbps, expressed as [value][M|K] '
                   '(only for apply operation)')
     observer.add_scenario_argument(
-            '--lm', '--loss_model', choices=['random', 'state', 'gemodel'], 
+            '--lm', '--loss_model', choices=['random', 'state', 'gemodel'],
             default='random', help='Packets loss model to use (only for apply operation)')
     observer.add_scenario_argument(
             '--lmp', '--loss_model_paramaters', default=0.0, type=float, nargs='*',
             help='Packets loss model parameters to use (only for apply operation). Warning: This must not be the last argument of the scenario')
     observer.add_scenario_argument(
-            '--delay', type=int, default=0, 
+            '--delay', type=int, default=0,
             help='Delay to add to packets, in ms (only for apply operation)')
     observer.add_scenario_argument(
-            '--jitter', type=int, default=0, 
+            '--jitter', type=int, default=0,
             help='Delay variation, in ms (only for apply operation)')
     observer.add_scenario_argument(
-            '--dd', '--delay_distribution', 
-            choices=['uniform', 'normal', 'pareto', 'paretonormal'], default='normal', 
+            '--dd', '--delay_distribution',
+            choices=['uniform', 'normal', 'pareto', 'paretonormal'], default='normal',
             help='Distribution to use to choose delay value (only for apply operation)')
-        
+    observer.add_scenario_argument(
+            '--buffer_size', type=int, default=10000,
+            help='Size of the buffer for qlen and netem limit parameter (default=10000)')
+
     args = observer.parse(argv, scenario_name)
 
     scenario = network_configure_link.build(
@@ -84,6 +87,7 @@ def main(scenario_name='configure_link', argv=None):
                 args.dd,
                 args.lm,
                 args.lmp,
+                args.buffer_size
     )
     observer.launch_and_wait(scenario)
 

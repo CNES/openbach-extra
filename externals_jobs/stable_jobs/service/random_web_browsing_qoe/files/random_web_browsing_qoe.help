@@ -1,9 +1,13 @@
-Examples:
-========
-Example1: launch navigation and visit each web page during 5 seconds. 
--In the web interface, set the following parameters:
- For Agent from which pages will be fetched:
-    page_visit_duration = 5
+=== Examples ===
 
--Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id of 0): 
-    JOB_NAME=random_web_browsing_qoe sudo -H python3 /opt/openbach/agent/jobs/random_web_browsing_qoe/random_web_browsing_qoe.py 5
+== Example 1 ==
+
+Launch navigation and visit each web page during 5 seconds.
+
+In the web interface, set the following parameters:
+  * **page_visit_duration** = 5
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=random_web_browsing_qoe sudo -H python3 /opt/openbach/agent/jobs/random_web_browsing_qoe/random_web_browsing_qoe.py 5
+</code>

@@ -52,41 +52,42 @@ def extract_jobs_to_postprocess(scenario):
                 yield function_id
 
 
-def network_delay_simultaneous_core(client, scenario_name='network_delay_simultaneous_core'):
+def network_delay_simultaneous_core(clt_entity, scenario_name='network_delay_simultaneous_core'):
     scenario = Scenario(scenario_name, 'OpenBACH Network Delay Measurement: Comparison of two RTT measurements simultaneously')
-    scenario.add_argument('ip_dst', 'Target of the pings and server IP adress')
+    scenario.add_argument('srv_ip', 'Target of the pings and server IP adress')
     scenario.add_argument('duration', 'The duration of fping/hping tests')
 
-    fping_measure_rtt(scenario, client, '$ip_dst', '$duration')
-    hping_measure_rtt(scenario, client, '$ip_dst', '$duration')
+    fping_measure_rtt(scenario, client, '$srv_ip', '$duration')
+    hping_measure_rtt(scenario, client, '$srv_ip', '$duration')
 
     return scenario
 
 
-def network_delay_sequential_core(client, scenario_name='network_delay_sequential_core'):
+def network_delay_sequential_core(clt_entity, scenario_name='network_delay_sequential_core'):
     scenario = Scenario(scenario_name, 'OpenBACH Network Delay Measurement: Comparison of two RTT measurements one after the other')
-    scenario.add_argument('ip_dst', 'Target of the pings and server IP adress')
+    scenario.add_argument('srv_ip', 'Target of the pings and server IP adress')
     scenario.add_argument('duration', 'The duration of each fping/hping tests')
 
-    wait = fping_measure_rtt(scenario, client, '$ip_dst', '$duration')
-    wait = hping_measure_rtt(scenario, client, '$ip_dst', '$duration', wait)
-
+    wait = fping_measure_rtt(scenario, clt_entity, '$srv_ip', '$duration')
+    # TODO Check hping performance test with wireshark and remove ?
+    wait = hping_measure_rtt(scenario, clt_entity, '$srv_ip', '$duration', wait)
+    #TODO Add d-itg delay test ?
     return scenario
 
 
-def build(client, ip_dst, duration, simultaneous, post_processing_entity, scenario_name=SCENARIO_NAME):
+def build(clt_entity, srv_ip, duration, simultaneous, post_processing_entity, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     if simultaneous:
-       scenario_core = network_delay_simultaneous_core(client)
+       scenario_core = network_delay_simultaneous_core(clt_entity)
     else:
-       scenario_core = network_delay_sequential_core(client)
+       scenario_core = network_delay_sequential_core(clt_entity)
 
     start_scenario_core = scenario.add_function(
             'start_scenario_instance')
 
     start_scenario_core.configure(
             scenario_core,
-            ip_dst=ip_dst,
+            srv_ip=srv_ip,
             duration=duration)
 
     if post_processing_entity is not None:

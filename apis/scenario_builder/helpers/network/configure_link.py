@@ -30,13 +30,16 @@
 
 def configure_link_apply_delay(
         scenario, entity, interface, mode, delay_distribution, delay, jitter=None,
-        wait_finished=None, wait_launched=None, wait_delay=0):
+        buffer_size=10000, wait_finished=None, wait_launched=None, wait_delay=0):
     function = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    apply_params = {'mode':mode, 'delay_distribution':delay_distribution, 'delay':delay}
+    apply_params = {'mode':mode,
+                    'delay_distribution':delay_distribution,
+                    'delay':delay,
+                    'buffer_size':buffer_size}
     if jitter:
        apply_params.update({'jitter':jitter})
     function.configure(
@@ -63,7 +66,7 @@ def configure_link_apply_loss(
 
 def configure_link_apply(
         scenario, entity, interface, mode, bandwidth=None, delay_distribution='normal', delay=0, jitter=0, 
-        loss_model='random', loss_model_params=[0.0], wait_finished=None, 
+        loss_model='random', loss_model_params=[0.0], buffer_size=10000, wait_finished=None,
         wait_launched=None, wait_delay=0):
     function = scenario.add_function(
             'start_job_instance',
@@ -76,7 +79,8 @@ def configure_link_apply(
                   'delay':delay,
                   'jitter':jitter,
                   'loss_model':loss_model,
-                  'loss_model_params':loss_model_params
+                  'loss_model_params':loss_model_params,
+                  'buffer_size':buffer_size
                  }
     if bandwidth:
        apply_params.update({'bandwidth':bandwidth})
@@ -102,33 +106,3 @@ def configure_link_clear(
 
     return [function]
 
-def terrestrial_link(
-        scenario, server, server_iface, server_bandwidth,
-        client, client_iface, mode, client_bandwidth, delay_distribution, delay, jitter, 
-        loss_model, loss_model_params,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    server = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    server.configure(
-            'configure_link', server, offset=0,
-            interface_name=server_iface,
-            apply={'mode':mode, 'bandwidth':server_bandwidth, 
-                   'delay_distribution':delay_distribution, 'delay':delay, 
-                   'loss_model': loss_model, 'loss_model_params':loss_model_params})
-
-    client = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    client.configure(
-            'configure_link', client, offset=0,
-            interface_name=client_iface,
-            apply={'mode':mode, 'bandwidth':client_bandwidth, 
-                   'delay_distribution':delay_distribution, 'delay':delay, 
-                   'loss_model': loss_model, 'loss_model_params':loss_model_params})
-
-    return [client, server]

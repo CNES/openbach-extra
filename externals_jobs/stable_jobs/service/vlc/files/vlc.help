@@ -1,18 +1,27 @@
-Examples:
-========
-Example1: From a "sender" Agent, stream default video (Big Buck Bunny) to "receiver" agent's ip address 192.168.1.4 which will play received video during 50 seconds. Statistics would be sent every 2 seconds.
+=== Examples ===
 
--In the web interface, set the following parameters:
- For Agent "sender":
-     dest_ip: 192.168.1.4
-     mode : choose 'sender' mode
- For Agent "receiver" (Start 5s after sender is launched):
-     dest_ip = 192.168.1.4
-     duration = 50
-     mode = choose 'receiver' mode
-     interval = 2
+== Example 1 ==
+
+From a "sender" Agent, stream default video (Big Buck Bunny) to "receiver" agent's ip address ''192.168.1.4'' which will play received video during 50 seconds. Statistics would be sent every 2 seconds.
+
+In the web interface, set the following parameters:
+  * For Agent "sender":
+    * **dest_ip** = 192.168.1.4
+    * **mode** = sender
+  * For Agent "receiver" (Start 5s after sender is launched):
+    * **dest_ip** = 192.168.1.4
+    * **duration** = 50
+    * **mode** = receiver
+    * **interval** = 2
       
--Or launch the job manually from the Agent as follows (the statistics will be available on the collector with a job_instance_id, scenario_instance_id and owner_scenario_instance_id of 0): 
-    From sender CLI: JOB_NAME=vlc sudo -E -u openbach python3 /opt/openbach/agent/jobs/vlc/vlc.py 192.168.1.4 'sender'
-    From receiver CLI: JOB_NAME=vlc sudo -E -u openbach python3 /opt/openbach/agent/jobs/vlc/vlc.py 192.168.1.4 -d 50 'receiver'
-  
+Or launch the job manually from the Agent as follows:
+
+From server Agent:
+<code>
+JOB_NAME=vlc sudo -E python3 /opt/openbach/agent/jobs/vlc/vlc.py 192.168.1.4 'sender'
+</code>
+
+From client Agent:
+<code>
+JOB_NAME=vlc sudo -E python3 /opt/openbach/agent/jobs/vlc/vlc.py 192.168.1.4 -d 50 'receiver'
+</code>
