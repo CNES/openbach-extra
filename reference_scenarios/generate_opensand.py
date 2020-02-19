@@ -37,15 +37,16 @@ from argparse import FileType
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from auditorium_scripts.push_file import PushFile
+from scenario_builder.scenarios import opensand
 
 
 def main(scenario_name='opensand', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--address', '-a', required=True,
-            help='Address of the agent to send files to')
+            '--entity', '-e', required=True,
+            help='Entity of the agent to send files to')
     observer.add_scenario_argument(
-            '--file', '-f', required=True,
+            '--transfert', required=True,
             type=FileType('r'),
             help='File to transfert as /opt/openbach/agent/bite.txt')
     observer.add_scenario_argument(
@@ -53,11 +54,12 @@ def main(scenario_name='opensand', argv=None):
             help='Alternative content for /opt/openbach/agent/toto.txt')
 
     args = observer.parse(argv, scenario_name)
+    print(args)
 
     pusher = observer._share_state(PushFile)
     pusher.args.keep = True
 
-    pusher.args.local_file = args.file
+    pusher.args.local_file = args.transfert
     pusher.args.remote_path = '/opt/openbach/agent/bite.txt'
     pusher.execute(True)
 
@@ -68,6 +70,9 @@ def main(scenario_name='opensand', argv=None):
         pusher.args.local_file = f
         pusher.args.remote_path = '/opt/openbach/agent/toto.txt'
         pusher.execute(True)
+
+    scenario = opensand.build(args.entity)
+    observer.launch_and_wait(scenario)
 
 
 if __name__ == '__main__':

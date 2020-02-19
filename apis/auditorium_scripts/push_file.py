@@ -83,7 +83,7 @@ class PushFile(FrontendBase):
                         files={'file': local_file})
         else:
             form_data['local_path'] = self.args.path
-            response = self.session.post(self.base_url + 'file', data=form_data)
+            response = self.session.post(self.base_url + 'file', json=form_data)
 
         if show_response_content:
             pretty_print(response)

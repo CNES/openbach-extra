@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+#
 #   OpenBACH is a generic testbed able to control/configure multiple
 #   network/physical entities (under test) and collect data from them. It is
 #   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
@@ -26,19 +26,17 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Generic helpers that does not fit into an OSI layer """
+from scenario_builder import Scenario
+from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
+from scenario_builder.helpers import push_file
 
-def push_file(
-        scenario, entity, remote_path, controller_path=None,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    if controller_path is None:
-        controller_path = remote_path
 
-    push = scenario.add_function(
-            'push_file',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    push.configure(entity, controller_path, remote_path)
+SCENARIO_DESCRIPTION="""This is reference OpenSAND scenario"""
+SCENARIO_NAME="""opensand"""
 
-    return [push]
+
+def build(entity, scenario_name=SCENARIO_NAME):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    push_file(scenario, entity, '/opt/openbach/agent/files/testing/bite.txt', '/opt/openbach/agent/bite.txt')
+    push_file(scenario, entity, '/opt/openbach/agent/files/testing/toto.txt', '/opt/openbach/agent/toto.txt')
+    return scenario
