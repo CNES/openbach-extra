@@ -45,7 +45,9 @@ def main(scenario_name='generate_network_one_way_delay', argv=None):
             '--server', '--server-entity', required=True,
             help='name of the entity for the server of the owamp RTT test')
     observer.add_scenario_argument(
-            '--ip_dst', required=True, help='server ip address and target of owamp test')
+            '--ip_dst', required=True, help='server ip address and target of owamp and d-itg test')
+    observer.add_scenario_argument(
+            '--ip_clt', required=True, help='client ip address of d-itg test')
     observer.add_scenario_argument(
             '--entity_pp', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
@@ -55,6 +57,7 @@ def main(scenario_name='generate_network_one_way_delay', argv=None):
     scenario = network_one_way_delay.build(
                       args.client,
                       args.server,
+                      args.ip_clt,
                       args.ip_dst,
                       args.entity_pp)
 
