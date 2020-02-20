@@ -101,18 +101,24 @@ def build(client, server, ip_dst, ip_snd, port, command_port, duration, rate, nu
                 [start_scenario_core, function_id]
                 for function_id in extract_jobs_to_postprocess(scenario_core)
         ]
+
+        if num_flows == '1': 
+            no_suffix = False
+        else:
+            no_suffix = True 
+
         time_series_on_same_graph(scenario, post_processing_entity, post_processed,
             [['bitrate_receiver', 'rate', 'throughput']],
             [['Rate (b/s)']], [['Rate time series']],
             [['{} TCP flow with iperf3'.format(num_flows)], ['{} TCP flows with nuttcp'.format(num_flows)],
              ['1 TCP flows with d-itg'], ['1 UDP flow with nuttcp'], ['1 UDP flow with d-itg']],
-            [start_scenario_core], None, 2, True)
+            [start_scenario_core], None, 2, no_suffix)
 
         cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, 
             [['rate', 'throughput', 'bitrate_receiver']], 
             [['Rate (b/s)']], [['Rate CDF']], 
             [['{} TCP flow with iperf3'.format(num_flows)], ['{} TCP flow with nuttcp'.format(num_flows)], 
              ['1 TCP flows with d-itg'],['1 UDP flow with nuttcp'], ['1 UDP flow with d-itg']], 
-            [start_scenario_core], None, 2, True)
+            [start_scenario_core], None, 2, no_suffix)
         
     return scenario
