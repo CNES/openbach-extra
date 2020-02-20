@@ -55,8 +55,8 @@ def extract_jobs_to_postprocess(scenario):
 def network_delay_simultaneous_core(clt_entity, srv_entity, scenario_name='network_delay_simultaneous_core'):
     scenario = Scenario(scenario_name, 'OpenBACH Network Delay Measurement: Comparison of two RTT measurements simultaneously')
     scenario.add_argument('srv_ip', 'Target of the pings and server IP address')
-    scenario.add_argument('clt_ip', 'Sender of the pings IP address')
-    scenario.add_argument('duration', 'The duration of fping/hping tests')
+    scenario.add_argument('clt_ip', 'IP address of source of pings and packets')
+    scenario.add_argument('duration', 'The duration of fping/d-itg tests')
 
     srv = ditg_pcket_rate(scenario, clt_entity, srv_entity, '$srv_ip', '$clt_ip', 'UDP', packet_rate = 1, duration = '$duration', meter = "rttm")
     fping_measure_rtt(scenario, clt_entity, '$srv_ip', '$duration', wait_launched = srv, wait_delay = 1)
@@ -67,8 +67,8 @@ def network_delay_simultaneous_core(clt_entity, srv_entity, scenario_name='netwo
 def network_delay_sequential_core(clt_entity, srv_entity, scenario_name='network_delay_sequential_core'):
     scenario = Scenario(scenario_name, 'OpenBACH Network Delay Measurement: Comparison of two RTT measurements one after the other')
     scenario.add_argument('srv_ip', 'Target of the pings and server IP adress')
-    scenario.add_argument('clt_ip', 'Sender of the pings IP address')
-    scenario.add_argument('duration', 'The duration of each fping/hping tests')
+    scenario.add_argument('clt_ip', 'IP address of source of pings and packets')
+    scenario.add_argument('duration', 'The duration of each fping/d-itg tests')
 
     wait = fping_measure_rtt(scenario, clt_entity, '$srv_ip', '$duration')
     wait = ditg_pcket_rate(scenario, clt_entity, srv_entity, '$srv_ip', '$clt_ip', 'UDP', packet_rate = 1, duration = '$duration', meter = "rttm", wait_finished = wait)
