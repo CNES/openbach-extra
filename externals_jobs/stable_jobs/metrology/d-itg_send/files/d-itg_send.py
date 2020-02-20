@@ -107,7 +107,8 @@ def main(target_address, log_address, dest_path, granularity, traffic_type = 'UD
     # Send the stats of the receiver to the collector
     path_RCV = '{}/RCV'.format(dest_path)
     stats = open(path_RCV, "r")
-
+    
+    owd_r = []
     for line in stats:
         txt = line.strip()
         txt = txt.split(' ')
@@ -126,6 +127,7 @@ def main(target_address, log_address, dest_path, granularity, traffic_type = 'UD
         # Get the delay (in ms)
         delay = txt[2]
         delay = float(delay)*1000
+        owd_r.append(delay)
         statistics = {'owd_receiver': delay}
         collect_agent.send_stat(timestamp, **statistics)
 
@@ -147,6 +149,8 @@ def main(target_address, log_address, dest_path, granularity, traffic_type = 'UD
     path_SND = '{}/SND'.format(dest_path)
     stats = open(path_SND, "r")
 
+    owd_s = []
+    timetab = []
     for line in stats:
         txt = line.strip()
         txt = txt.split(' ')
@@ -166,6 +170,8 @@ def main(target_address, log_address, dest_path, granularity, traffic_type = 'UD
             # Get the delay (in ms)
             delay = txt[2]
             delay = float(delay)*1000
+            owd_s.append(delay)
+            timetab.append(timestamp)
             statistics = {'rtt_sender': delay}
             collect_agent.send_stat(timestamp, **statistics)
 
@@ -182,7 +188,11 @@ def main(target_address, log_address, dest_path, granularity, traffic_type = 'UD
             collect_agent.send_stat(timestamp, **statistics)        
 
     stats.close()
-   
+    if meter == "rttm" or meter == "RTTM":
+       for n in range(0, len(owd_s)):
+          owd_return = owd_s[n] - owd_r[n]
+          statistics = {'owd_return': owd_return}
+          collect_agent.send_stat(timetab[n], **statistics)
     
 if __name__ == "__main__":
     # Define Usage
