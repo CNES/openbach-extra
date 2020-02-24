@@ -36,8 +36,7 @@ def opensand_network_ip(scenario, entity, address_mask, tap_name = None,
                  wait_launched = wait_launched,
                  wait_delay = wait_delay)
     opensand.configure('opensand', entity, action_type = 'network', tap_name = tap_name,
-        bridge_name = bridge_name, action = 'ip', address_mask = address_mask, 
-        wait_finished = wait_finished, wait_launched = wait_launched, wait_delay = wait_delay)
+        bridge_name = bridge_name, action = 'ip', address_mask = address_mask)
 
     return [opensand]
 
@@ -50,8 +49,7 @@ def opensand_network_eth(scenario, entity, interface, tap_name = None,
                  wait_launched = wait_launched,
                  wait_delay = wait_delay)
     opensand.configure('opensand', entity, action_type = 'network', tap_name = tap_name,
-        bridge_name = bridge_name, action = 'eth', interface = interface,
-        wait_finished = wait_finished, wait_launched = wait_launched, wait_delay = wait_delay)
+        bridge_name = bridge_name, action = 'eth', interface = interface)
 
     return [opensand]
 
@@ -63,8 +61,7 @@ def opensand_network_clear(scenario, entity, tap_name = None,
                  wait_launched = wait_launched,
                  wait_delay = wait_delay)
     opensand.configure('opensand', entity, action_type = 'network', tap_name = tap_name,
-        bridge_name = bridge_name, action = 'clear', wait_finished = wait_finished, 
-        wait_launched = wait_launched, wait_delay = wait_delay)
+        bridge_name = bridge_name, action = 'clear', wait_finished = wait_finished)
 
     return [opensand]
 
@@ -77,8 +74,7 @@ def opensand_run(scenario, agent_entity,entity, configuration = None, output_add
                  wait_delay = wait_delay)
     opensand.configure('opensand', agent_entity, action_type = 'run', entity = entity,
         configuration = configuration, output_address = output_address, logs_port = logs_port,
-        stats_port = stats_port, binaries_directory = binaries_directory,
-        wait_finished = wait_finished, wait_launched = wait_launched, wait_delay = wait_delay)
+        stats_port = stats_port, binaries_directory = binaries_directory)
 
     return [opensand]
 
