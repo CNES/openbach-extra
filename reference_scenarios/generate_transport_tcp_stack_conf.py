@@ -40,7 +40,7 @@ The job ip_route needs the following arguments to run:
 - operation
 - gw_ip or dev
 If no argument neither icwnd and irwnd are set, the job is not launched. If at
-least one argument is set but not all, this script stops.
+least one argument is set but not all for the above list, this script stops.
 """
 
 
@@ -199,7 +199,7 @@ def main(scenario_name=None, argv=None):
              'initrwnd':args.irwnd,
              }
 
-    #route = {k:v for k,v in route.items() if v is not None}
+    route = {k:v for k,v in route.items() if v is not None}
 
     if {k:v for k,v in route.items() if v is not None}:
         if args.dest_ip is None or args.operation is None or (args.gw_ip is None and args.dev is None):
@@ -208,10 +208,7 @@ def main(scenario_name=None, argv=None):
             print("- operation")
             print("- gw_ip or dev")
             print("EXITING")
-            print(route)
             exit()
-
-    print(route)
 
     scenario = transport_tcp_stack_conf.build(
                 args.entity,
