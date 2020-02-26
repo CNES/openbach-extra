@@ -35,8 +35,12 @@ they had at the installation of the job of tcp_conf_linux. Then the parameters
 are updated only if a new value is set in the arguments. More information on
 the wiki page of the job tcp_conf_linux.
 
-The job ip_route is launched only if destination_ip is set. If yes, at least one
-of the two following parameters is mandatory: gw_ip or dev.
+The job ip_route needs the following arguments to run:
+- dest_ip
+- operation
+- gw_ip or dev
+If no argument neither icwnd and irwnd are set, the job is not launched. If at
+least one argument is set but not all, this script stops.
 """
 
 
@@ -195,14 +199,19 @@ def main(scenario_name=None, argv=None):
              'initrwnd':args.irwnd,
              }
 
+    #route = {k:v for k,v in route.items() if v is not None}
+
     if {k:v for k,v in route.items() if v is not None}:
         if args.dest_ip is None or args.operation is None or (args.gw_ip is None and args.dev is None):
-            print("\nWARNING: The following arguments are mandatory when changing the routes or setting icwnd and rcwnd:")
+            print("\nWARNING: The following arguments are mandatory when setting the iproute rules or setting icwnd and rcwnd:")
             print("- dest_ip")
             print("- operation")
             print("- gw_ip or dev")
             print("EXITING")
+            print(route)
             exit()
+
+    print(route)
 
     scenario = transport_tcp_stack_conf.build(
                 args.entity,
