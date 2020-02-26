@@ -201,7 +201,7 @@ def main(scenario_name=None, argv=None):
 
     route = {k:v for k,v in route.items() if v is not None}
 
-    if {k:v for k,v in route.items() if v is not None}:
+    if route:
         if args.dest_ip is None or args.operation is None or (args.gw_ip is None and args.dev is None):
             print("\nWARNING: The following arguments are mandatory when setting the iproute rules or setting icwnd and rcwnd:")
             print("- dest_ip")
