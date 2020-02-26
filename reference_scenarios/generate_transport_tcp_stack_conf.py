@@ -135,7 +135,7 @@ def main(scenario_name=None, argv=None):
             '--dest_ip', '--destination_ip',
             help='Ip address of the destination network')
     observer.add_scenario_argument(
-            '--operation', choices=["add", "change", "delete"], default="change",
+            '--operation', choices=["add", "change", "delete"],
             help='Select the operation to apply')
     observer.add_scenario_argument(
             '--gw_ip', '--gateway_ip',
@@ -144,10 +144,10 @@ def main(scenario_name=None, argv=None):
             '--dev', '--device',
             help='Output device name')
     observer.add_scenario_argument(
-            '--icwnd', '--initcwnd', type=str, default=10,
+            '--icwnd', '--initcwnd', type=str,
             help='Initial congestion window size for connections to specified destination')
     observer.add_scenario_argument(
-            '--irwnd', '--initrwnd', type=str, default=10,
+            '--irwnd', '--initrwnd', type=str,
             help='Initial receive window size for connections to specified destination')
     
     args = observer.parse(argv, scenario_name)
@@ -195,10 +195,14 @@ def main(scenario_name=None, argv=None):
              'initrwnd':args.irwnd,
              }
 
-    if args.gw_ip is None and args.dev is None and args.dest_ip:
-        print("\nWARNING: At least one of the arguments is mandatory: gw_ip or dev")
-        print("Exiting")
-        exit()
+    if {k:v for k,v in route.items() if v is not None}:
+        if args.dest_ip is None or args.operation is None or (args.gw_ip is None and args.dev is None):
+            print("\nWARNING: The following arguments are mandatory when changing the routes or setting icwnd and rcwnd:")
+            print("- dest_ip")
+            print("- operation")
+            print("- gw_ip or dev")
+            print("EXITING")
+            exit()
 
     scenario = transport_tcp_stack_conf.build(
                 args.entity,
