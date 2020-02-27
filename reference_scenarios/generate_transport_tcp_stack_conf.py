@@ -35,8 +35,12 @@ they had at the installation of the job of tcp_conf_linux. Then the parameters
 are updated only if a new value is set in the arguments. More information on
 the wiki page of the job tcp_conf_linux.
 
-The job ip_route is launched only if destination_ip is set. If yes, at least one
-of the two following parameters is mandatory: gw_ip or dev.
+The job ip_route needs the following arguments to run:
+- dest_ip
+- operation
+- gw_ip or dev
+If no argument neither icwnd and irwnd are set, the job is not launched. If at
+least one argument is set but not all for the above list, this script stops.
 """
 
 
@@ -135,7 +139,7 @@ def main(scenario_name=None, argv=None):
             '--dest_ip', '--destination_ip',
             help='Ip address of the destination network')
     observer.add_scenario_argument(
-            '--operation', choices=["add", "change", "delete"], default="change",
+            '--operation', choices=["add", "change", "delete"],
             help='Select the operation to apply')
     observer.add_scenario_argument(
             '--gw_ip', '--gateway_ip',
@@ -144,10 +148,10 @@ def main(scenario_name=None, argv=None):
             '--dev', '--device',
             help='Output device name')
     observer.add_scenario_argument(
-            '--icwnd', '--initcwnd', type=str, default=10,
+            '--icwnd', '--initcwnd', type=str,
             help='Initial congestion window size for connections to specified destination')
     observer.add_scenario_argument(
-            '--irwnd', '--initrwnd', type=str, default=10,
+            '--irwnd', '--initrwnd', type=str,
             help='Initial receive window size for connections to specified destination')
     
     args = observer.parse(argv, scenario_name)
@@ -195,10 +199,16 @@ def main(scenario_name=None, argv=None):
              'initrwnd':args.irwnd,
              }
 
-    if args.gw_ip is None and args.dev is None and args.dest_ip:
-        print("\nWARNING: At least one of the arguments is mandatory: gw_ip or dev")
-        print("Exiting")
-        exit()
+    route = {k:v for k,v in route.items() if v is not None}
+
+    if route:
+        if args.dest_ip is None or args.operation is None or (args.gw_ip is None and args.dev is None):
+            print("\nWARNING: The following arguments are mandatory when setting the iproute rules or setting icwnd and rcwnd:")
+            print("- dest_ip")
+            print("- operation")
+            print("- gw_ip or dev")
+            print("EXITING")
+            exit()
 
     scenario = transport_tcp_stack_conf.build(
                 args.entity,

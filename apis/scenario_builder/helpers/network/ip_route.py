@@ -30,7 +30,7 @@
 
 def ip_route(
        scenario, entity, operation, destination_ip, gateway_ip=None, 
-       device=None, initcwnd=0, initrwnd=0, wait_finished=None, 
+       device=None, initcwnd=None, initrwnd=None, wait_finished=None, 
        wait_launched=None, wait_delay=0):
     route_config = scenario.add_function(
                 'start_job_instance',
@@ -45,6 +45,9 @@ def ip_route(
                 'initcwnd': initcwnd,
                 'initrwnd': initrwnd
     }
+
+    parameters = {k:v for k,v in parameters.items() if v is not None}
+    
     if gateway_ip:
        parameters['gateway_ip']=gateway_ip
     if device:

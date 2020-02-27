@@ -61,8 +61,11 @@ def build(entity, tcp_params, tcp_subparams, interface=None, route=None, scenari
     if interface:
        ethtool_disable_segmentation_offload(scenario, entity, interface)
     if route and "destination_ip" in route and route["destination_ip"] is not None:
-      op = route["operation"]
-      del route["operation"]
+      if "operation" not in route:
+        op = "change"
+      else:
+        op = route["operation"]
+        del route["operation"]
       ip_route(scenario, entity, op, **route)
       
     return scenario
