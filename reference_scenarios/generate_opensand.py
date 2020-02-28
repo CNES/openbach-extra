@@ -71,9 +71,8 @@ def set_route_ip(ip):
 def get_route_ip_list(ip_list, ip):
     for n in range(0, len(ip_list)):
         if ip.split('.')[2] == ip_list[n].split('.')[2]:
-           ip_list.pop(n)
-           break
-    return ip_list
+           return ip_list[:n] + ip_list[(n+1):]
+    return []
         
 class validate_gateway(argparse.Action):
     def __call__(self, parser, args, values, option_string = None): 
@@ -89,7 +88,7 @@ class validate_gateway_phy(argparse.Action):
         if getattr(args, self.dest) == None:
             self.items = []
         gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity = values
-        Gateway_phy = collections.namedtuple('Gateway_phy', 'gw_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip')
+        Gateway_phy = collections.namedtuple('Gateway_phy', 'gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity')
         self.items.append(Gateway_phy(gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity))
         setattr(args, self.dest, self.items)
 
@@ -136,6 +135,9 @@ def set_gateways(sat_entity, sat_interface, sat_ip, gateway, satellite_terminal,
        gw_phy_interface = []
        gw_phy_ip = []
        st_list = []
+       gw_phy_entity = None
+       gw_phy_interface = []
+       gw_phy_ip = []
        
        #Set server
        for srv in server:
@@ -159,7 +161,7 @@ def set_gateways(sat_entity, sat_interface, sat_ip, gateway, satellite_terminal,
            if st.gw_entity == gw.gw_entity:
                route_ip.append(set_route_ip(st.lan_ip))
                st_list.append(st)
-               st_opensand_ip.append(st.opensand_ip)
+               st_opensand_ip.append(st.opensand_ip.split('/')[0])
        if len(st_list) == 0:
            raise ValueError('Gateway must have at least one satellite terminal')
 
@@ -176,10 +178,11 @@ def set_gateways(sat_entity, sat_interface, sat_ip, gateway, satellite_terminal,
                   break
        if len(gw_st) != len(gw_clt):
            raise ValueError('Each satellite terminal must have only one client')
-     
+
        gateways.append(GW(
                          gw.gw_entity, [gw.lan_interface, gw.emu_interface], [gw.lan_ip, gw.emu_ip], gw.opensand_ip,
-                         get_route_ip_list(route_ip, gw.lan_ip), st_opensand_ip, gw_st, gw_clt + [gw_srv]))
+                         get_route_ip_list(route_ip, gw.lan_ip), st_opensand_ip, gw_st, gw_clt + [gw_srv], 
+                         gw_phy_entity, gw_phy_interface, gw_phy_ip))
     return gateways   
 
 def main(scenario_name='opensand', argv=None):

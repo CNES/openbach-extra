@@ -63,7 +63,7 @@ def st_configure(scenario, st_entity, interface, interface_ip, mask_ip, lan_ip, 
     wait = opensand_network_ip(scenario, st_entity, mask_ip, wait_finished = wait)
 
     for ip in lan_ip:
-         wait = ip_route(scenario, st_entity, ip, gw_ip, wait_finished = wait)
+         wait = ip_route(scenario, st_entity, 'add', ip, gw_ip, wait_finished = wait)
 
     return wait
 
@@ -76,20 +76,20 @@ def gw_phy_configure(scenario, gw_phy_entity, interface, interface_ip, wait_fini
 
 def gw_configure(scenario, gw_entity, interface, interface_ip, mask_ip, lan_ip, gw_ip, wait_finished = None):
     wait = wait_finished 
+
     for interf, ip in zip(interface, interface_ip):
          wait = ip_address(scenario, gw_entity, interf, 'add', ip, wait_finished = wait)
 
     wait = opensand_network_ip(scenario, gw_entity, mask_ip, wait_finished = wait)
-
     for ip,gw_ip in zip(lan_ip,gw_ip):
-         wait = ip_route(scenario, gw_entity, ip, gw_ip, wait_finished = wait)
+         wait = ip_route(scenario, gw_entity, 'add', ip, gw_ip, wait_finished = wait)
 
     return wait
 
 
 def host_configure(scenario, entity, interface, interface_ip, ip_to_route, gw_ip, wait_finished = None):
     wait = ip_address(scenario, entity, interface, 'add', interface_ip, wait_finished = wait_finished)
-    wait = ip_route(scenario, entity, ip_to_route, gw_ip, wait_finished = wait)
+    wait = ip_route(scenario, entity, 'add', ip_to_route, gw_ip, wait_finished = wait)
    
     return wait
 
@@ -98,11 +98,12 @@ def build(gateways, sat_entity, sat_interface, sat_ip, wait_finished = None, sce
 
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     wait = []
-
+    
     # Sat configure
     wait.append(sat_configure(scenario, sat_entity, sat_interface, sat_ip))
     for gw in gateways :
         # Configure GW 
+        print(gw.gw_phy_entity)
         wait.append(gw_configure(scenario, gw.entity, gw.interface, gw.ip, gw.opensand_ip, gw.route_ip, gw.route_gw_ip, wait_finished))
         if gw.gw_phy_entity is not None:
             wait.append(gw_phy_configure(scenario, gw.gw_phy_entity, gw.gw_phy_interface, gw.gw_phy_ip, wait_finished))

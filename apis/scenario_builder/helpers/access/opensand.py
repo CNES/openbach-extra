@@ -28,53 +28,81 @@
 
 """ Helpers of open_sand job """
 
-def opensand_network_ip(scenario, entity, address_mask, tap_name = None, 
-        bridge_name = None, wait_finished = None, wait_launched = None, wait_delay = 0):
+def opensand_network_ip(scenario, entity, address_mask, tap_name = 'opensand_tap', 
+        bridge_name = 'opensand_br', wait_finished = None, wait_launched = None, wait_delay = 0):
 
     opensand = scenario.add_function('start_job_instance',
                  wait_finished = wait_finished,
                  wait_launched = wait_launched,
                  wait_delay = wait_delay)
-    opensand.configure('opensand', entity, action_type = 'network', tap_name = tap_name,
-        bridge_name = bridge_name, action = 'ip', address_mask = address_mask)
+    opensand.configure('opensand', entity, network = {'tap_name': tap_name,
+        'bridge_name': bridge_name, 'ip' : {'address_mask': address_mask}})
 
     return [opensand]
 
 
-def opensand_network_eth(scenario, entity, interface, tap_name = None,
-        bridge_name = None, wait_finished = None, wait_launched = None, wait_delay = 0):
+def opensand_network_eth(scenario, entity, interface, tap_name = 'opensand_tap',
+        bridge_name = 'opensand_br', wait_finished = None, wait_launched = None, wait_delay = 0):
 
     opensand = scenario.add_function('start_job_instance',
                  wait_finished = wait_finished,
                  wait_launched = wait_launched,
                  wait_delay = wait_delay)
-    opensand.configure('opensand', entity, action_type = 'network', tap_name = tap_name,
-        bridge_name = bridge_name, action = 'eth', interface = interface)
+    opensand.configure('opensand', entity, network = {'tap_name': tap_name,
+        'bridge_name': bridge_name, 'eth': {'interface': interface}})
 
     return [opensand]
 
-def opensand_network_clear(scenario, entity, tap_name = None,
-        bridge_name = None, wait_finished = None, wait_launched = None, wait_delay = 0):
+def opensand_network_clear(scenario, entity, tap_name = 'opensand_tap',
+        bridge_name = 'opensand_br', wait_finished = None, wait_launched = None, wait_delay = 0):
 
     opensand = scenario.add_function('start_job_instance',
                  wait_finished = wait_finished,
                  wait_launched = wait_launched,
                  wait_delay = wait_delay)
-    opensand.configure('opensand', entity, action_type = 'network', tap_name = tap_name,
-        bridge_name = bridge_name, action = 'clear', wait_finished = wait_finished)
+    opensand.configure('opensand', entity, network = {'tap_name': tap_name,
+        'bridge_name' : bridge_name, 'action': 'clear'})
 
     return [opensand]
 
-def opensand_run(scenario, agent_entity,entity, configuration = None, output_address = None, 
-        logs_port = None, stats_port = None, binaries_directory = None):
+def opensand_run(scenario, agent_entity, entity, configuration = None, output_address = None, 
+        logs_port = None, stats_port = None, binaries_directory = None, entity_id = None,
+        emulation_address = None, interconnection_address = None, 
+        wait_finished = None, wait_launched = None, wait_delay = 0):
 
     opensand = scenario.add_function('start_job_instance',
                  wait_finished = wait_finished,
                  wait_launched = wait_launched,
                  wait_delay = wait_delay)
-    opensand.configure('opensand', agent_entity, action_type = 'run', entity = entity,
-        configuration = configuration, output_address = output_address, logs_port = logs_port,
-        stats_port = stats_port, binaries_directory = binaries_directory)
+    if entity == 'sat': 
+        opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration, 
+            'output_address' : output_address, 'logs_port' : logs_port,
+            'stats_port' : stats_port, 'binaries_directory' : binaries_directory,
+            'sat' : {'emulation_address' : emulation_address}})
+    elif entity == 'gw':
+        opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
+            'output_address' : output_address, 'logs_port' : logs_port,
+            'stats_port' : stats_port, 'binaries_directory' : binaries_directory,
+            'gw' : {'id': entity_id, 'emulation_address' : emulation_address}})
+    elif entity == 'gw-phy':
+        opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
+            'output_address' : output_address, 'logs_port' : logs_port,
+            'stats_port' : stats_port, 'binaries_directory' : binaries_directory,
+            'gw-phy' : {'id': entity_id, 'emulation_address' : emulation_address, 
+                        'interconnection_address' : interconnection_address}})
+    elif entity == 'gw-net-acc':
+        opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
+            'output_address' : output_address, 'logs_port' : logs_port,
+            'stats_port' : stats_port, 'binaries_directory' : binaries_directory,
+            'gw-net-acc' : {'id': entity_id, 'interconnection_address' : interconnection_address}})
+    elif entity == 'st':
+        opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
+            'output_address' : output_address, 'logs_port' : logs_port,
+            'stats_port' : stats_port, 'binaries_directory' : binaries_directory,
+            'st' : {'id': entity_id, 'emulation_address' : emulation_address}})
+
+
+
 
     return [opensand]
 

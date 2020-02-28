@@ -28,7 +28,7 @@
 
 """ Helpers of ip_address job """
 
-def ip_address(scenario, entity, interface, cmd, ip_address = None,
+def ip_address(scenario, entity, interface, cmd, address_mask = '',
         wait_finished = None, wait_launched = None, wait_delay = 0):
 
     ip_address = scenario.add_function('start_job_instance',
@@ -36,7 +36,14 @@ def ip_address(scenario, entity, interface, cmd, ip_address = None,
                  wait_launched = wait_launched,
                  wait_delay = wait_delay)
 
-    ip_address.configure('ip_address', entity, interface = interface,
-        operation = cmd, address_mask = ip_address)
+    if cmd == 'add':
+        ip_address.configure('ip_address', entity, interface = interface,
+             add = { 'address_mask': address_mask})
+    elif cmd == 'delete':
+        ip_address.configure('ip_address', entity, interface = interface,
+             delete = { 'address_mask': address_mask})
+    else:
+        ip_address.configure('ip_address', entity, interface = interface,
+             operation = 'flush')
 
     return [ip_address]
