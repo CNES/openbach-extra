@@ -98,6 +98,6 @@ def build(clt_entity, srv_entity, clt_ip, srv_ip, duration, simultaneous, post_p
             for function_id in extract_jobs_to_postprocess(scenario_core)
        ]
        time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['rtt', 'rtt_sender']], [['RTT delay (ms)']], [['RTTs time series']], [['d-itg_send'], ['fping']], [start_scenario_core], None, 2)
-       cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rtt', 'rtt_sender']], [['RTT delay (ms)']], [['RTT CDF']], [['d-itg_send']['fping']], [start_scenario_core], None, 2)
+       cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['rtt', 'rtt_sender']], [['RTT delay (ms)']], [['RTT CDF']], [['d-itg_send'], ['fping']], [start_scenario_core], None, 2)
 
     return scenario
