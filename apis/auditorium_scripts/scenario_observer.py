@@ -39,6 +39,7 @@ import time
 import json
 import pprint
 import warnings
+from sys import exit
 from pathlib import Path
 from contextlib import suppress
 
@@ -60,7 +61,7 @@ MAX_RETRIES_STATUS = 5
 class ScenarioObserver(FrontendBase):
     def __init__(self, **default_run_arguments):
         super().__init__('OpenBACH — Run a scenario and postprocess stats')
-        self._scenarios = {}
+        self._last_instance = {'scenario_instance_id': -1}
         self._default_arguments = default_run_arguments
         self.build_parser()
 
@@ -191,19 +192,12 @@ class ScenarioObserver(FrontendBase):
         instance.args = self.args
         return instance
 
-    def _extract_scenario_json(self, scenario):
-        self._scenarios[self.args.scenario_name] = {
-                function['label']: function['id']
-                for function in scenario.json()['openbach_functions']
-                if 'start_job_instance' in function and function['label']
-        }
-
     def _send_scenario_to_controller(self, builder=None):
         scenario_getter = self._share_state(GetScenario)
+
         if builder is None:
             scenario = scenario_getter.execute(False)
             scenario.raise_for_status()
-            self._extract_scenario_json(scenario)
         else:
             scenario_setter = self._share_state(CreateScenario)
             scenario_modifier = self._share_state(ModifyScenario)
@@ -220,7 +214,6 @@ class ScenarioObserver(FrontendBase):
                     if self.args.override:
                         scenario = scenario_modifier.execute(False)
                 scenario.raise_for_status()
-                self._extract_scenario_json(scenario)
 
     def _run_scenario_to_completion(self):
         scenario_starter = self._share_state(StartScenarioInstance)
@@ -269,7 +262,8 @@ class ScenarioObserver(FrontendBase):
             }
 
         self._send_scenario_to_controller(builder)
-        return self._run_scenario_to_completion()
+        self._last_instance = self._run_scenario_to_completion()
+        return self._last_instance
 
     def _write_json(self, builder=None):
         path = Path(self.args.json_path).absolute()
@@ -295,3 +289,47 @@ class ScenarioObserver(FrontendBase):
             self.parser.error(
                     'asked to *not* contact the controller without a provided '
                     'scenario builder: cannot create scenario file')
+
+
+class DataProcessor:
+    def __init__(self, observer, scenario_instance=None):
+        if scenario_instance is None:
+            scenario_instance = observer._last_instance
+
+        self._post_processing = {}
+        self._instance = scenario_instance
+        self._collector = CollectorConnection(
+                observer.args.collector,
+                observer.args.elasticsearch_port,
+                observer.args.influxdb_port,
+                observer.args.database_name,
+                observer.args.time)
+
+    def add_callback(self, label, callback, openbach_functions):
+        ids = tuple(
+                str(function.scenario_name) if hasattr('scenario_name', function) else function
+                for function in openbach_functions)
+        self._post_processing[ids] = (label, callback)
+
+    def _extract_callback(self, scenario_instance, parent_scenarios=()):
+        name = scenario_instance['scenario_name']
+        for function in scenario_instance['openbach_functions']:
+            with suppress(KeyError):
+                yield from self._extract_callback(function['scenario'], parent_scenarios + (name,))
+            with suppress(KeyError):
+                callback = self._post_processing[parent_scenarios + (function['id'],)]
+                yield function['job']['id'], callback
+
+    def post_processing(self):
+        callbacks = dict(self._extract_callback(self._instance))
+
+        try:
+            scenario, = self._collector.scenarios(scenario_instance_id=self._instance['scenario_instance_id'])
+        except ValueError:
+            exit('cannot retrieve scenario instance data from database')
+        self._post_processing.clear()
+
+        return {
+                callbacks[job.instance_id][0]: callbacks[job.instance_id][1](job)
+                for job in scenario.jobs if job.instance_id in callbacks
+        }
