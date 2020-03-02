@@ -28,43 +28,62 @@
 
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
-from scenario_builder.helpers.transport.iperf3 import iperf3_send_file_tcp, iperf3_rate_tcp
+from scenario_builder.helpers.transport.iperf3 import iperf3_send_file_tcp, iperf3_rate_tcp, iperf3_find_server
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
-SCENARIO_DESCRIPTION="""This scenario launches one iperf3 transfer"""
-SCENARIO_NAME="""service_data_transfer"""
-
-def extract_jobs_to_postprocess(scenario):
-    for function_id, function in enumerate(scenario.openbach_functions):
-        if isinstance(function, StartJobInstance):
-            if function.job_name == 'iperf3':
-                if 'server' in function.start_job_instance['iperf3']:
-                    yield function_id
+SCENARIO_DESCRIPTION = """This scenario launches one iperf3 transfer"""
+LAUNCHER_DESCRIPTION = SCENARIO_DESCRIPTION + """
+It then plot the throughput using time-series and CDF.
+"""
+SCENARIO_NAME = 'Data Transfer'
 
 
-def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
-    print("Loading:",scenario_name)
-
-    # Create top network_global scenario
-    scenario = Scenario(scenario_name + "_" + args[0], SCENARIO_DESCRIPTION)
-
-    # launching traffic
-    if args[11] == "0":
-        start_scenario = iperf3_rate_tcp(scenario, args[2], args[3], args[9], args[10], int(args[4]), 1, args[12], args[13])
+def data_transfer(source, destination, duration, ip, port, size, tos, mtu, scenario_name=SCENARIO_NAME):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    if size == '0':
+        iperf3_rate_tcp(scenario, source, destination, ip, port, duration, 1, tos, mtu)
     else:
-        start_scenario = iperf3_send_file_tcp(scenario, args[2], args[3], args[9], args[10], args[11], args[12], args[13])
-    
-    # Post processing data
-    if post_processing_entity is not None:
-        post_processed = []
-        legends = []
-        for function_id in extract_jobs_to_postprocess(scenario):
-            post_processed.append([function_id])
-            legends.append(["iperf3 from " + args[2] + " to " + args[3] + ", port " + args[10]])
-        if post_processed:
-            time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['throughput']], [['Rate (b/s)']], [['Rate time series']], legends, start_scenario, None, 2)
-            cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['throughput']], [['Rate (b/s)']], [['Rate CDF']], legends, start_scenario, None, 2)
+        iperf3_send_file_tcp(scenario, source, destination, ip, port, size, tos, mtu)
 
     return scenario
+
+
+def build(
+        source, destination, duration, destination_ip, port, size, tos,
+        mtu, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    # Create core scenario
+    scenario = data_transfer(source, destination, duration, destination_ip, port, size, tos, mtu, scenario_name)
+    if post_processing_entity is None:
+        return scenario
+
+    # Wrap into meta scenario
+    scenario_launcher = Scenario(scenario_name + ' with post-processing', LAUNCHER_DESCRIPTION)
+    start_scenario = scenario_launcher.add_function('start_scenario_instance')
+    start_scenario.configure(scenario)
+
+    # Post processing data
+    post_processed = [[start_scenario, id] for id in scenario.extract_function_id(iperf3=iperf3_find_server)]
+    legends = ['iperf3 from {} to {}, port {}'.format(source, destination, port)]
+    time_series_on_same_graph(
+            scenario_launcher,
+            post_processing_entity,
+            post_processed,
+            [['throughput']],
+            [['Rate (b/s)']],
+            [['Rate time series']],
+            [legends],
+            start_scenario, None, 2)
+    cdf_on_same_graph(
+            scenario_launcher,
+            post_processing_entity,
+            post_processed,
+            100,
+            [['throughput']],
+            [['Rate (b/s)']],
+            [['Rate CDF']],
+            [legends],
+            start_scenario, None, 2)
+
+    return scenario_launcher

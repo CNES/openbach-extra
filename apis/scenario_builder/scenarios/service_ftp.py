@@ -33,54 +33,50 @@ from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph,
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 
-SCENARIO_NAME = """service_ftp"""
 SCENARIO_DESCRIPTION = """This service_ftp scenario allows to :
-    - Launch a ftp server and a ftp client, to either download or upload
-a file, only once or multiple time
-    - Perform two postprocessing tasks to compare the time-series and the CDF 
-of the throughput.
+ — Launch a ftp server;
+ — Launch a ftp client;
+ — Download or Upload a file, {}.
 """
+LAUNCHER_DESCRIPTION = SCENARIO_DESCRIPTION + """
+It then plot the throughput using time-series and CDF.
+"""
+SCENARIO_NAME = 'FTP'
 
-def extract_jobs_to_postprocess(scenario):
-    for function_id, function in enumerate(scenario.openbach_functions):
-        if isinstance(function, StartJobInstance):
-            if function.job_name == 'ftp_clt':
-                    yield function_id
-            elif function.job_name == 'ftp_srv':
-                    yield function_id
 
-def service_m(client, server, multiple, scenario_name = 'service_ftp_multiple'):
-    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    scenario.add_argument('server_ip', "Server's IP")
-    scenario.add_argument('port', "Server's port")
-    scenario.add_argument('mode', "Download or upload")
-    scenario.add_argument('file_path', 'Path of the exchanged file')
-    scenario.add_argument('user', 'FTP authorized user')
-    scenario.add_argument('password', "FTP authorized user's password")
-    scenario.add_argument('blocksize', "Blocksize sent or received of data crunch")
+def multiple_ftp(client, server, ip, port, mode, path, user, password, blocksize, amount, scenario_name=SCENARIO_NAME):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format('multiple times'))
+    scenario.add_constant('server_ip', ip)
+    scenario.add_constant('port', port)
+    scenario.add_constant('mode', mode)
+    scenario.add_constant('file_path', path)
+    scenario.add_constant('user', user)
+    scenario.add_constant('password', password)
+    scenario.add_constant('blocksize', blocksize)
     ftp_multiple(scenario, client, server, '$server_ip', '$port', '$mode', 
-        '$file_path', multiple, '$user', '$password', '$blocksize')
+        '$file_path', amount, '$user', '$password', '$blocksize')
     return scenario
-    
-def service_s(client, server, scenario_name = 'service_ftp_single'):
-    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    scenario.add_argument('server_ip', "Server's IP")
-    scenario.add_argument('port', "Server's port")
-    scenario.add_argument('mode', 'Download or upload')
-    scenario.add_argument('file_path', 'Path of the exchanged file')
-    scenario.add_argument('user', 'FTP authorized user')
-    scenario.add_argument('password', "FTP authorized user's password")
-    scenario.add_argument('blocksize', "Blocksize sent or received of data crunch")
+
+
+def single_ftp(client, server, ip, port, mode, path, user, password, blocksize, scenario_name=SCENARIO_NAME):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format('once'))
+    scenario.add_constant('server_ip', ip)
+    scenario.add_constant('port', port)
+    scenario.add_constant('mode', mode)
+    scenario.add_constant('file_path', path)
+    scenario.add_constant('user', user)
+    scenario.add_constant('password', password)
+    scenario.add_constant('blocksize', blocksize)
     ftp_single(scenario, client, server, '$server_ip', '$port', '$mode', 
         '$file_path', '$user', '$password', '$blocksize')
     return scenario
 
-def build(client, server, server_ip, port, mode, file_path, multiple,
-        user = 'openbach', password = 'openbach', blocksize = '8192', 
-	post_processing_entity = None, scenario_name = SCENARIO_NAME):
-        
-    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    start_scenario_core = scenario.add_function('start_scenario_instance')
+
+def build(
+        client, server, server_ip, port, mode, file_path, multiple,
+        user='openbach', password='openbach', blocksize='8192', 
+	post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    # Create core scenario
     if mode == 'download':
         name_stat = 'throughput_sent'
         server_leg = 'sent'
@@ -93,34 +89,45 @@ def build(client, server, server_ip, port, mode, file_path, multiple,
         raise ValueError('Mode must be "upload" or "download"')
 
     if multiple > 1:
-        legend = [["Server throughput " + server_leg]]
-        for n in range(1, multiple + 1) :
-            legend.append(["Client_" + str(n) + " throughput " + client_leg])
-        scenario_core = service_m(client, server, multiple)
-        start_scenario_core.configure(scenario_core, server_ip = server_ip, port = port,
-            mode = mode, file_path = file_path, user = user, password = password, 
-            blocksize = blocksize)
-    elif multiple == 1 :
-        legend = [["Server throughput " + server_leg], ["Client throughput " + client_leg]]
-        scenario_core = service_s(client, server)
-        start_scenario_core.configure(scenario_core, server_ip = server_ip, port = port,
-            mode = mode, file_path = file_path, user = user, password = password, 
-            blocksize = blocksize)
+        legend = [['Server throughput {}'.format(server_leg)]] + [
+                ['Client_{} throughput {}'.format(n+1, client_leg)] for n in range(multiple)
+        ]
+        scenario = multiple_ftp(client, server, server_ip, port, mode, file_path, user, password, blocksize, multiple, scenario_name)
+    elif multiple == 1:
+        legend = [['Server throughput {}'.format(server_leg)], ['Client throughput {}'.format(client_leg)]]
+        scenario = single_ftp(client, server, server_ip, port, mode, file_path, user, password, blocksize, scenario_name)
     else :
         raise ValueError("Multiple must be > 0")
 
-    #Post processing part
-    if post_processing_entity is not None:
-        post_processed = [
-            [start_scenario_core, function_id]
-            for function_id in extract_jobs_to_postprocess(scenario_core)
-        ]
-        time_series_on_same_graph(scenario, post_processing_entity, post_processed,
-            [['throughput_' + mode, name_stat]], [['Throughput (b/s)']], [[mode + ' throughput']],
-            legend, [start_scenario_core], None, 2)
-        cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, 
-            [['throughput_' + mode, name_stat]], [['Throughput (b/s)']], [[mode + ' throughput']],
-            legend, [start_scenario_core], None, 2)
+    if post_processing_entity is None:
+        return scenario
 
-    return scenario
+    # Wrap into meta scenario
+    scenario_launcher = Scenario(scenario_name + ' with post-processing', LAUNCHER_DESCRIPTION)
+    start_scenario = scenario_launcher.add_function('start_scenario_instance')
+    start_scenario.configure(scenario)
+
+    #Post processing part
+    post_processed = [[start_scenario, id] for id in scenario.extract_function_id('ftp_clt', 'ftp_srv')]
+    time_series_on_same_graph(
+            scenario_launcher,
+            post_processing_entity,
+            post_processed,
+            [['throughput_' + mode, name_stat]],
+            [['Throughput (b/s)']],
+            [[mode + ' throughput']],
+            legend,
+            [start_scenario_core], None, 2)
+    cdf_on_same_graph(
+            scenario_launcher,
+            post_processing_entity,
+            post_processed,
+            100,
+            [['throughput_' + mode, name_stat]],
+            [['Throughput (b/s)']],
+            [[mode + ' throughput']],
+            legend,
+            [start_scenario_core], None, 2)
+
+    return scenario_launcher
 

@@ -32,33 +32,38 @@ from scenario_builder.helpers.network.configure_link import configure_link_clear
 from inspect import signature
 
 
-SCENARIO_DESCRIPTION="""This scenario allows to:
-     - {} a configuration on network interfaces in ingress, egress or both directions 
-       in order to emulate/stop emulation of a network link like WIFI link. 
-       Many link characteristiscs can be emulated including: bandwidth, delay, jitter and losses
+SCENARIO_DESCRIPTION = """This scenario allows to:
+ - {} a configuration on network interfaces in ingress, egress or both directions 
+   in order to emulate/stop emulation of a network link like WIFI link. 
+   Many link characteristiscs can be emulated including: bandwidth, delay, jitter and losses
 """
-SCENARIO_NAME="""network_configure_link"""
+
+
+def apply_configure_link(
+        entity, ifaces, mode, bandwidth, delay_distribution,
+        delay, jitter, loss_model, loss_model_params,
+        buffer_size, scenario_name='Apply Configure Link'):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format('Apply'))
+    configure_link_apply(
+            scenario, entity, ifaces, mode, bandwidth, delay_distribution,
+            delay, jitter, loss_model, loss_model_params, buffer_size)
+    return scenario
+
+
+def clear_configure_link(entity, ifaces, mode, scenario_name='Clear Configure Link'):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format('Clear'))
+    configure_link_clear(scenario, entity, ifaces, mode)
+    return scenario
 
 
 def build(entity, ifaces, mode, operation, bandwidth=None, delay=0, jitter=0,
           delay_distribution='normal', loss_model='random', loss_model_params=[0.0], 
-          buffer_size=10000, scenario_name=SCENARIO_NAME):
+          buffer_size=10000, scenario_name=None):
+    scenario = clear_configure_link(entity, ifaces, mode) if operation != 'apply' else apply_configure_link(
+            entity, ifaces, mode, bandwidth, delay_distribution,
+            delay, jitter, loss_model, loss_model_params, buffer_size)
 
-    # Create scenario and add scenario arguments if needed
-    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format(operation))
-    args = signature(build).parameters
-    for arg in args:
-        value = locals()[arg] 
-        if str(value).startswith('$'):
-           scenario.add_argument(value[1:], '')
-
-    if operation == 'apply':
-       configure_link_apply(scenario, entity, ifaces, mode, bandwidth, delay_distribution,
-                            delay, jitter, loss_model, loss_model_params, buffer_size)
-    else:
-       configure_link_clear(scenario, entity, ifaces, mode)
+    if scenario_name is not None:
+        scenario.name = scenario_name
 
     return scenario
-
-
-

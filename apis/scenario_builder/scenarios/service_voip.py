@@ -33,34 +33,54 @@ from scenario_builder.helpers.postprocessing.time_series import time_series_on_s
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
-SCENARIO_DESCRIPTION="""This scenario launches one voip transfert"""
-SCENARIO_NAME="""service_voip"""
-
-def extract_jobs_to_postprocess(scenario):
-    for function_id, function in enumerate(scenario.openbach_functions):
-        if isinstance(function, StartJobInstance):
-            if function.job_name == 'voip_qoe_src':
-                yield function_id
+SCENARIO_DESCRIPTION = """This scenario launches one voip transfert"""
+LAUNCHER_DESCRIPTION = SCENARIO_DESCRIPTION + """
+It then plot the mean opinion score using time-series and CDF.
+"""
+SCENARIO_NAME = 'VoIP'
 
 
-def build(post_processing_entity, args, scenario_name=SCENARIO_NAME):
-    print("Loading:",scenario_name)
+def voip(source, destination, duration, source_ip, destination_ip, port, codec, scenario_name=SCENARIO_NAME):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    voip(scenario, destination, source, source_ip, destination_ip, port, codec, duration)
+    return scenario
 
-    # Create top network_global scenario
-    scenario = Scenario(scenario_name + "_" + args[0], SCENARIO_DESCRIPTION)
 
-    # launching traffic
-    start_scenario = voip(scenario, args[3], args[2], args[8], args[9], args[10], args[11], int(args[4]))
+def build(
+        source, destination, duration,
+        source_ip, destination_ip, port, codec,
+        post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    # Create core scenario
+    scenario = voip(source, destination, duration, source_ip, destination_ip, port, codec, scenario_name)
+    if post_processing_entity is None:
+        return scenario
+
+    # Wrap into meta scenario
+    scenario_launcher = Scenario(scenario_name + ' with post-processing', LAUNCHER_DESCRIPTION)
+    start_scenario = scenario_launcher.add_function('start_scenario_instance')
+    start_scenario.configure(scenario)
 
     # Post processing data
-    if post_processing_entity is not None:
-        post_processed = []
-        legends = []
-        for function_id in extract_jobs_to_postprocess(scenario):
-            post_processed.append([function_id])
-            legends.append(["voip from " + args[2] + " to " + args[3]])
-        if post_processed:
-            time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['instant_mos']], [['MOS']], [['MOS time series']], legends, start_scenario, None, 2)
-            cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['instant_mos']], [['MOS']], [['MOS CDF']], legends, start_scenario, None, 2)
+    post_processed = [[start_scenario, id] for id in scenario.extract_function_id('voip_qoe_src')]
+    legends = ['voip from {} to {}'.format(source, destination)]
+    time_series_on_same_graph(
+            scenario_launcher,
+            post_processing_entity,
+            post_processed,
+            [['instant_mos']],
+            [['MOS']],
+            [['MOS time series']],
+            [legends],
+            start_scenario, None, 2)
+    cdf_on_same_graph(
+            scenario_launcher,
+            post_processing_entity,
+            post_processed,
+            100,
+            [['instant_mos']],
+            [['MOS']],
+            [['MOS CDF']],
+            [legends],
+            start_scenario, None, 2)
 
     return scenario

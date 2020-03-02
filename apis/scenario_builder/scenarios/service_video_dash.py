@@ -31,51 +31,64 @@ from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
-SCENARIO_DESCRIPTION="""This scenario launches one DASH transfer"""
-SCENARIO_NAME="""service_video_dash"""
+SCENARIO_DESCRIPTION = """This scenario launches one DASH transfer"""
+LAUNCHER_DESCRIPTION = SCENARIO_DESCRIPTION + """
+It then plot the bit rate using time-series and CDF.
+"""
+SCENARIO_NAME = 'Video Dash'
 
-def extract_jobs_to_postprocess(scenario):
-    for function_id, function in enumerate(scenario.openbach_functions):
-        if isinstance(function, StartJobInstance):
-            if function.job_name == 'dash player&server':
-                yield function_id
 
-def build(post_processing_entity, args, launch_server=False, scenario_name=SCENARIO_NAME):
-    print("Loading:",scenario_name)
-
-    # Create top network_global scenario
-    scenario = Scenario(scenario_name + "_" + args[0], SCENARIO_DESCRIPTION)
+def video_dash(source, destination, duration, ip, protocol, launch_server, scenario_name=SCENARIO_NAME):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     if launch_server:
-        # launching server
-        start_server = scenario.add_function('start_job_instance')
-        start_server.configure('dash player&server', args[2], offset=0)
+        server = scenario.add_function('start_job_instance')
+        server.configure('dash player&server', source, offset=0)
 
-        # launching traffic
-        start_scenario = scenario.add_function('start_job_instance', wait_launched=[start_server], wait_delay=5)
-        start_scenario.configure(
-                'dash client', args[3], offset=0,
-                 dst_ip=args[8], protocol=args[10], duration=int(args[4]))
+        traffic = scenario.add_function('start_job_instance', wait_launched=[server], wait_delay=5)
 
-        # stopping server
-        stopper = scenario.add_function('stop_job_instance',
-                wait_finished=[start_scenario], wait_delay=5)
-        stopper.configure(start_server)
-
-        if post_processing_entity:
-            post_processed = []
-            legends = []
-            for function_id in extract_jobs_to_postprocess(scenario):
-                post_processed.append([function_id])
-                legends.append(["dash from " + args[2] + " to " + args[3]])
-            if post_processed:
-                time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['bitrate']], [['Rate (b/s)']], [['Rate time series']], legends, [start_scenario], None, 2)
-                cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['bitrate']], [['Rate (b/s)']], [['Rate CDF']], legends, [start_scenario], None, 2)
-
+        stopper = scenario.add_function('stop_job_instance', wait_finished=[traffic], wait_delay=5)
+        stopper.configure(server)
     else:
-        start_scenario = scenario.add_function('start_job_instance')
-        start_scenario.configure(
-                'dash client', args[3], offset=0,
-                 dst_ip=args[8], protocol=args[10], duration=int(args[4]))
+        traffic = scenario.add_function('start_job_instance')
+
+    traffic.configure('dash client', destination, offset=0, dst_ip=ip, protocol=protocol, duration=duration)
 
     return scenario
+
+
+def build(source, destination, duration, destination_ip, protocol, launch_server=False, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    # Create core scenario
+    scenario = video_dash(source, destination, duration, destination_ip, protocol, launch_server, scenario_name)
+    if not launch_server or post_processing_entity is None:
+        return scenario
+
+    # Wrap into meta scenario
+    scenario_launcher = Scenario(scenario_name + ' with post-processing', LAUNCHER_DESCRIPTION)
+    start_scenario = scenario_launcher.add_function('start_scenario_instance')
+    start_scenario.configure(scenario)
+
+    # Post processing data
+    post_processed = [[start_scenario, id] for id in scenario.extract_function_id('dash player&server')]
+    legends = ['dash from {} to {}'.format(source, destination)]
+    time_series_on_same_graph(
+            scenario_launcher,
+            post_processing_entity,
+            post_processed,
+            [['bitrate']],
+            [['Rate (b/s)']],
+            [['Rate time series']],
+            [legends],
+            [start_scenario], None, 2)
+    cdf_on_same_graph(
+            scenario_launcher,
+            post_processing_entity,
+            post_processed,
+            100,
+            [['bitrate']],
+            [['Rate (b/s)']],
+            [['Rate CDF']],
+            [legends],
+            [start_scenario], None, 2)
+
+    return scenario_launcher

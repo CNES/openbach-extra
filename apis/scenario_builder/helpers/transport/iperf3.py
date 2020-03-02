@@ -117,3 +117,7 @@ def iperf3_send_file_tcp(
             })
 
     return [server]
+
+
+def iperf3_find_server(openbach_function):
+    return 'server' in openbach_function.start_job_instance['iperf3']

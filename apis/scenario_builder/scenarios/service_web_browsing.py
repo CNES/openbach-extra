@@ -34,47 +34,65 @@ from scenario_builder.helpers.postprocessing.time_series import time_series_on_s
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
-SCENARIO_DESCRIPTION="""This scenario launches one web transfert"""
-SCENARIO_NAME="""service_web_browsing"""
-
-def extract_jobs_to_postprocess(scenario):
-    for function_id, function in enumerate(scenario.openbach_functions):
-        if isinstance(function, StartJobInstance):
-            if function.job_name == 'web_browsing_qoe':
-                yield function_id
+SCENARIO_DESCRIPTION = """This scenario launches one web transfert"""
+LAUNCHER_DESCRIPTION = SCENARIO_DESCRIPTION + """
+It then plot the page load time using time-series and CDF.
+"""
+SCENARIO_NAME = 'Web Browsing'
 
 
-def build(post_processing_entity, args, launch_server=False, scenario_name=SCENARIO_NAME):
-    print("Loading:",scenario_name)
-
-    # Create top network_global scenario
-    scenario = Scenario(scenario_name + "_" + args[0], SCENARIO_DESCRIPTION)
+def web_browsing(
+        source, destination, duration, nb_runs, parallel_runs,
+        compression=True, proxy_address=None, proxy_port=None,
+        launch_server=False, scenario_name=SCENARIO_NAME):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     if launch_server:
-        # launching server
-        start_server = apache2(scenario, args[2])
-
-        # launching traffic
-        start_scenario = web_browsing_qoe(scenario, args[3], args[10], args[11], int(args[4]), args[12], args[13], args[14], wait_launched=start_server, wait_delay=5)
-
-        # stopping server
-        stopper = scenario.add_function('stop_job_instance',
-                wait_finished=start_scenario, wait_delay=5)
-        stopper.configure(start_server[0])
-
+        server = apache2(scenario, source)
+        traffic = web_browsing_qoe(scenario, destination, nb_runs, parallel_runs, duration, not compression, proxy_address, proxy_port, wait_launched=start_server, wait_delay=5)
+        stopper = scenario.add_function('stop_job_instance', wait_finished=traffic, wait_delay=5)
+        stopper.configure(server[0])
     else:
-        # launching traffic
-        start_scenario = web_browsing_qoe(scenario, args[3], args[10], args[11], int(args[4]), args[12], args[13], args[14])
+        web_browsing_qoe(scenario, destination, nb_runs, parallel_runs, duration, not compression, proxy_address, proxy_port)
+
+    return scenario
+
+
+def build(
+        source, destination, duration, nb_runs, parallel_runs,
+        compression=True, proxy_address=None, proxy_port=None, launch_server=False,
+        post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    # Create core scenario
+    scenario = web_browsing(source, destination, duration, nb_runs, parallel_runs, compression, proxy_address, proxy_port, launch_server, scenario_name)
+    if post_processing_entity is None:
+        return scenario
+
+    # Wrap into meta scenario
+    scenario_launcher = Scenario(scenario_name + ' with post-processing', LAUNCHER_DESCRIPTION)
+    start_scenario = scenario_launcher.add_function('start_scenario_instance')
+    start_scenario.configure(scenario)
 
     # Post processing data
-    if post_processing_entity:
-        post_processed = []
-        legends = []
-        for function_id in extract_jobs_to_postprocess(scenario):
-            post_processed.append([function_id])
-            legends.append([])
-        if post_processed:
-            time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['page_load_time']], [['PLT (ms)']], [['PLT time series']], legends, start_scenario, None, 2)
-            cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['page_load_time']], [['PLT (ms)']], [['PLT CDF']], legends, start_scenario, None, 2)
+    post_processed = [[start_scenario, id] for id in scenario.extract_function_id('web_browsing_qoe')]
+    legends = ['web browsing from {} to {}'.format(source, destination)]
+    time_series_on_same_graph(
+            scenario_launcher,
+            post_processing_entity,
+            post_processed,
+            [['page_load_time']],
+            [['PLT (ms)']],
+            [['PLT time series']],
+            [legends],
+            start_scenario, None, 2)
+    cdf_on_same_graph(
+            scenario_launcher,
+            post_processing_entity,
+            post_processed,
+            100,
+            [['page_load_time']],
+            [['PLT (ms)']],
+            [['PLT CDF']],
+            [legends],
+            start_scenario, None, 2)
 
     return scenario

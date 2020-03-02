@@ -53,18 +53,19 @@ def extract_jobs_to_postprocess(scenario):
                 yield function_id
 
 
-def network_one_way_delay_core(client, server, scenario_name='network_one_way_delay_core'):
+def one_way_delay(client, server, ip_dest, ip_client, scenario_name='network_one_way_delay_core'):
     scenario = Scenario(scenario_name, 'OpenBACH Network One Way Delay Measurement')
-    scenario.add_argument('ip_dst', 'Target of the pings and server IP adress')
-    scenario.add_argument('ip_clt', 'IP address of source of pings and packets')
+    scenario.add_constant('ip_dst', ip_dest)
+    scenario.add_constant('ip_clt', ip_client)
 
     owamp_measure_owd(scenario, client, server, '$ip_dst')
-    ditg_pcket_rate(scenario, client, server, '$ip_dst', '$ip_clt', 'UDP', packet_rate = 1)
+    ditg_pcket_rate(scenario, client, server, '$ip_dst', '$ip_clt', 'UDP', packet_rate=1)
 
     return scenario
 
 
 def build(client, server, ip_clt, ip_dst, post_processing_entity, scenario_name=SCENARIO_NAME):
+    scenario = one_way_delay:x
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario_core = network_one_way_delay_core(client, server)
 

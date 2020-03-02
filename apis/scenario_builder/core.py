@@ -147,6 +147,29 @@ class Scenario:
                     yield scenario
         yield self
 
+    def extract_function_id(self, *job_names, include_subscenarios=False, **filtered_jobs):
+        def _unfiltered(openbach_function):
+            return True
+        jobs = set(job_names) | set(filtered_jobs)
+        for function_id, openbach_function in enumerate(self.openbach_functions):
+            if isinstance(openbach_function, openbach_functions.StartJobInstance):
+                name = openbach_function.job_name
+                if name in jobs and filters.get(name, _unfiltered)(openbach_function):
+                    yield [function_id]
+            elif include_subscenarios and isinstance(openbach_function, openbach_functions.StartScenarioInstance):
+                scenario = openbach_function.scenario_name
+                if isinstance(scenario, Scenario):
+                    for ids in scenario.extract_function_id(*job_names, include_subscenarios=include_subscenarios, **filters):
+                        yield [openbach_function] + ids
+
+    def find_openbach_function(self, path):
+        scenario = self
+        for function in path:
+            if isinstance(function, openbach_functions.StartScenarioInstance):
+                scenario = function.scenario_name
+            else:
+                return scenario.openbach_functions[function]
+
 
 def check_and_build_waiting_list(wait_on=None):
     """Check that each element container in the `wait_on` iterable
