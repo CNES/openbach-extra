@@ -59,7 +59,11 @@ def main(scenario_name='configure_link', argv=None):
             default='random', help='Packets loss model to use (only for apply operation)')
     observer.add_scenario_argument(
             '--lmp', '--loss_model_paramaters', default=0.0, type=float, nargs='*',
-            help='Packets loss model parameters to use (only for apply operation). Warning: This must not be the last argument of the scenario')
+            help='Packets loss model parameters to use (only for apply operation). Warning: This must not be the last argument of the scenario'
+            'This could be used as follows:'
+            '--lm random --lmp 1 --bandwidth 300M --delay 1 ; to add 1% random losses'
+            '--lm gemodel --lmp 1.8 64.5 100 0 --bandwidth 300M --delay 1 ; to add P(g|g)= 0.982, P(g|b)= 0.645, P(b|b)= 0.355, P(b|g)= 0.018'
+            '(see [RFC6534] for more details)')
     observer.add_scenario_argument(
             '--delay', type=int, default=0,
             help='Delay to add to packets, in ms (only for apply operation)')
