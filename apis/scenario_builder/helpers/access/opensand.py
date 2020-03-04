@@ -95,7 +95,7 @@ def opensand_run(scenario, agent_entity, entity, configuration = '/etc/opensand'
         opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
             'output_address' : output_address, 'logs_port' : logs_port,
             'stats_port' : stats_port, 'binaries directory' : binaries_directory,
-            'gw-net-acc' : {'id': entity_id, 'interconnection_address' : interconnection_address}})
+            'gw-net-acc' : {'id': entity_id, 'interconnection address' : interconnection_address}})
     elif entity == 'st':
         opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
             'output_address' : output_address, 'logs_port' : logs_port,
