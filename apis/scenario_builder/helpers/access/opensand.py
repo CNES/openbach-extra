@@ -65,8 +65,9 @@ def opensand_network_clear(scenario, entity, tap_name = 'opensand_tap',
 
     return [opensand]
 
-def opensand_run(scenario, agent_entity, entity, configuration = None, output_address = None, 
-        logs_port = None, stats_port = None, binaries_directory = None, entity_id = None,
+def opensand_run(scenario, agent_entity, entity, configuration = '/etc/opensand', 
+        output_address = '127.0.0.1', logs_port = 63000, stats_port = 63001,
+        binaries_directory = '/usr/bin', entity_id = None,
         emulation_address = None, interconnection_address = None, 
         wait_finished = None, wait_launched = None, wait_delay = 0):
 
@@ -77,32 +78,29 @@ def opensand_run(scenario, agent_entity, entity, configuration = None, output_ad
     if entity == 'sat': 
         opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration, 
             'output_address' : output_address, 'logs_port' : logs_port,
-            'stats_port' : stats_port, 'binaries_directory' : binaries_directory,
+            'stats_port' : stats_port, 'binaries directory' : binaries_directory,
             'sat' : {'emulation_address' : emulation_address}})
     elif entity == 'gw':
         opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
             'output_address' : output_address, 'logs_port' : logs_port,
-            'stats_port' : stats_port, 'binaries_directory' : binaries_directory,
+            'stats_port' : stats_port, 'binaries directory' : binaries_directory,
             'gw' : {'id': entity_id, 'emulation_address' : emulation_address}})
     elif entity == 'gw-phy':
         opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
             'output_address' : output_address, 'logs_port' : logs_port,
-            'stats_port' : stats_port, 'binaries_directory' : binaries_directory,
+            'stats_port' : stats_port, 'binaries directory' : binaries_directory,
             'gw-phy' : {'id': entity_id, 'emulation_address' : emulation_address, 
                         'interconnection_address' : interconnection_address}})
     elif entity == 'gw-net-acc':
         opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
             'output_address' : output_address, 'logs_port' : logs_port,
-            'stats_port' : stats_port, 'binaries_directory' : binaries_directory,
+            'stats_port' : stats_port, 'binaries directory' : binaries_directory,
             'gw-net-acc' : {'id': entity_id, 'interconnection_address' : interconnection_address}})
     elif entity == 'st':
         opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
             'output_address' : output_address, 'logs_port' : logs_port,
-            'stats_port' : stats_port, 'binaries_directory' : binaries_directory,
+            'stats_port' : stats_port, 'binaries directory' : binaries_directory,
             'st' : {'id': entity_id, 'emulation_address' : emulation_address}})
-
-
-
 
     return [opensand]
 
