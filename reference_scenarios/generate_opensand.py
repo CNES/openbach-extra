@@ -35,6 +35,7 @@ from /openbach-extra/apis/scenario_builder/scenarios/
 import tempfile
 import argparse 
 import collections
+import ipaddress
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from auditorium_scripts.push_file import PushFile
@@ -66,7 +67,7 @@ class GW(ST):
         self.host_list = host_list
 
 def set_route_ip(ip):
-    return ip.split('.')[0] + '.' + ip.split('.')[1] + '.' + ip.split('.')[2] + '.0/24'
+    return str(ipaddress.ip_interface(ip).network) 
 
 def get_route_ip_list(ip_list, ip):
     for n in range(0, len(ip_list)):
@@ -74,11 +75,21 @@ def get_route_ip_list(ip_list, ip):
            return ip_list[:n] + ip_list[(n+1):]
     return []
         
+def validate_ip(ip):
+    try:
+        return str(ipaddress.ip_interface(ip))
+    except ValueError:
+        print('address/netmask is invalid:', ip)
+        exit()
+
 class validate_gateway(argparse.Action):
     def __call__(self, parser, args, values, option_string = None): 
         if getattr(args, self.dest) == None:
             self.items = []
         gw_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip = values
+        lan_ip = validate_ip(lan_ip)
+        emu_ip = validate_ip(emu_ip)
+        opensand_ip = validate_ip(opensand_ip)
         Gateway = collections.namedtuple('Gateway', 'gw_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip')
         self.items.append(Gateway(gw_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip))
         setattr(args, self.dest, self.items)
@@ -88,6 +99,8 @@ class validate_gateway_phy(argparse.Action):
         if getattr(args, self.dest) == None:
             self.items = []
         gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity = values
+        lan_ip = validate_ip(lan_ip)
+        emu_ip = validate_ip(emu_ip)
         Gateway_phy = collections.namedtuple('Gateway_phy', 'gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity')
         self.items.append(Gateway_phy(gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity))
         setattr(args, self.dest, self.items)
@@ -97,6 +110,9 @@ class validate_satellite_terminal(argparse.Action):
         if getattr(args, self.dest) == None:
             self.items = []
         st_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip, gw_entity = values
+        lan_ip = validate_ip(lan_ip)
+        emu_ip = validate_ip(emu_ip)
+        opensand_ip = validate_ip(opensand_ip)
         Satellite_terminal = collections.namedtuple('Satellite_terminal', 'st_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip, gw_entity')
         self.items.append(Satellite_terminal(st_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip, gw_entity))
         setattr(args, self.dest, self.items)
@@ -106,6 +122,7 @@ class validate_client(argparse.Action):
         if getattr(args, self.dest) == None:
             self.items = []
         client_entity, interface, ip, st_entity = values
+        ip = validate_ip(ip)
         Client = collections.namedtuple('Client', 'clt_entity, interface, ip, st_entity')
         self.items.append(Client(client_entity, interface, ip, st_entity))
         setattr(args, self.dest, self.items)
@@ -115,6 +132,7 @@ class validate_server(argparse.Action):
         if getattr(args, self.dest) == None:
             self.items = []
         server_entity, interface, ip, gw_entity = values
+        ip = validate_ip(ip)
         Server = collections.namedtuple('Server', 'srv_entity, interface, ip, gw_entity')
         self.items.append(Server(server_entity, interface, ip, gw_entity))
         setattr(args, self.dest, self.items)
@@ -122,14 +140,14 @@ class validate_server(argparse.Action):
 
 def set_gateways(sat_entity, sat_interface, sat_ip, gateway, satellite_terminal, client, server, gateway_phy = []):
     # Set hosts' route ip
-    host_route_ip = sat_ip.split('.')[0] + '.' + sat_ip.split('.')[1] + '.0.0/16'
+    host_route_ip = str(ipaddress.ip_interface(str(ipaddress.ip_interface(sat_ip).ip) + '/16').network)
     gateways = []
     for gw in gateway:
        gw_srv = None
        gw_clt = []
        gw_st = []
        route_ip = [set_route_ip(gw.lan_ip)]
-       st_route_gw_ip = gw.opensand_ip.split('/')[0]
+       st_route_gw_ip = str(ipaddress.ip_interface(gw.opensand_ip).ip)
        st_opensand_ip = []
        gw_phy_entity = None
        gw_phy_interface = []
@@ -142,7 +160,7 @@ def set_gateways(sat_entity, sat_interface, sat_ip, gateway, satellite_terminal,
        #Set server
        for srv in server:
            if srv.gw_entity == gw.gw_entity:
-               gw_srv = network_member(srv.srv_entity, srv.interface, srv.ip, host_route_ip, gw.lan_ip.split('/')[0])
+               gw_srv = network_member(srv.srv_entity, srv.interface, srv.ip, host_route_ip, str(ipaddress.ip_interface(gw.lan_ip).ip))
                break
        if gw_srv == None:
            raise ValueError('Gateway must have a server')
@@ -161,7 +179,7 @@ def set_gateways(sat_entity, sat_interface, sat_ip, gateway, satellite_terminal,
            if st.gw_entity == gw.gw_entity:
                route_ip.append(set_route_ip(st.lan_ip))
                st_list.append(st)
-               st_opensand_ip.append(st.opensand_ip.split('/')[0])
+               st_opensand_ip.append(str(ipaddress.ip_interface(st.opensand_ip).ip))
        if len(st_list) == 0:
            raise ValueError('Gateway must have at least one satellite terminal')
 
@@ -174,7 +192,7 @@ def set_gateways(sat_entity, sat_interface, sat_ip, gateway, satellite_terminal,
           #Set client list
           for clt in client:
               if clt.st_entity == st.st_entity:
-                  gw_clt.append(network_member(clt.clt_entity, clt.interface, clt.ip, host_route_ip, st.lan_ip.split('/')[0]))
+                  gw_clt.append(network_member(clt.clt_entity, clt.interface, clt.ip, host_route_ip, str(ipaddress.ip_interface(st.lan_ip).ip)))
                   break
        if len(gw_st) != len(gw_clt):
            raise ValueError('Each satellite terminal must have only one client')
