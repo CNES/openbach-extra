@@ -229,6 +229,9 @@ def main(scenario_name='opensand', argv=None):
             '--server', '-srv', required = True, action = validate_server, nargs = 4, type = str,
             help = 'Info for SRV: srv_entity, interface, interface, lan_ip, gw_entity',
             metavar = ('SERVER_ENTITY', 'INTERFACE', 'IP', 'GW_ENTITY'))
+    observer.add_scenario_argument(
+            '--duration', '-d', required = False, type = int, default = 60,
+            help = 'Duration of the opensand test run (default = 60')
 
     args = observer.parse(argv, scenario_name)
 
@@ -244,7 +247,7 @@ def main(scenario_name='opensand', argv=None):
       server = args.server)
     
    
-    scenario = opensand.build(gateways, args.sat[0], args.sat[1], args.sat[2])
+    scenario = opensand.build(gateways, args.sat[0], args.sat[1], args.sat[2], args.duration)
     observer.launch_and_wait(scenario)
 
     #old opensand
