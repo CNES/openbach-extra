@@ -61,7 +61,7 @@ def opensand_network_clear(scenario, entity, tap_name = 'opensand_tap',
                  wait_launched = wait_launched,
                  wait_delay = wait_delay)
     opensand.configure('opensand', entity, network = {'tap_name': tap_name,
-        'bridge_name' : bridge_name, 'action': 'clear'})
+        'bridge_name' : bridge_name, 'clear': {}})
 
     return [opensand]
 
