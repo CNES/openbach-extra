@@ -29,7 +29,7 @@
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 from scenario_builder.helpers import push_file
-from scenario_builder.scenarios import opensand_configure, opensand_run
+from scenario_builder.scenarios import opensand_configure, opensand_run, opensand_clear
 
 SCENARIO_DESCRIPTION="""This is reference OpenSAND scenario"""
 SCENARIO_NAME="""opensand"""
@@ -49,6 +49,12 @@ def build(gw, sat_entity, sat_interface, sat_ip, duration, scenario_name=SCENARI
     
     stopper = scenario.add_function('stop_scenario_instance', wait_launched = [start_scenario_run], wait_delay = duration)
     stopper.configure(start_scenario_run)    
+
+    #Clear config
+    start_scenario_clear = scenario.add_function('start_scenario_instance', wait_finished = [start_scenario_run], wait_delay = 5)
+    scenario_clear = opensand_clear.build(gw, sat_entity, sat_interface)
+    start_scenario_clear.configure(scenario_clear)
+
 
     #Opensand!
     #push_file(scenario, entity, '/opt/openbach/agent/files/testing/bite.txt', '/opt/openbach/agent/bite.txt')
