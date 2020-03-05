@@ -32,231 +32,244 @@ from /openbach-extra/apis/scenario_builder/scenarios/
 """
 
 
-import tempfile
 import argparse 
-import collections
+import tempfile
+import warnings
 import ipaddress
+from collections import namedtuple
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from auditorium_scripts.push_file import PushFile
 from scenario_builder.scenarios import opensand
 
 
-class network_member:
-    def __init__(self, entity, interface, ip, route_ip, route_gw_ip):
+class Gateway:
+    def __init__(self, entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip):
         self.entity = entity
+        self.lan_ip = validate_ip(lan_ip)
+        self.lan_interface = lan_interface
+        self.emu_ip = validate_ip(emu_ip)
+        self.emu_interface = emu_interface
+        self.opensand_ip = validate_ip(opensand_ip)
+
+
+class GatewayPhy:
+    def __init__(self, entity, lan_interface, emu_interface, lan_ip, emu_ip, net_access_entity):
+        self.entity = entity
+        self.lan_ip = validate_ip(lan_ip)
+        self.lan_interface = lan_interface
+        self.emu_ip = validate_ip(emu_ip)
+        self.emu_interface = emu_interface
+        self.net_access_entity = net_access_entity
+
+
+class SatelliteTerminal:
+    def __init__(self, entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip, gateway_entity):
+        self.entity = entity
+        self.lan_ip = validate_ip(lan_ip)
+        self.lan_interface = lan_interface
+        self.emu_ip = validate_ip(emu_ip)
+        self.emu_interface = emu_interface
+        self.opensand_ip = validate_ip(opensand_ip)
+        self.gateway_entity = gateway_entity
+
+
+class Satellite:
+    def __init__(self, entity, interface, ip):
+        self.entity = entity
+        self.ip = validate_ip(ip)
         self.interface = interface
-        self.ip = ip
-        self.route_ip = route_ip
-        self.route_gw_ip = route_gw_ip
 
 
-class ST(network_member):
-    def __init__(self, entity, interface, ip, opensand_ip, route_ip, route_gw_ip):
-       super(ST, self).__init__(entity, interface, ip, route_ip, route_gw_ip)
-       self.opensand_ip = opensand_ip
+class WorkStation:
+    def __init__(self, entity, interface, ip, opensand_entity):
+        self.entity = entity
+        self.ip = validate_ip(ip)
+        self.interface = interface
+        self.opensand_entity = opensand_entity
 
 
-class GW(ST):
-    def __init__(self, entity, interface, ip, opensand_ip, route_ip, route_gw_ip, st_list, host_list,
-            gw_phy_entity = None, gw_phy_interface = None, gw_phy_ip = None):
-        super(GW, self).__init__(entity, interface, ip, opensand_ip, route_ip, route_gw_ip)
-        self.gw_phy_entity = None
-        if gw_phy_entity is not None:
-            self.gw_phy_entity = gw_phy_entity
-            self.gw_phy_ip = gw_phy_ip
-            self.gw_phy_interface = gw_phy_interface
-        self.st_list = st_list
-        self.host_list = host_list
+class ValidateSatellite(argparse.Action):
+    def __call__(self, parser, args, values, option_string=None): 
+        satellite = Satellite(*values)
+        setattr(args, self.dest, satellite)
 
 
-def set_route_ip(ip):
-    return str(ipaddress.ip_interface(ip).network) 
+class _Validate(argparse.Action):
+    ENTITY_TYPE = None
+
+    def __call__(self, parser, args, values, option_string=None): 
+        if getattr(args, self.dest) == None:
+            self.items = []
+
+        entity = self.ENTITY_TYPE(*values)
+        self.items.append(gateway)
+        setattr(args, self.dest, self.items)
 
 
-def get_route_ip_list(ip_list, ip):
-    for n in range(0, len(ip_list)):
-        if ip.split('.')[2] == ip_list[n].split('.')[2]:
-           return ip_list[:n] + ip_list[(n+1):]
-    return []
-        
+class ValidateGateway(_Validate):
+    ENTITY_TYPE = Gateway
+
+
+class ValidateGatewayPhy(_Validate):
+    ENTITY_TYPE = GatewayPhy
+
+
+class ValidateSatelliteTerminal(_Validate):
+    ENTITY_TYPE = SatelliteTerminal
+
+
+class ValidateWorkStation(_Validate):
+    ENTITY_TYPE = WorkStation
+
 
 def validate_ip(ip):
-    try:
-        return str(ipaddress.ip_interface(ip))
-    except ValueError:
-        print('address/netmask is invalid:', ip)
-        exit()
+    return ipaddress.ip_interface(ip).with_prefixlen
 
 
-class validate_gateway(argparse.Action):
-    def __call__(self, parser, args, values, option_string = None): 
-        if getattr(args, self.dest) == None:
-            self.items = []
-        gw_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip = values
-        lan_ip = validate_ip(lan_ip)
-        emu_ip = validate_ip(emu_ip)
-        opensand_ip = validate_ip(opensand_ip)
-        Gateway = collections.namedtuple('Gateway', 'gw_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip')
-        self.items.append(Gateway(gw_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip))
-        setattr(args, self.dest, self.items)
+def extract_network(ip):
+    return ipaddress.ip_interface(ip).network.with_prefixlen
 
 
-class validate_gateway_phy(argparse.Action):
-    def __call__(self, parser, args, values, option_string = None):
-        if getattr(args, self.dest) == None:
-            self.items = []
-        gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity = values
-        lan_ip = validate_ip(lan_ip)
-        emu_ip = validate_ip(emu_ip)
-        Gateway_phy = collections.namedtuple('Gateway_phy', 'gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity')
-        self.items.append(Gateway_phy(gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity))
-        setattr(args, self.dest, self.items)
+def extract_ip(ip):
+    return ipaddress.ip_address(ip).ip.compressed
 
 
-class validate_satellite_terminal(argparse.Action):
-    def __call__(self, parser, args, values, option_string = None):
-        if getattr(args, self.dest) == None:
-            self.items = []
-        st_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip, gw_entity = values
-        lan_ip = validate_ip(lan_ip)
-        emu_ip = validate_ip(emu_ip)
-        opensand_ip = validate_ip(opensand_ip)
-        Satellite_terminal = collections.namedtuple('Satellite_terminal', 'st_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip, gw_entity')
-        self.items.append(Satellite_terminal(st_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip, gw_entity))
-        setattr(args, self.dest, self.items)
+def find_routes(routes, ip):
+    network = extract_network(ip)
+    return [
+            route
+            for route in routes
+            if ipaddress.ip_network(route) != network
+    ]
 
 
-class validate_client(argparse.Action):
-    def __call__(self, parser, args, values, option_string = None):
-        if getattr(args, self.dest) == None:
-            self.items = []
-        client_entity, interface, ip, st_entity = values
-        ip = validate_ip(ip)
-        Client = collections.namedtuple('Client', 'clt_entity, interface, ip, st_entity')
-        self.items.append(Client(client_entity, interface, ip, st_entity))
-        setattr(args, self.dest, self.items)
+def create_gateways(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, terminals, workstations):
+    satellite_subnet = '{}/{}'.format(extract_ip(satellite_ip), satellite_subnet_mask)
+    host_route_ip = extract_network(satellite_subnet)
 
-
-class validate_server(argparse.Action):
-    def __call__(self, parser, args, values, option_string = None):
-        if getattr(args, self.dest) == None:
-            self.items = []
-        server_entity, interface, ip, gw_entity = values
-        ip = validate_ip(ip)
-        Server = collections.namedtuple('Server', 'srv_entity, interface, ip, gw_entity')
-        self.items.append(Server(server_entity, interface, ip, gw_entity))
-        setattr(args, self.dest, self.items)
-
-
-def set_gateways(sat_entity, sat_interface, sat_ip, gateway, satellite_terminal, client, server, gateway_phy = []):
-    # Set hosts' route ip
-    host_route_ip = str(ipaddress.ip_interface(str(ipaddress.ip_interface(sat_ip).ip) + '/16').network)
+    work_stations = []
     gateways = []
-    for gw in gateway:
-       gw_srv = None
-       gw_clt = []
-       gw_st = []
-       route_ip = [set_route_ip(gw.lan_ip)]
-       st_route_gw_ip = str(ipaddress.ip_interface(gw.opensand_ip).ip)
-       st_opensand_ip = []
-       gw_phy_entity = None
-       gw_phy_interface = []
-       gw_phy_ip = []
-       st_list = []
-       gw_phy_entity = None
-       gw_phy_interface = []
-       gw_phy_ip = []
-       
-       #Set server
-       for srv in server:
-           if srv.gw_entity == gw.gw_entity:
-               gw_srv = network_member(srv.srv_entity, srv.interface, srv.ip, host_route_ip, str(ipaddress.ip_interface(gw.lan_ip).ip))
-               break
-       if gw_srv == None:
-           raise ValueError('Gateway must have a server')
 
-       #Set gateway phy
-       if gateway_phy is not None:
-           for gwp in gateway_phy:
-               if gwp.gw_entity == gw.gw_entity:
-                  gw_phy_entity = gwp.gw_phy_entity
-                  gw_phy_interface = [gwp.lan_interface, gwp.emu_interface]
-                  gw_phy_ip = [gwp.lan_ip, gwp.emu_ip]
-                  break
+    for gateway in gateways:
+        route_ips = [extract_network(gateway.lan_ip)]
+        route_gateway_ip = extract_ip(gateway.opensand_ip)
+        terminals = []
+        terminal_ips = []
+        gatewayφ_entity = None
+        gatewayφ_interfaces = []
+        gatewayφ_ips = []
 
-       #Set server route_ip
-       for st in satellite_terminal:
-           if st.gw_entity == gw.gw_entity:
-               route_ip.append(set_route_ip(st.lan_ip))
-               st_list.append(st)
-               st_opensand_ip.append(str(ipaddress.ip_interface(st.opensand_ip).ip))
-       if len(st_list) == 0:
-           raise ValueError('Gateway must have at least one satellite terminal')
+        server = False
+        for workstation in workstations:
+            if workstation.opensand_entity == gateway.entity:
+                if server:
+                    warnings.warn('More than one server workstation configured for gateway {}'.format(gateway.entity))
+                work_stations.append(opensand.WS(
+                    workstation.entity,
+                    workstation.interface,
+                    workstation.ip,
+                    host_route_ip,
+                    extract_ip(gateway.lan_ip)))
+                 server = True
 
-       #Set satellite terminal list
-       for st in st_list:
-          gw_st.append(
-             ST(st.st_entity, [st.lan_interface, st.emu_interface], [st.lan_ip, st.emu_ip], st.opensand_ip, 
-                get_route_ip_list(route_ip, st.lan_ip), st_route_gw_ip))
+        if not server:
+            warning.warn('No server workstation configured for gateway {}'.format(gateway.entity))
 
-          #Set client list
-          for clt in client:
-              if clt.st_entity == st.st_entity:
-                  gw_clt.append(network_member(clt.clt_entity, clt.interface, clt.ip, host_route_ip, str(ipaddress.ip_interface(st.lan_ip).ip)))
-                  break
-       if len(gw_st) != len(gw_clt):
-           raise ValueError('Each satellite terminal must have only one client')
+        if gateways_φ:
+            for gatewayφ in gateways_φ:
+                if gatewayφ.entity == gateway.entity:
+                    if gatewayφ_entity is not None:
+                        warnings.warn('More than one gateway_phy configured for the gateway_net_acc {}, keeping only the last one'.format(gateway.entity))
+                    gatewayφ_entity = gateway.entity
+                    gatewayφ_interfaces = [gatewayφ.lan_interface, gatewayφ.emu_interface]
+                    gatewayφ_ips = [gatewayφ.lan_ip, gatewayφ.emu_ip]
 
-       gateways.append(GW(
-                         gw.gw_entity, [gw.lan_interface, gw.emu_interface], [gw.lan_ip, gw.emu_ip], gw.opensand_ip,
-                         get_route_ip_list(route_ip, gw.lan_ip), st_opensand_ip, gw_st, gw_clt + [gw_srv], 
-                         gw_phy_entity, gw_phy_interface, gw_phy_ip))
-    return gateways   
+        for terminal in terminals:
+            if terminal.gateway_entity == gateway.entity:
+                route_ips.append(extract_network(terminal.lan_ip))
+                terminal_ips.append(extract_ip(terminal.opensand_ip))
+                terminals.append(terminal)
+
+                client = False
+                for workstation in workstations:
+                    if workstation.opensand_entity == terminal.entity:
+                        if client:
+                            warnings.warn('More than one client workstation configured for terminal {}'.format(terminal.entity))
+                        work_stations.append(opensand.WS(
+                            workstation.entity,
+                            workstation.interface,
+                            workstation.ip,
+                            host_route_ip,
+                            extract_ip(terminal.lan_ip)))
+                        client = True
+
+                if not client:
+                    warnings.warn('No client workstation configured for terminal {}'.format(terminal.entity))
+
+        if not terminals:
+            warnings.warn('Gateway {} does not have any associated terminal'.format(gateway.entity))
+
+        terminals = [
+                opensand.ST(
+                    terminal.entity,
+                    [terminal.lan_interface, terminal.emu_interface],
+                    [terminal.lan_ip, terminal.emu_ip],
+                    find_routes(route_ips, terminal.lan_ip),
+                    route_gateway_ip,
+                    terminal.opensand_ip)
+                for terminal in terminals
+        ]
+
+        gateways.append(opensand.GW(
+            gateway.entity,
+            [gateway.lan_interface, gateway.emu_interface],
+            [gateway.lan_ip, gateway.emu_ip],
+            find_routes(route_ips, gateway.lan_ip),
+            terminal_ips,
+            gateway.opensand_ip,
+            terminals,
+            gatewayφ_entity,
+            gatewayφ_interfaces,
+            gatewayφ_ips))
+
+    return gateways, work_stations
 
 
 def main(scenario_name='opensand', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--sat', '-s', required=True, nargs=3, type=str,
+            '--sat', '-s', required=True, action=ValidateSatellite, nargs=3,
             metavar=('SAT_ENTITY', 'SAT_INTERFACE', 'SAT_IP'),
             help='Info for the satellite : sat_entity, sat_interface and sat_ip')
     observer.add_scenario_argument(
-            '--gateway', '-gw', required=True, action=validate_gateway, nargs=6, type=str,
+            '--gateway', '-gw', required=True, action=ValidateGateway, nargs=6,
             help='Info for GW: gw_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip',
             metavar=('GW_ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP', 'OPENSAND_IP'))
     observer.add_scenario_argument(
-            '--gateway_phy', '-gwp', required=False, action=validate_gateway_phy, nargs=6, type=str,
+            '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy, nargs=6,
             help='Info for GW_PHY: gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity',
             metavar=('GW_PHY_ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP', 'GW_ENTITY'))
     observer.add_scenario_argument(
-            '--satellite_terminal', '-st', required=True, action=validate_satellite_terminal, nargs=7, type=str,
+            '--satellite-terminal', '-st', required=True, action=ValidateSatelliteTerminal, nargs=7,
             help='Info for ST: st_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip, gw_entity', 
             metavar=('ST_ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP', 'EMU_IP', 'OPENSAND_IP', 'GW_ENTITY'))
     observer.add_scenario_argument(
-            '--client', '-clt', required=True, action=validate_client, nargs=4, type=str,
-            help='Info for CLT: clt_entity, interface, interface, lan_ip, st_entity',
-            metavar=('CLIENT_ENTITY', 'INTERFACE', 'IP', 'ST_ENTITY'))
-    observer.add_scenario_argument(
-            '--server', '-srv', required=True, action=validate_server, nargs=4, type=str,
-            help='Info for SRV: srv_entity, interface, interface, lan_ip, gw_entity',
-            metavar=('SERVER_ENTITY', 'INTERFACE', 'IP', 'GW_ENTITY'))
+            '--workstation', '-ws', required=False, action=ValidateWorkStation, nargs=4,
+            help='Info for CLT: clt_entity, interface, interface, lan_ip, opensand_entity',
+            metavar=('CLIENT_ENTITY', 'INTERFACE', 'IP', 'OPENSAND_ENTITY'))
 
     args = observer.parse(argv, scenario_name)
 
-        
-    gateways = set_gateways(
-      sat_entity=args.sat[0],
-      sat_interface=args.sat[1],
-      sat_ip=args.sat[2],
-      gateway=args.gateway,
-      gateway_phy=args.gateway_phy,
-      satellite_terminal=args.satellite_terminal,
-      client=args.client,
-      server=args.server)
-    
-   
-    scenario = opensand.build(gateways, args.sat[0], args.sat[1], args.sat[2])
+    gateways, workstations = create_network(
+        args.sat.ip, 16,
+        args.gateway,
+        args.gateway_phy,
+        args.satellite_terminal,
+        args.workstation)
+    satellite = args.sat
+
+    scenario = opensand.build(satellite.entity, satellite.ip, satellite.interface, gateways, workstations)
     observer.launch_and_wait(scenario)
 
     #old opensand
