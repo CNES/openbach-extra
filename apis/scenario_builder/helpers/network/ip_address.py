@@ -44,6 +44,6 @@ def ip_address(scenario, entity, interface, cmd, address_mask = '',
              delete = { 'address_mask': address_mask})
     else:
         ip_address.configure('ip_address', entity, interface = interface,
-             operation = 'flush')
+             flush = {})
 
     return [ip_address]
