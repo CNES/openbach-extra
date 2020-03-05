@@ -28,79 +28,188 @@
 
 """ Helpers of open_sand job """
 
-def opensand_network_ip(scenario, entity, address_mask, tap_name = 'opensand_tap', 
-        bridge_name = 'opensand_br', wait_finished = None, wait_launched = None, wait_delay = 0):
+import itertools
 
-    opensand = scenario.add_function('start_job_instance',
-                 wait_finished = wait_finished,
-                 wait_launched = wait_launched,
-                 wait_delay = wait_delay)
-    opensand.configure('opensand', entity, network = {'tap_name': tap_name,
-        'bridge_name': bridge_name, 'ip' : {'address_mask': address_mask}})
+from ..network.ip_address import ip_address
+from ..network.ip_route import ip_route
+
+
+def opensand_network_ip(
+        scenario, entity, address_mask,
+        tap_name='opensand_tap', bridge_name='opensand_br',
+        wait_finished=None, wait_launched=None, wait_delay=0):
+
+    opensand = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    opensand.configure('opensand', entity, network={
+        'tap_name': tap_name,
+        'bridge_name': bridge_name,
+        'ip': {'address_mask': address_mask},
+    })
+
+    return [opensand]
+
+
+def opensand_network_ethernet(
+        scenario, entity, interface,
+        tap_name='opensand_tap', bridge_name='opensand_br',
+        wait_finished=None, wait_launched=None, wait_delay=0):
+
+    opensand = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    opensand.configure('opensand', entity, network={
+        'tap_name': tap_name,
+        'bridge_name': bridge_name,
+        'eth': {'interface': interface},
+    })
 
     return [opensand]
 
 
-def opensand_network_eth(scenario, entity, interface, tap_name = 'opensand_tap',
-        bridge_name = 'opensand_br', wait_finished = None, wait_launched = None, wait_delay = 0):
+def opensand_network_clear(
+        scenario, entity,
+        tap_name='opensand_tap', bridge_name='opensand_br',
+        wait_finished=None, wait_launched=None, wait_delay=0):
 
-    opensand = scenario.add_function('start_job_instance',
-                 wait_finished = wait_finished,
-                 wait_launched = wait_launched,
-                 wait_delay = wait_delay)
-    opensand.configure('opensand', entity, network = {'tap_name': tap_name,
-        'bridge_name': bridge_name, 'eth': {'interface': interface}})
-
+    opensand = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    opensand.configure('opensand', entity, network={
+        'tap_name': tap_name,
+        'bridge_name': bridge_name,
+        'clear': {},
+    })
     return [opensand]
 
-def opensand_network_clear(scenario, entity, tap_name = 'opensand_tap',
-        bridge_name = 'opensand_br', wait_finished = None, wait_launched = None, wait_delay = 0):
 
-    opensand = scenario.add_function('start_job_instance',
-                 wait_finished = wait_finished,
-                 wait_launched = wait_launched,
-                 wait_delay = wait_delay)
-    opensand.configure('opensand', entity, network = {'tap_name': tap_name,
-        'bridge_name' : bridge_name, 'clear': {}})
+def opensand_run(
+        scenario, agent_entity, entity, configuration='/etc/opensand', 
+        output_address='127.0.0.1', logs_port=63000, stats_port=63001,
+        binaries_directory='/usr/bin', entity_id=None,
+        emulation_address=None, interconnection_address=None, 
+        wait_finished=None, wait_launched=None, wait_delay=0):
 
-    return [opensand]
+    opensand = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
 
-def opensand_run(scenario, agent_entity, entity, configuration = '/etc/opensand', 
-        output_address = '127.0.0.1', logs_port = 63000, stats_port = 63001,
-        binaries_directory = '/usr/bin', entity_id = None,
-        emulation_address = None, interconnection_address = None, 
-        wait_finished = None, wait_launched = None, wait_delay = 0):
+    run = {
+            'configuration': configuration,
+            'output_address': output_address,
+            'logs_port': logs_port,
+            'stats_port': stats_port,
+            'binaries_directory': binaries_directory,
+            entity: {'id': entity_id, 'emulation_address': emulation_address},
+    }
 
-    opensand = scenario.add_function('start_job_instance',
-                 wait_finished = wait_finished,
-                 wait_launched = wait_launched,
-                 wait_delay = wait_delay)
     if entity == 'sat': 
-        opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration, 
-            'output_address' : output_address, 'logs_port' : logs_port,
-            'stats_port' : stats_port, 'binaries directory' : binaries_directory,
-            'sat' : {'emulation_address' : emulation_address}})
-    elif entity == 'gw':
-        opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
-            'output_address' : output_address, 'logs_port' : logs_port,
-            'stats_port' : stats_port, 'binaries directory' : binaries_directory,
-            'gw' : {'id': entity_id, 'emulation_address' : emulation_address}})
+        del run[entity]['id']
     elif entity == 'gw-phy':
-        opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
-            'output_address' : output_address, 'logs_port' : logs_port,
-            'stats_port' : stats_port, 'binaries directory' : binaries_directory,
-            'gw-phy' : {'id': entity_id, 'emulation_address' : emulation_address, 
-                        'interconnection_address' : interconnection_address}})
+        run[entity]['interconnection_address'] = interconnection_address
     elif entity == 'gw-net-acc':
-        opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
-            'output_address' : output_address, 'logs_port' : logs_port,
-            'stats_port' : stats_port, 'binaries directory' : binaries_directory,
-            'gw-net-acc' : {'id': entity_id, 'interconnection address' : interconnection_address}})
-    elif entity == 'st':
-        opensand.configure('opensand', agent_entity, run = { 'configuration' : configuration,
-            'output_address' : output_address, 'logs_port' : logs_port,
-            'stats_port' : stats_port, 'binaries directory' : binaries_directory,
-            'st' : {'id': entity_id, 'emulation_address' : emulation_address}})
+        del run[entity]['emulation_address']
+        run[entity]['interconnection_address'] = interconnection_address
+    opensand.configure('opensand', agent_entity, run=run)
 
     return [opensand]
 
+
+def configure_interfaces(
+        scenario, entity, interfaces, ips,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+
+    for interface, ip in zip(interfaces, ips):
+        wait_finished = ip_address(
+                scenario, entity, interface, 'add', ip,
+                wait_finished=wait_finished,
+                wait_launched=wait_launched,
+                wait_delay=wait_delay)
+        wait_launched = None
+        wait_delay = 0
+
+    return wait_finished
+
+
+def configure_routing(
+        scenario, entity, network_mask, ips, gateway_ips,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+
+    wait_finished = opensand_network_ip(
+            scenario, entity, network_mask,
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+
+    for ip, gateway_ip in zip(ips, gateway_ips):
+        wait_finished = ip_route(scenario, entity, 'add', ip, gateway_ip, wait_finished=wait_finished)
+
+    return wait_finished
+
+
+def configure_satellite(
+        scenario, entity, interface, ip,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    return configure_interfaces(
+            scenario, entity, [interface], [ip],
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+
+
+def configure_terminal(
+        scenario, entity, interfaces, ips, mask, lan_ips, gateway_ip,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    interfaces = configure_interfaces(
+            scenario, entity, interfaces, ips,
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    return configure_routing(
+            scenario, entity, mask, lan_ips, itertools.repeat(gateway_ip),
+            wait_finished=interfaces)
+
+
+def configure_gateway_phy(
+        scenario, entity, interfaces, ips,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    return configure_interfaces(
+            scenario, entity, interfaces, ips,
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+
+
+def configure_gateway(
+        scenario, entity, interfaces, ips, mask, lan_ips, gateway_ips,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    interfaces = configure_interfaces(
+            scenario, entity, interfaces, ips,
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    return configure_routing(
+            scenario, entity, mask, lan_ips, gateway_ips,
+            wait_finished=interfaces)
+
+
+def configure_workstation(
+        scenario, entity, interface, ip, lan_ip, gateway_ip,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    interface = ip_address(
+            scenario, entity, interface, 'add', ip,
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    return ip_route(
+            scenario, entity, 'add', lan_ip, gateway_ip,
+            wait_finished=interface)
