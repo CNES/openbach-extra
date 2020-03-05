@@ -26,28 +26,87 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-from scenario_builder import Scenario
-from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
-from scenario_builder.helpers import push_file
-from scenario_builder.scenarios import opensand_configure, opensand_run
+import ipaddress
+import itertools
 
-SCENARIO_DESCRIPTION="""This is reference OpenSAND scenario"""
-SCENARIO_NAME="""opensand"""
+from scenario_builder import Scenario
+from scenario_builder.helpers import push_file
+from scenario_builder.helpers.access import opensand
+
+
+CONFIGURE_DESCRIPTION = """This configure opensand system scenario allows to:
+ - Configure the satellite, the gateways, the ST, the SRV and the CLT for an opensand test
+"""
+CONFIGURE_NAME = 'opensand_configure'
+
+RUN_DESCRIPTION = """This run opensand scenario allows to:
+ - Run opensand in the satellite, the gateways and the STs for an opensand test
+"""
+RUN_NAME = 'opensand_run'
+
+SCENARIO_DESCRIPTION = """This is reference OpenSAND scenario"""
+SCENARIO_NAME = 'opensand'
+
+
+def configure(gateways, satellite_entity, satellite_interface, satellite_ip, scenario_name=CONFIGURE_NAME):
+    scenario = Scenario(scenario_name, CONFIGURE_DESCRIPTION)
+    opensand.configure_satellite(scenario, satellite_entity, satellite_interface, satellite_ip)
+
+    for gateway in gateways:
+        opensand.configure_gateway(scenario, gateway.entity, gateway.interface, gateway.ip, gateway.opensand_ip, gateway.route_ip, gateway.route_gw_ip)
+        if gateway.gw_phy_entity is not None:
+            opensand.configure_gateway_phy(scenario, gateway.gw_phy_entity, gateway.gw_phy_interface, gateway.gw_phy_ip)
+
+        for terminal in gateway.st_list:
+            opensand.configure_terminal(scenario, terminal.entity, terminal.interface, terminal.ip, terminal.opensand_ip, terminal.route_ip, terminal.route_gw_ip)
+
+        for host in gateway.host_list:
+            opensand.configure_workstation(scenario, host.entity, host.interface, host.ip, host.route_ip, host.route_gw_ip)
+
+    return scenarioo
+
+
+def _extract_ip(ip_with_mask):
+    return ipaddress.ip_interface(ip_with_mask).ip.compressed
+
+
+def run(gateways, satellite_entity, satellite_ip, scenario_name=RUN_NAME):
+    scenario = Scenario(scenario_name, RUN_DESCRIPTION)
+    opensand_run(scenario, satellite_entity, 'sat', emulation_address=_extract_ip(satellite_ip))
+
+    ids = itertools.count()
+    for gateway in gateways:
+        if gateway.gw_phy_entity is not None:
+            id = next(ids)
+            opensand_run(
+                    scenario, gateway.entity, 'gw-net-acc', entity_id=id,
+                    interconnection_address=_extract_ip(gateway.ip[1]))
+            opensand_run(
+                    scenario, gateway.gw_phy_entity, 'gw-phy', entity_id=id,
+                    emulation_address=_extract_ip(gateway.gw_phy_ip[1]),
+                    interconnection_address=_extract_ip(gateway.gw_phy_ip[0]))
+        else:
+            opensand_run(
+                    scenario, gateway.entity, 'gw', entity_id=next(ids),
+                    emulation_address=_extract_ip(gateway.ip[1]))
+
+        for terminal in gateway.st_list:
+            opensand_run(
+                    scenario, terminal.entity, 'st', entity_id=next(ids),
+                    emulation_address=_extract_ip(terminal.ip[1]))
+
+    return scenario
+
 
 def build(gw, sat_entity, sat_interface, sat_ip, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     start_scenario_configure = scenario.add_function('start_scenario_instance')
+    start_scenario_configure.configure(configure(gw, sat_entity, sat_interface, sat_ip))
 
-    #Configure
-    scenario_configure = opensand_configure.build(gw, sat_entity, sat_interface, sat_ip)
-    start_scenario_configure.configure(scenario_configure)
-
-    #Run
-    start_scenario_run = scenario.add_function('start_scenario_instance', wait_finished = [start_scenario_configure])
-    scenario_run = opensand_run.build(gw, sat_entity, sat_ip)
-    start_scenario_run.configure(scenario_run)
-
-    #Opensand!
     #push_file(scenario, entity, '/opt/openbach/agent/files/testing/bite.txt', '/opt/openbach/agent/bite.txt')
     #push_file(scenario, entity, '/opt/openbach/agent/files/testing/toto.txt', '/opt/openbach/agent/toto.txt')
+
+    start_scenario_run = scenario.add_function('start_scenario_instance', wait_finished=[start_scenario_configure])
+    start_scenario_run.configure(run(gw, sat_entity, sat_ip))
+
     return scenario

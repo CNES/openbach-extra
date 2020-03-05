@@ -41,6 +41,7 @@ from auditorium_scripts.scenario_observer import ScenarioObserver
 from auditorium_scripts.push_file import PushFile
 from scenario_builder.scenarios import opensand
 
+
 class network_member:
     def __init__(self, entity, interface, ip, route_ip, route_gw_ip):
         self.entity = entity
@@ -49,10 +50,12 @@ class network_member:
         self.route_ip = route_ip
         self.route_gw_ip = route_gw_ip
 
+
 class ST(network_member):
     def __init__(self, entity, interface, ip, opensand_ip, route_ip, route_gw_ip):
        super(ST, self).__init__(entity, interface, ip, route_ip, route_gw_ip)
        self.opensand_ip = opensand_ip
+
 
 class GW(ST):
     def __init__(self, entity, interface, ip, opensand_ip, route_ip, route_gw_ip, st_list, host_list,
@@ -66,8 +69,10 @@ class GW(ST):
         self.st_list = st_list
         self.host_list = host_list
 
+
 def set_route_ip(ip):
     return str(ipaddress.ip_interface(ip).network) 
+
 
 def get_route_ip_list(ip_list, ip):
     for n in range(0, len(ip_list)):
@@ -75,12 +80,14 @@ def get_route_ip_list(ip_list, ip):
            return ip_list[:n] + ip_list[(n+1):]
     return []
         
+
 def validate_ip(ip):
     try:
         return str(ipaddress.ip_interface(ip))
     except ValueError:
         print('address/netmask is invalid:', ip)
         exit()
+
 
 class validate_gateway(argparse.Action):
     def __call__(self, parser, args, values, option_string = None): 
@@ -94,6 +101,7 @@ class validate_gateway(argparse.Action):
         self.items.append(Gateway(gw_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip))
         setattr(args, self.dest, self.items)
 
+
 class validate_gateway_phy(argparse.Action):
     def __call__(self, parser, args, values, option_string = None):
         if getattr(args, self.dest) == None:
@@ -104,6 +112,7 @@ class validate_gateway_phy(argparse.Action):
         Gateway_phy = collections.namedtuple('Gateway_phy', 'gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity')
         self.items.append(Gateway_phy(gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity))
         setattr(args, self.dest, self.items)
+
 
 class validate_satellite_terminal(argparse.Action):
     def __call__(self, parser, args, values, option_string = None):
@@ -117,6 +126,7 @@ class validate_satellite_terminal(argparse.Action):
         self.items.append(Satellite_terminal(st_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip, gw_entity))
         setattr(args, self.dest, self.items)
 
+
 class validate_client(argparse.Action):
     def __call__(self, parser, args, values, option_string = None):
         if getattr(args, self.dest) == None:
@@ -126,6 +136,7 @@ class validate_client(argparse.Action):
         Client = collections.namedtuple('Client', 'clt_entity, interface, ip, st_entity')
         self.items.append(Client(client_entity, interface, ip, st_entity))
         setattr(args, self.dest, self.items)
+
 
 class validate_server(argparse.Action):
     def __call__(self, parser, args, values, option_string = None):
@@ -203,45 +214,46 @@ def set_gateways(sat_entity, sat_interface, sat_ip, gateway, satellite_terminal,
                          gw_phy_entity, gw_phy_interface, gw_phy_ip))
     return gateways   
 
+
 def main(scenario_name='opensand', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--sat', '-s', required = True, nargs = 3, type = str,
-            metavar = ('SAT_ENTITY', 'SAT_INTERFACE', 'SAT_IP'),
-            help = 'Info for the satellite : sat_entity, sat_interface and sat_ip')
+            '--sat', '-s', required=True, nargs=3, type=str,
+            metavar=('SAT_ENTITY', 'SAT_INTERFACE', 'SAT_IP'),
+            help='Info for the satellite : sat_entity, sat_interface and sat_ip')
     observer.add_scenario_argument(
-            '--gateway', '-gw', required = True, action = validate_gateway, nargs = 6, type = str,
-            help = 'Info for GW: gw_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip',
-            metavar = ('GW_ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP', 'OPENSAND_IP'))
+            '--gateway', '-gw', required=True, action=validate_gateway, nargs=6, type=str,
+            help='Info for GW: gw_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip',
+            metavar=('GW_ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP', 'OPENSAND_IP'))
     observer.add_scenario_argument(
-            '--gateway_phy', '-gwp', required = False, action = validate_gateway_phy, nargs = 6, type = str,
-            help = 'Info for GW_PHY: gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity',
-            metavar = ('GW_PHY_ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP', 'GW_ENTITY'))
+            '--gateway_phy', '-gwp', required=False, action=validate_gateway_phy, nargs=6, type=str,
+            help='Info for GW_PHY: gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity',
+            metavar=('GW_PHY_ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP', 'GW_ENTITY'))
     observer.add_scenario_argument(
-            '--satellite_terminal', '-st', required = True, action = validate_satellite_terminal, nargs = 7, type = str,
-            help = 'Info for ST: st_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip, gw_entity', 
-            metavar = ('ST_ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP', 'EMU_IP', 'OPENSAND_IP', 'GW_ENTITY'))
+            '--satellite_terminal', '-st', required=True, action=validate_satellite_terminal, nargs=7, type=str,
+            help='Info for ST: st_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip, gw_entity', 
+            metavar=('ST_ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP', 'EMU_IP', 'OPENSAND_IP', 'GW_ENTITY'))
     observer.add_scenario_argument(
-            '--client', '-clt', required = True, action = validate_client, nargs = 4, type = str,
-            help = 'Info for CLT: clt_entity, interface, interface, lan_ip, st_entity',
-            metavar = ('CLIENT_ENTITY', 'INTERFACE', 'IP', 'ST_ENTITY'))
+            '--client', '-clt', required=True, action=validate_client, nargs=4, type=str,
+            help='Info for CLT: clt_entity, interface, interface, lan_ip, st_entity',
+            metavar=('CLIENT_ENTITY', 'INTERFACE', 'IP', 'ST_ENTITY'))
     observer.add_scenario_argument(
-            '--server', '-srv', required = True, action = validate_server, nargs = 4, type = str,
-            help = 'Info for SRV: srv_entity, interface, interface, lan_ip, gw_entity',
-            metavar = ('SERVER_ENTITY', 'INTERFACE', 'IP', 'GW_ENTITY'))
+            '--server', '-srv', required=True, action=validate_server, nargs=4, type=str,
+            help='Info for SRV: srv_entity, interface, interface, lan_ip, gw_entity',
+            metavar=('SERVER_ENTITY', 'INTERFACE', 'IP', 'GW_ENTITY'))
 
     args = observer.parse(argv, scenario_name)
 
         
     gateways = set_gateways(
-      sat_entity = args.sat[0],
-      sat_interface = args.sat[1],
-      sat_ip = args.sat[2],
-      gateway =  args.gateway,
-      gateway_phy = args.gateway_phy,
-      satellite_terminal = args.satellite_terminal,
-      client = args.client,
-      server = args.server)
+      sat_entity=args.sat[0],
+      sat_interface=args.sat[1],
+      sat_ip=args.sat[2],
+      gateway=args.gateway,
+      gateway_phy=args.gateway_phy,
+      satellite_terminal=args.satellite_terminal,
+      client=args.client,
+      server=args.server)
     
    
     scenario = opensand.build(gateways, args.sat[0], args.sat[1], args.sat[2])
