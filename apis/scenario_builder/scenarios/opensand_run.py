@@ -34,7 +34,7 @@ from scenario_builder import Scenario
 import ipaddress
 
 SCENARIO_NAME = "Scenario run simple system"
-SCENARIO_DESCRIPTION = """This configure simple system scenario allows to:
+SCENARIO_DESCRIPTION = """This run simple system scenario allows to:
                        - Run opensand in the satellite, the gateways and the ST for an opensand test
                        """
 
