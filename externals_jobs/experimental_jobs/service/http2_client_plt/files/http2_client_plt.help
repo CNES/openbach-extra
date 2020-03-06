@@ -1,0 +1,19 @@
+=== Job description ===
+
+This Job generates HTTP2.0 requests to a destination server and computes the page load time.
+
+=== Example ===
+
+Monitor HTTP2 traffic with ''172.20.0.83'' during 30 seconds using the inter-arrival mode following an exponential law and a lambda of 1.
+
+In the web interface, set parameters as follows:
+  * **sim_t** = 30
+  * **server_address** = 172.20.0.83
+  * **port** = 3000
+  * **mode** = exponential
+  * **lambd** = 1
+
+Or launch the job manually from CLI on the agent as follows:
+<code>
+JOB_NAME=http2_client_plt sudo -E python3 /opt/openbach/agent/jobs/http2_client_plt/http2_client_plt.py --sim-t 30 172.20.0.83 3000 exponential 1
+</code>
