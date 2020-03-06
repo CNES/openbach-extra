@@ -37,7 +37,7 @@ import tempfile
 import warnings
 import ipaddress
 from collections import namedtuple
-
+import pprint
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from auditorium_scripts.push_file import PushFile
 from scenario_builder.scenarios import opensand
@@ -51,6 +51,7 @@ class Gateway:
         self.emu_ip = validate_ip(emu_ip)
         self.emu_interface = emu_interface
         self.opensand_ip = validate_ip(opensand_ip)
+
 
 
 class GatewayPhy:
@@ -87,7 +88,7 @@ class WorkStation:
         self.ip = validate_ip(ip)
         self.interface = interface
         self.opensand_entity = opensand_entity
-
+        
 
 class ValidateSatellite(argparse.Action):
     def __call__(self, parser, args, values, option_string=None): 
@@ -103,7 +104,7 @@ class _Validate(argparse.Action):
             self.items = []
 
         entity = self.ENTITY_TYPE(*values)
-        self.items.append(gateway)
+        self.items.append(entity)
         setattr(args, self.dest, self.items)
 
 
@@ -132,7 +133,7 @@ def extract_network(ip):
 
 
 def extract_ip(ip):
-    return ipaddress.ip_address(ip).ip.compressed
+    return ipaddress.ip_interface(ip).ip.compressed
 
 
 def find_routes(routes, ip):
@@ -140,21 +141,22 @@ def find_routes(routes, ip):
     return [
             route
             for route in routes
-            if ipaddress.ip_network(route) != network
+            if ipaddress.ip_network(route) != ipaddress.ip_network(network)
     ]
 
 
-def create_gateways(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, terminals, workstations):
+def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, terminals, workstations):
     satellite_subnet = '{}/{}'.format(extract_ip(satellite_ip), satellite_subnet_mask)
     host_route_ip = extract_network(satellite_subnet)
 
     work_stations = []
-    gateways = []
+    opensand_gateways = []
 
     for gateway in gateways:
+
         route_ips = [extract_network(gateway.lan_ip)]
         route_gateway_ip = extract_ip(gateway.opensand_ip)
-        terminals = []
+        opensand_terminals = []
         terminal_ips = []
         gatewayφ_entity = None
         gatewayφ_interfaces = []
@@ -171,17 +173,17 @@ def create_gateways(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, 
                     workstation.ip,
                     host_route_ip,
                     extract_ip(gateway.lan_ip)))
-                 server = True
+                server = True
 
         if not server:
             warning.warn('No server workstation configured for gateway {}'.format(gateway.entity))
 
         if gateways_φ:
             for gatewayφ in gateways_φ:
-                if gatewayφ.entity == gateway.entity:
+                if gatewayφ.net_access_entity == gateway.entity:
                     if gatewayφ_entity is not None:
                         warnings.warn('More than one gateway_phy configured for the gateway_net_acc {}, keeping only the last one'.format(gateway.entity))
-                    gatewayφ_entity = gateway.entity
+                    gatewayφ_entity = gatewayφ.entity
                     gatewayφ_interfaces = [gatewayφ.lan_interface, gatewayφ.emu_interface]
                     gatewayφ_ips = [gatewayφ.lan_ip, gatewayφ.emu_ip]
 
@@ -189,7 +191,7 @@ def create_gateways(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, 
             if terminal.gateway_entity == gateway.entity:
                 route_ips.append(extract_network(terminal.lan_ip))
                 terminal_ips.append(extract_ip(terminal.opensand_ip))
-                terminals.append(terminal)
+                opensand_terminals.append(terminal)
 
                 client = False
                 for workstation in workstations:
@@ -207,10 +209,10 @@ def create_gateways(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, 
                 if not client:
                     warnings.warn('No client workstation configured for terminal {}'.format(terminal.entity))
 
-        if not terminals:
+        if not opensand_terminals:
             warnings.warn('Gateway {} does not have any associated terminal'.format(gateway.entity))
 
-        terminals = [
+        gw_terminals = [
                 opensand.ST(
                     terminal.entity,
                     [terminal.lan_interface, terminal.emu_interface],
@@ -218,22 +220,22 @@ def create_gateways(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, 
                     find_routes(route_ips, terminal.lan_ip),
                     route_gateway_ip,
                     terminal.opensand_ip)
-                for terminal in terminals
+                for terminal in opensand_terminals
         ]
-
-        gateways.append(opensand.GW(
+        
+        opensand_gateways.append(opensand.GW(
             gateway.entity,
             [gateway.lan_interface, gateway.emu_interface],
             [gateway.lan_ip, gateway.emu_ip],
             find_routes(route_ips, gateway.lan_ip),
             terminal_ips,
             gateway.opensand_ip,
-            terminals,
+            gw_terminals,
             gatewayφ_entity,
             gatewayφ_interfaces,
             gatewayφ_ips))
 
-    return gateways, work_stations
+    return opensand_gateways, work_stations
 
 
 def main(scenario_name='opensand', argv=None):
@@ -256,11 +258,13 @@ def main(scenario_name='opensand', argv=None):
             metavar=('ST_ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP', 'EMU_IP', 'OPENSAND_IP', 'GW_ENTITY'))
     observer.add_scenario_argument(
             '--workstation', '-ws', required=False, action=ValidateWorkStation, nargs=4,
-            help='Info for CLT: clt_entity, interface, interface, lan_ip, opensand_entity',
-            metavar=('CLIENT_ENTITY', 'INTERFACE', 'IP', 'OPENSAND_ENTITY'))
+            help='Info for WS: ws_entity, interface, interface, lan_ip, opensand_entity',
+            metavar=('WS_ENTITY', 'INTERFACE', 'IP', 'OPENSAND_ENTITY'))
+    observer.add_scenario_argument(
+            '--duration', '-d', required=False, default=0, type=int,
+            help='Duration of the opensand run test, default = 0 (no end)')
 
     args = observer.parse(argv, scenario_name)
-
     gateways, workstations = create_network(
         args.sat.ip, 16,
         args.gateway,
@@ -269,7 +273,7 @@ def main(scenario_name='opensand', argv=None):
         args.workstation)
     satellite = args.sat
 
-    scenario = opensand.build(satellite.entity, satellite.ip, satellite.interface, gateways, workstations)
+    scenario = opensand.build(satellite.entity, satellite.interface, satellite.ip, gateways, workstations, args.duration)
     observer.launch_and_wait(scenario)
 
     #old opensand

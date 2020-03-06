@@ -45,6 +45,11 @@ RUN_DESCRIPTION = """This run opensand scenario allows to:
 """
 RUN_NAME = 'opensand_run'
 
+CLEAR_DESCRIPTION = """This clear simple system scenario allows to:
+                       - Clear the satellite, the gateways, the ST, the SRV and the CLT from an opensand test
+                       """
+CLEAR_NAME = "opensand_clear"
+
 SCENARIO_DESCRIPTION = """This is reference OpenSAND scenario"""
 SCENARIO_NAME = 'opensand'
 
@@ -82,6 +87,7 @@ def configure(satellite_entity, satellite_interface, satellite_ip, gateways, wor
                     gateway.gw_phy_interfaces, gateway.gw_phy_ips)
 
         for terminal in gateway.terminals:
+
             opensand.configure_terminal(
                     scenario, terminal.entity,
                     terminal.interfaces, terminal.ips, terminal.opensand_ip,
@@ -100,7 +106,7 @@ def _extract_ip(ip_with_mask):
 
 def run(satellite_entity, satellite_ip, gateways, scenario_name=RUN_NAME):
     scenario = Scenario(scenario_name, RUN_DESCRIPTION)
-    opensand_run(scenario, satellite_entity, 'sat', emulation_address=_extract_ip(satellite_ip))
+    opensand.opensand_run(scenario, satellite_entity, 'sat', emulation_address=_extract_ip(satellite_ip))
 
     ids = itertools.count()
     for gateway in gateways:
@@ -108,29 +114,55 @@ def run(satellite_entity, satellite_ip, gateways, scenario_name=RUN_NAME):
 
         if gateway.gw_phy_entity is not None:
             id = next(ids)
-            opensand_run(
+            opensand.opensand_run(
                     scenario, gateway.entity, 'gw-net-acc', entity_id=id,
                     interconnection_address=emulation_address)
-            interconnect_address, emulation_address = map(_extract_ip, gateway.gw_phy_ip)
-            opensand_run(
+            interconnect_address, emulation_address = map(_extract_ip, gateway.gw_phy_ips)
+            opensand.opensand_run(
                     scenario, gateway.gw_phy_entity, 'gw-phy', entity_id=id,
                     emulation_address=emulation_address,
-                    interconnection_address=interconnection_address)
+                    interconnection_address=interconnect_address)
         else:
-            opensand_run(
+            opensand.opensand_run(
                     scenario, gateway.entity, 'gw', entity_id=next(ids),
                     emulation_address=emulation_address)
 
         for terminal in gateway.terminals:
             _, emulation_address = map(_extract_ip, terminal.ips)
-            opensand_run(
+            opensand.opensand_run(
                     scenario, terminal.entity, 'st', entity_id=next(ids),
                     emulation_address=emulation_address)
 
     return scenario
 
 
-def build(satellite_entity, satellite_interface, satellite_ip, gateways, workstations=(), scenario_name=SCENARIO_NAME):
+def clear(satellite_entity, satellite_interface, gateways, work_stations=(), scenario_name = CLEAR_NAME):
+    scenario = Scenario(scenario_name, CLEAR_DESCRIPTION)
+    opensand.clear_satellite(scenario, satellite_entity, satellite_interface)
+
+    for gateway in gateways:
+        opensand.clear_gateway(
+                scenario, gateway.entity,
+                gateway.interfaces)
+        if gateway.gw_phy_entity is not None:
+            opensand.clear_gateway_phy(
+                    scenario, gateway.gw_phy_entity,
+                    gateway.gw_phy_interfaces)
+
+        for terminal in gateway.terminals:
+            opensand.clear_terminal(
+                    scenario, terminal.entity,
+                    terminal.interfaces)
+
+    for host in work_stations:
+        opensand.clear_workstation(
+                scenario, host.entity,
+                host.interfaces)
+
+    return scenario
+
+
+def build(satellite_entity, satellite_interface, satellite_ip, gateways, workstations=(), duration = 0, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     scenario_configure = configure(satellite_entity, satellite_interface, satellite_ip, gateways, workstations)
@@ -143,13 +175,14 @@ def build(satellite_entity, satellite_interface, satellite_ip, gateways, worksta
     scenario_run = run(satellite_entity, satellite_ip, gateways)
     start_scenario_run = scenario.add_function('start_scenario_instance', wait_finished=[start_scenario_configure])
     start_scenario_run.configure(scenario_run)
+    
+    if duration != 0:
+        stopper = scenario.add_function('stop_scenario_instance', wait_launched = [start_scenario_run], wait_delay = duration)
+        stopper.configure(start_scenario_run)
 
-    stopper = scenario.add_function('stop_scenario_instance', wait_launched = [start_scenario_run], wait_delay = duration)
-    stopper.configure(start_scenario_run)
-
-    """start_scenario_clear = scenario.add_function('start_scenario_instance', wait_finished = [start_scenario_run], wait_delay = 5)
-    scenario_clear = opensand_clear.build(gw, sat_entity, sat_interface)
+    scenario_clear = clear(satellite_entity, satellite_interface, gateways, workstations)
+    start_scenario_clear = scenario.add_function('start_scenario_instance', wait_finished = [start_scenario_run], wait_delay = 5)
     start_scenario_clear.configure(scenario_clear)
-    """
+    
 
     return scenario

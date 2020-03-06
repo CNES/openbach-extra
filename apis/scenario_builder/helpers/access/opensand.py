@@ -108,7 +108,7 @@ def opensand_run(
             'output_address': output_address,
             'logs_port': logs_port,
             'stats_port': stats_port,
-            'binaries_directory': binaries_directory,
+            'binaries directory': binaries_directory,
             entity: {'id': entity_id, 'emulation_address': emulation_address},
     }
 
@@ -118,7 +118,7 @@ def opensand_run(
         run[entity]['interconnection_address'] = interconnection_address
     elif entity == 'gw-net-acc':
         del run[entity]['emulation_address']
-        run[entity]['interconnection_address'] = interconnection_address
+        run[entity]['interconnection address'] = interconnection_address
     opensand.configure('opensand', agent_entity, run=run)
 
     return [opensand]
@@ -213,3 +213,87 @@ def configure_workstation(
     return ip_route(
             scenario, entity, 'add', lan_ip, gateway_ip,
             wait_finished=interface)
+
+
+def clear_interfaces(
+        scenario, entity, interfaces,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+
+    for interface in interfaces:
+        wait_finished = ip_address(
+                scenario, entity, interface, 'flush',
+                wait_finished=wait_finished,
+                wait_launched=wait_launched,
+                wait_delay=wait_delay)
+        wait_launched = None
+        wait_delay = 0
+
+    return wait_finished
+
+
+def clear_routing(
+        scenario, entity,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+
+    wait_finished = opensand_network_clear(
+            scenario, entity,
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    return wait_finished
+
+
+def clear_satellite(
+        scenario, entity, interface,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    return clear_interfaces(
+            scenario, entity, [interface],
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+
+
+def clear_terminal(
+        scenario, entity, interfaces,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    interfaces = clear_interfaces(
+            scenario, entity, interfaces,
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    return clear_routing(
+            scenario, entity,
+            wait_finished=interfaces)
+
+
+def clear_gateway_phy(
+        scenario, entity, interfaces,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    return clear_interfaces(
+            scenario, entity, interfaces,
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+
+
+def clear_gateway(
+        scenario, entity, interfaces,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    interfaces = clear_interfaces(
+            scenario, entity, interfaces,
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    return clear_routing(
+            scenario, entity,
+            wait_finished=interfaces)
+
+
+def clear_workstation(
+        scenario, entity, interfaces, 
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    return clear_interfaces(
+            scenario, entity, [interfaces],
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
