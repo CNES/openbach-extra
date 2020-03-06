@@ -29,7 +29,7 @@
 
 from scenario_builder import Scenario
 from scenario_builder.helpers.network.owamp import owamp_measure_owd
-from scenario_builder.helpers.metrology.d_itg import ditg_pcket_rate
+from scenario_builder.helpers.network.d_itg import ditg_pcket_rate
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
