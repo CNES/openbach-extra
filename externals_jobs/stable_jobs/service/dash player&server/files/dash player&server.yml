@@ -8,7 +8,7 @@ general:
       This JS progamm can be run  by Chrome/Firefox to play video which will be streamed over http/1.1 or http/2
       according to the used protocol (http or https) and port (8083 or 8084). 
       The job also collects metrics from the player (video quality, bandwidth, rtt, buffer size, etc.)
-  job_version:     '2.0'
+  job_version:     '2.1'
   keywords:        [dash, dashjs, server, apache2, http2, http1.1, player, QoE]
   persistent:      True
   need_privileges: True
