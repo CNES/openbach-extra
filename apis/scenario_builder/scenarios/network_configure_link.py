@@ -35,14 +35,14 @@ from inspect import signature
 SCENARIO_DESCRIPTION = """This scenario allows to:
  - {} a configuration on network interfaces in ingress, egress or both directions 
    in order to emulate/stop emulation of a network link like WIFI link. 
-   Many link characteristiscs can be emulated including: bandwidth, delay, jitter and losses
+Many link characteristiscs can be emulated including: bandwidth, delay, jitter and losses
 """
 
 
 def apply_configure_link(
         entity, ifaces, mode, bandwidth, delay_distribution,
         delay, jitter, loss_model, loss_model_params,
-        buffer_size, scenario_name='Apply Configure Link'):
+        buffer_size, scenario_name='apply_configure_link'):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format('Apply'))
     configure_link_apply(
             scenario, entity, ifaces, mode, bandwidth, delay_distribution,
@@ -50,7 +50,7 @@ def apply_configure_link(
     return scenario
 
 
-def clear_configure_link(entity, ifaces, mode, scenario_name='Clear Configure Link'):
+def clear_configure_link(entity, ifaces, mode, scenario_name='clear_configure_link'):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format('Clear'))
     configure_link_clear(scenario, entity, ifaces, mode)
     return scenario

@@ -28,6 +28,7 @@
 
 """ Helpers of nuttcp job """
 
+
 def nuttcp_rate_udp(
         scenario, client_entity, server_entity,
         server_ip, port, command_port, duration, rate_limit,
@@ -62,6 +63,7 @@ def nuttcp_rate_udp(
     stopper.configure(server)
 
     return [server]
+
 
 def nuttcp_rate_tcp(
         scenario, client_entity, server_entity,
@@ -99,3 +101,7 @@ def nuttcp_rate_tcp(
     stopper.configure(server)
 
     return [server]
+
+
+def nuttcp_find_client(openbach_function):
+    return 'client' in openbach_function.start_job_instance['nuttcp']

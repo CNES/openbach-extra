@@ -37,11 +37,10 @@ SCENARIO_DESCRIPTION = """This service_ftp scenario allows to :
  — Launch a ftp server;
  — Launch a ftp client;
  — Download or Upload a file, {}.
+
+It can then, optionally, plot the throughput using time-series and CDF.
 """
-LAUNCHER_DESCRIPTION = SCENARIO_DESCRIPTION + """
-It then plot the throughput using time-series and CDF.
-"""
-SCENARIO_NAME = 'FTP'
+SCENARIO_NAME = 'service_ftp'
 
 
 def multiple_ftp(client, server, ip, port, mode, path, user, password, blocksize, amount, scenario_name=SCENARIO_NAME):
@@ -53,8 +52,11 @@ def multiple_ftp(client, server, ip, port, mode, path, user, password, blocksize
     scenario.add_constant('user', user)
     scenario.add_constant('password', password)
     scenario.add_constant('blocksize', blocksize)
-    ftp_multiple(scenario, client, server, '$server_ip', '$port', '$mode', 
-        '$file_path', amount, '$user', '$password', '$blocksize')
+
+    ftp_multiple(
+            scenario, client, server, '$server_ip', '$port', '$mode',
+            '$file_path', amount, '$user', '$password', '$blocksize')
+
     return scenario
 
 
@@ -67,8 +69,11 @@ def single_ftp(client, server, ip, port, mode, path, user, password, blocksize, 
     scenario.add_constant('user', user)
     scenario.add_constant('password', password)
     scenario.add_constant('blocksize', blocksize)
-    ftp_single(scenario, client, server, '$server_ip', '$port', '$mode', 
-        '$file_path', '$user', '$password', '$blocksize')
+
+    ftp_single(
+            scenario, client, server, '$server_ip', '$port', '$mode',
+            '$file_path', '$user', '$password', '$blocksize')
+
     return scenario
 
 
@@ -99,35 +104,28 @@ def build(
     else :
         raise ValueError("Multiple must be > 0")
 
-    if post_processing_entity is None:
-        return scenario
+    if post_processing_entity is not None:
+        post_processed = list(scenario.extract_function_id('ftp_clt', 'ftp_srv'))
+        jobs = scenario.openbach_functions.copy()
 
-    # Wrap into meta scenario
-    scenario_launcher = Scenario(scenario_name + ' with post-processing', LAUNCHER_DESCRIPTION)
-    start_scenario = scenario_launcher.add_function('start_scenario_instance')
-    start_scenario.configure(scenario)
+        time_series_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                [['throughput_' + mode, name_stat]],
+                [['Throughput (b/s)']],
+                [[mode + ' throughput']],
+                legend,
+                jobs, None, 2)
+        cdf_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                100,
+                [['throughput_' + mode, name_stat]],
+                [['Throughput (b/s)']],
+                [[mode + ' throughput']],
+                legend,
+                jobs, None, 2)
 
-    #Post processing part
-    post_processed = [[start_scenario, id] for id in scenario.extract_function_id('ftp_clt', 'ftp_srv')]
-    time_series_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            [['throughput_' + mode, name_stat]],
-            [['Throughput (b/s)']],
-            [[mode + ' throughput']],
-            legend,
-            [start_scenario_core], None, 2)
-    cdf_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            100,
-            [['throughput_' + mode, name_stat]],
-            [['Throughput (b/s)']],
-            [[mode + ' throughput']],
-            legend,
-            [start_scenario_core], None, 2)
-
-    return scenario_launcher
-
+    return scenario

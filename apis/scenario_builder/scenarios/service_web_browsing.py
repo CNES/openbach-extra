@@ -34,11 +34,11 @@ from scenario_builder.helpers.postprocessing.time_series import time_series_on_s
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
-SCENARIO_DESCRIPTION = """This scenario launches one web transfert"""
-LAUNCHER_DESCRIPTION = SCENARIO_DESCRIPTION + """
-It then plot the page load time using time-series and CDF.
+SCENARIO_DESCRIPTION = """This scenario launches one web transfer.
+
+It can then, optionally, plot the page load time using time-series and CDF.
 """
-SCENARIO_NAME = 'Web Browsing'
+SCENARIO_NAME = 'service_web_browsing'
 
 
 def web_browsing(
@@ -62,37 +62,31 @@ def build(
         source, destination, duration, nb_runs, parallel_runs,
         compression=True, proxy_address=None, proxy_port=None, launch_server=False,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    # Create core scenario
     scenario = web_browsing(source, destination, duration, nb_runs, parallel_runs, compression, proxy_address, proxy_port, launch_server, scenario_name)
-    if post_processing_entity is None:
-        return scenario
 
-    # Wrap into meta scenario
-    scenario_launcher = Scenario(scenario_name + ' with post-processing', LAUNCHER_DESCRIPTION)
-    start_scenario = scenario_launcher.add_function('start_scenario_instance')
-    start_scenario.configure(scenario)
+    if post_processing_entity is not None:
+        post_processed = list(scenario.extract_function_id('web_browsing_qoe'))
+        legends = ['web browsing from {} to {}'.format(source, destination)]
+        jobs = scenario.openbach_functions.copy()
 
-    # Post processing data
-    post_processed = [[start_scenario, id] for id in scenario.extract_function_id('web_browsing_qoe')]
-    legends = ['web browsing from {} to {}'.format(source, destination)]
-    time_series_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            [['page_load_time']],
-            [['PLT (ms)']],
-            [['PLT time series']],
-            [legends],
-            start_scenario, None, 2)
-    cdf_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            100,
-            [['page_load_time']],
-            [['PLT (ms)']],
-            [['PLT CDF']],
-            [legends],
-            start_scenario, None, 2)
+        time_series_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                [['page_load_time']],
+                [['PLT (ms)']],
+                [['PLT time series']],
+                [legends],
+                jobs, None, 2)
+        cdf_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                100,
+                [['page_load_time']],
+                [['PLT (ms)']],
+                [['PLT CDF']],
+                [legends],
+                jobs, None, 2)
 
     return scenario

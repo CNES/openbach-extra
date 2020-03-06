@@ -37,57 +37,53 @@ SCENARIO_DESCRIPTION = """This scenario allows to launch:
  — a FTP server;
  — and an associated client.
 And transfer files between them.
+
+It can then, optionally, plot the applicative rate using time-series and CDF.
 """
-LAUNCHER_DESCRIPTION = SCENARIO_DESCRIPTION + """
-It then plot the applicative rate using time-series and CDF.
-"""
-SCENARIO_NAME = 'FTP Rate'
+SCENARIO_NAME = 'ftp_rate'
 
 
-def ftp_rate(client, server, ip_dst, port, command_port, duration, scenario_name=SCENARIO_NAME):
+def ftp_rate(client, server, ip_destination, port, command_port, duration, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    scenario.add_constant('ip_dst', ip_dst)
+    scenario.add_constant('ip_destination', ip_destination)
     scenario.add_constant('port', port)
     scenario.add_constant('command_port', command_port)
     scenario.add_constant('duration', duration)
 
-    wait = ftp_server(scenario, client, server, '$ip_dst', '$port')
-    ftp_client(scenario, client, server, '$ip_dst', '$port', '$command_port', '$duration', wait, None, 5)
+    wait = ftp_server(scenario, client, server, '$ip_destination', '$port')
+    ftp_client(scenario, client, server, '$ip_destination', '$port', '$command_port', '$duration', wait, None, 5)
 
     return scenario
 
 
-def build(client, server, ip_dst, port, command_port, duration, rate, post_processing_entity, scenario_name=SCENARIO_NAME):
-    # Create core scenario
-    scenario = ftp_rate(client, server, ip_dst, port, command_port, duration, scenario_name)
-    if post_processing_entity is None:
-        return scenario
+def build(
+        client, server, ip_destination, port,
+        command_port, duration, rate,
+        post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    scenario = ftp_rate(client, server, ip_destination, port, command_port, duration, scenario_name)
 
-    # Wrap into meta scenario
-    scenario_launcher = Scenario(scenario_name + ' with post-processing', LAUNCHER_DESCRIPTION)
-    start_scenario = scenario.add_function('start_scenario_instance')
-    start_scenario.configure(scenario)
+    if post_processing_entity is not None:
+        post_processed = list(scenario.extract_function_id('ftp_server'))
+        jobs = scenario.openbach_functions.copy()
 
-    # Add post-processing to meta scenario
-    post_processed = [[start_scenario, id] for id in scenario.extract_function_id('ftp_server')]
-    time_series_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            [['bitrate']],
-            [['Rate (b/s)']],
-            [['FTP Rate time series']],
-            [['rate ftp']],
-            [start_scenario], None, 2)
-    cdf_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            100,
-            [['bitrate']],
-            [['Rate (b/s)']],
-            [['FTP Rate CDF']],
-            [['Rate ftp']],
-            [start_scenario], None, 2)
+        time_series_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                [['bitrate']],
+                [['Rate (b/s)']],
+                [['FTP Rate time series']],
+                [['rate ftp']],
+                jobs, None, 2)
+        cdf_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                100,
+                [['bitrate']],
+                [['Rate (b/s)']],
+                [['FTP Rate CDF']],
+                [['Rate ftp']],
+                jobs, None, 2)
 
-    return scenario_launcher
+    return scenario

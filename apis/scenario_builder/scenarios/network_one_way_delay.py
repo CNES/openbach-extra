@@ -35,27 +35,18 @@ from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph,
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 
-SCENARIO_DESCRIPTION="""This scenario allows to :
-     - Launch the subscenario One Way Delay measurement for both directions
-       (with owamp jobs).
-     - Perform two postprocessing tasks to compare the
-       time-series and the CDF of the one way delay measurements.
+SCENARIO_DESCRIPTION = """This scenario allows to :
+ - Launch the subscenario One Way Delay measurement for both directions
+   (with owamp jobs).
+ - Perform two postprocessing tasks to compare the
+   time-series and the CDF of the one way delay measurements.
 """
-
-SCENARIO_NAME="""network_one_way_delay"""
-
-def extract_jobs_to_postprocess(scenario):
-    for function_id, function in enumerate(scenario.openbach_functions):
-        if isinstance(function, StartJobInstance):
-            if function.job_name == 'owamp-client':
-                yield function_id
-            elif function.job_name == 'd-itg_send':
-                yield function_id
+SCENARIO_NAME = 'network_one_way_delay'
 
 
-def one_way_delay(client, server, ip_dest, ip_client, scenario_name='network_one_way_delay_core'):
-    scenario = Scenario(scenario_name, 'OpenBACH Network One Way Delay Measurement')
-    scenario.add_constant('ip_dst', ip_dest)
+def one_way_delay(client, server, ip_client, ip_destination, scenario_name=SCENARIO_NAME):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    scenario.add_constant('ip_dst', ip_destination)
     scenario.add_constant('ip_clt', ip_client)
 
     owamp_measure_owd(scenario, client, server, '$ip_dst')
@@ -64,33 +55,29 @@ def one_way_delay(client, server, ip_dest, ip_client, scenario_name='network_one
     return scenario
 
 
-def build(client, server, ip_clt, ip_dst, post_processing_entity, scenario_name=SCENARIO_NAME):
-    scenario = one_way_delay:x
-    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    scenario_core = network_one_way_delay_core(client, server)
-
-    start_scenario_core = scenario.add_function(
-            'start_scenario_instance')
-
-    start_scenario_core.configure(
-            scenario_core,
-            ip_clt=ip_clt,
-            ip_dst=ip_dst)
+def build(client, server, ip_client, ip_destination, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    scenario = one_way_delay(client, server, ip_client, ip_destination)
 
     if post_processing_entity is not None:
-        post_processed = [
-            [start_scenario_core, function_id]
-            for function_id in extract_jobs_to_postprocess(scenario_core)
-        ]
-        time_series_on_same_graph(scenario, post_processing_entity, post_processed, 
-            [['owd_sent','owd_received', 'owd_receiver', 'owd_return']], 
-            [['One Way Delay (ms)']], [['Both One Way delays time series']], 
-            [['owd_received_owamp'],['owd_sent_owamp'], ['owd_sent_d-itg'], ['owd_received_d-itg']],
-            [start_scenario_core], None, 2)
-        cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, 
-            [['owd_sent','owd_received', 'owd_receiver', 'owd_return']],
-            [['One Way Delay (ms)']], [['Both One Way delay CDF']], 
-            [['owd_received_owamp'],['owd_sent_owamp'], ['owd_sent_d-itg'], ['owd_received_d-itg']],
-            [start_scenario_core], None, 2)
+        post_processed = list(scenario.extract_function_id('owamp-client', 'd-itg_send'))
+        jobs = scenario.openbach_functions.copy()
+
+        time_series_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                [['owd_sent','owd_received', 'owd_receiver', 'owd_return']],
+                [['One Way Delay (ms)']], [['Both One Way delays time series']],
+                [['owd_received_owamp'],['owd_sent_owamp'], ['owd_sent_d-itg'], ['owd_received_d-itg']],
+                jobs, None, 2)
+        cdf_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                100,
+                [['owd_sent','owd_received', 'owd_receiver', 'owd_return']],
+                [['One Way Delay (ms)']], [['Both One Way delay CDF']],
+                [['owd_received_owamp'],['owd_sent_owamp'], ['owd_sent_d-itg'], ['owd_received_d-itg']],
+                jobs, None, 2)
 
     return scenario

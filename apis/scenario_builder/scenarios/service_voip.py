@@ -33,11 +33,11 @@ from scenario_builder.helpers.postprocessing.time_series import time_series_on_s
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
-SCENARIO_DESCRIPTION = """This scenario launches one voip transfert"""
-LAUNCHER_DESCRIPTION = SCENARIO_DESCRIPTION + """
-It then plot the mean opinion score using time-series and CDF.
+SCENARIO_DESCRIPTION = """This scenario launches one voip transfer.
+
+It can then, optionally, plot the mean opinion score using time-series and CDF.
 """
-SCENARIO_NAME = 'VoIP'
+SCENARIO_NAME = 'service_voip'
 
 
 def voip(source, destination, duration, source_ip, destination_ip, port, codec, scenario_name=SCENARIO_NAME):
@@ -50,37 +50,31 @@ def build(
         source, destination, duration,
         source_ip, destination_ip, port, codec,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    # Create core scenario
     scenario = voip(source, destination, duration, source_ip, destination_ip, port, codec, scenario_name)
-    if post_processing_entity is None:
-        return scenario
 
-    # Wrap into meta scenario
-    scenario_launcher = Scenario(scenario_name + ' with post-processing', LAUNCHER_DESCRIPTION)
-    start_scenario = scenario_launcher.add_function('start_scenario_instance')
-    start_scenario.configure(scenario)
+    if post_processing_entity is not None:
+        post_processed = list(scenario.extract_function_id('voip_qoe_src'))
+        legends = ['voip from {} to {}'.format(source, destination)]
+        jobs = scenario.openbach_functions.copy()
 
-    # Post processing data
-    post_processed = [[start_scenario, id] for id in scenario.extract_function_id('voip_qoe_src')]
-    legends = ['voip from {} to {}'.format(source, destination)]
-    time_series_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            [['instant_mos']],
-            [['MOS']],
-            [['MOS time series']],
-            [legends],
-            start_scenario, None, 2)
-    cdf_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            100,
-            [['instant_mos']],
-            [['MOS']],
-            [['MOS CDF']],
-            [legends],
-            start_scenario, None, 2)
+        time_series_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                [['instant_mos']],
+                [['MOS']],
+                [['MOS time series']],
+                [legends],
+                jobs, None, 2)
+        cdf_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                100,
+                [['instant_mos']],
+                [['MOS']],
+                [['MOS CDF']],
+                [legends],
+                jobs, None, 2)
 
     return scenario

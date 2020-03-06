@@ -45,11 +45,10 @@ as subscenarios. Possible generators are:
  - Web browsing
  - Dash video player
  - Data transfer
+
+It can then, optionally,  post-processes the generated data by plotting time-series and CDF.
 """
-LAUNCHER_DESCRIPTION = SCENARIO_DESCRIPTION + """
-It then post-processes the generated data by plotting time-series and CDF.
-"""
-SCENARIO_NAME = 'Traffic Mix'
+SCENARIO_NAME = 'service_traffic_mix'
 
 
 _Arguments = namedtuple('Arguments', ('id', 'traffic', 'source', 'destination', 'duration', 'wait_launched', 'wait_finished', 'wait_delay', 'source_ip', 'destination_ip'))
@@ -209,52 +208,47 @@ def traffic_mix(arguments, scenario_name=SCENARIO_NAME):
 
 
 def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAME):
-    # Create top network_traffix_mix scenario
     try:
         with open(extra_args_traffic) as extra_args_file:
             arguments = _load_args(extra_args_file)
     except (OSError, IOError):
         print("\033[91mERROR:", "Cannot open args file, exiting", "\033[0m")
         return
+    else:
+        scenario = traffic_mix(arguments, scenario_name)
 
-    scenario = traffic_mix(arguments, scenario_name)
-    if post_processing_entity is None:
-        return scenario
+    if post_processing_entity is not None:
+        wait_finished = scenario.openbach_functions.copy()
 
-    # Wrap into meta scenario
-    scenario_launcher = Scenario(scenario_name + ' with post-processing', LAUNCHER_DESCRIPTION)
-    start_scenario = scenario_launcher.add_function('start_scenario_instance')
-    start_scenario.configure(scenario)
+        for jobs, filters, legend, statistic, axis in [
+                ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'Rate (b/s)'),
+                (['dash player&server'], {}, _dash_legend, 'bitrate', 'Rate (b/s)'),
+                (['web_browsing_qoe'], {}, _web_browsing_legend, 'page_load_time', 'PLT (ms)'),
+                (['voip_qoe_src'], {}, _voip_legend, 'instant_mos', 'MOS'),
+        ]:
+            post_processed = list(scenario.extract_function_id(*jobs, include_subscenarios=True, **filters))
+            if post_processed:
+                legends = [legend(scenario.find_openbach_function(f)) for f in post_processed]
+                title = axis.split(maxsplit=1)[0]
 
-    # Post processing data
-    for jobs, filters, legend, statistic, axis in [
-            ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'Rate (b/s)'),
-            (['dash player&server'], {}, _dash_legend, 'bitrate', 'Rate (b/s)'),
-            (['web_browsing_qoe'], {}, _web_browsing_legend, 'page_load_time', 'PLT (ms)'),
-            (['voip_qoe_src'], {}, _voip_legend, 'instant_mos', 'MOS'),
-    ]:
-        post_processed = list(scenario_launcher.extract_function_id(*jobs, include_subscenarios=True, **filters))
-        if post_processed:
-            legends = [legend(scenario_launcher.find_openbach_function(f)) for f in post_processed]
-            title = axis.split(maxsplit=1)[0]
-            time_series_on_same_graph(
-                    senario_launcher,
-                    post_processing_entity,
-                    post_processed,
-                    [[statistic]],
-                    [[axis]],
-                    [['{} time series'.format(title)]],
-                    [legends],
-                    [start_scenario], None, 2)
-            cdf_on_same_graph(
-                    scenario_launcher,
-                    post_processing_entity,
-                    post_processed,
-                    100,
-                    [[statistic]],
-                    [[axis]],
-                    [['{} CDF'.format(title)]],
-                    [legends],
-                    [start_scenario], None, 2)
+                time_series_on_same_graph(
+                        senario,
+                        post_processing_entity,
+                        post_processed,
+                        [[statistic]],
+                        [[axis]],
+                        [['{} time series'.format(title)]],
+                        [legends],
+                        wait_finished, None, 2)
+                cdf_on_same_graph(
+                        scenario,
+                        post_processing_entity,
+                        post_processed,
+                        100,
+                        [[statistic]],
+                        [[axis]],
+                        [['{} CDF'.format(title)]],
+                        [legends],
+                        wait_finished, None, 2)
 
-    return scenario_launcher
+    return scenario

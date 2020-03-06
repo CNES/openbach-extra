@@ -32,47 +32,54 @@ from scenario_builder.scenarios import network_rate, network_delay, network_jitt
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 
-
-SCENARIO_DESCRIPTION="""This scenario is a wrapper of
-        - network_delay,
-        - network_one_way_delay
-        - network_jitter
-        - network_rate
-        scenarios
+SCENARIO_DESCRIPTION = """This scenario is a wrapper for the following scenarios:
+ - network_delay,
+ - network_one_way_delay
+ - network_jitter
+ - network_rate
 """
-SCENARIO_NAME="""network_global"""
+SCENARIO_NAME = 'network_global'
 
-def build(client, server, ip_dst, port, command_port, duration, rate, num_flows, tos, mtu, bandwidth, post_processing_entity, scenario_name=SCENARIO_NAME):
 
+def build(
+        client, server, ip_destination, server_port, command_port,
+        duration, rate, num_flows, tos, mtu, bandwidth,
+        post_processing_entity=None, scenario_name=SCENARIO_NAME):
     #Create top network_global scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     # Add Delay metrology sub scenario
-    start_network_delay = scenario.add_function(
-                'start_scenario_instance')
-    scenario_network_delay = network_delay.build(client, ip_dst, duration, 0, post_processing_entity)
-    start_network_delay.configure(
-                scenario_network_delay)
+    scenario_network_delay = network_delay.build(client, ip_destination, duration, False, post_processing_entity)
+    start_network_delay = scenario.add_function('start_scenario_instance')
+    start_network_delay.configure(scenario_network_delay)
 
     # Add One Way Delay metrology sub scenario
+    scenario_network_one_way_delay = network_one_way_delay.build(
+            client, server, ip_destination, post_processing_entity)
     start_network_one_way_delay = scenario.add_function(
-                'start_scenario_instance',wait_finished=[start_network_delay], wait_delay=2)
-    scenario_network_one_way_delay = network_one_way_delay.build(client, server, ip_dst, post_processing_entity)
-    start_network_one_way_delay.configure(
-                scenario_network_one_way_delay)
+            'start_scenario_instance',
+            wait_finished=[start_network_delay],
+            wait_delay=2)
+    start_network_one_way_delay.configure(scenario_network_one_way_delay)
 
     # Add Jitter metrology sub scenario
+    scenario_network_jitter = network_jitter.build(
+            client, server, ip_destination, server_port,
+            duration, num_flows, tos, bandwidth, post_processing_entity)
     start_network_jitter = scenario.add_function(
-                'start_scenario_instance',wait_finished=[start_network_one_way_delay], wait_delay=2)
-    scenario_network_jitter = network_jitter.build(client, server, ip_dst, port, duration, num_flows, tos, bandwidth, post_processing_entity)
-    start_network_jitter.configure(
-                scenario_network_jitter)
+            'start_scenario_instance',
+            wait_finished=[start_network_one_way_delay],
+            wait_delay=2)
+    start_network_jitter.configure(scenario_network_jitter)
 
     # Add Rate metrology sub scenario
+    scenario_network_rate = network_rate.build(
+            client, server, ip_destination, server_port, command_port,
+            duration, rate, num_flows, tos, mtu, post_processing_entity)
     start_network_rate = scenario.add_function(
-        'start_scenario_instance',wait_finished=[start_network_jitter], wait_delay=2)
-    scenario_network_rate = network_rate.build(client, server,ip_dst, port, command_port, duration, rate, num_flows, tos, mtu, post_processing_entity)
-    start_network_rate.configure(
-            scenario_network_rate)
+            'start_scenario_instance',
+            wait_finished=[start_network_jitter],
+            wait_delay=2)
+    start_network_rate.configure(scenario_network_rate)
 
     return scenario

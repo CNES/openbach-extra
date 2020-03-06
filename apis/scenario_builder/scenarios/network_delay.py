@@ -38,15 +38,14 @@ SCENARIO_DESCRIPTION = """This network_delay scenario allows to
 compare the RTT measurement of fping (ICMP) and d-itg (UDP). It
 can be configured to start the traffics either simultaneously or
 sequentially.
+
+It can then, optionally, plot the delay measurements using time-series and CDF.
 """
-LAUNCHER_DESCRIPTION = SCENARIO_DESCRIPTION + """
-It then plot the delay measurements using time-series and CDF.
-"""
-SCENARIO_NAME = 'Network Delay'
+SCENARIO_NAME = 'network_delay'
 
 
 def simultaneous_traffic(client_entity, client, server_entity, server, duration, scenario_name=SCENARIO_NAME):
-    scenario = Scenario(scenario_name, 'OpenBACH Network Delay Measurement: Comparison of two RTT measurements simultaneously')
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('srv_ip', server)
     scenario.add_constant('clt_ip', client)
     scenario.add_constant('duration', duration)
@@ -63,7 +62,7 @@ def simultaneous_traffic(client_entity, client, server_entity, server, duration,
 
 
 def sequential_traffic(client_entity, client, server_entity, server, duration, scenario_name=SCENARIO_NAME):
-    scenario = Scenario(scenario_name, 'OpenBACH Network Delay Measurement: Comparison of two RTT measurements one after the other')
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('srv_ip', server)
     scenario.add_constant('clt_ip', client)
     scenario.add_constant('duration', duration)
@@ -73,43 +72,43 @@ def sequential_traffic(client_entity, client, server_entity, server, duration, s
             '$srv_ip', '$clt_ip', 'UDP', packet_rate=1,
             duration='$duration', meter='rttm')
     fping_measure_rtt(
-            scenario, clt_entity, '$srv_ip', '$duration',
+            scenario, client_entity, '$srv_ip', '$duration',
             wait_finished=ditg)
 
     return scenario
 
 
-def build(clt_entity, srv_entity, clt_ip, srv_ip, duration, simultaneous, post_processing_entity, scenario_name=SCENARIO_NAME):
-    # Create core scenario
-    scenario = (simultaneous_traffic if simultaneous else sequential_traffic)(clt_entity, clt_ip, srv_entity, srv_ip, duration, scenario_name)
-    if post_processing_entity is None:
-        return scenario
+def build(
+        client_entity, server_entity, client_ip, server_ip,
+        duration, simultaneous,
+        post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    scenario = (simultaneous_traffic if simultaneous else sequential_traffic)(
+            client_entity, client_ip,
+            server_entity, server_ip,
+            duration, scenario_name)
 
-    # Wrap into meta scenario
-    scenario_launcher = Scenario(scenario_name + ' with post-processing', LAUNCHER_DESCRIPTION)
-    start_scenario = scenario_launcher.add_function('start_scenario_instance')
-    start_scenario.configure(scenario)
+    if post_processing_entity is not None:
+        post_processed = list(scenario.extract_function_id('fping', 'd-itg_send'))
+        jobs = scenario.openbach_functions.copy()
 
-    # Add post-processing to meta scenario
-    post_processed = [[start_scenario, id] for id in scenario.extract_function_id('fping', 'd-itg_send')]
-    time_series_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            [['rtt', 'rtt_sender']],
-            [['RTT delay (ms)']],
-            [['RTTs time series']],
-            [['d-itg_send'], ['fping']],
-            [start_scenario], None, 2)
-    cdf_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            100,
-            [['rtt', 'rtt_sender']],
-            [['RTT delay (ms)']],
-            [['RTT CDF']],
-            [['d-itg_send'], ['fping']],
-            [start_scenario_core], None, 2)
+        time_series_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                [['rtt', 'rtt_sender']],
+                [['RTT delay (ms)']],
+                [['RTTs time series']],
+                [['d-itg_send'], ['fping']],
+                jobs, None, 2)
+        cdf_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                100,
+                [['rtt', 'rtt_sender']],
+                [['RTT delay (ms)']],
+                [['RTT CDF']],
+                [['d-itg_send'], ['fping']],
+                jobs, None, 2)
 
-    return scenario_launcher
+    return scenario

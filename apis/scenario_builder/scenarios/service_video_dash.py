@@ -31,11 +31,12 @@ from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
-SCENARIO_DESCRIPTION = """This scenario launches one DASH transfer"""
-LAUNCHER_DESCRIPTION = SCENARIO_DESCRIPTION + """
-It then plot the bit rate using time-series and CDF.
+
+SCENARIO_DESCRIPTION = """This scenario launches one DASH transfer.
+
+It can then, optionally, plot the bit rate using time-series and CDF.
 """
-SCENARIO_NAME = 'Video Dash'
+SCENARIO_NAME = 'service_video_dash'
 
 
 def video_dash(source, destination, duration, ip, protocol, launch_server, scenario_name=SCENARIO_NAME):
@@ -58,37 +59,31 @@ def video_dash(source, destination, duration, ip, protocol, launch_server, scena
 
 
 def build(source, destination, duration, destination_ip, protocol, launch_server=False, post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    # Create core scenario
     scenario = video_dash(source, destination, duration, destination_ip, protocol, launch_server, scenario_name)
-    if not launch_server or post_processing_entity is None:
-        return scenario
 
-    # Wrap into meta scenario
-    scenario_launcher = Scenario(scenario_name + ' with post-processing', LAUNCHER_DESCRIPTION)
-    start_scenario = scenario_launcher.add_function('start_scenario_instance')
-    start_scenario.configure(scenario)
+    if launch_server and post_processing_entity is not None:
+        post_processed = list(scenario.extract_function_id('dash player&server'))
+        legends = ['dash from {} to {}'.format(source, destination)]
+        jobs = scenario.openbach_functions.copy()
 
-    # Post processing data
-    post_processed = [[start_scenario, id] for id in scenario.extract_function_id('dash player&server')]
-    legends = ['dash from {} to {}'.format(source, destination)]
-    time_series_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            [['bitrate']],
-            [['Rate (b/s)']],
-            [['Rate time series']],
-            [legends],
-            [start_scenario], None, 2)
-    cdf_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            100,
-            [['bitrate']],
-            [['Rate (b/s)']],
-            [['Rate CDF']],
-            [legends],
-            [start_scenario], None, 2)
+        time_series_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                [['bitrate']],
+                [['Rate (b/s)']],
+                [['Rate time series']],
+                [legends],
+                jobs, None, 2)
+        cdf_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                100,
+                [['bitrate']],
+                [['Rate (b/s)']],
+                [['Rate CDF']],
+                [legends],
+                jobs, None, 2)
 
-    return scenario_launcher
+    return scenario

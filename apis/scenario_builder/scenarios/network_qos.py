@@ -29,28 +29,20 @@
 from scenario_builder import Scenario
 
 
-SCENARIO_DESCRIPTION="""This scenario allows to:
-     - Add/Remove a scheduler on ip layer on the chosen interface.
-     This scheduler works with three levels of scheduling:
-     per trunk, per destination, and per Class of Service.
+SCENARIO_DESCRIPTION = """This scenario allows to:
+ - Add/Remove a scheduler on ip layer on the chosen interface.
+   This scheduler works with three levels of scheduling: per trunk, per destination, and per Class of Service.
 """
-SCENARIO_NAME="""network_qos"""
+SCENARIO_NAME = 'network_qos'
 
 
 def build(entity, interface_name, action, path, scenario_name=SCENARIO_NAME):
-
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     function = scenario.add_function('start_job_instance')
     if action == "add":
-        function.configure(
-                'ip_scheduler', entity,
-                interface_name=interface_name, 
-                add={"file_path":path})
+        function.configure('ip_scheduler', entity, interface_name=interface_name, add={"file_path":path})
     elif action == "remove":
-        function.configure(
-                'ip_scheduler', entity,
-                interface_name=interface_name, 
-                remove={})
+        function.configure('ip_scheduler', entity, interface_name=interface_name, remove={})
 
     return scenario

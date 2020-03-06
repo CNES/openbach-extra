@@ -37,11 +37,10 @@ from scenario_builder.openbach_functions import StartJobInstance, StartScenarioI
 
 SCENARIO_DESCRIPTION = """This scenario allows to retrieve
 jitter information using iperf3 and owamp.
+
+It can then, optionally, plot the jitter measurements using time-series and CDF.
 """
-LAUNCHER_DESCRIPTION = SCENARIO_DESCRIPTION + """
-It then plot the jitter measurements using time-series and CDF.
-"""
-SCENARIO_NAME = 'Network Jitter'
+SCENARIO_NAME = 'network_jitter'
 
 
 def jitter(
@@ -61,42 +60,41 @@ def jitter(
             scenario, client_entity, server_entity,
             '$srv_ip', '$srv_port', '$num_flows',
             '$duration', '$tos', '$bandwidth')
-    owamp_measure_owd(scenario, clt_entity, srv_entity, '$srv_ip', iperf)
+    owamp_measure_owd(scenario, client_entity, srv_entity, '$srv_ip', iperf)
 
     return scenario
 
 
-def build(clt_entity, srv_entity, srv_ip, srv_port, duration, num_flows, tos, bandwidth, post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    # Create core scenario
-    scenario = jitter(clt_entity, srv_entity, srv_ip, srv_port, num_flows, duration, tos, bandwidth, scenario_name)
-    if post_processing_entity is None:
-        return scenario
+def build(
+        client_entity, server_entity, server_ip, server_port,
+        duration, num_flows, tos, bandwidth,
+        post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    scenario = jitter(
+            client_entity, server_entity, server_ip, server_port,
+            num_flows, duration, tos, bandwidth, scenario_name)
 
-    # Wrap into meta scenario
-    scenario_launcher = Scenario(scenario_name + ' with post-processing', LAUNCHER_DESCRIPTION)
-    start_scenario = scenario_launcher.add_function('start_scenario_instance')
-    start_scenario.configure(scenario)
+    if post_processing_entity is not None:
+        post_processed = list(scenario.extract_function_id('owamp-client', iperf3=iperf3_find_server))
+        jobs = scenario.openbach_functions.copy()
 
-    # Add post-processing to meta scenario
-    post_processed = [[start_scenario, id] for id in scenario.extract_function_id('owamp-client', iperf3=iperf3_find_server)]
-    time_series_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            [['jitter', 'ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']],
-            [['Jitter (ms)']],
-            [['Jitters time series']],
-            [['iperf3 jitter'], ['owamp ipdv_sent'], ['owamp ipdv_received'], ['owamp pdv_send'], ['owamp pdv_received']],
-            [start_scenario_core], None, 2)
-    cdf_on_same_graph(
-            scenario_launcher,
-            post_processing_entity,
-            post_processed,
-            100,
-            [['jitter', 'ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']],
-            [['Jitter (ms)']],
-            [['Jitters CDF']],
-            [['iperf3 jitter'], ['owamp ipdv_sent'], ['owamp ipdv_received'], ['owamp pdv_send'], ['owamp pdv_received']],
-            [start_scenario_core], None, 2)
+        time_series_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                [['jitter', 'ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']],
+                [['Jitter (ms)']],
+                [['Jitters time series']],
+                [['iperf3 jitter'], ['owamp ipdv_sent'], ['owamp ipdv_received'], ['owamp pdv_send'], ['owamp pdv_received']],
+                jobs, None, 2)
+        cdf_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                100,
+                [['jitter', 'ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']],
+                [['Jitter (ms)']],
+                [['Jitters CDF']],
+                [['iperf3 jitter'], ['owamp ipdv_sent'], ['owamp ipdv_received'], ['owamp pdv_send'], ['owamp pdv_received']],
+                jobs, None, 2)
 
     return scenario

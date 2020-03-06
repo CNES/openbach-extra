@@ -28,6 +28,7 @@
 
 """ Helpers of iperf3 job """
 
+
 def iperf3_rate_tcp(
         scenario, clt_entity, srv_entity,
         srv_ip, port, duration, num_flows, tos, mtu,
@@ -57,6 +58,7 @@ def iperf3_rate_tcp(
             })
 
     return [server]
+
 
 def iperf3_rate_udp(
         scenario, clt_entity, srv_entity,
