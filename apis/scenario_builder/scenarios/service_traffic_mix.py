@@ -32,6 +32,7 @@ from collections import namedtuple
 
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
+from scenario_builder.openbach_functions import StartScenarioInstance
 from scenario_builder.helpers.service.apache2 import apache2
 from scenario_builder.helpers.transport.iperf3 import iperf3_find_server
 from scenario_builder.scenarios import service_data_transfer, service_video_dash, service_web_browsing, service_voip
@@ -95,14 +96,14 @@ def _load_args(args_list):
                 print("\033[91mWARNING:", "Duplicated id:", " ".join(args), "... ignoring")
                 continue
             int(args.duration)
-            int(args.delay)
+            int(args.wait_delay)
             for dependency in ids:
                 if dependency not in id_explored:
                     print("\033[91mWARNING:", "This traffic depends on missing ones:", " ".join(args), "... ignoring", "\033[0m")
                     break
             else:
                 arguments.append(args)
-                id_explored.add(cur_id)
+                id_explored.add(int(args.id))
         except ValueError:
             print("\033[91mWARNING:", "Cannot parse this line:", line, "\033[0m")
 
@@ -134,7 +135,7 @@ def _voip_legend(openbach_function):
     return 'VoIP — {} {} {}'.format(destination, address, port)
 
 
-def traffic_mix(arguments, scenario_name=SCENARIO_NAME):
+def traffic_mix(post_processing_entity, arguments, scenario_name=SCENARIO_NAME):
     scenario_mix = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     list_wait_finished = []
     apache_servers = {}
@@ -174,12 +175,12 @@ def traffic_mix(arguments, scenario_name=SCENARIO_NAME):
         elif args.traffic == "dash":
             scenario = service_video_dash.build(
                     args.source, args.destination, int(args.duration),
-                    args.destination_ip, args.protocol, False,
+                    args.source_ip, args.protocol, False,
                     post_processing_entity, 'Dash player ' + args.id)
         elif args.traffic == "web_browsing":
             scenario = service_web_browsing.build(
                     args.source, args.destination, int(args.duration),
-                    int(args.nb_runs), int(args.parallel_runs),
+                    int(args.run_count), int(args.parallel_runs),
                     post_processing_entity=post_processing_entity,
                     scenario_name='Web browsing ' + args.id)
         elif args.traffic == "voip":
@@ -196,7 +197,7 @@ def traffic_mix(arguments, scenario_name=SCENARIO_NAME):
                 wait_delay=int(args.wait_delay) + offset_delay)
         start_scenario.configure(scenario)
         list_wait_finished += [start_scenario]
-        map_scenarios[args.id] = start_scenario
+        map_scenarios[int(args.id)] = start_scenario
         
     # Stopping all Apache2 servers
     for server_entity,scenario_server in apache_servers.items():
@@ -215,10 +216,10 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
         print("\033[91mERROR:", "Cannot open args file, exiting", "\033[0m")
         return
     else:
-        scenario = traffic_mix(arguments, scenario_name)
+        scenario = traffic_mix(post_processing_entity, arguments, scenario_name)
 
     if post_processing_entity is not None:
-        wait_finished = scenario.openbach_functions.copy()
+        wait_finished = [function for function in scenario.openbach_functions if isinstance(function, (StartJobInstance, StartScenarioInstance))]
 
         for jobs, filters, legend, statistic, axis in [
                 ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'Rate (b/s)'),
@@ -232,7 +233,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
                 title = axis.split(maxsplit=1)[0]
 
                 time_series_on_same_graph(
-                        senario,
+                        scenario,
                         post_processing_entity,
                         post_processed,
                         [[statistic]],

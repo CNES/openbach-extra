@@ -35,12 +35,12 @@ from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 SCENARIO_DESCRIPTION = """This scenario launches one voip transfer.
 
-It can then, optionally, plot the mean opinion score using time-series and CDF.
+It can then, optionally, plot the Mean Opinion Score using time-series and CDF.
 """
 SCENARIO_NAME = 'service_voip'
 
 
-def voip(source, destination, duration, source_ip, destination_ip, port, codec, scenario_name=SCENARIO_NAME):
+def _voip(source, destination, duration, source_ip, destination_ip, port, codec, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     voip(scenario, destination, source, source_ip, destination_ip, port, codec, duration)
     return scenario
@@ -50,12 +50,12 @@ def build(
         source, destination, duration,
         source_ip, destination_ip, port, codec,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = voip(source, destination, duration, source_ip, destination_ip, port, codec, scenario_name)
+    scenario = _voip(source, destination, duration, source_ip, destination_ip, port, codec, scenario_name)
 
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('voip_qoe_src'))
         legends = ['voip from {} to {}'.format(source, destination)]
-        jobs = scenario.openbach_functions.copy()
+        jobs = [function for function in scenario.openbach_functions if isinstance(function, StartJobInstance)]
 
         time_series_on_same_graph(
                 scenario,
@@ -65,7 +65,7 @@ def build(
                 [['MOS']],
                 [['MOS time series']],
                 [legends],
-                jobs, None, 2)
+                jobs, None, 5)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -75,6 +75,6 @@ def build(
                 [['MOS']],
                 [['MOS CDF']],
                 [legends],
-                jobs, None, 2)
+                jobs, None, 5)
 
     return scenario

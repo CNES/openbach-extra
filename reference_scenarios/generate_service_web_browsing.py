@@ -50,7 +50,7 @@ def main():
             '--duration', required=True,
             help='duration of VoIP transmission')
     observer.add_scenario_argument(
-            '--no_compression', action = 'store_true', 
+            '--no_compression', action = 'store_true', required = False,
             help = 'Prevent compression for transmission')
     observer.add_scenario_argument(
             '--proxy_address', type = str, required = False,
@@ -64,28 +64,18 @@ def main():
 
     args = observer.parse()
 
-    extra_args = []
-    extra_args.append("web_browsing")
-    extra_args.append("web_browsing")
-    extra_args.append(args.src_entity)
-    extra_args.append(args.dst_entity)
-    extra_args.append(args.duration)
-    extra_args.append("None")
-    extra_args.append("None")
-    extra_args.append("0")
-    extra_args.append(".")
-    extra_args.append(".")
-    extra_args.append(args.nb_runs)
-    extra_args.append(args.nb_parallel_runs)
-    extra_args.append(args.no_compression)
-    extra_args.append(args.proxy_address)
-    extra_args.append(args.proxy_port)
-
     scenario = service_web_browsing.build(
-            args.entity_pp,
-            extra_args,
+            args.src_entity,
+            args.dst_entity,
+            args.duration,
+            args.nb_runs,
+            args.nb_parallel_runs,
+            not args.no_compression,
+            args.proxy_address,
+            args.proxy_port,
             True,
-            scenario_name="service")
+            args.entity_pp,
+            scenario_name="service_web_browsing")
 
     observer.launch_and_wait(scenario)
 

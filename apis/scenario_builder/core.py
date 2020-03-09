@@ -154,12 +154,12 @@ class Scenario:
         for function_id, openbach_function in enumerate(self.openbach_functions):
             if isinstance(openbach_function, openbach_functions.StartJobInstance):
                 name = openbach_function.job_name
-                if name in jobs and filters.get(name, _unfiltered)(openbach_function):
+                if name in jobs and filtered_jobs.get(name, _unfiltered)(openbach_function):
                     yield [function_id]
             elif include_subscenarios and isinstance(openbach_function, openbach_functions.StartScenarioInstance):
                 scenario = openbach_function.scenario_name
                 if isinstance(scenario, Scenario):
-                    for ids in scenario.extract_function_id(*job_names, include_subscenarios=include_subscenarios, **filters):
+                    for ids in scenario.extract_function_id(*job_names, include_subscenarios=include_subscenarios, **filtered_jobs):
                         yield [openbach_function] + ids
 
     def find_openbach_function(self, path):

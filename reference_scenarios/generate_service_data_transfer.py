@@ -67,26 +67,17 @@ def main():
 
     args = observer.parse()
 
-    extra_args = []
-    extra_args.append("data_transfer")
-    extra_args.append("data_transfer")
-    extra_args.append(args.src_entity)
-    extra_args.append(args.dst_entity)
-    extra_args.append(args.duration)
-    extra_args.append("None")
-    extra_args.append("None")
-    extra_args.append("0")
-    extra_args.append(".")
-    extra_args.append(args.dst_ip)
-    extra_args.append(args.dst_port)
-    extra_args.append(args.file_size)
-    extra_args.append(args.tos)
-    extra_args.append(args.mtu)
-
     scenario = service_data_transfer.build(
+            args.src_entity,
+            args.dst_entity,
+            args.duration,
+            args.dst_ip,
+            args.dst_port,
+            args.file_size,
+            args.tos,
+            args.mtu,
             args.entity_pp,
-            extra_args,
-            scenario_name="service")
+            scenario_name="service_data_transfer")
 
     observer.launch_and_wait(scenario)
 

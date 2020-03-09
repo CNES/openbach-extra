@@ -57,7 +57,7 @@ def build(
 
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id(iperf3=iperf3_find_server))
-        jobs = scenario.openbach_functions.copy()
+        jobs = [function for function in scenario.openbach_functions if isinstance(function, StartJobInstance)]
         legends = ['iperf3 from {} to {}, port {}'.format(source, destination, port)]
 
         time_series_on_same_graph(

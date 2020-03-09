@@ -55,24 +55,15 @@ def main():
 
     args = observer.parse()
 
-    extra_args = []
-    extra_args.append("dash")
-    extra_args.append("dash")
-    extra_args.append(args.src_entity)
-    extra_args.append(args.dst_entity)
-    extra_args.append(args.duration)
-    extra_args.append("None")
-    extra_args.append("None")
-    extra_args.append("0")
-    extra_args.append(args.src_ip)
-    extra_args.append(".")
-    extra_args.append(args.protocol)
-
     scenario = service_video_dash.build(
-            args.entity_pp,
-            extra_args,
+            args.src_entity,
+            args.dst_entity,
+            args.duration,
+            args.src_ip,
+            args.protocol,
             True,
-            scenario_name="service")
+            args.entity_pp,
+            scenario_name="service_video_dash")
 
     observer.launch_and_wait(scenario)
 

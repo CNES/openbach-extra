@@ -61,24 +61,16 @@ def main():
 
     args = observer.parse()
 
-    extra_args = []
-    extra_args.append("voip")
-    extra_args.append("voip")
-    extra_args.append(args.src_entity)
-    extra_args.append(args.dst_entity)
-    extra_args.append(args.duration)
-    extra_args.append("None")
-    extra_args.append("None")
-    extra_args.append("0")
-    extra_args.append(args.src_ip)
-    extra_args.append(args.dst_ip)
-    extra_args.append(args.dst_port)
-    extra_args.append(args.codec)
-
     scenario = service_voip.build(
+            args.src_entity,
+            args.dst_entity,
+            args.duration,
+            args.src_ip,
+            args.dst_ip,
+            args.dst_port,
+            args.codec,
             args.entity_pp,
-            extra_args,
-            scenario_name="service")
+            scenario_name="service_voip")
 
     observer.launch_and_wait(scenario)
 

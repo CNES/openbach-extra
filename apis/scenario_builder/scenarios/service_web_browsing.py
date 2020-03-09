@@ -49,7 +49,7 @@ def web_browsing(
 
     if launch_server:
         server = apache2(scenario, source)
-        traffic = web_browsing_qoe(scenario, destination, nb_runs, parallel_runs, duration, not compression, proxy_address, proxy_port, wait_launched=start_server, wait_delay=5)
+        traffic = web_browsing_qoe(scenario, destination, nb_runs, parallel_runs, duration, not compression, proxy_address, proxy_port, wait_launched=server, wait_delay=5)
         stopper = scenario.add_function('stop_job_instance', wait_finished=traffic, wait_delay=5)
         stopper.configure(server[0])
     else:
@@ -67,7 +67,7 @@ def build(
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('web_browsing_qoe'))
         legends = ['web browsing from {} to {}'.format(source, destination)]
-        jobs = scenario.openbach_functions.copy()
+        jobs = [function for function in scenario.openbach_functions if isinstance(function, StartJobInstance)]
 
         time_series_on_same_graph(
                 scenario,
@@ -77,7 +77,7 @@ def build(
                 [['PLT (ms)']],
                 [['PLT time series']],
                 [legends],
-                jobs, None, 2)
+                jobs, None, 5)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -87,6 +87,6 @@ def build(
                 [['PLT (ms)']],
                 [['PLT CDF']],
                 [legends],
-                jobs, None, 2)
+                jobs, None, 5)
 
     return scenario

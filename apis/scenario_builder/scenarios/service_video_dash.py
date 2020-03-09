@@ -64,7 +64,7 @@ def build(source, destination, duration, destination_ip, protocol, launch_server
     if launch_server and post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('dash player&server'))
         legends = ['dash from {} to {}'.format(source, destination)]
-        jobs = scenario.openbach_functions.copy()
+        jobs = [function for function in scenario.openbach_functions if isinstance(function, StartJobInstance)]
 
         time_series_on_same_graph(
                 scenario,
@@ -74,7 +74,7 @@ def build(source, destination, duration, destination_ip, protocol, launch_server
                 [['Rate (b/s)']],
                 [['Rate time series']],
                 [legends],
-                jobs, None, 2)
+                jobs, None, 5)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -84,6 +84,6 @@ def build(source, destination, duration, destination_ip, protocol, launch_server
                 [['Rate (b/s)']],
                 [['Rate CDF']],
                 [legends],
-                jobs, None, 2)
+                jobs, None, 5)
 
     return scenario
