@@ -37,6 +37,7 @@ import tempfile
 import warnings
 import ipaddress
 from collections import namedtuple
+from pathlib import Path
 import pprint
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from auditorium_scripts.push_file import PushFile
@@ -263,6 +264,9 @@ def main(scenario_name='opensand', argv=None):
     observer.add_scenario_argument(
             '--duration', '-d', required=False, default=0, type=int,
             help='Duration of the opensand run test, default = 0 (no end)')
+    observer.add_scenario_argument(
+            '--pushfile', '-pf', required=False, default='', type=str,
+            help='Path to config files')
 
     args = observer.parse(argv, scenario_name)
     gateways, workstations = create_network(
@@ -272,45 +276,26 @@ def main(scenario_name='opensand', argv=None):
         args.satellite_terminal,
         args.workstation)
     satellite = args.sat
+  
+    stored_file = []
+    pushfile = args.pushfile
+    if pushfile != '':
+        path_conf_file = sorted(Path(args.pushfile).rglob('*.conf'))
 
-    scenario = opensand.build(satellite.entity, satellite.interface, satellite.ip, gateways, workstations, args.duration)
+        pusher = observer._share_state(PushFile)
+        pusher.args.keep = True
+        #Store files on the controller
+        for local_file in path_conf_file:
+            localfile = open(str(local_file), 'r')
+            pusher.args.local_file = localfile
+            pusher.args.remote_path = 'opensand/' + str(local_file).split(pushfile)[-1]
+            pusher.execute(True)
+            stored_file.append('opensand/' + str(local_file).split(pushfile)[-1])
+            localfile.close()
+        
+    scenario = opensand.build(satellite.entity, satellite.interface, satellite.ip, gateways, workstations, args.duration, stored_file)
     observer.launch_and_wait(scenario)
 
-    #old opensand
-    """
-    observer = ScenarioObserver()
-    observer.add_scenario_argument(
-            '--entity', '-e', required=True,
-            help='Entity of the agent to send files to')
-    observer.add_scenario_argument(
-            '--transfert', required=True,
-            type=argparse.FileType('r'),
-            help='File to transfert as /opt/openbach/agent/bite.txt')
-    observer.add_scenario_argument(
-            '--content', '-c', default='Empty file',
-            help='Alternative content for /opt/openbach/agent/toto.txt')
-
-    args = observer.parse(argv, scenario_name)
-    print(args)
-
-    pusher = observer._share_state(PushFile)
-    pusher.args.keep = True
-
-    pusher.args.local_file = args.transfert
-    pusher.args.remote_path = '/opt/openbach/agent/bite.txt'
-    pusher.execute(True)
-
-    with tempfile.NamedTemporaryFile('w+') as f:
-        print(args.content, file=f, flush=True)
-        f.seek(0)
-
-        pusher.args.local_file = f
-        pusher.args.remote_path = '/opt/openbach/agent/toto.txt'
-        pusher.execute(True)
-
-    scenario = opensand.build(args.entity)
-    observer.launch_and_wait(scenario)
-    """
 
 if __name__ == '__main__':
     main()

@@ -53,6 +53,11 @@ CLEAR_NAME = "opensand_clear"
 SCENARIO_DESCRIPTION = """This is reference OpenSAND scenario"""
 SCENARIO_NAME = 'opensand'
 
+PUSH_DESCRIPTION = """This push file scenario allows to:
+                       - Push conf files to the satellite, the gateways, the ST and the workstations from the controller
+                       """
+PUSH_NAME = "opensand_push"
+
 
 WS = namedtuple('WS', ('entity', 'interfaces', 'ips', 'route_ips', 'gateway_route'))
 ST = namedtuple('ST', WS._fields + ('opensand_ip',))
@@ -162,18 +167,42 @@ def clear(satellite_entity, satellite_interface, gateways, work_stations=(), sce
     return scenario
 
 
-def build(satellite_entity, satellite_interface, satellite_ip, gateways, workstations=(), duration = 0, scenario_name=SCENARIO_NAME):
+def push_conf(satellite_entity, gateways, work_stations, stored_file, scenario_name = PUSH_NAME):
+    scenario = Scenario(scenario_name, PUSH_DESCRIPTION)
+
+    for storedfile in stored_file:
+        remote_file_path = '/etc/' + storedfile
+        push_file(scenario, satellite_entity, remote_file_path, storedfile)
+
+        for gateway in gateways:
+            push_file(scenario, gateway.entity, remote_file_path, storedfile)
+            if gateway.gw_phy_entity is not None:
+                push_file(scenario, gateway.gw_phy_entity, remote_file_path, storedfile)
+            for terminal in gateway.terminals:
+                push_file(scenario, terminal.entity, remote_file_path, storedfile)
+
+        for host in work_stations:
+            push_file(scenario, gateway.entity, remote_file_path, storedfile)
+
+    return scenario
+
+
+def build(satellite_entity, satellite_interface, satellite_ip, gateways, workstations=(), duration = 0, stored_file = None, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     scenario_configure = configure(satellite_entity, satellite_interface, satellite_ip, gateways, workstations)
     start_scenario_configure = scenario.add_function('start_scenario_instance')
     start_scenario_configure.configure(scenario_configure)
-
-    #push_file(scenario, entity, '/opt/openbach/agent/files/testing/bite.txt', '/opt/openbach/agent/bite.txt')
-    #push_file(scenario, entity, '/opt/openbach/agent/files/testing/toto.txt', '/opt/openbach/agent/toto.txt')
+    wait = [start_scenario_configure]
+ 
+    if len(stored_file) != 0:
+        scenario_push = push_conf(satellite_entity, gateways, workstations, stored_file)
+        start_scenario_push = scenario.add_function('start_scenario_instance', wait_finished = wait)
+        start_scenario_push.configure(scenario_push)
+        wait = [start_scenario_push]
 
     scenario_run = run(satellite_entity, satellite_ip, gateways)
-    start_scenario_run = scenario.add_function('start_scenario_instance', wait_finished=[start_scenario_configure])
+    start_scenario_run = scenario.add_function('start_scenario_instance', wait_finished = wait)
     start_scenario_run.configure(scenario_run)
     
     if duration != 0:
@@ -183,6 +212,5 @@ def build(satellite_entity, satellite_interface, satellite_ip, gateways, worksta
     scenario_clear = clear(satellite_entity, satellite_interface, gateways, workstations)
     start_scenario_clear = scenario.add_function('start_scenario_instance', wait_finished = [start_scenario_run], wait_delay = 5)
     start_scenario_clear.configure(scenario_clear)
-    
 
     return scenario
