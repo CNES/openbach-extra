@@ -182,7 +182,7 @@ def push_conf(satellite_entity, gateways, work_stations, stored_file, scenario_n
                 push_file(scenario, terminal.entity, remote_file_path, storedfile)
 
         for host in work_stations:
-            push_file(scenario, gateway.entity, remote_file_path, storedfile)
+            push_file(scenario, host.entity, remote_file_path, storedfile)
 
     return scenario
 
