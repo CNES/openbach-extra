@@ -34,7 +34,6 @@ from /openbach-extra/apis/scenario_builder/scenarios/
 import argparse 
 import tempfile
 import warnings
-import itertools
 import ipaddress
 from pathlib import Path
 from collections import namedtuple
@@ -243,30 +242,39 @@ def main(scenario_name='opensand', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--sat', '-s', required=True, action=ValidateSatellite, nargs=3,
-            metavar=('SAT_ENTITY', 'SAT_INTERFACE', 'SAT_IP'),
-            help='Info for the satellite : sat_entity, sat_interface and sat_ip')
+            metavar=('ENTITY', 'EMU_INTERFACE', 'EMU_IP'),
+            help='The satellite of the platform. Must be supplied only once.')
     observer.add_scenario_argument(
             '--gateway', '-gw', required=True, action=ValidateGateway, nargs=6,
-            help='Info for GW: gw_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip',
-            metavar=('GW_ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP', 'OPENSAND_IP'))
+            help='A gateway in the platform. Must be supplied at least once.',
+            metavar=('ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP', 'OPENSAND_IP'))
     observer.add_scenario_argument(
             '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy, nargs=6,
-            help='Info for GW_PHY: gw_phy_entity, lan_interface, emu_interface, lan_ip, emu_ip, gw_entity',
-            metavar=('GW_PHY_ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP', 'GW_ENTITY'))
+            help='The physical part of a split gateway. Must reference the '
+            'net access part previously provided using the --gateway option. '
+            'Optional, can be supplied only once per gateway.',
+            metavar=('ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP', 'NET_ACCESS_ENTITY'))
     observer.add_scenario_argument(
             '--satellite-terminal', '-st', required=True, action=ValidateSatelliteTerminal, nargs=7,
-            help='Info for ST: st_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip, gw_entity', 
-            metavar=('ST_ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP', 'EMU_IP', 'OPENSAND_IP', 'GW_ENTITY'))
+            help='A satellite terminal in the platform. Must be supplied at '
+            'least once and reference the gateway it is attached to.',
+            metavar=(
+                'ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP', 'EMU_IP',
+                'OPENSAND_IP', 'GATEWAY_ENTITY'))
     observer.add_scenario_argument(
             '--workstation', '-ws', required=False, action=ValidateWorkStation, nargs=4,
-            help='Info for WS: ws_entity, interface, interface, lan_ip, opensand_entity',
-            metavar=('WS_ENTITY', 'INTERFACE', 'IP', 'OPENSAND_ENTITY'))
+            help='A workstation to configure alongside the main OpenSAND platform. '
+            'Must reference an existing gateway or satellite terminal. Optional, '
+            'can be supplied several times per OpenSAND entity.',
+            metavar=('ENTITY', 'INTERFACE', 'IP', 'OPENSAND_ENTITY'))
     observer.add_scenario_argument(
             '--duration', '-d', required=False, default=0, type=int,
-            help='Duration of the opensand run test, default = 0 (no end)')
+            help='Duration of the opensand run test, leave blank for endless emulation.')
     observer.add_scenario_argument(
             '--configuration-folder', '--configuration', '-c',
-            required=False, type=Path, help='Path to config files')
+            required=False, type=Path, metavar='PATH',
+            help='Path to a configuration folder that should be dispatched on '
+            'agents before the simulation.')
 
     args = observer.parse(argv, scenario_name)
     gateways, workstations = create_network(
@@ -280,11 +288,11 @@ def main(scenario_name='opensand', argv=None):
     config_files = None
     configuration_folder = args.configuration_folder
     if configuration_folder:
-        config_files = list(itertools.chain.from_iterable(
-            p.relative_to(configuration_folder)
-            for extension in ('conf', 'txt', 'csv', 'input')
-            for p in configuration_folder.rglob('*.' + extension)
-        ))
+        config_files = [
+                p.relative_to(configuration_folder)
+                for extension in ('conf', 'txt', 'csv', 'input')
+                for p in configuration_folder.rglob('*.' + extension)
+        ]
 
         #Store files on the controller
         pusher = observer._share_state(PushFile)
