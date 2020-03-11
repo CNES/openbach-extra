@@ -265,8 +265,8 @@ def main(scenario_name='opensand', argv=None):
             '--duration', '-d', required=False, default=0, type=int,
             help='Duration of the opensand run test, default = 0 (no end)')
     observer.add_scenario_argument(
-            '--pushfile', '-pf', required=False, default='', type=str,
-            help='Path to config files')
+            '--configuration-folder', '--configuration', '-c',
+            required=False, type=Path, help='Path to config files')
 
     args = observer.parse(argv, scenario_name)
     gateways, workstations = create_network(
@@ -277,23 +277,27 @@ def main(scenario_name='opensand', argv=None):
         args.workstation)
     satellite = args.sat
   
-    stored_file = []
-    pushfile = args.pushfile
-    if pushfile != '':
-        path_conf_file = sorted(Path(args.pushfile).rglob('*.conf'))
+    config_files = None
+    configuration_folder = args.configuration_folder
+    if configuration_folder:
+        config_files = [
+                p.relative_to(configuration_folder)
+                for p in configuration_folder.rglob('*.conf')
+        ]
 
+        #Store files on the controller
         pusher = observer._share_state(PushFile)
         pusher.args.keep = True
-        #Store files on the controller
-        for local_file in path_conf_file:
-            localfile = open(str(local_file), 'r')
-            pusher.args.local_file = localfile
-            pusher.args.remote_path = 'opensand/' + str(local_file).split(pushfile)[-1]
-            pusher.execute(True)
-            stored_file.append('opensand/' + str(local_file).split(pushfile)[-1])
-            localfile.close()
-        
-    scenario = opensand.build(satellite.entity, satellite.interface, satellite.ip, gateways, workstations, args.duration, stored_file)
+        for config_file in config_files:
+            with configuration_folder.joinpath(config_file).open() as local_file:
+                pusher.args.local_file = local_file
+                pusher.args.remote_path = str(config_file)
+                pusher.execute(False)
+
+    scenario = opensand.build(
+            satellite.entity, satellite.interface, satellite.ip,
+            gateways, workstations,
+            args.duration, config_files)
     observer.launch_and_wait(scenario)
 
 

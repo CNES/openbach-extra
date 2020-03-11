@@ -28,8 +28,9 @@
 
 """ Generic helpers that does not fit into an OSI layer """
 
+
 def push_file(
-        scenario, entity, remote_path, controller_path=None,
+        scenario, entity, remote_path, controller_path=None, users=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     if controller_path is None:
         controller_path = remote_path
@@ -39,6 +40,6 @@ def push_file(
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    push.configure(entity, controller_path, remote_path)
+    push.configure(entity, controller_path, remote_path, users or [])
 
     return [push]

@@ -50,28 +50,39 @@ class PushFile(FrontendBase):
 
         send = subparsers.add_parser('send', help='send file directly onto an agent')
         send.add_argument('agent', help='IP address of the agent')
-        send.add_argument('remote_path', help='path where the file should be pushed')
+        send.add_argument('remote_path', nargs='+', help='path where the file should be pushed')
         group = send.add_mutually_exclusive_group(required=True)
-        group.add_argument('--path', help='path of the file on the controller')
+        group.add_argument('--path', nargs='+', help='path of the file on the controller')
         group.add_argument(
                 '--local-file', type=FileType('r'),
                 help='path of a file on the current '
                 'computer to be sent to the agent')
+        send.add_argument('--user', nargs='+', help='user under which to push the file on the agent')
         send.set_defaults(keep=False)
 
         keep = subparsers.add_parser('store', help='store file on the controller for future use')
         keep.add_argument('local_file', type=FileType('r'), help='path of the file to send to the controller')
         keep.add_argument('remote_path', help='path where the file should be stored')
+        keep.add_argument('user', nargs='?', help='user under which to push the file on the agent')
         keep.set_defaults(keep=True)
 
     def execute(self, show_response_content=True):
         keep = self.args.keep
+        path_length = len(self.args.remote_path)
         form_data = {
                 'path': self.args.remote_path,
                 'keep_file': keep,
         }
 
-        if not keep:
+        if keep:
+            if path_length != 1:
+                self.parser.error('expected a single remote path when storing files')
+        else:
+            users = self.args.user
+            if users:
+                if path_length != len(users):
+                    self.parser.error('users and remote paths length mismatch')
+                form_data['users'] = users
             form_data['agent_ip'] = self.args.agent
 
         local_file = self.args.local_file
@@ -82,7 +93,10 @@ class PushFile(FrontendBase):
                         data=form_data,
                         files={'file': local_file})
         else:
-            form_data['local_path'] = self.args.path
+            path = self.args.path
+            if path_length != len(path):
+                self.parser.error('local and remote paths length mismatch')
+            form_data['local_path'] = path
             response = self.session.post(self.base_url + 'file', json=form_data)
 
         if show_response_content:
