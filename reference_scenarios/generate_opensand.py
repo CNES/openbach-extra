@@ -31,14 +31,14 @@
 from /openbach-extra/apis/scenario_builder/scenarios/
 """
 
-
 import argparse 
 import tempfile
 import warnings
+import itertools
 import ipaddress
-from collections import namedtuple
 from pathlib import Path
-import pprint
+from collections import namedtuple
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from auditorium_scripts.push_file import PushFile
 from scenario_builder.scenarios import opensand
@@ -280,10 +280,11 @@ def main(scenario_name='opensand', argv=None):
     config_files = None
     configuration_folder = args.configuration_folder
     if configuration_folder:
-        config_files = [
-                p.relative_to(configuration_folder)
-                for p in configuration_folder.rglob('*.conf')
-        ]
+        config_files = list(itertools.chain.from_iterable(
+            p.relative_to(configuration_folder)
+            for extension in ('conf', 'txt', 'csv', 'input')
+            for p in configuration_folder.rglob('*.' + extension)
+        ))
 
         #Store files on the controller
         pusher = observer._share_state(PushFile)
@@ -291,7 +292,7 @@ def main(scenario_name='opensand', argv=None):
         for config_file in config_files:
             with configuration_folder.joinpath(config_file).open() as local_file:
                 pusher.args.local_file = local_file
-                pusher.args.remote_path = str(config_file)
+                pusher.args.remote_path = config_file.as_posix()
                 pusher.execute(False)
 
     scenario = opensand.build(

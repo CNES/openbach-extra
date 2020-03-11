@@ -68,19 +68,15 @@ class PushFile(FrontendBase):
 
     def execute(self, show_response_content=True):
         keep = self.args.keep
-        path_length = len(self.args.remote_path)
         form_data = {
                 'path': self.args.remote_path,
                 'keep_file': keep,
         }
 
-        if keep:
-            if path_length != 1:
-                self.parser.error('expected a single remote path when storing files')
-        else:
+        if not keep:
             users = self.args.user
             if users:
-                if path_length != len(users):
+                if len(self.args.remote_path) != len(users):
                     self.parser.error('users and remote paths length mismatch')
                 form_data['users'] = users
             form_data['agent_ip'] = self.args.agent
@@ -94,7 +90,7 @@ class PushFile(FrontendBase):
                         files={'file': local_file})
         else:
             path = self.args.path
-            if path_length != len(path):
+            if len(self.args.remote_path) != len(path):
                 self.parser.error('local and remote paths length mismatch')
             form_data['local_path'] = path
             response = self.session.post(self.base_url + 'file', json=form_data)

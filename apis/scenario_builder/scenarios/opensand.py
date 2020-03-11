@@ -169,20 +169,41 @@ def clear(satellite_entity, satellite_interface, gateways, work_stations=(), sce
     return scenario
 
 
+def _build_remote_and_users(configuration_per_entity, entity_name, prefix='/etc/opensand/'):
+    common_files = configuration_per_entity[None]
+    entity_files = configuration_per_entity[entity_name]
+    local_files = [f.as_posix() for f in itertools.chain(common_files, entity_files)]
+    remote_files = [(prefix / f).as_posix() for f in common_files]
+    remote_files.extend((prefix / f.relative_to(entity_name)).as_posix() for f in entity_files)
+    users = ['opensand'] * len(local_files)
+    return remote_files, local_files, users
+
+
 def push_conf(satellite_entity, gateways, configuration_files, scenario_name=PUSH_NAME):
+    configuration_per_entity = {
+            'sat': [],
+            'st': [],
+            'gw': [],
+            None: [],
+    }
+    for config_file in configuration_files:
+        entity = config_file.parts[0]
+        if entity not in configuration_per_entity:
+            entity = None
+        configuration_per_entity[entity].append(config_file)
+
     scenario = Scenario(scenario_name, PUSH_DESCRIPTION)
 
-    remote_files = [str('/etc/opensand' / f) for f in configuration_files]
-    stored_files = [str(f) for f in configuration_files]
-    users = ['opensand'] * len(stored_files)
-
-    push_file(scenario, satellite_entity, remote_files, stored_files, users)
+    push_file(scenario, satellite_entity, *_build_remote_and_users(configuration_per_entity, 'sat'))
     for gateway in gateways:
-        push_file(scenario, gateway.entity, remote_files, stored_files, users)
+        files = _build_remote_and_users(configuration_per_entity, 'gw')
+        push_file(scenario, gateway.entity, *files)
         if gateway.gw_phy_entity:
-            push_file(scenario, gateway.gw_phy_entity, remote_files, stored_files, users)
+            push_file(scenario, gateway.gw_phy_entity, *files)
+
+        files = _build_remote_and_users(configuration_per_entity, 'st')
         for terminal in gateway.terminals:
-            push_file(scenario, terminal.entity, remote_files, stored_files, users)
+            push_file(scenario, terminal.entity, *files)
 
     return scenario
 
