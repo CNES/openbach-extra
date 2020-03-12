@@ -1,0 +1,154 @@
+---
+
+general:
+  name:            opensand
+  description: >
+      This job configures and runs an OpenSAND entity.
+      It can be a gateway ("gw"), a split gateway("gw-phy" and "gw-net-acc")
+      a satellite terminal ("st") or satellite emulator ("sat").
+  job_version:     '1.0'
+  keywords:        [opensand, configuration, conf, run, network, gw, gateway, sat, satellite, st, terminal]
+  persistent:      true
+  need_privileges: true
+
+platform_configuration:
+  - ansible_system: 'Linux'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/opensand/opensand.py'
+    command_stop:
+
+# maybe 'ip' as ipv4 and ipv6 type
+
+arguments:
+  required:
+  optional:
+  subcommand:
+    - group_name: action_type
+      optional: no
+      choices:
+        - name: network
+          required:
+          optional:
+            - name: tap_name
+              type: str
+              count: 1
+              flag: '-t'
+              description: 'The TAP interface name (default: opensand_tap)'
+            - name: bridge_name
+              type: str
+              count: 1
+              flag: '-b'
+              description: 'The bridge name (default: opensand_br)'
+          subcommand:
+            - group_name: action
+              optional: no
+              choices:
+                - name: ip
+                  required:
+                    - name: address_mask
+                      type: str
+                      count: 1
+                      description: 'The terrestrial network address (format: ADDRESS/NET_DIGIT)'
+                  optional:
+                - name: eth
+                  required:
+                    - name: interface
+                      type: str
+                      count: 1
+                      description: The terrestrial network interface
+                  optional:
+                - name: clear
+                  required:
+                  optional:
+      
+        - name: run
+          required:
+          optional:
+            - name: configuration
+              type: str
+              count: 1
+              flag: '--conf-dir'
+              description: 'The directory of the OpenSAND entity configuration (default: /etc/opensand)'
+            - name: output_address
+              type: ip
+              count: 1
+              flag: '--output-addr'
+              description: 'The internal output address (default: 127.0.0.1)'
+            - name: logs_port
+              type: int
+              count: 1
+              flag: '--logs-port'
+              description: 'The internal logs UDP port (default: 63000)'
+            - name: stats_port
+              type: int
+              count: 1
+              flag: '--stats-port'
+              description: 'The internal stats UDP port (default: 63001)'
+            - name: binaries directory
+              type: str
+              count: 1
+              flag: '--bin-dir'
+              description: 'The directory of OpenSAND binaries (default: /usr/bin)'
+          subcommand:
+            - group_name: entity
+              optional: no
+              choices:
+                - name: sat
+                  required:
+                    - name: emulation_address
+                      type: ip
+                      count: 1
+                      description: 'The emulation address (format: "ADDRESS")'
+                  optional:
+                - name: gw
+                  required:
+                    - name: id
+                      type: int
+                      count: 1
+                      description: The OpenSAND entity identifier
+                    - name: emulation_address
+                      type: ip
+                      count: 1
+                      description: 'The emulation address (format: "ADDRESS")'
+                  optional:
+                - name: gw-phy
+                  required:
+                    - name: id
+                      type: int
+                      count: 1
+                      description: The OpenSAND entity identifier
+                    - name: emulation_address
+                      type: ip
+                      count: 1
+                      description: 'The emulation address (format: "ADDRESS")'
+                    - name: interconnection_address
+                      type: ip
+                      count: 1
+                      description: 'The remote interconnection address (format: "ADDRESS")'
+                  optional:
+                - name: gw-net-acc
+                  required:
+                    - name: id
+                      type: int
+                      count: 1
+                      description: The OpenSAND entity identifier
+                    - name: interconnection address
+                      type: ip
+                      count: 1
+                      description: 'The remote interconnection address (format: "ADDRESS")'
+                  optional:
+                - name: st
+                  required:
+                    - name: id
+                      type: int
+                      count: 1
+                      description: The OpenSAND entity identifier
+                    - name: emulation_address
+                      type: ip
+                      count: 1
+                      description: 'The emulation address (format: "ADDRESS")'
+                  optional:
+
+statistics:
+
