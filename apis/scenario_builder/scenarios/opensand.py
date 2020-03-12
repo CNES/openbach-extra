@@ -60,14 +60,14 @@ SCENARIO_NAME = 'opensand'
 
 
 WS = namedtuple('WS', ('entity', 'interfaces', 'ips', 'route_ips', 'gateway_route'))
-ST = namedtuple('ST', WS._fields + ('opensand_ip',))
+ST = namedtuple('ST', WS._fields + ('opensand_bridge_ip',))
 class GW(ST):
     def __new__(
-            self, entity, interfaces, ips, route_ips, terminals_ips, opensand_ip, terminals,
+            self, entity, interfaces, ips, route_ips, terminals_ips, opensand_bridge_ip, terminals,
             gw_phy_entity=None, gw_phy_interface=None, gw_phy_ip=None):
-        return super().__new__(self, entity, interfaces, ips, route_ips, terminals_ips, opensand_ip)
+        return super().__new__(self, entity, interfaces, ips, route_ips, terminals_ips, opensand_bridge_ip)
     def __init__(
-            self, entity, interfaces, ips, route_ips, terminals_routes, opensand_ip, terminals,
+            self, entity, interfaces, ips, route_ips, terminals_routes, opensand_bridge_ip, terminals,
             gw_phy_entity=None, gw_phy_interfaces=None, gw_phy_ips=None):
         self.terminals = terminals
         self.gw_phy_entity = None
@@ -84,7 +84,7 @@ def configure(satellite_entity, satellite_interface, satellite_ip, gateways, wor
     for gateway in gateways:
         opensand.configure_gateway(
                 scenario, gateway.entity,
-                gateway.interfaces, gateway.ips, gateway.opensand_ip,
+                gateway.interfaces, gateway.ips, gateway.opensand_bridge_ip,
                 gateway.route_ips, gateway.gateway_route)
         if gateway.gw_phy_entity is not None:
             opensand.configure_gateway_phy(
@@ -95,7 +95,7 @@ def configure(satellite_entity, satellite_interface, satellite_ip, gateways, wor
 
             opensand.configure_terminal(
                     scenario, terminal.entity,
-                    terminal.interfaces, terminal.ips, terminal.opensand_ip,
+                    terminal.interfaces, terminal.ips, terminal.opensand_bridge_ip,
                     terminal.route_ips, terminal.gateway_route)
 
     for host in work_stations:

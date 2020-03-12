@@ -44,13 +44,13 @@ from scenario_builder.scenarios import opensand
 
 
 class Gateway:
-    def __init__(self, entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip):
+    def __init__(self, entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_bridge_ip):
         self.entity = entity
         self.lan_ip = validate_ip(lan_ip)
         self.lan_interface = lan_interface
         self.emu_ip = validate_ip(emu_ip)
         self.emu_interface = emu_interface
-        self.opensand_ip = validate_ip(opensand_ip)
+        self.opensand_bridge_ip = validate_ip(opensand_bridge_ip)
 
 
 
@@ -65,13 +65,13 @@ class GatewayPhy:
 
 
 class SatelliteTerminal:
-    def __init__(self, entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_ip, gateway_entity):
+    def __init__(self, entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_bridge_ip, gateway_entity):
         self.entity = entity
         self.lan_ip = validate_ip(lan_ip)
         self.lan_interface = lan_interface
         self.emu_ip = validate_ip(emu_ip)
         self.emu_interface = emu_interface
-        self.opensand_ip = validate_ip(opensand_ip)
+        self.opensand_bridge_ip = validate_ip(opensand_bridge_ip)
         self.gateway_entity = gateway_entity
 
 
@@ -155,7 +155,7 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, t
     for gateway in gateways:
 
         route_ips = [extract_network(gateway.lan_ip)]
-        route_gateway_ip = extract_ip(gateway.opensand_ip)
+        route_gateway_ip = extract_ip(gateway.opensand_bridge_ip)
         opensand_terminals = []
         terminal_ips = []
         gatewayφ_entity = None
@@ -190,7 +190,7 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, t
         for terminal in terminals:
             if terminal.gateway_entity == gateway.entity:
                 route_ips.append(extract_network(terminal.lan_ip))
-                terminal_ips.append(extract_ip(terminal.opensand_ip))
+                terminal_ips.append(extract_ip(terminal.opensand_bridge_ip))
                 opensand_terminals.append(terminal)
 
                 client = False
@@ -219,7 +219,7 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, t
                     [terminal.lan_ip, terminal.emu_ip],
                     find_routes(route_ips, terminal.lan_ip),
                     route_gateway_ip,
-                    terminal.opensand_ip)
+                    terminal.opensand_bridge_ip)
                 for terminal in opensand_terminals
         ]
         
@@ -229,7 +229,7 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, t
             [gateway.lan_ip, gateway.emu_ip],
             find_routes(route_ips, gateway.lan_ip),
             terminal_ips,
-            gateway.opensand_ip,
+            gateway.opensand_bridge_ip,
             gw_terminals,
             gatewayφ_entity,
             gatewayφ_interfaces,
@@ -247,7 +247,7 @@ def main(scenario_name='opensand', argv=None):
     observer.add_scenario_argument(
             '--gateway', '-gw', required=True, action=ValidateGateway, nargs=6,
             help='A gateway in the platform. Must be supplied at least once.',
-            metavar=('ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP', 'OPENSAND_IP'))
+            metavar=('ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP', 'OPENSAND_BRIDGE_IP'))
     observer.add_scenario_argument(
             '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy, nargs=6,
             help='The physical part of a split gateway. Must reference the '
@@ -260,7 +260,7 @@ def main(scenario_name='opensand', argv=None):
             'least once and reference the gateway it is attached to.',
             metavar=(
                 'ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP', 'EMU_IP',
-                'OPENSAND_IP', 'GATEWAY_ENTITY'))
+                'OPENSAND_BRIDGE_IP', 'GATEWAY_ENTITY'))
     observer.add_scenario_argument(
             '--workstation', '-ws', required=False, action=ValidateWorkStation, nargs=4,
             help='A workstation to configure alongside the main OpenSAND platform. '
