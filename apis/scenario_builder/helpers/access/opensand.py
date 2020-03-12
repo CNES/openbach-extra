@@ -35,8 +35,7 @@ from ..network.ip_route import ip_route
 
 
 def opensand_network_ip(
-        scenario, entity, address_mask,
-        tap_name='opensand_tap', bridge_name='opensand_br',
+        scenario, entity, address_mask, tap_name=None, bridge_name=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
 
     opensand = scenario.add_function(
@@ -44,18 +43,20 @@ def opensand_network_ip(
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    opensand.configure('opensand', entity, network={
-        'tap_name': tap_name,
-        'bridge_name': bridge_name,
-        'ip': {'address_mask': address_mask},
-    })
+
+    network = {'ip': {'address_mask': address_mask}}
+    if tap_name:
+        network['tap_name'] = tap_name
+    if bridge_name:
+        network['bridge_name'] = bridge_name
+
+    opensand.configure('opensand', entity, network=network)
 
     return [opensand]
 
 
 def opensand_network_ethernet(
-        scenario, entity, interface,
-        tap_name='opensand_tap', bridge_name='opensand_br',
+        scenario, entity, interface, tap_name=None, bridge_name=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
 
     opensand = scenario.add_function(
@@ -63,18 +64,19 @@ def opensand_network_ethernet(
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    opensand.configure('opensand', entity, network={
-        'tap_name': tap_name,
-        'bridge_name': bridge_name,
-        'eth': {'interface': interface},
-    })
+
+    network = {'eth': {'interface': interface}}
+    if tap_name:
+        network['tap_name'] = tap_name
+    if bridge_name:
+        network['bridge_name'] = bridge_name
+    opensand.configure('opensand', entity, network=network)
 
     return [opensand]
 
 
 def opensand_network_clear(
-        scenario, entity,
-        tap_name='opensand_tap', bridge_name='opensand_br',
+        scenario, entity, tap_name=None, bridge_name=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
 
     opensand = scenario.add_function(
@@ -82,18 +84,21 @@ def opensand_network_clear(
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    opensand.configure('opensand', entity, network={
-        'tap_name': tap_name,
-        'bridge_name': bridge_name,
-        'clear': {},
-    })
+
+    network = {'clear': {}}
+    if tap_name:
+        network['tap_name'] = tap_name
+    if bridge_name:
+        network['bridge_name'] = bridge_name
+    opensand.configure('opensand', entity, network=network)
+
     return [opensand]
 
 
 def opensand_run(
-        scenario, agent_entity, entity, configuration='/etc/opensand', 
-        output_address='127.0.0.1', logs_port=63000, stats_port=63001,
-        binaries_directory='/usr/bin', entity_id=None,
+        scenario, agent_entity, entity, configuration=None,
+        output_address=None, logs_port=None, stats_port=None,
+        binaries_directory=None, entity_id=None,
         emulation_address=None, interconnection_address=None, 
         wait_finished=None, wait_launched=None, wait_delay=0):
 
@@ -104,13 +109,19 @@ def opensand_run(
             wait_delay=wait_delay)
 
     run = {
-            'configuration': configuration,
-            'output_address': output_address,
-            'logs_port': logs_port,
-            'stats_port': stats_port,
-            'binaries directory': binaries_directory,
             entity: {'id': entity_id, 'emulation_address': emulation_address},
     }
+
+    if configuration:
+        run['configuration'] = configuration
+    if output_address:
+        run['output_address'] = output_address
+    if logs_port:
+        run['logs_port'] = logs_port
+    if stats_port:
+        run['stats_port'] = stats_port
+    if binaries_directory:
+        run['binaries_directory'] = binaries_directory
 
     if entity == 'sat': 
         del run[entity]['id']
