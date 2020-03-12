@@ -57,13 +57,13 @@ class PushFile(FrontendBase):
                 '--local-file', type=FileType('r'),
                 help='path of a file on the current '
                 'computer to be sent to the agent')
-        send.add_argument('--user', nargs='+', help='user under which to push the file on the agent')
+        send.add_argument('--user', nargs='+', help='owner under which to push the file on the agent')
+        send.add_argument('--group', nargs='+', help='group name under which to push the file on the agent')
         send.set_defaults(keep=False)
 
         keep = subparsers.add_parser('store', help='store file on the controller for future use')
         keep.add_argument('local_file', type=FileType('r'), help='path of the file to send to the controller')
         keep.add_argument('remote_path', help='path where the file should be stored')
-        keep.add_argument('user', nargs='?', help='user under which to push the file on the agent')
         keep.set_defaults(keep=True)
 
     def execute(self, show_response_content=True):
@@ -79,6 +79,11 @@ class PushFile(FrontendBase):
                 if len(self.args.remote_path) != len(users):
                     self.parser.error('users and remote paths length mismatch')
                 form_data['users'] = users
+            groups = self.args.group
+            if groups:
+                if len(self.args.remote_path) != len(groups):
+                    self.parser.error('groups and remote paths length mismatch')
+                form_data['groups'] = groups
             form_data['agent_ip'] = self.args.agent
 
         local_file = self.args.local_file

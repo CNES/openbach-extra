@@ -371,7 +371,7 @@ class PushFile(OpenBachFunction):
         super().__init__(launched, finished, delay, label)
         self.arguments = None
 
-    def configure(self, entity_name, controller_path, agent_path, users=()):
+    def configure(self, entity_name, controller_path, agent_path, users=(), groups=()):
         """Define this openbach function with the mandatory values:
          - entity_name: name of the entity (hopefully with an agent
                         installed on) that should receive the file;
@@ -386,6 +386,9 @@ class PushFile(OpenBachFunction):
 
         if users:
             self.arguments['users'] = users
+
+        if groups:
+            self.arguments['groups'] = groups
 
     def build(self, functions, function_id):
         """Construct a dictionary representing this function.

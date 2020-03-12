@@ -176,7 +176,8 @@ def _build_remote_and_users(configuration_per_entity, entity_name, prefix='/etc/
     remote_files = [(prefix / f).as_posix() for f in common_files]
     remote_files.extend((prefix / f.relative_to(entity_name)).as_posix() for f in entity_files)
     users = ['opensand'] * len(local_files)
-    return remote_files, local_files, users
+    groups = ['root'] * len(local_files)
+    return remote_files, local_files, users, groups
 
 
 def push_conf(satellite_entity, gateways, configuration_files, scenario_name=PUSH_NAME):
