@@ -217,7 +217,7 @@ def build(satellite_entity, satellite_interface, satellite_ip, gateways, worksta
     wait = [start_scenario_configure]
  
     if configuration_files:
-        scenario_push = push_conf(satellite_entity, gateways, workstations, configuration_files)
+        scenario_push = push_conf(satellite_entity, gateways, configuration_files)
         start_scenario_push = scenario.add_function('start_scenario_instance', wait_finished=wait)
         start_scenario_push.configure(scenario_push)
         wait = [start_scenario_push]
