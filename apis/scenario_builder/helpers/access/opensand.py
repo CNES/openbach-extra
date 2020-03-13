@@ -161,8 +161,9 @@ def configure_routing(
             wait_delay=wait_delay)
 
     wait_finished = command_shell(
-            scenario, entity, "ip link set dev opensand_tap address " + bridge_mac_address,
-            wait_finished = wait_finished)
+            scenario, entity,
+            "ip link set dev opensand_tap address " + bridge_mac_address,
+            wait_finished=wait_finished)
 
     for ip, gateway_ip in zip(ips, gateway_ips):
         wait_finished = ip_route(scenario, entity, 'add', ip, gateway_ip, wait_finished=wait_finished)

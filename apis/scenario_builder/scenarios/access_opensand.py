@@ -60,21 +60,25 @@ SCENARIO_NAME = 'access_opensand'
 
 
 WS = namedtuple('WS', ('entity', 'interfaces', 'ips', 'route_ips', 'gateway_route'))
-ST = namedtuple('ST', WS._fields + ('opensand_bridge_ip', 'bridge_mac_address'))
+ST = namedtuple('ST', WS._fields + ('opensand_bridge_ip', 'opensand_bridge_mac_address'))
 class GW(ST):
     def __new__(
-            self, entity, interfaces, ips, route_ips, terminals_ips, opensand_bridge_ip, bridge_mac_address, terminals,
-            gw_phy_entity=None, gw_phy_interface=None, gw_phy_ip=None):
-        return super().__new__(self, entity, interfaces, ips, route_ips, terminals_ips, opensand_bridge_ip, bridge_mac_address)
+            self, entity, interfaces, ips, route_ips, terminals_ips,
+            opensand_bridge_ip, opensand_bridge_mac_address, terminals,
+            gateway_phy_entity=None, gateway_phy_interface=None, gateway_phy_ip=None):
+        return super().__new__(
+                self, entity, interfaces, ips, route_ips,
+                terminals_ips, opensand_bridge_ip, opensand_bridge_mac_address)
     def __init__(
-            self, entity, interfaces, ips, route_ips, terminals_routes, opensand_bridge_ip, bridge_mac_address, terminals,
-            gw_phy_entity=None, gw_phy_interfaces=None, gw_phy_ips=None):
+            self, entity, interfaces, ips, route_ips, terminals_routes,
+            opensand_bridge_ip, opensand_bridge_mac_address, terminals,
+            gateway_phy_entity=None, gateway_phy_interfaces=None, gateway_phy_ips=None):
         self.terminals = terminals
-        self.gw_phy_entity = None
-        if gw_phy_entity is not None:
-            self.gw_phy_entity = gw_phy_entity
-            self.gw_phy_ips = gw_phy_ips
-            self.gw_phy_interfaces = gw_phy_interfaces
+        self.gateway_phy_entity = None
+        if gateway_phy_entity is not None:
+            self.gateway_phy_entity = gateway_phy_entity
+            self.gateway_phy_ips = gateway_phy_ips
+            self.gateway_phy_interfaces = gateway_phy_interfaces
 
 
 def configure(satellite_entity, satellite_interface, satellite_ip, gateways, work_stations=(), scenario_name=CONFIGURE_NAME):
@@ -85,18 +89,17 @@ def configure(satellite_entity, satellite_interface, satellite_ip, gateways, wor
         opensand.configure_gateway(
                 scenario, gateway.entity,
                 gateway.interfaces, gateway.ips, gateway.opensand_bridge_ip,
-                gateway.route_ips, gateway.gateway_route, gateway.bridge_mac_address)
-        if gateway.gw_phy_entity is not None:
+                gateway.route_ips, gateway.gateway_route, gateway.opensand_bridge_mac_address)
+        if gateway.gateway_phy_entity is not None:
             opensand.configure_gateway_phy(
-                    scenario, gateway.gw_phy_entity,
-                    gateway.gw_phy_interfaces, gateway.gw_phy_ips)
+                    scenario, gateway.gateway_phy_entity,
+                    gateway.gateway_phy_interfaces, gateway.gateway_phy_ips)
 
         for terminal in gateway.terminals:
-
             opensand.configure_terminal(
                     scenario, terminal.entity,
                     terminal.interfaces, terminal.ips, terminal.opensand_bridge_ip,
-                    terminal.route_ips, terminal.gateway_route, terminal.bridge_mac_address)
+                    terminal.route_ips, terminal.gateway_route, terminal.opensand_bridge_mac_address)
 
     for host in work_stations:
         opensand.configure_workstation(
@@ -119,14 +122,14 @@ def run(satellite_entity, satellite_ip, gateways, scenario_name=RUN_NAME):
     for gateway in gateways:
         _, emulation_address = map(_extract_ip, gateway.ips)
 
-        if gateway.gw_phy_entity is not None:
+        if gateway.gateway_phy_entity is not None:
             id = next(ids)
             opensand.opensand_run(
                     scenario, gateway.entity, 'gw-net-acc', entity_id=id,
                     interconnection_address=emulation_address)
-            interconnect_address, emulation_address = map(_extract_ip, gateway.gw_phy_ips)
+            interconnect_address, emulation_address = map(_extract_ip, gateway.gateway_phy_ips)
             opensand.opensand_run(
-                    scenario, gateway.gw_phy_entity, 'gw-phy', entity_id=id,
+                    scenario, gateway.gateway_phy_entity, 'gw-phy', entity_id=id,
                     emulation_address=emulation_address,
                     interconnection_address=interconnect_address)
         else:
@@ -143,7 +146,7 @@ def run(satellite_entity, satellite_ip, gateways, scenario_name=RUN_NAME):
     return scenario
 
 
-def clear(satellite_entity, satellite_interface, gateways, work_stations=(), scenario_name = CLEAR_NAME):
+def clear(satellite_entity, satellite_interface, gateways, work_stations=(), scenario_name=CLEAR_NAME):
     scenario = Scenario(scenario_name, CLEAR_DESCRIPTION)
     opensand.clear_satellite(scenario, satellite_entity, satellite_interface)
 
@@ -151,10 +154,10 @@ def clear(satellite_entity, satellite_interface, gateways, work_stations=(), sce
         opensand.clear_gateway(
                 scenario, gateway.entity,
                 gateway.interfaces)
-        if gateway.gw_phy_entity is not None:
+        if gateway.gateway_phy_entity is not None:
             opensand.clear_gateway_phy(
-                    scenario, gateway.gw_phy_entity,
-                    gateway.gw_phy_interfaces)
+                    scenario, gateway.gateway_phy_entity,
+                    gateway.gateway_phy_interfaces)
 
         for terminal in gateway.terminals:
             opensand.clear_terminal(
@@ -199,8 +202,8 @@ def push_conf(satellite_entity, gateways, configuration_files, scenario_name=PUS
     for gateway in gateways:
         files = _build_remote_and_users(configuration_per_entity, 'gw')
         push_file(scenario, gateway.entity, *files)
-        if gateway.gw_phy_entity:
-            push_file(scenario, gateway.gw_phy_entity, *files)
+        if gateway.gateway_phy_entity:
+            push_file(scenario, gateway.gateway_phy_entity, *files)
 
         files = _build_remote_and_users(configuration_per_entity, 'st')
         for terminal in gateway.terminals:
