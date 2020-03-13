@@ -60,14 +60,14 @@ SCENARIO_NAME = 'access_opensand'
 
 
 WS = namedtuple('WS', ('entity', 'interfaces', 'ips', 'route_ips', 'gateway_route'))
-ST = namedtuple('ST', WS._fields + ('opensand_bridge_ip',))
+ST = namedtuple('ST', WS._fields + ('opensand_bridge_ip', 'bridge_mac_address'))
 class GW(ST):
     def __new__(
-            self, entity, interfaces, ips, route_ips, terminals_ips, opensand_bridge_ip, terminals,
+            self, entity, interfaces, ips, route_ips, terminals_ips, opensand_bridge_ip, bridge_mac_address, terminals,
             gw_phy_entity=None, gw_phy_interface=None, gw_phy_ip=None):
-        return super().__new__(self, entity, interfaces, ips, route_ips, terminals_ips, opensand_bridge_ip)
+        return super().__new__(self, entity, interfaces, ips, route_ips, terminals_ips, opensand_bridge_ip, bridge_mac_address)
     def __init__(
-            self, entity, interfaces, ips, route_ips, terminals_routes, opensand_bridge_ip, terminals,
+            self, entity, interfaces, ips, route_ips, terminals_routes, opensand_bridge_ip, bridge_mac_address, terminals,
             gw_phy_entity=None, gw_phy_interfaces=None, gw_phy_ips=None):
         self.terminals = terminals
         self.gw_phy_entity = None
@@ -85,7 +85,7 @@ def configure(satellite_entity, satellite_interface, satellite_ip, gateways, wor
         opensand.configure_gateway(
                 scenario, gateway.entity,
                 gateway.interfaces, gateway.ips, gateway.opensand_bridge_ip,
-                gateway.route_ips, gateway.gateway_route)
+                gateway.route_ips, gateway.gateway_route, gateway.bridge_mac_address)
         if gateway.gw_phy_entity is not None:
             opensand.configure_gateway_phy(
                     scenario, gateway.gw_phy_entity,
@@ -96,7 +96,7 @@ def configure(satellite_entity, satellite_interface, satellite_ip, gateways, wor
             opensand.configure_terminal(
                     scenario, terminal.entity,
                     terminal.interfaces, terminal.ips, terminal.opensand_bridge_ip,
-                    terminal.route_ips, terminal.gateway_route)
+                    terminal.route_ips, terminal.gateway_route, terminal.bridge_mac_address)
 
     for host in work_stations:
         opensand.configure_workstation(

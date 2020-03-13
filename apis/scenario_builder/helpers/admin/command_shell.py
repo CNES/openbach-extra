@@ -39,4 +39,4 @@ def command_shell(
     function.configure(
             'command_shell', entity,
             command_line=command)
-    return function
+    return [function]

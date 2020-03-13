@@ -32,7 +32,7 @@ import itertools
 
 from ..network.ip_address import ip_address
 from ..network.ip_route import ip_route
-
+from ..admin.command_shell import command_shell
 
 def opensand_network_ip(
         scenario, entity, address_mask, tap_name=None, bridge_name=None,
@@ -152,14 +152,17 @@ def configure_interfaces(
 
 
 def configure_routing(
-        scenario, entity, network_mask, ips, gateway_ips,
+        scenario, entity, network_mask, ips, gateway_ips, bridge_mac_address,
         wait_finished=None, wait_launched=None, wait_delay=0):
-
     wait_finished = opensand_network_ip(
             scenario, entity, network_mask,
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
+
+    wait_finished = command_shell(
+            scenario, entity, "ip link set dev opensand_tap address " + bridge_mac_address,
+            wait_finished = wait_finished)
 
     for ip, gateway_ip in zip(ips, gateway_ips):
         wait_finished = ip_route(scenario, entity, 'add', ip, gateway_ip, wait_finished=wait_finished)
@@ -178,15 +181,15 @@ def configure_satellite(
 
 
 def configure_terminal(
-        scenario, entity, interfaces, ips, mask, lan_ips, gateway_ip,
-        wait_finished=None, wait_launched=None, wait_delay=0):
+        scenario, entity, interfaces, ips, mask, lan_ips, gateway_ip, bridge_mac_address,
+        wait_finished=None, wait_launched=None, wait_delay=0): 
     interfaces = configure_interfaces(
             scenario, entity, interfaces, ips,
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     return configure_routing(
-            scenario, entity, mask, lan_ips, itertools.repeat(gateway_ip),
+            scenario, entity, mask, lan_ips, itertools.repeat(gateway_ip), bridge_mac_address,
             wait_finished=interfaces)
 
 
@@ -201,7 +204,7 @@ def configure_gateway_phy(
 
 
 def configure_gateway(
-        scenario, entity, interfaces, ips, mask, lan_ips, gateway_ips,
+        scenario, entity, interfaces, ips, mask, lan_ips, gateway_ips, bridge_mac_address,
         wait_finished=None, wait_launched=None, wait_delay=0):
     interfaces = configure_interfaces(
             scenario, entity, interfaces, ips,
@@ -209,7 +212,7 @@ def configure_gateway(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     return configure_routing(
-            scenario, entity, mask, lan_ips, gateway_ips,
+            scenario, entity, mask, lan_ips, gateway_ips, bridge_mac_address,
             wait_finished=interfaces)
 
 
