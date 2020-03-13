@@ -38,9 +38,9 @@ import ipaddress
 from pathlib import Path
 from collections import namedtuple
 
-from auditorium_scripts.scenario_observer import ScenarioObserver
 from auditorium_scripts.push_file import PushFile
-from scenario_builder.scenarios import opensand
+from auditorium_scripts.scenario_observer import ScenarioObserver
+from scenario_builder.scenarios.access_opensand import GW, ST, WS, build as build_opensand
 
 
 class Gateway:
@@ -167,7 +167,7 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, t
             if workstation.opensand_entity == gateway.entity:
                 if server:
                     warnings.warn('More than one server workstation configured for gateway {}'.format(gateway.entity))
-                work_stations.append(opensand.WS(
+                work_stations.append(WS(
                     workstation.entity,
                     workstation.interface,
                     workstation.ip,
@@ -198,7 +198,7 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, t
                     if workstation.opensand_entity == terminal.entity:
                         if client:
                             warnings.warn('More than one client workstation configured for terminal {}'.format(terminal.entity))
-                        work_stations.append(opensand.WS(
+                        work_stations.append(WS(
                             workstation.entity,
                             workstation.interface,
                             workstation.ip,
@@ -213,7 +213,7 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, t
             warnings.warn('Gateway {} does not have any associated terminal'.format(gateway.entity))
 
         gw_terminals = [
-                opensand.ST(
+                ST(
                     terminal.entity,
                     [terminal.lan_interface, terminal.emu_interface],
                     [terminal.lan_ip, terminal.emu_ip],
@@ -223,7 +223,7 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_φ, t
                 for terminal in opensand_terminals
         ]
         
-        opensand_gateways.append(opensand.GW(
+        opensand_gateways.append(GW(
             gateway.entity,
             [gateway.lan_interface, gateway.emu_interface],
             [gateway.lan_ip, gateway.emu_ip],
@@ -303,7 +303,7 @@ def main(scenario_name='opensand', argv=None):
                 pusher.args.remote_path = config_file.as_posix()
                 pusher.execute(False)
 
-    scenario = opensand.build(
+    scenario = build_opensand(
             satellite.entity, satellite.interface, satellite.ip,
             gateways, workstations,
             args.duration, config_files)

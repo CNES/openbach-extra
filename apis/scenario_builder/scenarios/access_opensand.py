@@ -31,32 +31,32 @@ import itertools
 from collections import namedtuple
 
 from scenario_builder import Scenario
-from scenario_builder.helpers import push_file
 from scenario_builder.helpers.access import opensand
+from scenario_builder.helpers.admin.push_file import push_file
 
 
 CONFIGURE_DESCRIPTION = """This configure opensand system scenario allows to:
  - Configure the satellite, the gateways, the ST, the SRV and the CLT for an opensand test
 """
-CONFIGURE_NAME = 'opensand_configure'
+CONFIGURE_NAME = 'access_opensand_configure'
 
 RUN_DESCRIPTION = """This run opensand scenario allows to:
  - Run opensand in the satellite, the gateways and the STs for an opensand test
 """
-RUN_NAME = 'opensand_run'
+RUN_NAME = 'access_opensand_run'
 
 CLEAR_DESCRIPTION = """This clear simple system scenario allows to:
  - Clear the satellite, the gateways, the ST, the SRV and the CLT from an opensand test
 """
-CLEAR_NAME = 'opensand_clear'
+CLEAR_NAME = 'access_opensand_clear'
 
 PUSH_DESCRIPTION = """This push file scenario allows to:
  - Push conf files to the satellite, the gateways, and the ST from the controller
 """
-PUSH_NAME = 'opensand_push'
+PUSH_NAME = 'access_opensand_push'
 
 SCENARIO_DESCRIPTION = """This is reference OpenSAND scenario"""
-SCENARIO_NAME = 'opensand'
+SCENARIO_NAME = 'access_opensand'
 
 
 WS = namedtuple('WS', ('entity', 'interfaces', 'ips', 'route_ips', 'gateway_route'))
