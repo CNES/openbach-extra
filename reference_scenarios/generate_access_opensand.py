@@ -35,6 +35,7 @@ import argparse
 import tempfile
 import warnings
 import ipaddress
+import functools
 from pathlib import Path
 from collections import namedtuple
 
@@ -43,8 +44,45 @@ from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios.access_opensand import GW, ST, WS, build as build_opensand
 
 
+@functools.lru_cache(maxsize=1)
+class _auto_gateway_id:
+    IDS = [0, 6]
+    def __init__(self):
+        self._ids = iter(self.IDS)
+
+    def __int__(self):
+        try:
+            return next(self._ids)
+        except StopIteration:
+            raise ValueError('too much gateways; only allowed ids are {}'.format(self.IDS)) from None
+
+
+@functools.lru_cache(maxsize=1)
+class _auto_terminal_id:
+    def __init__(self):
+        self._id = -1
+
+    def __int__(self):
+        while True:
+            self._id += 1
+            if self._id not in _auto_gateway_id.IDS:
+                return self._id
+
+
+@functools.lru_cache(maxsize=1)
+class _auto_mac_address:
+    def __init__(self):
+        self._id = 0
+
+    def __str__(self):
+        self._id += 1
+        return ':'.join(format(s, '02x') for s in self._ids.to_bytes(6, 'big'))
+
+
 class Gateway:
-    def __init__(self, entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_bridge_ip, opensand_bridge_mac_address, opensand_id):
+    def __init__(
+            self, entity, lan_interface, emu_interface, lan_ip, emu_ip,
+            opensand_bridge_ip, opensand_bridge_mac_address=_auto_mac_address(), opensand_id=_auto_gateway_id()):
         self.entity = entity
         self.lan_ip = validate_ip(lan_ip)
         self.lan_interface = lan_interface
@@ -66,7 +104,9 @@ class GatewayPhy:
 
 
 class SatelliteTerminal:
-    def __init__(self, entity, gateway_entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_bridge_ip, opensand_bridge_mac_address, opensand_id):
+    def __init__(
+            self, entity, gateway_entity, lan_interface, emu_interface, lan_ip, emu_ip,
+            opensand_bridge_ip, opensand_bridge_mac_address=_auto_mac_address(), opensand_id=_auto_terminal_id()):
         self.entity = entity
         self.gateway_entity = gateway_entity
         self.lan_ip = validate_ip(lan_ip)
@@ -152,11 +192,11 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_phy, 
     satellite_subnet = '{}/{}'.format(extract_ip(satellite_ip), satellite_subnet_mask)
     host_route_ip = extract_network(satellite_subnet)
 
+    opensand_ids = set()
     work_stations = []
     opensand_gateways = []
 
     for gateway in gateways:
-
         route_ips = [extract_network(gateway.lan_ip)]
         route_gateway_ip = extract_ip(gateway.opensand_bridge_ip)
         opensand_terminals = []
@@ -165,10 +205,14 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_phy, 
         gateway_phy_interfaces = []
         gateway_phy_ips = []
 
-        server = False
+        if gateway.opensand_id in opensand_ids:
+            warnings.warn('Gateway {} uses an ID already used by another entity'.format(gateway.entity))
+        opensand_ids.add(gateway.opensand_id)
+
+        found = False
         for workstation in workstations:
             if workstation.opensand_entity == gateway.entity:
-                if server:
+                if found:
                     warnings.warn('More than one server workstation configured for gateway {}'.format(gateway.entity))
                 work_stations.append(WS(
                     workstation.entity,
@@ -176,19 +220,18 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_phy, 
                     workstation.ip,
                     host_route_ip,
                     extract_ip(gateway.lan_ip)))
-                server = True
+                found = True
 
-        if not server:
+        if not found:
             warning.warn('No server workstation configured for gateway {}'.format(gateway.entity))
 
-        if gateways_phy:
-            for gateway_phy in gateways_phy:
-                if gateway_phy.net_access_entity == gateway.entity:
-                    if gateway_phy_entity is not None:
-                        warnings.warn('More than one gateway_phy configured for the gateway_net_acc {}, keeping only the last one'.format(gateway.entity))
-                    gateway_phy_entity = gateway_phy.entity
-                    gateway_phy_interfaces = [gateway_phy.lan_interface, gateway_phy.emu_interface]
-                    gateway_phy_ips = [gateway_phy.lan_ip, gateway_phy.emu_ip]
+        for gateway_phy in gateways_phy:
+            if gateway_phy.net_access_entity == gateway.entity:
+                if gateway_phy_entity is not None:
+                    warnings.warn('More than one gateway_phy configured for the gateway_net_acc {}, keeping only the last one'.format(gateway.entity))
+                gateway_phy_entity = gateway_phy.entity
+                gateway_phy_interfaces = [gateway_phy.lan_interface, gateway_phy.emu_interface]
+                gateway_phy_ips = [gateway_phy.lan_ip, gateway_phy.emu_ip]
 
         for terminal in terminals:
             if terminal.gateway_entity == gateway.entity:
@@ -196,10 +239,14 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_phy, 
                 terminal_ips.append(extract_ip(terminal.opensand_bridge_ip))
                 opensand_terminals.append(terminal)
 
-                client = False
+                if terminal.opensand_id in opensand_ids:
+                    warnings.warn('Terminal {} uses an ID already used by another entity'.format(terminal.entity))
+                opensand_ids.add(terminal.opensand_id)
+
+                found = False
                 for workstation in workstations:
                     if workstation.opensand_entity == terminal.entity:
-                        if client:
+                        if found:
                             warnings.warn('More than one client workstation configured for terminal {}'.format(terminal.entity))
                         work_stations.append(WS(
                             workstation.entity,
@@ -207,9 +254,9 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_phy, 
                             workstation.ip,
                             host_route_ip,
                             extract_ip(terminal.lan_ip)))
-                        client = True
+                        found = True
 
-                if not client:
+                if not found:
                     warnings.warn('No client workstation configured for terminal {}'.format(terminal.entity))
 
         if not opensand_terminals:
@@ -223,7 +270,8 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_phy, 
                     find_routes(route_ips, terminal.lan_ip),
                     route_gateway_ip,
                     terminal.opensand_bridge_ip,
-                    terminal.opensand_bridge_mac_address)
+                    terminal.opensand_bridge_mac_address,
+                    terminal.opensand_id)
                 for terminal in opensand_terminals
         ]
         
@@ -235,6 +283,7 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_phy, 
             terminal_ips,
             gateway.opensand_bridge_ip,
             gateway.opensand_bridge_mac_address,
+            gateway.opensand_id,
             gw_terminals,
             gateway_phy_entity,
             gateway_phy_interfaces,
@@ -252,8 +301,9 @@ def main(scenario_name='opensand', argv=None):
     observer.add_scenario_argument(
             '--gateway', '-gw', required=True, action=ValidateGateway, nargs=8,
             help='A gateway in the platform. Must be supplied at least once.',
-            metavar=('ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP', 
-                     'OPENSAND_BRIDGE_IP', 'OPENSAND_BRIDGE_MAC_ADDRESS', 'OPENSAND_ID'))
+            metavar=(
+                'ENTITY', 'LAN_INTERFACE', 'EMU_INTERFACE', 'LAN_IP','EMU_IP',
+                'OPENSAND_BRIDGE_IP', 'OPENSAND_BRIDGE_MAC_ADDRESS', 'OPENSAND_ID'))
     observer.add_scenario_argument(
             '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy, nargs=6,
             help='The physical part of a split gateway. Must reference the '
@@ -286,7 +336,7 @@ def main(scenario_name='opensand', argv=None):
     gateways, workstations = create_network(
         args.sat.ip, 16,
         args.gateway,
-        args.gateway_phy,
+        args.gateway_phy or [],
         args.satellite_terminal,
         args.workstation or [])
     satellite = args.sat

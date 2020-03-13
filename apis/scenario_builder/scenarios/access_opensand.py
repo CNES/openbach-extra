@@ -60,18 +60,18 @@ SCENARIO_NAME = 'access_opensand'
 
 
 WS = namedtuple('WS', ('entity', 'interfaces', 'ips', 'route_ips', 'gateway_route'))
-ST = namedtuple('ST', WS._fields + ('opensand_bridge_ip', 'opensand_bridge_mac_address'))
+ST = namedtuple('ST', WS._fields + ('opensand_bridge_ip', 'opensand_bridge_mac_address', 'opensand_id'))
 class GW(ST):
     def __new__(
             self, entity, interfaces, ips, route_ips, terminals_ips,
-            opensand_bridge_ip, opensand_bridge_mac_address, terminals,
+            opensand_bridge_ip, opensand_bridge_mac_address, opensand_id, terminals,
             gateway_phy_entity=None, gateway_phy_interface=None, gateway_phy_ip=None):
         return super().__new__(
-                self, entity, interfaces, ips, route_ips,
-                terminals_ips, opensand_bridge_ip, opensand_bridge_mac_address)
+                self, entity, interfaces, ips, route_ips, terminals_ips,
+                opensand_bridge_ip, opensand_bridge_mac_address, opensand_id)
     def __init__(
             self, entity, interfaces, ips, route_ips, terminals_routes,
-            opensand_bridge_ip, opensand_bridge_mac_address, terminals,
+            opensand_bridge_ip, opensand_bridge_mac_address, opensand_id, terminals,
             gateway_phy_entity=None, gateway_phy_interfaces=None, gateway_phy_ips=None):
         self.terminals = terminals
         self.gateway_phy_entity = None
@@ -118,30 +118,32 @@ def run(satellite_entity, satellite_ip, gateways, scenario_name=RUN_NAME):
     scenario = Scenario(scenario_name, RUN_DESCRIPTION)
     opensand.opensand_run(scenario, satellite_entity, 'sat', emulation_address=_extract_ip(satellite_ip))
 
-    ids = itertools.count()
     for gateway in gateways:
         _, emulation_address = map(_extract_ip, gateway.ips)
 
         if gateway.gateway_phy_entity is not None:
-            id = next(ids)
             opensand.opensand_run(
-                    scenario, gateway.entity, 'gw-net-acc', entity_id=id,
+                    scenario, gateway.entity, 'gw-net-acc',
+                    entity_id=gateway.opensand_id,
                     interconnection_address=emulation_address)
             interconnect_address, emulation_address = map(_extract_ip, gateway.gateway_phy_ips)
             opensand.opensand_run(
-                    scenario, gateway.gateway_phy_entity, 'gw-phy', entity_id=id,
+                    scenario, gateway.gateway_phy_entity, 'gw-phy',
+                    entity_id=gateway.opensand_id,
                     emulation_address=emulation_address,
                     interconnection_address=interconnect_address)
         else:
             opensand.opensand_run(
-                    scenario, gateway.entity, 'gw', entity_id=next(ids),
+                    scenario, gateway.entity, 'gw',
+                    entity_id=gateway.opensand_id,
                     emulation_address=emulation_address)
 
         for terminal in gateway.terminals:
             _, emulation_address = map(_extract_ip, terminal.ips)
             opensand.opensand_run(
-                    scenario, terminal.entity, 'st', entity_id=next(ids),
-                   emulation_address=emulation_address)
+                    scenario, terminal.entity, 'st',
+                    entity_id=terminal.opensand_id,
+                    emulation_address=emulation_address)
 
     return scenario
 
