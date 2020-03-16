@@ -83,7 +83,7 @@ class _auto_mac_address:
 @functools.lru_cache(maxsize=1)
 class _auto_spot_port:
     def __init__(self):
-        self._port = 50000
+        self._port = 54999
 
     def __int__(self):
         self._port += 1
@@ -302,9 +302,14 @@ def create_topology(satellite, gateways, terminals, spots):
         gw_table_ids[terminal.gateway_entity].append(terminal_id)
 
     for gateway_entity in list(gw_table_ids):
+        terminal_ids = gw_table_ids.pop(gateway_entity)
         for gateway in gateways:
             if gateway.entity == gateway_entity:
-                gw_table_ids[str(gateway.opensand_id)] = gw_table_ids.pop(gateway_entity)
+                gw_table_ids[str(gateway.opensand_id)] = terminal_ids
+                break
+        else:
+            warnings.warn('Terminals {} {} linked to unknown gateway {}; ignoring'.format(', '.join(terminal_ids), 'is' if len(terminal_ids) < 2 else 'are', gateway_entity))
+
 
     sat_carriers = ET.SubElement(configuration, 'sat_carrier')
 
@@ -577,9 +582,6 @@ def main(scenario_name='access_opensand', argv=None):
     if args.spot:
         topology = create_topology(args.sat, args.gateway, args.satellite_terminal, args.spot)
         indent_xml(topology.getroot())
-        topology.write('topology.xml')
-
-    return
 
     gateways, workstations = create_network(
         args.sat.ip, 16,
@@ -605,6 +607,14 @@ def main(scenario_name='access_opensand', argv=None):
             with configuration_folder.joinpath(config_file).open() as local_file:
                 pusher.args.local_file = local_file
                 pusher.args.remote_path = config_file.as_posix()
+                pusher.execute(False)
+
+        if args.spot:
+            with tempfile.NamedTemporaryFile() as topology_conf:
+                topology.write(topology_conf, 'UTF-8', True)
+                topology_conf.seek(0)
+                pusher.args.local_file = topology_conf
+                pusher.args.remote_path = 'topology.conf'
                 pusher.execute(False)
 
     scenario = build_opensand(
