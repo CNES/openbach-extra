@@ -38,7 +38,7 @@ import ipaddress
 import functools
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from collections import namedtuple
+from collections import defaultdict
 
 from auditorium_scripts.push_file import PushFile
 from auditorium_scripts.scenario_observer import ScenarioObserver
@@ -80,10 +80,31 @@ class _auto_mac_address:
         return ':'.join(format(s, '02x') for s in self._id.to_bytes(6, 'big'))
 
 
+@functools.lru_cache(maxsize=1)
+class _auto_spot_port:
+    def __init__(self):
+        self._port = 50000
+
+    def __int__(self):
+        self._port += 1
+        return self._port
+
+
+@functools.lru_cache(maxsize=1)
+class _auto_multicast_address:
+    def __init__(self):
+        self._address = 4018782940
+
+    def __str__(self):
+        self._address += 1
+        return ipaddress.ip_address(self._address).compressed
+
+
 class Gateway:
     def __init__(
-            self, entity, lan_interface, emu_interface, lan_ip, emu_ip,
-            opensand_bridge_ip, opensand_bridge_mac_address=_auto_mac_address(), opensand_id=_auto_gateway_id()):
+            self, entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_bridge_ip,
+            opensand_bridge_mac_address=_auto_mac_address(), opensand_id=_auto_gateway_id(),
+            opensand_default_spot_id=1):
         self.entity = entity
         self.lan_ip = validate_ip(lan_ip)
         self.lan_interface = lan_interface
@@ -92,6 +113,7 @@ class Gateway:
         self.opensand_bridge_ip = validate_ip(opensand_bridge_ip)
         self.opensand_bridge_mac_address = str(opensand_bridge_mac_address)
         self.opensand_id = int(opensand_id)
+        self.default_spot_id = int(opensand_default_spot_id)
 
 
 class GatewayPhy:
@@ -106,8 +128,10 @@ class GatewayPhy:
 
 class SatelliteTerminal:
     def __init__(
-            self, entity, gateway_entity, lan_interface, emu_interface, lan_ip, emu_ip,
-            opensand_bridge_ip, opensand_bridge_mac_address=_auto_mac_address(), opensand_id=_auto_terminal_id()):
+            self, entity, gateway_entity, lan_interface,
+            emu_interface, lan_ip, emu_ip, opensand_bridge_ip,
+            opensand_bridge_mac_address=_auto_mac_address(),
+            opensand_id=_auto_terminal_id(), opensand_spot_id=1):
         self.entity = entity
         self.gateway_entity = gateway_entity
         self.lan_ip = validate_ip(lan_ip)
@@ -117,6 +141,7 @@ class SatelliteTerminal:
         self.opensand_bridge_ip = validate_ip(opensand_bridge_ip)
         self.opensand_bridge_mac_address = str(opensand_bridge_mac_address)
         self.opensand_id = int(opensand_id)
+        self.spot_id = int(opensand_spot_id)
 
 
 class Satellite:
@@ -128,17 +153,20 @@ class Satellite:
 
 class Spot:
     def __init__(
-            self, spot_id,
-            control_multicast_address,
-            data_multicast_address,
-            control_out_port, control_in_port,
-            logon_out_port, logon_in_port,
-            data_out_st_port, data_in_st_port,
-            data_out_gw_port, data_in_gw_port,
-            gateway_entity, *terminal_entities):
+            self, spot_id, gateway_entity,
+            control_out_port=_auto_spot_port(),
+            control_in_port=_auto_spot_port(),
+            logon_out_port=_auto_spot_port(),
+            logon_in_port=_auto_spot_port(),
+            data_out_st_port=_auto_spot_port(),
+            data_in_st_port=_auto_spot_port(),
+            data_out_gw_port=_auto_spot_port(),
+            data_in_gw_port=_auto_spot_port(),
+            control_multicast_address=_auto_multicast_address(),
+            data_multicast_address=_auto_multicast_address()):
         self.spot_id = int(spot_id)
-        self.control_multicast_address = ipaddress.ip_address(control_multicast_address).compressed
-        self.data_multicast_address = ipaddress.ip_address(data_multicast_address).compressed
+        self.control_multicast_address = ipaddress.ip_address(str(control_multicast_address)).compressed
+        self.data_multicast_address = ipaddress.ip_address(str(data_multicast_address)).compressed
         self.control_out_port = int(control_out_port)
         self.control_in_port = int(control_in_port)
         self.logon_out_port = int(logon_out_port)
@@ -148,7 +176,6 @@ class Spot:
         self.data_out_gw_port = int(data_out_gw_port)
         self.data_in_gw_port = int(data_in_gw_port)
         self.gateway_entity = gateway_entity
-        self.terminals = terminal_entities
 
 
 class WorkStation:
@@ -207,21 +234,23 @@ class ValidateSpot(_ValidateOptional, _Validate):
 
 
 def patch_print_help(parser):
-    print_help = parser.print_help
+    def decorate(printer):
+        @functools.wraps(printer)
+        def wrapper(file=None):
+            nargs = [action.nargs for action in parser._actions]
 
-    @functools.wraps(print_help)
-    def wrapper():
-        nargs = [action.nargs for action in parser._actions]
+            for action in parser._actions:
+                if isinstance(action, _ValidateOptional):
+                    action.nargs = None
+            printer(file)
 
-        for action in parser._actions:
-            if isinstance(action, _ValidateOptional):
-                action.nargs = None
-        print_help()
+            for action, narg in zip(parser._actions, nargs):
+                action.nargs = narg
 
-        for action, narg in zip(parser._actions, nargs):
-            action.nargs = narg
+        return wrapper
 
-    parser.print_help = wrapper
+    parser.print_help = decorate(parser.print_help)
+    parser.print_usage = decorate(parser.print_usage)
 
 
 def validate_ip(ip):
@@ -259,100 +288,98 @@ def create_topology(satellite, gateways, terminals, spots):
     for address in ('ff:ff:ff:ff:ff:ff', '33:33:**:**:**:**', '01:00:5E:**:**:**'):
         terminal_eth = ET.SubElement(ethernet, 'terminal_eth')
         terminal_eth.set('mac', address)
-        terminal_eth.set('tal_id', 31)
-
-    sat_carriers = ET.SubElement(configuration, 'sat_carrier')
+        terminal_eth.set('tal_id', '31')
 
     spot_table_ids = defaultdict(list)
     gw_table_ids = defaultdict(list)
 
+    for terminal in terminals:
+        terminal_id = str(terminal.opensand_id)
+        terminal_eth = ET.SubElement(ethernet, 'terminal_eth')
+        terminal_eth.set('mac', terminal.opensand_bridge_mac_address)
+        terminal_eth.set('tal_id', terminal_id)
+        spot_table_ids[str(terminal.spot_id)].append(terminal_id)
+        gw_table_ids[terminal.gateway_entity].append(terminal_id)
+
+    for gateway_entity in list(gw_table_ids):
+        for gateway in gateways:
+            if gateway.entity == gateway_entity:
+                gw_table_ids[str(gateway.opensand_id)] = gw_table_ids.pop(gateway_entity)
+
+    sat_carriers = ET.SubElement(configuration, 'sat_carrier')
+
     base_carrier_id = 0
     for spot in spots:
-        spot_id = spot.spot_id
+        spot_id = str(spot.spot_id)
         gateway_entity = spot.gateway_entity
         for gateway in gateways:
             if gateway.entity == gateway_entity:
                 gateway_ip = extract_ip(gateway.emu_ip)
-                gateway_id = gateway.opensand_id
+                gateway_id = str(gateway.opensand_id)
                 break
         else:
-            warning.warn('Spot {} is linked to unknown gateway {}; ignoring'.format(spot_id, gateway_entity))
+            warnings.warn('Spot {} is linked to unknown gateway {}; ignoring'.format(spot_id, gateway_entity))
             continue
-
-        spot_terminals = []
-        for terminal_entity in spot.terminals:
-            for terminal in terminals:
-                if terminal.entity == terminal_entity:
-                    spot_terminals.append(terminal.opensand_id)
-                    break
-            else:
-                warning.warn(
-                        'Spot {} on gateway {} is configured to server unknown terminal '
-                        '{}; ignoring'.format(spot_id, gateway_entity, terminal_entity))
-                continue
-
-        spot_table_ids[spot_id].extend(spot_terminals)
-        gw_table_ids[gateway_id].extend(spot_terminals)
 
         spot_element = ET.SubElement(sat_carriers, 'spot')
         spot_element.set('id', spot_id)
         spot_element.set('gw', gateway_id)
         carriers = ET.SubElement(spot_element, 'carriers')
         carrier = ET.SubElement(carriers, 'carrier')
-        carrier.set('id', base_carrier_id)
+        carrier.set('id', str(base_carrier_id))
         carrier.set('type', 'ctrl_out')
         carrier.set('ip_address', spot.control_multicast_address)
-        carrier.set('port', spot.control_out_port)
-        carrier.set('ip_multicast', True)
+        carrier.set('port', str(spot.control_out_port))
+        carrier.set('ip_multicast', 'true')
         base_carrier_id += 1
         carrier = ET.SubElement(carriers, 'carrier')
-        carrier.set('id', base_carrier_id)
+        carrier.set('id', str(base_carrier_id))
         carrier.set('type', 'ctrl_in')
         carrier.set('ip_address', satellite_ip)
-        carrier.set('port', spot.control_in_port)
-        carrier.set('ip_multicast', False)
+        carrier.set('port', str(spot.control_in_port))
+        carrier.set('ip_multicast', 'false')
         base_carrier_id += 1
         carrier = ET.SubElement(carriers, 'carrier')
-        carrier.set('id', base_carrier_id)
+        carrier.set('id', str(base_carrier_id))
         carrier.set('type', 'logon_out')
         carrier.set('ip_address', gateway_ip)
-        carrier.set('port', spot.logon_out_port)
-        carrier.set('ip_multicast', False)
+        carrier.set('port', str(spot.logon_out_port))
+        carrier.set('ip_multicast', 'false')
         base_carrier_id += 1
         carrier = ET.SubElement(carriers, 'carrier')
-        carrier.set('id', base_carrier_id)
+        carrier.set('id', str(base_carrier_id))
         carrier.set('type', 'logon_in')
         carrier.set('ip_address', satellite_ip)
-        carrier.set('port', spot.logon_in_port)
-        carrier.set('ip_multicast', False)
+        carrier.set('port', str(spot.logon_in_port))
+        carrier.set('ip_multicast', 'false')
         base_carrier_id += 1
         carrier = ET.SubElement(carriers, 'carrier')
-        carrier.set('id', base_carrier_id)
+        carrier.set('id', str(base_carrier_id))
         carrier.set('type', 'data_out_st')
         carrier.set('ip_address', spot.data_multicast_address)
-        carrier.set('port', spot.data_out_st_port)
-        carrier.set('ip_multicast', True)
+        carrier.set('port', str(spot.data_out_st_port))
+        carrier.set('ip_multicast', 'true')
         base_carrier_id += 1
         carrier = ET.SubElement(carriers, 'carrier')
-        carrier.set('id', base_carrier_id)
+        carrier.set('id', str(base_carrier_id))
         carrier.set('type', 'data_in_st')
         carrier.set('ip_address', satellite_ip)
-        carrier.set('port', spot.data_in_st_port)
-        carrier.set('ip_multicast', False)
+        carrier.set('port', str(spot.data_in_st_port))
+        carrier.set('ip_multicast', 'false')
         base_carrier_id += 1
         carrier = ET.SubElement(carriers, 'carrier')
-        carrier.set('id', base_carrier_id)
+        carrier.set('id', str(base_carrier_id))
         carrier.set('type', 'data_out_gw')
         carrier.set('ip_address', gateway_ip)
-        carrier.set('port', spot.data_out_gw_port)
-        carrier.set('ip_multicast', False)
+        carrier.set('port', str(spot.data_out_gw_port))
+        carrier.set('ip_multicast', 'false')
         base_carrier_id += 1
         carrier = ET.SubElement(carriers, 'carrier')
-        carrier.set('id', base_carrier_id)
+        carrier.set('id', str(base_carrier_id))
         carrier.set('type', 'data_in_gw')
         carrier.set('ip_address', satellite_ip)
-        carrier.set('port', spot.data_in_gw_port)
-        carrier.set('ip_multicast', False)
+        carrier.set('port', str(spot.data_in_gw_port))
+        carrier.set('ip_multicast', 'false')
         base_carrier_id += 1
 
     spot_table = ET.SubElement(configuration, 'spot_table')
@@ -378,6 +405,18 @@ def create_topology(satellite, gateways, terminals, spots):
     default.text = '0'
 
     return ET.ElementTree(configuration)
+
+
+def indent_xml(element, padding='\t', level=0, last=True):
+    """Indent an xml.etree.ElementTree.Element tree for pretty printing"""
+    if element:
+        next_level = level + 1
+        if not element.text or not element.text.strip():
+            element.text = '\n' + padding * next_level
+        for idx, sub_element in enumerate(reversed(element)):
+            indent_xml(sub_element, padding, next_level, not idx)
+    if not element.tail or not element.tail.strip():
+        element.tail = '\n' + padding * (level - last)
 
 
 def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_phy, terminals, workstations):
@@ -415,7 +454,7 @@ def create_network(satellite_ip, satellite_subnet_mask, gateways, gateways_phy, 
                 found = True
 
         if not found:
-            warning.warn('No server workstation configured for gateway {}'.format(gateway.entity))
+            warnings.warn('No server workstation configured for gateway {}'.format(gateway.entity))
 
         for gateway_phy in gateways_phy:
             if gateway_phy.net_access_entity == gateway.entity:
@@ -493,8 +532,8 @@ def main(scenario_name='access_opensand', argv=None):
     observer.add_scenario_argument(
             '--gateway', '-gw', required=True, action=ValidateGateway, nargs='*',
             help='A gateway in the platform. Must be supplied at least once.',
-            metavar='ENTITY LAN_INTERFACE EMU_INTERFACE LAN_IP EMU_IP '
-            'OPENSAND_BRIDGE_IP [OPENSAND_BRIDGE_MAC_ADDRESS [OPENSAND_ID]]')
+            metavar='ENTITY LAN_INTERFACE EMU_INTERFACE LAN_IP EMU_IP OPENSAND_BRIDGE_IP '
+            '[OPENSAND_BRIDGE_MAC_ADDRESS [OPENSAND_ID [OPENSAND_DEFAULT_SPOT_ID]]]')
     observer.add_scenario_argument(
             '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy, nargs=6,
             help='The physical part of a split gateway. Must reference the '
@@ -505,17 +544,17 @@ def main(scenario_name='access_opensand', argv=None):
             '--satellite-terminal', '-st', required=True, action=ValidateSatelliteTerminal, nargs='*',
             help='A satellite terminal in the platform. Must be supplied at '
             'least once and reference the gateway it is attached to.',
-            metavar='ENTITY GATEWAY_ENTITY LAN_INTERFACE EMU_INTERFACE LAN_IP '
-            'EMU_IP OPENSAND_BRIDGE_IP [OPENSAND_BRIDGE_MAC_ADDRESS [OPENSAND_ID]]')
+            metavar='ENTITY GATEWAY_ENTITY LAN_INTERFACE EMU_INTERFACE LAN_IP EMU_IP '
+            'OPENSAND_BRIDGE_IP [OPENSAND_BRIDGE_MAC_ADDRESS [OPENSAND_ID [OPENSAND_SPOT_ID]]')
     observer.add_scenario_argument(
             '--spot', required=False, action=ValidateSpot, nargs='*',
             help='A spot associated to a gateway and serving several '
             'terminals. Presence of spots is optional but will override any '
             'topology.conf found using the --configuration-folder option.',
-            metavar='SPOT_ID CONTROL_MULTICAST_ADDR DATA_MULTICAST_ADDR '
-            'CTRL_OUT_PORT CTRL_IN_PORT LOGON_OUT_PORT LOGON_IN_PORT '
-            'DATA_OUT_ST_PORT DATA_IN_ST_PORT DATA_OUT_GW_PORT DATA_IN_GW_PORT '
-            'GATEWAY_ENTITY [TERMINAL_ENTITY [TERMINAL_ENTITY [...]]]')
+            metavar='SPOT_ID GATEWAY_ENTITY [CTRL_OUT_PORT [CTRL_IN_PORT '
+            '[LOGON_OUT_PORT [LOGON_IN_PORT [DATA_OUT_ST_PORT '
+            '[DATA_IN_ST_PORT [DATA_OUT_GW_PORT [DATA_IN_GW_PORT '
+            '[CONTROL_MULTICAST_ADDR [DATA_MULTICAST_ADDR]]]]]]]]]]')
     observer.add_scenario_argument(
             '--workstation', '-ws', required=False, action=ValidateWorkStation, nargs=4,
             help='A workstation to configure alongside the main OpenSAND platform. '
@@ -537,7 +576,10 @@ def main(scenario_name='access_opensand', argv=None):
 
     if args.spot:
         topology = create_topology(args.sat, args.gateway, args.satellite_terminal, args.spot)
-        print(topology.getroot().dump())
+        indent_xml(topology.getroot())
+        topology.write('topology.xml')
+
+    return
 
     gateways, workstations = create_network(
         args.sat.ip, 16,
