@@ -44,14 +44,14 @@ from scenario_builder.scenarios.access_opensand import SAT, GW, SPLIT_GW, ST, bu
 
 
 class Entity:
-    def __init__(self, entity, opensand_id, emulation_ip):
+    def __init__(self, entity, emulation_ip, opensand_id):
         self.entity = entity
         self.opensand_id = int(opensand_id)
         self.emulation_ip = validate_ip(emulation_ip)
 
 
 class GatewayPhy:
-    def __init__(self, entity, net_access_entity, interco_net_access, interco_phy):
+    def __init__(self, entity, net_access_entity, interco_phy, interco_net_access):
         self.entity = entity
         self.net_access_entity = net_access_entity
         self.interconnect_net_access = validate_ip(interco_net_access)
@@ -229,17 +229,17 @@ def main(scenario_name='access_opensand', argv=None):
             help='The satellite of the platform. Must be supplied only once.')
     observer.add_scenario_argument(
             '--gateway', '-gw', required=True, action=ValidateGateway,
-            nargs=3, metavar=('ENTITY', 'OPENSAND_ID', 'EMULATION_IP'),
+            nargs=3, metavar=('ENTITY', 'EMULATION_IP', 'OPENSAND_ID'),
             help='A gateway in the platform. Must be supplied at least once.')
     observer.add_scenario_argument(
             '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy,
-            nargs=4, metavar=('ENTITY', 'NET_ACCESS_ENTITY', 'INTERCONNECT_NET_ACC', 'INTERCONNECT_PHY'),
+            nargs=4, metavar=('ENTITY_PHY', 'ENTITY_NET_ACC', 'INTERCONNECT_PHY', 'INTERCONNECT_NET_ACC'),
             help='The physical part of a split gateway. Must reference the '
             'net access part previously provided using the --gateway option. '
             'Optional, can be supplied only once per gateway.')
     observer.add_scenario_argument(
             '--satellite-terminal', '-st', required=True, action=ValidateSatelliteTerminal,
-            nargs=3, metavar=('ENTITY', 'OPENSAND_ID', 'EMULATION_IP'),
+            nargs=3, metavar=('ENTITY', 'EMULATION_IP', 'OPENSAND_ID'),
             help='A satellite terminal in the platform. Must be supplied at least once.')
     observer.add_scenario_argument(
             '--duration', '-d', required=False, default=0, type=int,

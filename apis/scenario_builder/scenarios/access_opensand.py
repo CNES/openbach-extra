@@ -30,6 +30,7 @@ import itertools
 from collections import namedtuple
 
 from scenario_builder import Scenario
+from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.access import opensand
 from scenario_builder.helpers.admin.push_file import push_file
 
@@ -114,8 +115,9 @@ def push_conf(satellite_entity, gateways, terminals, configuration_files, scenar
     scenario = Scenario(scenario_name, PUSH_DESCRIPTION)
 
     push_file(scenario, satellite_entity, *_build_remote_and_users(configuration_per_entity, 'sat'))
+
+    files = _build_remote_and_users(configuration_per_entity, 'gw')
     for gateway in gateways:
-        files = _build_remote_and_users(configuration_per_entity, 'gw')
         if isinstance(gateway, GW):
             push_file(scenario, gateway.entity, *files)
         elif isinstance(gateway, SPLIT_GW):
@@ -132,25 +134,22 @@ def push_conf(satellite_entity, gateways, terminals, configuration_files, scenar
 
 
 def build(satellite, gateways, terminals, duration=0, configuration_files=None, scenario_name=SCENARIO_NAME):
-    scenario = None
     scenario_run = run(satellite, gateways, terminals, scenario_name)
 
-    if configuration_files:
-        scenario_push = push_conf(satellite.entity, gateways, terminals, configuration_files)
-
-        scenario = Scenario(scenario_name + '_with_configuration_files')
-        start_scenario = scenario.add_function('start_scenario_instance')
-        start_scenario.configure(scenario_push)
-
-        start_scenario = scenario.add_function('start_scenario_instance', wait_finished=[start_scenario])
-        start_scenario.configure(scenario_run)
-
     if duration:
-        if scenario is None:
-            scenario = Scenario(scenario_name + '_limited_time')
-            start_scenario = scenario.add_function('start_scenario_instance')
-            start_scenario.configure(scenario_run)
+        jobs = [f for f in scenario_run.openbach_functions if isinstance(f, StartJobInstance)]
+        scenario_run.add_function('stop_job_instances', wait_launched=jobs, wait_delay=duration).configure(*jobs)
 
-        scenario.add_function('stop_scenario_instance', wait_launched=[start_scenario], wait_delay=duration).configure(start_scenario)
+    if not configuration_files:
+        return scenario_run
 
-    return scenario_run if scenario is None else scenario
+    scenario = Scenario(scenario_name + '_with_configuration_files')
+    scenario_push = push_conf(satellite.entity, gateways, terminals, configuration_files)
+
+    start_scenario = scenario.add_function('start_scenario_instance')
+    start_scenario.configure(scenario_push)
+
+    start_scenario = scenario.add_function('start_scenario_instance', wait_finished=[start_scenario])
+    start_scenario.configure(scenario_run)
+
+    return scenario
