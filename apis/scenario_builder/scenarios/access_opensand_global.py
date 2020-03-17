@@ -45,11 +45,6 @@ def _extract_ip(ip_with_mask):
 
 def _extract_simple_parameters(gateways):
     for gateway in gateways:
-        terminals = [
-                _ST(terminal.entity, terminal.opensand_id, _extract_ip(terminal.ips[1]))
-                for terminal in gateway.terminals
-        ]
-
         _, emulation_address = map(_extract_ip, gateway.ips)
         if gateway.gateway_phy_entity is not None:
             interconnect_net_acc = emulation_address
@@ -57,9 +52,9 @@ def _extract_simple_parameters(gateways):
             yield _GW_PHY(
                     gateway.entity, gateway.gateway_phy_entity,
                     gateway.opensand_id, emulation_address,
-                    interconnect_net_acc, interconnect_phy, terminals)
+                    interconnect_net_acc, interconnect_phy)
         else:
-            yield _GW(gateway.entity, gateway.opensand_id, emulation_address, terminals)
+            yield _GW(gateway.entity, gateway.opensand_id, emulation_address)
 
 
 def build(satellite, gateways, workstations=(), duration=0, configuration_files=None, scenario_name=SCENARIO_NAME):
@@ -69,8 +64,13 @@ def build(satellite, gateways, workstations=(), duration=0, configuration_files=
     start_scenario_configure = scenario.add_function('start_scenario_instance')
     start_scenario_configure.configure(scenario_configure)
  
+    sts = [
+            _ST(terminal.entity, terminal.opensand_id, _extract_ip(terminal.ips[1]))
+            for gw in gateways
+            for terminal in gw.terminals
+    ]
     gws = list(_extract_simple_parameters(gateways))
-    scenario_run = access_opensand(satellite, gws, duration, configuration_files)
+    scenario_run = access_opensand(satellite, gws, sts, duration, configuration_files)
     start_scenario_run = scenario.add_function('start_scenario_instance', wait_finished=[start_scenario_configure])
     start_scenario_run.configure(scenario_run)
     

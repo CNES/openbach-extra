@@ -47,13 +47,13 @@ PUSH_NAME = 'access_opensand_push'
 
 SAT = namedtuple('SAT', ('entity', 'ip'))
 ST = namedtuple('ST', ('entity', 'opensand_id', 'emulation_ip'))
-GW = namedtuple('GW', ('entity', 'opensand_id', 'emulation_ip', 'terminals'))
+GW = namedtuple('GW', ('entity', 'opensand_id', 'emulation_ip'))
 SPLIT_GW = namedtuple('SPLIT_GW', (
     'entity_net_acc', 'entity_phy', 'opensand_id', 'emulation_ip',
-    'interconnect_ip_net_acc', 'interconnect_ip_phy', 'terminals'))
+    'interconnect_ip_net_acc', 'interconnect_ip_phy'))
 
 
-def run(satellite, gateways, scenario_name=SCENARIO_NAME):
+def run(satellite, gateways, terminals, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     opensand.opensand_run(scenario, satellite.entity, 'sat', emulation_address=satellite.ip)
 
@@ -76,11 +76,11 @@ def run(satellite, gateways, scenario_name=SCENARIO_NAME):
         else:
             continue  # TODO:~fail ?
 
-        for terminal in gateway.terminals:
-            opensand.opensand_run(
-                    scenario, terminal.entity, 'st',
-                    entity_id=terminal.opensand_id,
-                    emulation_address=terminal.emulation_ip)
+    for terminal in terminals:
+        opensand.opensand_run(
+                scenario, terminal.entity, 'st',
+                entity_id=terminal.opensand_id,
+                emulation_address=terminal.emulation_ip)
 
     return scenario
 
@@ -96,7 +96,7 @@ def _build_remote_and_users(configuration_per_entity, entity_name, prefix='/etc/
     return remote_files, local_files, users, groups
 
 
-def push_conf(satellite_entity, gateways, configuration_files, scenario_name=PUSH_NAME):
+def push_conf(satellite_entity, gateways, terminals, configuration_files, scenario_name=PUSH_NAME):
     configuration_per_entity = {
             'sat': [],
             'st': [],
@@ -122,19 +122,19 @@ def push_conf(satellite_entity, gateways, configuration_files, scenario_name=PUS
         else:
             continue  # TODO:~fail ?
 
-        files = _build_remote_and_users(configuration_per_entity, 'st')
-        for terminal in gateway.terminals:
-            push_file(scenario, terminal.entity, *files)
+    files = _build_remote_and_users(configuration_per_entity, 'st')
+    for terminal in terminals:
+        push_file(scenario, terminal.entity, *files)
 
     return scenario
 
 
-def build(satellite, gateways, duration=0, configuration_files=None, scenario_name=SCENARIO_NAME):
+def build(satellite, gateways, terminals, duration=0, configuration_files=None, scenario_name=SCENARIO_NAME):
     scenario = None
-    scenario_run = run(satellite, gateways, scenario_name)
+    scenario_run = run(satellite, gateways, terminals, scenario_name)
 
     if configuration_files:
-        scenario_push = push_conf(satellite.entity, gateways, configuration_files)
+        scenario_push = push_conf(satellite.entity, gateways, terminals, configuration_files)
 
         scenario = Scenario(scenario_name + '_with_configuration_files')
         start_scenario = scenario.add_function('start_scenario_instance')
