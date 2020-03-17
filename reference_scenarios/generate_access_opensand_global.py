@@ -42,7 +42,7 @@ from collections import defaultdict
 
 from auditorium_scripts.push_file import PushFile
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios.access_opensand import GW, ST, WS, build as build_opensand
+from scenario_builder.scenarios.access_opensand_global import SAT, GW, ST, WS, build as build_opensand
 
 
 @functools.lru_cache(maxsize=1)
@@ -625,7 +625,7 @@ def main(scenario_name='access_opensand', argv=None):
                 pusher.execute(False)
 
     scenario = build_opensand(
-            satellite.entity, satellite.interface, satellite.ip,
+            SAT(satellite.entity, satellite.interface, satellite.ip),
             gateways, workstations,
             args.duration, config_files)
     observer.launch_and_wait(scenario)
