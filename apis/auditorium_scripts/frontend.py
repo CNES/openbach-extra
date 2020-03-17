@@ -46,6 +46,7 @@ __credits__ = '''Contributors:
 
 import json
 import fcntl
+import shlex
 import socket
 import struct
 import pprint
@@ -139,6 +140,13 @@ def pretty_print(response):
     response.raise_for_status()
 
 
+class FromFileParser(argparse.ArgumentParser):
+    def convert_arg_line_to_args(self, line):
+        if line.lstrip().startswith('#'):
+            return []
+        return shlex.split(line)
+
+
 class FrontendBase:
     WAITING_TIME_BETWEEN_STATES_POLL = 5  # seconds
 
@@ -156,7 +164,7 @@ class FrontendBase:
     def __init__(self, description):
         self.__filename = 'controller'
         controller, login, password, unspecified = read_controller_configuration(self.__filename)
-        self.parser = argparse.ArgumentParser(
+        self.parser = FromFileParser(
                 description=description,
                 epilog='Backend-specific arguments can be specified by '
                 'providing a file called \'controller\' in the same folder '
@@ -166,7 +174,8 @@ class FrontendBase:
                 '\'controller\' argument default value. If no password is '
                 'specified using either this file or the command-line, it '
                 'will be prompted without echo.',
-                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                fromfile_prefix_chars='@')
         backend = self.parser.add_argument_group('backend')
         backend.add_argument(
                 '--controller', default=controller,

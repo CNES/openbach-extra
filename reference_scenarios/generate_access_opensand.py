@@ -103,8 +103,7 @@ class _auto_multicast_address:
 class Gateway:
     def __init__(
             self, entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_bridge_ip,
-            opensand_bridge_mac_address=_auto_mac_address(), opensand_id=_auto_gateway_id(),
-            opensand_default_spot_id=1):
+            opensand_id=_auto_gateway_id(), opensand_bridge_mac_address=_auto_mac_address()):
         self.entity = entity
         self.lan_ip = validate_ip(lan_ip)
         self.lan_interface = lan_interface
@@ -113,7 +112,6 @@ class Gateway:
         self.opensand_bridge_ip = validate_ip(opensand_bridge_ip)
         self.opensand_bridge_mac_address = str(opensand_bridge_mac_address)
         self.opensand_id = int(opensand_id)
-        self.default_spot_id = int(opensand_default_spot_id)
 
 
 class GatewayPhy:
@@ -130,8 +128,8 @@ class SatelliteTerminal:
     def __init__(
             self, entity, gateway_entity, lan_interface,
             emu_interface, lan_ip, emu_ip, opensand_bridge_ip,
-            opensand_bridge_mac_address=_auto_mac_address(),
-            opensand_id=_auto_terminal_id(), opensand_spot_id=1):
+            opensand_id=_auto_terminal_id(), opensand_spot_id=1,
+            opensand_bridge_mac_address=_auto_mac_address()):
         self.entity = entity
         self.gateway_entity = gateway_entity
         self.lan_ip = validate_ip(lan_ip)
@@ -291,7 +289,7 @@ def create_topology(satellite, gateways, terminals, spots):
         terminal_eth.set('tal_id', '31')
 
     spot_table_ids = defaultdict(list)
-    gw_table_ids = defaultdict(list)
+    terminals_table_ids = defaultdict(list)
 
     for terminal in terminals:
         terminal_id = str(terminal.opensand_id)
@@ -299,17 +297,24 @@ def create_topology(satellite, gateways, terminals, spots):
         terminal_eth.set('mac', terminal.opensand_bridge_mac_address)
         terminal_eth.set('tal_id', terminal_id)
         spot_table_ids[str(terminal.spot_id)].append(terminal_id)
-        gw_table_ids[terminal.gateway_entity].append(terminal_id)
+        terminals_table_ids[terminal.gateway_entity].append(terminal_id)
 
-    for gateway_entity in list(gw_table_ids):
-        terminal_ids = gw_table_ids.pop(gateway_entity)
-        for gateway in gateways:
-            if gateway.entity == gateway_entity:
-                gw_table_ids[str(gateway.opensand_id)] = terminal_ids
-                break
-        else:
-            warnings.warn('Terminals {} {} linked to unknown gateway {}; ignoring'.format(', '.join(terminal_ids), 'is' if len(terminal_ids) < 2 else 'are', gateway_entity))
+    gw_table_ids = {}
+    for gateway in gateways:
+        gateway_id = str(gateway.opensand_id)
+        gateway_eth = ET.SubElement(ethernet, 'terminal_eth')
+        gateway_eth.set('mac', gateway.opensand_bridge_mac_address)
+        gateway_eth.set('tal_id', gateway_id)
+        gw_table_ids[gateway_id] = terminals_table_ids[gateway.entity]
+        del terminals_table_ids[gateway.entity]
 
+    for gateway_entity, terminal_ids in terminals_table_ids.items():
+        warnings.warn(
+                'Terminals {} {} linked to unknown gateway {}; ignoring'
+                .format(
+                    ', '.join(terminal_ids),
+                    'is' if len(terminal_ids) < 2 else 'are',
+                    gateway_entity))
 
     sat_carriers = ET.SubElement(configuration, 'sat_carrier')
 
@@ -323,7 +328,9 @@ def create_topology(satellite, gateways, terminals, spots):
                 gateway_id = str(gateway.opensand_id)
                 break
         else:
-            warnings.warn('Spot {} is linked to unknown gateway {}; ignoring'.format(spot_id, gateway_entity))
+            warnings.warn(
+                    'Spot {} is linked to unknown gateway {}; ignoring'
+                    .format(spot_id, gateway_entity))
             continue
 
         spot_element = ET.SubElement(sat_carriers, 'spot')
@@ -538,7 +545,7 @@ def main(scenario_name='access_opensand', argv=None):
             '--gateway', '-gw', required=True, action=ValidateGateway, nargs='*',
             help='A gateway in the platform. Must be supplied at least once.',
             metavar='ENTITY LAN_INTERFACE EMU_INTERFACE LAN_IP EMU_IP OPENSAND_BRIDGE_IP '
-            '[OPENSAND_BRIDGE_MAC_ADDRESS [OPENSAND_ID [OPENSAND_DEFAULT_SPOT_ID]]]')
+            '[OPENSAND_ID [OPENSAND_BRIDGE_MAC_ADDRESS]]')
     observer.add_scenario_argument(
             '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy, nargs=6,
             help='The physical part of a split gateway. Must reference the '
@@ -550,7 +557,7 @@ def main(scenario_name='access_opensand', argv=None):
             help='A satellite terminal in the platform. Must be supplied at '
             'least once and reference the gateway it is attached to.',
             metavar='ENTITY GATEWAY_ENTITY LAN_INTERFACE EMU_INTERFACE LAN_IP EMU_IP '
-            'OPENSAND_BRIDGE_IP [OPENSAND_BRIDGE_MAC_ADDRESS [OPENSAND_ID [OPENSAND_SPOT_ID]]')
+            'OPENSAND_BRIDGE_IP [OPENSAND_ID [OPENSAND_SPOT_ID [OPENSAND_BRIDGE_MAC_ADDRESS]]]')
     observer.add_scenario_argument(
             '--spot', required=False, action=ValidateSpot, nargs='*',
             help='A spot associated to a gateway and serving several '
