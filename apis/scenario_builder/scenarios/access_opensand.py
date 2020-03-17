@@ -103,8 +103,10 @@ def push_conf(satellite_entity, gateways, terminals, configuration_files, scenar
             'gw': [],
             None: [],
     }
+
     for config_file in configuration_files:
         entity = config_file.parts[0]
+
         if entity not in configuration_per_entity:
             entity = None
         configuration_per_entity[entity].append(config_file)
@@ -145,9 +147,9 @@ def build(satellite, gateways, terminals, duration=0, configuration_files=None, 
 
     if duration:
         if scenario is None:
-            scenario = Scenario(scenario_name + '_with_configuration_files')
+            scenario = Scenario(scenario_name + '_limited_time')
             start_scenario = scenario.add_function('start_scenario_instance')
-            start_scenario.configure(scenario_push)
+            start_scenario.configure(scenario_run)
 
         scenario.add_function('stop_scenario_instance', wait_launched=[start_scenario], wait_delay=duration).configure(start_scenario)
 

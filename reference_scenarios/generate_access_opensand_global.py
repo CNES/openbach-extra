@@ -623,6 +623,8 @@ def main(scenario_name='access_opensand', argv=None):
                 pusher.args.local_file = topology_conf
                 pusher.args.remote_path = 'topology.conf'
                 pusher.execute(False)
+            if Path("topology.conf") not in config_files:
+                config_files.append(Path("topology.conf"))
 
     scenario = build_opensand(
             SAT(satellite.entity, satellite.interface, satellite.ip),

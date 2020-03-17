@@ -30,7 +30,7 @@
 import ipaddress
 
 from scenario_builder import Scenario
-from scenario_builder.scenarios.access_opensand import build as access_opensand, ST as _ST, GW as _GW, SPLIT_GW as _GW_PHY
+from scenario_builder.scenarios.access_opensand import build as access_opensand, SAT as _SAT, ST as _ST, GW as _GW, SPLIT_GW as _GW_PHY
 from scenario_builder.scenarios.access_opensand_configure import configure, SAT, ST, GW, WS
 from scenario_builder.scenarios.access_opensand_clear import clear
 
@@ -69,12 +69,14 @@ def build(satellite, gateways, workstations=(), duration=0, configuration_files=
             for gw in gateways
             for terminal in gw.terminals
     ]
+
     gws = list(_extract_simple_parameters(gateways))
-    scenario_run = access_opensand(satellite, gws, sts, duration, configuration_files)
+    sat = _SAT(satellite.entity, _extract_ip(satellite.ip))
+    scenario_run = access_opensand(sat, gws, sts, duration, configuration_files)
     start_scenario_run = scenario.add_function('start_scenario_instance', wait_finished=[start_scenario_configure])
     start_scenario_run.configure(scenario_run)
     
-    scenario_clear = clear(satellite_entity, satellite_interface, gateways, workstations)
+    scenario_clear = clear(satellite, gateways, workstations)
     start_scenario_clear = scenario.add_function('start_scenario_instance', wait_finished=[start_scenario_run], wait_delay=5)
     start_scenario_clear.configure(scenario_clear)
 
