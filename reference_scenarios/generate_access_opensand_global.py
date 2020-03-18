@@ -261,7 +261,11 @@ def find_routes(routes, ip):
     ]
 
 
-def create_topology(satellite, gateways, terminals, spots):
+def create_topology(satellite, gateways, gateways_phy, terminals, spots):
+    default_gw = None
+    default_spot = None
+    physical_emulation_address = {gw.net_access_entity: gw.emu_ip for gw in gateways_phy}
+
     satellite_ip = extract_ip(satellite.ip)
 
     configuration = ET.Element('configuration')
@@ -296,6 +300,8 @@ def create_topology(satellite, gateways, terminals, spots):
         gateway_eth.set('tal_id', gateway_id)
         gw_table_ids[gateway_id] = []
         gateway_entities[gateway.entity] = gateway
+        if default_gw is None:
+            default_gw = gateway_id
 
     sat_carriers = ET.SubElement(configuration, 'sat_carrier')
 
@@ -310,7 +316,9 @@ def create_topology(satellite, gateways, terminals, spots):
                     .format(spot_id, spot.gateway_entity))
             continue
         else:
-            gateway_ip = extract_ip(gateway.emu_ip)
+            if default_spot is None:
+                default_spot = spot_id
+            gateway_ip = extract_ip(physical_emulation_address.get(gateway.entity, gateway.emu_ip))
             gateway_id = str(gateway.opensand_id)
 
         for terminal_entity in spot.terminals:
@@ -404,7 +412,7 @@ def create_topology(satellite, gateways, terminals, spots):
             terminal = ET.SubElement(terminals, 'tal')
             terminal.set('id', terminal_id)
     default = ET.SubElement(spot_table, 'default_spot')
-    default.text = '1'
+    default.text = default_spot
 
     gw_table = ET.SubElement(configuration, 'gw_table')
     for gateway_id, gateway_terminals in gw_table_ids.items():
@@ -414,8 +422,8 @@ def create_topology(satellite, gateways, terminals, spots):
         for terminal_id in gateway_terminals:
             terminal = ET.SubElement(terminals, 'tal')
             terminal.set('id', terminal_id)
-    default = ET.SubElement(gw_table, 'default_spot')
-    default.text = '0'
+    default = ET.SubElement(gw_table, 'default_gw')
+    default.text = default_gw
 
     return ET.ElementTree(configuration)
 
@@ -548,7 +556,7 @@ def main(scenario_name='access_opensand', argv=None):
             metavar='ENTITY LAN_INTERFACE EMU_INTERFACE LAN_IP EMU_IP OPENSAND_BRIDGE_IP '
             '[OPENSAND_ID [OPENSAND_BRIDGE_MAC_ADDRESS]]')
     observer.add_scenario_argument(
-            '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy, nargs=6,
+            '--gateway-phy', '-gwp', default=[], action=ValidateGatewayPhy, nargs=6,
             help='The physical part of a split gateway. Must reference the '
             'net access part previously provided using the --gateway option. '
             'Optional, can be supplied only once per gateway.',
@@ -566,13 +574,13 @@ def main(scenario_name='access_opensand', argv=None):
             'topology.conf found using the --configuration-folder option.',
             metavar='SPOT_ID GATEWAY_ENTITY [TERMINAL_ENTITY [TERMINAL_ENTITY [...]]]')
     observer.add_scenario_argument(
-            '--workstation', '-ws', required=False, action=ValidateWorkStation, nargs=4,
+            '--workstation', '-ws', default=[], action=ValidateWorkStation, nargs=4,
             help='A workstation to configure alongside the main OpenSAND platform. '
             'Must reference an existing gateway or satellite terminal. Optional, '
             'can be supplied several times per OpenSAND entity.',
             metavar=('ENTITY', 'OPENSAND_ENTITY', 'LAN_INTERFACE', 'LAN_IP'))
     observer.add_scenario_argument(
-            '--duration', '-d', required=False, default=0, type=int,
+            '--duration', '-d', default=0, type=int,
             help='Duration of the opensand run test, leave blank for endless emulation.')
     observer.add_scenario_argument(
             '--configuration-folder', '--configuration', '-c',
@@ -585,15 +593,15 @@ def main(scenario_name='access_opensand', argv=None):
     args = observer.parse(argv, scenario_name)
 
     if args.spot:
-        topology = create_topology(args.sat, args.gateway, args.satellite_terminal, args.spot)
+        topology = create_topology(args.sat, args.gateway, args.gateway_phy, args.satellite_terminal, args.spot)
         indent_xml(topology.getroot())
 
     gateways, workstations = create_network(
         args.sat.ip, 16,
         args.gateway,
-        args.gateway_phy or [],
+        args.gateway_phy,
         args.satellite_terminal,
-        args.workstation or [])
+        args.workstation)
     satellite = args.sat
   
     config_files = None
