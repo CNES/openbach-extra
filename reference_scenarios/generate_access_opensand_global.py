@@ -183,8 +183,10 @@ class _Validate(argparse.Action):
     ENTITY_TYPE = None
 
     def __call__(self, parser, args, values, option_string=None): 
-        if getattr(args, self.dest) == None:
-            self.items = []
+        items = getattr(args, self.dest)
+        if items is None:
+            items = []
+            setattr(args, self.dest, items)
 
         try:
             entity = self.ENTITY_TYPE(*values)
@@ -192,8 +194,8 @@ class _Validate(argparse.Action):
             raise argparse.ArgumentError(self, str(e).split('__init__() ', 1)[-1])
         except ValueError as e:
             raise argparse.ArgumentError(self, e)
-        self.items.append(entity)
-        setattr(args, self.dest, self.items)
+        items.append(entity)
+        
 
 
 class _ValidateOptional:
