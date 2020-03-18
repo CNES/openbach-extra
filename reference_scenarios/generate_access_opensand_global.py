@@ -80,6 +80,26 @@ class _auto_mac_address:
         return ':'.join(format(s, '02x') for s in self._id.to_bytes(6, 'big'))
 
 
+@functools.lru_cache(maxsize=1)
+class _auto_spot_port:
+    def __init__(self):
+        self._port = 54999
+
+    def __int__(self):
+        self._port += 1
+        return self._port
+
+
+@functools.lru_cache(maxsize=1)
+class _auto_multicast_address:
+    def __init__(self):
+        self._address = 4018782940
+
+    def __str__(self):
+        self._address += 1
+        return ipaddress.ip_address(self._address).compressed
+
+
 class Gateway:
     def __init__(
             self, entity, lan_interface, emu_interface, lan_ip, emu_ip, opensand_bridge_ip,
@@ -133,6 +153,16 @@ class Spot:
         self.spot_id = int(spot_id)
         self.gateway_entity = gateway_entity
         self.terminals = terminals
+        self.control_out_port = int(_auto_spot_port())
+        self.control_in_port = int(_auto_spot_port())
+        self.logon_out_port = int(_auto_spot_port())
+        self.logon_in_port = int(_auto_spot_port())
+        self.data_out_st_port = int(_auto_spot_port())
+        self.data_in_st_port = int(_auto_spot_port())
+        self.data_out_gw_port = int(_auto_spot_port())
+        self.data_in_gw_port = int(_auto_spot_port())
+        self.control_multicast_address = str(_auto_multicast_address())
+        self.data_multicast_address = str(_auto_multicast_address())
 
 
 class WorkStation:
