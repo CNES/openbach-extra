@@ -138,7 +138,7 @@ def build(satellite, gateways, terminals, duration=0, configuration_files=None, 
 
     if duration:
         jobs = [f for f in scenario_run.openbach_functions if isinstance(f, StartJobInstance)]
-        scenario_run.add_function('stop_job_instances', wait_launched=jobs, wait_delay=duration).configure(*jobs)
+        scenario_run.add_function('stop_job_instance', wait_launched=jobs, wait_delay=duration).configure(*jobs)
 
     if not configuration_files:
         return scenario_run
