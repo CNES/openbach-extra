@@ -31,6 +31,7 @@ import ipaddress
 from collections import namedtuple
 
 from scenario_builder import Scenario
+from scenario_builder.scenarios.access_opensand_network import configure, clear
 from scenario_builder.helpers.access import opensand
 from scenario_builder.scenarios.access_opensand import (
         build as access_opensand,
@@ -40,18 +41,6 @@ from scenario_builder.scenarios.access_opensand import (
 
 SCENARIO_DESCRIPTION = """This is reference OpenSAND scenario"""
 SCENARIO_NAME = 'access_opensand_global'
-
-
-CONFIGURE_DESCRIPTION = """This configure opensand system scenario allows to:
- - Configure the satellite, the gateways, the ST, the SRV and the CLT for an opensand test
-"""
-CONFIGURE_NAME = 'access_opensand_configure'
-
-
-CLEAR_DESCRIPTION = """This clear simple system scenario allows to:
- - Clear the satellite, the gateways, the ST, the SRV and the CLT from an opensand test
-"""
-CLEAR_NAME = 'access_opensand_clear'
 
 
 SAT = namedtuple('SAT', ('entity', 'interface', 'ip'))
@@ -75,61 +64,6 @@ class GW(ST):
             self.gateway_phy_entity = gateway_phy_entity
             self.gateway_phy_ips = gateway_phy_ips
             self.gateway_phy_interfaces = gateway_phy_interfaces
-
-
-def configure(satellite, gateways, work_stations=(), scenario_name=CONFIGURE_NAME):
-    scenario = Scenario(scenario_name, CONFIGURE_DESCRIPTION)
-    opensand.configure_satellite(scenario, satellite.entity, satellite.interface, satellite.ip)
-
-    for gateway in gateways:
-        opensand.configure_gateway(
-                scenario, gateway.entity,
-                gateway.interfaces, gateway.ips, gateway.opensand_bridge_ip,
-                gateway.route_ips, gateway.gateway_route, gateway.opensand_bridge_mac_address)
-        if gateway.gateway_phy_entity is not None:
-            opensand.configure_gateway_phy(
-                    scenario, gateway.gateway_phy_entity,
-                    gateway.gateway_phy_interfaces, gateway.gateway_phy_ips)
-
-        for terminal in gateway.terminals:
-            opensand.configure_terminal(
-                    scenario, terminal.entity,
-                    terminal.interfaces, terminal.ips, terminal.opensand_bridge_ip,
-                    terminal.route_ips, terminal.gateway_route, terminal.opensand_bridge_mac_address)
-
-    for host in work_stations:
-        opensand.configure_workstation(
-                scenario, host.entity,
-                host.interfaces, host.ips,
-                host.route_ips, host.gateway_route)
-
-    return scenario
-
-
-def clear(satellite, gateways, work_stations=(), scenario_name=CLEAR_NAME):
-    scenario = Scenario(scenario_name, CLEAR_DESCRIPTION)
-    opensand.clear_satellite(scenario, satellite.entity, satellite.interface)
-
-    for gateway in gateways:
-        opensand.clear_gateway(
-                scenario, gateway.entity,
-                gateway.interfaces)
-        if gateway.gateway_phy_entity is not None:
-            opensand.clear_gateway_phy(
-                    scenario, gateway.gateway_phy_entity,
-                    gateway.gateway_phy_interfaces)
-
-        for terminal in gateway.terminals:
-            opensand.clear_terminal(
-                    scenario, terminal.entity,
-                    terminal.interfaces)
-
-    for host in work_stations:
-        opensand.clear_workstation(
-                scenario, host.entity,
-                host.interfaces)
-
-    return scenario
 
 
 def _extract_ip(ip_with_mask):
