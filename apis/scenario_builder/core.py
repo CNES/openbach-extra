@@ -69,7 +69,7 @@ class Scenario:
     def add_constant(self, name, value):
         """Associate a value to a constant for this scenario"""
 
-        self.constants[name] = value
+        self.constants[name] = str(value)
 
     def remove_constants(self, name):
         """Remove the given constant from this scenario"""
