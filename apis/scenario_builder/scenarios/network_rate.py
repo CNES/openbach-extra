@@ -46,13 +46,13 @@ SCENARIO_NAME = 'network_rate'
 
 
 def network_rate(
-        client, server, ip_sender, ip_destination,
+        server_entity, client_entity, server_ip, client_ip,
         server_port, command_port, duration,
         num_flows, tos, mtu, rate, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    scenario.add_constant('ip_dst', ip_destination)
-    scenario.add_constant('ip_snd', ip_sender)
-    scenario.add_constant('port', server_port)
+    scenario.add_constant('server_ip', server_ip)
+    scenario.add_constant('client_ip', client_ip)
+    scenario.add_constant('server_port', server_port)
     scenario.add_constant('command_port', command_port)
     scenario.add_constant('duration', duration)
     scenario.add_constant('num_flows', num_flows)
@@ -61,34 +61,39 @@ def network_rate(
     scenario.add_constant('rate', rate)
 
     wait = iperf3_rate_tcp(
-            scenario, client, server, '$ip_dst', '$port', '$duration', '$num_flows', '$tos', '$mtu')
+            scenario, client_entity, server_entity, '$server_ip', '$server_port', '$duration', '$num_flows', '$tos', '$mtu')
     wait = nuttcp_rate_tcp(
-            scenario, client, server, '$ip_dst', '$port', '$command_port',
+            scenario, client_entity, server_entity, '$server_ip', '$server_port', '$command_port',
             '$duration', '$num_flows', '$tos', '$mtu', wait, None, 2)
     wait = ditg_pcket_rate(
-            scenario, client, server, '$ip_dst', '$ip_snd', 'TCP', '/tmp/',
-            1000, '$mtu', 100000, '$duration', 'owdm', 50, '$port', '$command_port', wait, None, 2)
+            scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'TCP', '/tmp/',
+            1000, '$mtu', 100000, '$duration', 'owdm', 50, '$server_port', '$command_port', wait, None, 2)
     wait = nuttcp_rate_udp(
-            scenario, client, server, '$ip_dst', '$port', '$command_port', '$duration', '$rate', wait, None, 2)
+            scenario, client_entity, server_entity, '$server_ip', '$server_port', '$command_port', '$duration', '$rate', wait, None, 2)
     ditg_rate(
-            scenario, client, server, '$ip_dst', '$ip_snd', 'UDP', '/tmp/',
-            1000, '$mtu', '$rate', '$duration', 'owdm', 50, '$port', '$command_port', wait, None, 2)
+            scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', '/tmp/',
+            1000, '$mtu', '$rate', '$duration', 'owdm', 50, '$server_port', '$command_port', wait, None, 2)
 
     return scenario
 
 
 def build(
-        client, server, ip_destination, ip_sender,
+        server_entity, client_entity, server_ip, client_ip,
         server_port, command_port, duration,
         rate, num_flows, tos, mtu,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = network_rate(
-            client, server, ip_sender, ip_destination, server_port,
+            server_entity, client_entity, server_ip, client_ip, server_port,
             command_port, duration, num_flows, tos, mtu, rate, scenario_name)
 
     if post_processing_entity is not None:
+        waiting_jobs = []
+        for function in scenario.openbach_functions:
+            if isinstance(function, StartJobInstance):
+                waiting_jobs.append(function)
+
         post_processed = list(scenario.extract_function_id('d-itg_send', iperf3=iperf3_find_server, nuttcp=nuttcp_find_client))
-        jobs = scenario.openbach_functions.copy()
+
         no_suffix = num_flows != '1'
         legends = [
                 ['{} TCP flow with iperf3'.format(num_flows)],
@@ -105,7 +110,7 @@ def build(
                 [['bitrate_receiver', 'rate', 'throughput']],
                 [['Rate (b/s)']], [['Rate time series']],
                 legends,
-                jobs, None, 2, no_suffix)
+                waiting_jobs, None, 2, no_suffix)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -114,6 +119,6 @@ def build(
                 [['rate', 'throughput', 'bitrate_receiver']],
                 [['Rate (b/s)']], [['Rate CDF']],
                 legends,
-                jobs, None, 2, no_suffix)
+                waiting_jobs, None, 2, no_suffix)
 
     return scenario

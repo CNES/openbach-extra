@@ -39,42 +39,42 @@ from scenario_builder.scenarios import network_rate
 def main(scenario_name='generate_network_rate', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--client', '--client-entity', required=True,
-            help='name of the entity for the client iperf3/nuttcp/d-itg_recv')
-    observer.add_scenario_argument(
-            '--server', '--server-entity', required=True,
+            '--server-entity', required=True,
             help='name of the entity for the server iperf3/nuttcp/d-itg_send')
     observer.add_scenario_argument(
-            '--ip_dst', required=True, help='The server IP address')
+            '--client-entity', required=True,
+            help='name of the entity for the client iperf3/nuttcp/d-itg_recv')
     observer.add_scenario_argument(
-            '--ip_snd', required=True, help='The sender IP address')
+            '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--port', default=7001,  help='The iperf3/nuttcp/d-itg server port for data')
+            '--client-ip', required=True, help='The sender IP address')
+    observer.add_scenario_argument(
+            '--server-port', default=7001,  help='The iperf3/nuttcp/d-itg server port for data')
+    observer.add_scenario_argument(
+            '--command-port', default=7000, help='The port of nuttcp/d-itg server for signalling')
     observer.add_scenario_argument(
             '--duration', default=30, help='duration of iperf3/nuttcp/d-itg tests')
-    observer.add_scenario_argument(
-            '--command_port', default=7000, help='The port of nuttcp/d-itg server for signalling')
     observer.add_scenario_argument(
             '--rate', help='Set a higher rate (in kb/s) than what you estimate between server and client '
             'for the UDP test (add M/G to set M/G b/s)', required=True)
     observer.add_scenario_argument(
-            '--num_flows', default=10, help='Number of iperf3/nuttcp flows generated')
+            '--num-flows', default=10, help='Number of iperf3/nuttcp flows generated')
     observer.add_scenario_argument(
             '--tos', default=0, help='Type of Service of the trafic (default : 0)')
     observer.add_scenario_argument(
             '--mtu', default=1000-40, help='MTU size (default : 1000-40)')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be '
+            '--entity-pp', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
 
     scenario = network_rate.build(
-            args.client,
-            args.server,
-            args.ip_dst,
-            args.ip_snd,
-            args.port,
+            args.server_entity,
+            args.client_entity,
+            args.server_ip,
+            args.client_ip,
+            args.server_port,
             args.command_port,
             args.duration,
             args.rate,
