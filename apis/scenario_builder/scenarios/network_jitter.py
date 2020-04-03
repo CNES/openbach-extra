@@ -44,11 +44,11 @@ SCENARIO_NAME = 'network_jitter'
 
 
 def jitter(
-        client_entity, server_entity, server_ip, server_port,
+        server_entity, client_entity, server_ip, server_port,
         num_flows, duration, tos, bandwidth, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    scenario.add_constant('srv_ip', server_ip)
-    scenario.add_constant('srv_port', server_port)
+    scenario.add_constant('server_ip', server_ip)
+    scenario.add_constant('server_port', server_port)
     scenario.add_constant('num_flows', num_flows)
     scenario.add_constant('duration', duration)
     scenario.add_constant('tos', tos)
@@ -58,24 +58,27 @@ def jitter(
     # Add d-itg if good jitter measure ?
     iperf = iperf3_rate_udp(
             scenario, client_entity, server_entity,
-            '$srv_ip', '$srv_port', '$num_flows',
+            '$server_ip', '$server_port', '$num_flows',
             '$duration', '$tos', '$bandwidth')
-    owamp_measure_owd(scenario, client_entity, srv_entity, '$srv_ip', iperf)
+    owamp_measure_owd(scenario, client_entity, server_entity, '$server_ip', iperf)
 
     return scenario
 
 
 def build(
-        client_entity, server_entity, server_ip, server_port,
+        server_entity, client_entity, server_ip, server_port,
         duration, num_flows, tos, bandwidth,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = jitter(
-            client_entity, server_entity, server_ip, server_port,
+            server_entity, client_entity, server_ip, server_port,
             num_flows, duration, tos, bandwidth, scenario_name)
 
     if post_processing_entity is not None:
+        waiting_jobs = []
+        for function in scenario.openbach_functions:
+            if isinstance(function, StartJobInstance):
+                waiting_jobs.append(function)
         post_processed = list(scenario.extract_function_id('owamp-client', iperf3=iperf3_find_server))
-        jobs = scenario.openbach_functions.copy()
 
         time_series_on_same_graph(
                 scenario,
@@ -85,7 +88,7 @@ def build(
                 [['Jitter (ms)']],
                 [['Jitters time series']],
                 [['iperf3 jitter'], ['owamp ipdv_sent'], ['owamp ipdv_received'], ['owamp pdv_send'], ['owamp pdv_received']],
-                jobs, None, 2)
+                waiting_jobs, None, 2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -95,6 +98,6 @@ def build(
                 [['Jitter (ms)']],
                 [['Jitters CDF']],
                 [['iperf3 jitter'], ['owamp ipdv_sent'], ['owamp ipdv_received'], ['owamp pdv_send'], ['owamp pdv_received']],
-                jobs, None, 2)
+                waiting_jobs, None, 2)
 
     return scenario
