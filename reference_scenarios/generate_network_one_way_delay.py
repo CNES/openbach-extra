@@ -39,26 +39,26 @@ from scenario_builder.scenarios import network_one_way_delay
 def main(scenario_name='generate_network_one_way_delay', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--client', '--client-entity', required=True,
-            help='name of the entity for the client of the RTT tests')
-    observer.add_scenario_argument(
-            '--server', '--server-entity', required=True,
+            '--server-entity', required=True,
             help='name of the entity for the server of the owamp RTT test')
     observer.add_scenario_argument(
-            '--ip_dst', required=True, help='server ip address and target of owamp and d-itg test')
+            '--client-entity', required=True,
+            help='name of the entity for the client of the RTT tests')
     observer.add_scenario_argument(
-            '--ip_clt', required=True, help='client ip address of d-itg test')
+            '--server-ip', required=True, help='server ip address and target of owamp and d-itg test')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be '
+            '--client-ip', required=True, help='client ip address of d-itg test')
+    observer.add_scenario_argument(
+            '--entity-pp', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
 
     scenario = network_one_way_delay.build(
-                      args.client,
-                      args.server,
-                      args.ip_clt,
-                      args.ip_dst,
+                      args.server_entity,
+                      args.client_entity,
+                      args.server_ip,
+                      args.client_ip,
                       args.entity_pp)
 
     observer.launch_and_wait(scenario)
