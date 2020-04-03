@@ -34,31 +34,33 @@ from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
 SCENARIO_DESCRIPTION = """This scenario launches one iperf3 transfer.
-
+The server_ip and client_ip values are in accordance with iperf3 logic :
+server = receiver and client = sender.
 It can then, optionally, plot the throughput using time-series and CDF.
 """
 SCENARIO_NAME = 'service_data_transfer'
 
 
-def data_transfer(source, destination, duration, ip, port, size, tos, mtu, scenario_name=SCENARIO_NAME):
+def data_transfer(server_entity, client_entity, server_ip, server_port, duration, file_size, tos, mtu, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    if size == '0':
-        iperf3_rate_tcp(scenario, source, destination, ip, port, duration, 1, tos, mtu)
+    if file_size == '0':
+        iperf3_rate_tcp(scenario, client_entity, server_entity, server_ip, server_port, duration, 1, tos, mtu)
     else:
-        iperf3_send_file_tcp(scenario, source, destination, ip, port, size, tos, mtu)
+        iperf3_send_file_tcp(scenario, client_entity, server_entity, server_ip, server_port, file_size, tos, mtu)
 
     return scenario
 
 
 def build(
-        source, destination, duration, destination_ip, port, size, tos,
+        server_entity, client_entity, server_ip, server_port, duration, file_size, tos,
         mtu, post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = data_transfer(source, destination, duration, destination_ip, port, size, tos, mtu, scenario_name)
+
+    scenario = data_transfer(server_entity, client_entity, server_ip, server_port, duration, file_size, tos, mtu, scenario_name)
 
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id(iperf3=iperf3_find_server))
         jobs = [function for function in scenario.openbach_functions if isinstance(function, StartJobInstance)]
-        legends = ['iperf3 from {} to {}, port {}'.format(source, destination, port)]
+        legends = ['iperf3 from {} to {}, port {}'.format(client_entity, server_entity, server_port)]
 
         time_series_on_same_graph(
                 scenario,

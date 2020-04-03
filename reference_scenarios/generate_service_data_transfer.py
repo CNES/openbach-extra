@@ -35,19 +35,19 @@ from scenario_builder.scenarios import service_data_transfer
 def main():
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--src_entity', required=True,
-            help='name of the source entity for the iperf3 traffic')
-    observer.add_scenario_argument(
-            '--dst_entity', required=True,
+            '--server-entity', required=True,
             help='name of the destination entity for the iperf3 traffic')
     observer.add_scenario_argument(
-            '--dst_ip', required=True,
+            '--client-entity', required=True,
+            help='name of the source entity for the iperf3 traffic')
+    observer.add_scenario_argument(
+            '--server-ip', required=True,
             help='destination ip address for the iperf3 traffic')
     observer.add_scenario_argument(
-            '--dst_port', required=True,
+            '--server-port', required=True,
             help='destination port for the iperf3 traffic (e.g. 5201)')
     observer.add_scenario_argument(
-            '--file_size', required=True,
+            '--file-size', required=True,
             help='size of the file to transmit (in bytes) - must be set to 0 if '
             'the end of the transfer is defined by the duration parameter')
     observer.add_scenario_argument(
@@ -62,17 +62,17 @@ def main():
             'an integer value even if the file_size parameter defines the end of'
             'transfer (the value will then be ignored)')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be performed '
+            '--entity-pp', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse()
 
     scenario = service_data_transfer.build(
-            args.src_entity,
-            args.dst_entity,
+            args.server_entity,
+            args.client_entity,
+            args.server_ip,
+            args.server_port,
             args.duration,
-            args.dst_ip,
-            args.dst_port,
             args.file_size,
             args.tos,
             args.mtu,
