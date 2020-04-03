@@ -33,16 +33,29 @@ SCENARIO_DESCRIPTION = """This scenario allows to:
  - Add/Remove a scheduler on ip layer on the chosen interface.
    This scheduler works with three levels of scheduling: per trunk, per destination, and per Class of Service.
 """
-SCENARIO_NAME = 'network_qos'
 
 
-def build(entity, interface_name, action, path, scenario_name=SCENARIO_NAME):
+def add_qos(entity, interface_name, path, scenario_name='add_network_qos'):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-
     function = scenario.add_function('start_job_instance')
-    if action == "add":
-        function.configure('ip_scheduler', entity, interface_name=interface_name, add={"file_path":path})
-    elif action == "remove":
-        function.configure('ip_scheduler', entity, interface_name=interface_name, remove={})
-
+    function.configure('ip_scheduler', entity, interface_name=interface_name, add={"file_path":path})
     return scenario
+
+
+def remove_qos(entity, interface_name, scenario_name='remove_network_qos'):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    function = scenario.add_function('start_job_instance')
+    function.configure('ip_scheduler', entity, interface_name=interface_name, remove={})
+    return scenario
+
+
+def build(entity, interface_name, action, path, scenario_name=None):
+
+    scenario = add_qos(entity, interface_name, path) if action == "add" else remove_qos(entity, interface_name)
+
+    if scenario_name is not None:
+        scenario.name = scenario_name
+ 
+    return scenario
+
+

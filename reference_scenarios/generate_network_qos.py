@@ -39,7 +39,7 @@ from scenario_builder.scenarios import network_qos
 def main(scenario_name='network_qos', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--entity', '--entity', required=True,
+            '--entity', required=True,
             help='Name of the entity to place the scheduler')
     observer.add_scenario_argument(
             '--interface', '--network_interface', required=True,
@@ -48,20 +48,20 @@ def main(scenario_name='network_qos', argv=None):
             '--action', choices=['add', 'remove'], required=True,
             help='Add a new scheduler or remove the existing one')
     observer.add_scenario_argument(
-            '--path',
+            '-c', '--configuration-file', metavar='PATH',
             help='The path to the scheduler configuartion file, on the entity, mandatory if action is add')
-    
-    args = observer.parse(argv, scenario_name)
 
+    args = observer.parse(argv, scenario_name)
+ 
     if args.action == "add":
-        if not args.path:
+        if not args.configuration_file:
             raise AttributeError("Path must be specified if the action is add")
 
     scenario = network_qos.build(
                 args.entity,
                 args.interface,
                 args.action,
-                args.path,
+                args.configuration_file,
     )
     observer.launch_and_wait(scenario)
 
