@@ -44,53 +44,56 @@ It can then, optionally, plot the delay measurements using time-series and CDF.
 SCENARIO_NAME = 'network_delay'
 
 
-def simultaneous_traffic(client_entity, client, server_entity, server, duration, scenario_name=SCENARIO_NAME):
+def simultaneous_traffic(server_entity, client_entity, server_ip, client_ip, duration, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    scenario.add_constant('srv_ip', server)
-    scenario.add_constant('clt_ip', client)
+    scenario.add_constant('server_ip', server_ip)
+    scenario.add_constant('client_ip', client_ip)
     scenario.add_constant('duration', duration)
 
     srv = ditg_pcket_rate(
             scenario, client_entity, server_entity,
-            '$srv_ip', '$clt_ip', 'UDP', packet_rate=1,
+            '$server_ip', '$client_ip', 'UDP', packet_rate=1,
             duration='$duration', meter='rttm')
     fping_measure_rtt(
-            scenario, clt_entity, '$srv_ip', '$duration',
+            scenario, client_entity, '$server_ip', '$duration',
             wait_launched=srv, wait_delay=1)
 
     return scenario
 
 
-def sequential_traffic(client_entity, client, server_entity, server, duration, scenario_name=SCENARIO_NAME):
+def sequential_traffic(server_entity, client_entity, server_ip, client_ip, duration, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    scenario.add_constant('srv_ip', server)
-    scenario.add_constant('clt_ip', client)
+    scenario.add_constant('server_ip', server_ip)
+    scenario.add_constant('client_ip', client_ip)
     scenario.add_constant('duration', duration)
 
     ditg = ditg_pcket_rate(
             scenario, client_entity, server_entity,
-            '$srv_ip', '$clt_ip', 'UDP', packet_rate=1,
+            '$server_ip', '$client_ip', 'UDP', packet_rate=1,
             duration='$duration', meter='rttm')
     fping_measure_rtt(
-            scenario, client_entity, '$srv_ip', '$duration',
+            scenario, client_entity, '$server_ip', '$duration',
             wait_finished=ditg)
 
     return scenario
 
 
 def build(
-        client_entity, server_entity, client_ip, server_ip,
+        server_entity, client_entity, server_ip, client_ip,
         duration, simultaneous,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = (simultaneous_traffic if simultaneous else sequential_traffic)(
-            client_entity, client_ip,
-            server_entity, server_ip,
+            server_entity, client_entity,
+            server_ip, client_ip,
             duration, scenario_name)
 
     if post_processing_entity is not None:
-        post_processed = list(scenario.extract_function_id('fping', 'd-itg_send'))
-        jobs = scenario.openbach_functions.copy()
+        waiting_jobs = []
+        for function in scenario.openbach_functions:
+            if isinstance(function, StartJobInstance):
+                waiting_jobs.append(function)
 
+        post_processed = list(scenario.extract_function_id('fping', 'd-itg_send'))
         time_series_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -99,7 +102,7 @@ def build(
                 [['RTT delay (ms)']],
                 [['RTTs time series']],
                 [['d-itg_send'], ['fping']],
-                jobs, None, 2)
+                waiting_jobs, None, 2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -109,6 +112,6 @@ def build(
                 [['RTT delay (ms)']],
                 [['RTT CDF']],
                 [['d-itg_send'], ['fping']],
-                jobs, None, 2)
+                waiting_jobs, None, 2)
 
     return scenario

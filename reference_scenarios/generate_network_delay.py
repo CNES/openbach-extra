@@ -38,34 +38,35 @@ from scenario_builder.scenarios import network_delay
 def main(scenario_name='generate_network_delay', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--clt_entity', '--clt', required=True,
-            help='name of the entity for the client of the RTT tests')
-    observer.add_scenario_argument(
-            '--srv_entity', '--srv', required=True,
+            '--server-entity', required=True,
             help='name of the entity for the srv of the RTT tests')
     observer.add_scenario_argument(
-            '--clt_ip', required=True, help='IP address of source of pings and packets')
+            '--client-entity', required=True,
+            help='name of the entity for the client of the RTT tests')
     observer.add_scenario_argument(
-            '--srv_ip', required=True, help='destination ip address and target of the pings')
+            '--server-ip', required=True, help='destination ip address and target of the pings')
+    observer.add_scenario_argument(
+            '--client-ip', required=True, help='IP address of source of pings and packets')
     observer.add_scenario_argument(
             '--duration', default=10, help='duration of delay scenario (s)')
     observer.add_scenario_argument(
             '--simultaneous', action='store_true',
             help='option whether or not the test is simultaneous. Default sequential')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be '
+            '--entity-pp', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
 
     scenario = network_delay.build(
-                      args.clt_entity,
-                      args.srv_entity,
-                      args.clt_ip,
-                      args.srv_ip,
+                      args.server_entity,
+                      args.client_entity,
+                      args.server_ip,
+                      args.client_ip,
                       args.duration,
                       args.simultaneous,
                       args.entity_pp)
+
     observer.launch_and_wait(scenario)
 
 
