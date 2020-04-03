@@ -34,27 +34,27 @@ from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
 SCENARIO_DESCRIPTION = """This scenario launches one voip transfer.
-
+client = transmitter and server = receiver
 It can then, optionally, plot the Mean Opinion Score using time-series and CDF.
 """
 SCENARIO_NAME = 'service_voip'
 
 
-def _voip(source, destination, duration, source_ip, destination_ip, port, codec, scenario_name=SCENARIO_NAME):
+def service_voip(server_entity, client_entity, server_ip, client_ip, server_port, duration, codec, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    voip(scenario, destination, source, source_ip, destination_ip, port, codec, duration)
+    voip(scenario, server_entity, client_entity, client_ip, server_ip, server_port, codec, duration)
     return scenario
 
 
 def build(
-        source, destination, duration,
-        source_ip, destination_ip, port, codec,
-        post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = _voip(source, destination, duration, source_ip, destination_ip, port, codec, scenario_name)
+        server_entity, client_entity, server_ip, client_ip, server_port,
+        duration, codec, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+
+    scenario = service_voip(server_entity, client_entity, server_ip, client_ip, server_port, duration, codec, scenario_name)
 
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('voip_qoe_src'))
-        legends = ['voip from {} to {}'.format(source, destination)]
+        legends = ['voip from {} to {}'.format(client_entity, server_entity)]
         jobs = [function for function in scenario.openbach_functions if isinstance(function, StartJobInstance)]
 
         time_series_on_same_graph(

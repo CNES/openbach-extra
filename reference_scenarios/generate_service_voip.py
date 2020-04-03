@@ -35,39 +35,39 @@ from scenario_builder.scenarios import service_voip
 def main():
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--src_entity', required=True,
-            help='name of the source entity for the VoIP traffic')
-    observer.add_scenario_argument(
-            '--dst_entity', required=True,
+            '--server-entity', required=True,
             help='name of the destination entity for the VoIP traffic')
     observer.add_scenario_argument(
-            '--src_ip', required=True,
-            help='source ip address for the VoIP traffic')
+            '--client-entity', required=True,
+            help='name of the source entity for the VoIP traffic')
     observer.add_scenario_argument(
-            '--dst_ip', required=True,
+            '--server-ip', required=True,
             help='destination ip address for the VoIP traffic')
     observer.add_scenario_argument(
-            '--dst_port', required=True,
+            '--client-ip', required=True,
+            help='source ip address for the VoIP traffic')
+    observer.add_scenario_argument(
+            '--server-port', required=True,
             help='destination port for the VoIP traffic')
     observer.add_scenario_argument(
             '--codec', required=True,
             help='codec used by the VoIP traffic. Possible values are: G.711.1, G.711.2, G.723.1, G.729.2, G.729.3.')
     observer.add_scenario_argument(
             '--duration', required=True,
-            help='duration of VoIP transmission')
+            help='duration of VoIP transmission in seconds')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be performed '
+            '--entity-pp', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse()
 
     scenario = service_voip.build(
-            args.src_entity,
-            args.dst_entity,
+            args.server_entity,
+            args.client_entity,
+            args.server_ip,
+            args.client_ip,
+            args.server_port,
             args.duration,
-            args.src_ip,
-            args.dst_ip,
-            args.dst_port,
             args.codec,
             args.entity_pp,
             scenario_name="service_voip")
