@@ -39,17 +39,17 @@ from scenario_builder.scenarios import transport_tcp_one_flow
 def main(scenario_name='generate_transport_tcp_one_flow', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--client', '--client-entity', required=True,
-            help='name of the entity for the client iperf3')
-    observer.add_scenario_argument(
-            '--server', '--server-entity', required=True,
+            '--server-entity', required=True,
             help='name of the entity for the server iperf3')
     observer.add_scenario_argument(
-            '--ip_dst', required=True, help='The server IP address')
+            '--client-entity', required=True,
+            help='name of the entity for the client iperf3')
     observer.add_scenario_argument(
-            '--port', default=7000,  help='The iperf3 server port for data')
+            '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--transmitted_size', required=True, help='The iperf3 '
+            '--server-port', default=7000,  help='The iperf3 server port for data')
+    observer.add_scenario_argument(
+            '--transmitted-size', required=True, help='The iperf3 '
             'transmitted_size (in bytes - you can use [K/M/G]: '
             'set 100M to send 100 MBytes)')
     observer.add_scenario_argument(
@@ -57,16 +57,16 @@ def main(scenario_name='generate_transport_tcp_one_flow', argv=None):
     observer.add_scenario_argument(
             '--mtu', default=1000-40, help='MTU size (default : 1000-40)')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be '
+            '--entity-pp', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
 
     scenario = transport_tcp_one_flow.build(
-            args.client,
-            args.server,
-            args.ip_dst,
-            args.port,
+            args.server_entity,
+            args.client_entity,
+            args.server_ip,
+            args.server_port,
             args.transmitted_size,
             args.tos,
             args.mtu,

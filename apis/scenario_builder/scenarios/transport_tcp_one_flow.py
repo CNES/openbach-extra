@@ -42,29 +42,32 @@ SCENARIO_DESCRIPTION = """This transport_tcp_one_flow scenario allows to:
 SCENARIO_NAME = 'transport_tcp_one_flow'
 
 
-def tcp_one_flow(client, server, ip_destination, server_port, size, tos, mtu, scenario_name=SCENARIO_NAME):
+def tcp_one_flow(server_entity, client_entity, server_ip, server_port, size, tos, mtu, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    scenario.add_constant('ip_dst', ip_destination)
-    scenario.add_constant('port', server_port)
+    scenario.add_constant('server_ip', server_ip)
+    scenario.add_constant('server_port', server_port)
     scenario.add_constant('transmitted_size', size)
     scenario.add_constant('tos', tos)
     scenario.add_constant('mtu', mtu)
 
-    iperf3_send_file_tcp(scenario, client, server, '$ip_dst', '$port', '$transmitted_size', '$tos', '$mtu')
+    iperf3_send_file_tcp(scenario, client_entity, server_entity, '$server_ip', '$server_port', '$transmitted_size', '$tos', '$mtu')
 
     return scenario
 
 
 def build(
-        client, server, ip_destination, server_port,
+        server_entity, client_entity, server_ip, server_port,
         transmitted_size, tos, mtu,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = tcp_one_flow(client, server, ip_destination, server_port, transmitted_size, tos, mtu, scenario_name)
+    scenario = tcp_one_flow(client_entity, server_entity, server_ip, server_port, transmitted_size, tos, mtu, scenario_name)
 
     if post_processing_entity is not None:
-        post_processed = list(scenario.extract_function_id(iperf3=iperf3_find_server))
-        jobs = scenario.openbach_functions.copy()
+        waiting_jobs = []
+        for function in scenario.openbach_functions:
+            if isinstance(function, StartJobInstance):
+                waiting_jobs.append(function)
 
+        post_processed = list(scenario.extract_function_id(iperf3=iperf3_find_server))
         time_series_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -73,7 +76,7 @@ def build(
                 [['Rate (b/s)']],
                 [['Rate time series']],
                 [['iperf3']],
-                jobs, None, 2)
+                waiting_jobs, None, 2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -83,6 +86,6 @@ def build(
                 [['Rate (b/s)']],
                 [['Rate CDF']],
                 [['iperf3']],
-                jobs, None, 2)
+                waiting_jobs, None, 2)
 
     return scenario
