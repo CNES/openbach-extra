@@ -35,38 +35,38 @@ from scenario_builder.scenarios import service_web_browsing
 def main():
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--src_entity', required=True,
-            help='name of the source entity for the web_browsing traffic')
+            '--server-entity', required=True,
+            help='name of the server entity which sends the web_browsing traffic')
     observer.add_scenario_argument(
-            '--dst_entity', required=True,
-            help='name of the destination entity for the web_browsing traffic')
+            '--client-entity', required=True,
+            help='name of the client entity which receives the web_browsing traffic')
     observer.add_scenario_argument(
-            '--nb_runs', required=True,
+            '--nb-runs', required=True,
             help='the number of fetches to perform for each website')
     observer.add_scenario_argument(
-            '--nb_parallel_runs', required=True,
+            '--nb-parallel-runs', required=True,
             help='the maximum number of fetches that can work simultaneously')
     observer.add_scenario_argument(
             '--duration', required=True,
             help='duration of VoIP transmission')
     observer.add_scenario_argument(
-            '--no_compression', action = 'store_true', required = False,
+            '--no-compression', action = 'store_true', required = False,
             help = 'Prevent compression for transmission')
     observer.add_scenario_argument(
-            '--proxy_address', type = str, required = False,
+            '--proxy-address', type = str, required = False,
             help = 'Set the proxy address (also needs a proxy port)')
     observer.add_scenario_argument(
-            '--proxy_port', type = int, required = False,
+            '--proxy-port', type = int, required = False,
             help = 'Set the proxy port (also needs a proxy address)')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be performed '
+            '--entity-pp', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse()
 
     scenario = service_web_browsing.build(
-            args.src_entity,
-            args.dst_entity,
+            args.server_entity,
+            args.client_entity,
             args.duration,
             args.nb_runs,
             args.nb_parallel_runs,

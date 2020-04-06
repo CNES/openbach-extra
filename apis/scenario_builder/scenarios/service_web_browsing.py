@@ -37,36 +37,38 @@ from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 SCENARIO_DESCRIPTION = """This scenario launches one web transfer.
 
 It can then, optionally, plot the page load time using time-series and CDF.
+Entities logic : server = sends content and client = requests for and receives content
 """
 SCENARIO_NAME = 'service_web_browsing'
 
 
 def web_browsing(
-        source, destination, duration, nb_runs, parallel_runs,
+        server_entity, client_entity, duration, nb_runs, parallel_runs,
         compression=True, proxy_address=None, proxy_port=None,
         launch_server=False, scenario_name=SCENARIO_NAME):
+
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     if launch_server:
-        server = apache2(scenario, source)
-        traffic = web_browsing_qoe(scenario, destination, nb_runs, parallel_runs, duration, not compression, proxy_address, proxy_port, wait_launched=server, wait_delay=5)
+        server = apache2(scenario, server_entity)
+        traffic = web_browsing_qoe(scenario, client_entity, nb_runs, parallel_runs, duration, not compression, proxy_address, proxy_port, wait_launched=server, wait_delay=5)
         stopper = scenario.add_function('stop_job_instance', wait_finished=traffic, wait_delay=5)
         stopper.configure(server[0])
     else:
-        web_browsing_qoe(scenario, destination, nb_runs, parallel_runs, duration, not compression, proxy_address, proxy_port)
+        web_browsing_qoe(scenario, client_entity, nb_runs, parallel_runs, duration, not compression, proxy_address, proxy_port)
 
     return scenario
 
 
 def build(
-        source, destination, duration, nb_runs, parallel_runs,
+        server_entity, client_entity, duration, nb_runs, parallel_runs,
         compression=True, proxy_address=None, proxy_port=None, launch_server=False,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = web_browsing(source, destination, duration, nb_runs, parallel_runs, compression, proxy_address, proxy_port, launch_server, scenario_name)
+    scenario = web_browsing(server_entity, client_entity, duration, nb_runs, parallel_runs, compression, proxy_address, proxy_port, launch_server, scenario_name)
 
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('web_browsing_qoe'))
-        legends = ['web browsing from {} to {}'.format(source, destination)]
+        legends = []
         jobs = [function for function in scenario.openbach_functions if isinstance(function, StartJobInstance)]
 
         time_series_on_same_graph(
