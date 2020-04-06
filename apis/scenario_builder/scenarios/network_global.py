@@ -37,25 +37,28 @@ SCENARIO_DESCRIPTION = """This scenario is a wrapper for the following scenarios
  - network_one_way_delay
  - network_jitter
  - network_rate
+
+NB : client = traffic sender and server = traffic receiver 
 """
 SCENARIO_NAME = 'network_global'
 
 
 def build(
-        client, server, ip_destination, server_port, command_port,
+        server_entity, client_entity, server_ip, client_ip, server_port, command_port,
         duration, rate, num_flows, tos, mtu, bandwidth,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
+
     #Create top network_global scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     # Add Delay metrology sub scenario
-    scenario_network_delay = network_delay.build(client, ip_destination, duration, False, post_processing_entity)
+    scenario_network_delay = network_delay.build(server_entity, client_entity, server_ip, client_ip, duration, False, post_processing_entity)
     start_network_delay = scenario.add_function('start_scenario_instance')
     start_network_delay.configure(scenario_network_delay)
 
     # Add One Way Delay metrology sub scenario
     scenario_network_one_way_delay = network_one_way_delay.build(
-            client, server, ip_destination, post_processing_entity)
+            server_entity, client_entity, server_ip, client_ip, post_processing_entity)
     start_network_one_way_delay = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_network_delay],
@@ -64,7 +67,7 @@ def build(
 
     # Add Jitter metrology sub scenario
     scenario_network_jitter = network_jitter.build(
-            client, server, ip_destination, server_port,
+            server_entity, client_entity, server_ip, server_port,
             duration, num_flows, tos, bandwidth, post_processing_entity)
     start_network_jitter = scenario.add_function(
             'start_scenario_instance',
@@ -74,7 +77,7 @@ def build(
 
     # Add Rate metrology sub scenario
     scenario_network_rate = network_rate.build(
-            client, server, ip_destination, server_port, command_port,
+            server_entity, client_entity, server_ip, client_ip, server_port, command_port,
             duration, rate, num_flows, tos, mtu, post_processing_entity)
     start_network_rate = scenario.add_function(
             'start_scenario_instance',

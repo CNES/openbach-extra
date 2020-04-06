@@ -39,17 +39,21 @@ from scenario_builder.scenarios import network_global
 def main(scenario_name='generate_network_global', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--client', '--client-entity', required=True,
-            help='name of the entity for the client of global tests')
-    observer.add_scenario_argument(
-            '--server', '--server-entity', required=True,
+            '--server-entity', required=True,
             help='name of the entity for the server of the global tests')
     observer.add_scenario_argument(
-            '--ip_dst', help='server ip address and target of the global network test')
+            '--client-entity', required=True,
+            help='name of the entity for the client of global tests')
     observer.add_scenario_argument(
-            '--port', default=7000,  help='The iperf3/nuttcp server port for data')
+            '--server-ip', required=True,
+            help='server ip address and target of the global network test')
     observer.add_scenario_argument(
-            '--command_port', default=8000, help='The port of nuttcp server for signalling')
+            '--client-ip', required=True,
+            help='IP address of source of pings and packets')
+    observer.add_scenario_argument(
+            '--server-port', default=7001,  help='The iperf3/nuttcp server port for data')
+    observer.add_scenario_argument(
+            '--command-port', default=7000, help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
             '--duration', default=30, help='duration of each delay, rate,   scenario (s)')
     observer.add_scenario_argument(
@@ -57,7 +61,7 @@ def main(scenario_name='generate_network_global', argv=None):
             'than what you estimate between server and client for the '
             'UDP test (add m/g to set M/G b/s)')
     observer.add_scenario_argument(
-            '--num_flows', default=1, help='Number of iperf3 flows generated (default : 1)')
+            '--num-flows', default=1, help='Number of iperf3 flows generated (default : 1)')
     observer.add_scenario_argument(
             '--tos', default=0, help='Type of Service of the trafic (default : 0)')
     observer.add_scenario_argument(
@@ -66,16 +70,17 @@ def main(scenario_name='generate_network_global', argv=None):
             '--bandwidth', default='1M',
             help='the bandwidth (bits/s) of iperf3 test')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be '
+            '--entity-pp', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
 
     scenario = network_global.build(
-                      args.client,
-                      args.server,
-                      args.ip_dst,
-                      args.port,
+                      args.server_entity,
+                      args.client_entity,
+                      args.server_ip,
+                      args.client_ip,
+                      args.server_port,
                       args.command_port,
                       args.duration,
                       args.rate,
