@@ -135,7 +135,7 @@ def _voip_legend(openbach_function):
     return 'VoIP — {} {} {}'.format(destination, address, port)
 
 
-def traffic_mix(post_processing_entity, arguments, scenario_name=SCENARIO_NAME):
+def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
     scenario_mix = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     list_wait_finished = []
     apache_servers = {}
@@ -168,14 +168,14 @@ def traffic_mix(post_processing_entity, arguments, scenario_name=SCENARIO_NAME):
 
         if args.traffic == "data_transfer":
             scenario = service_data_transfer.build(
-                    args.source, args.destination, int(args.duration),
-                    args.destination_ip, int(args.port), args.size,
+                    args.destination, args.source, args.destination_ip,
+                    int(args.port), int(args.duration), args.size,
                     int(args.tos), int(args.mtu),
                     post_processing_entity, 'Data Transfer ' + args.id)
         elif args.traffic == "dash":
             scenario = service_video_dash.build(
-                    args.source, args.destination, int(args.duration),
-                    args.source_ip, args.protocol, False,
+                    args.source, args.destination, args.source_ip,
+                    int(args.duration), args.protocol, False,
                     post_processing_entity, 'Dash player ' + args.id)
         elif args.traffic == "web_browsing":
             scenario = service_web_browsing.build(
@@ -185,10 +185,9 @@ def traffic_mix(post_processing_entity, arguments, scenario_name=SCENARIO_NAME):
                     scenario_name='Web browsing ' + args.id)
         elif args.traffic == "voip":
             scenario = service_voip.build(
-                    args.source, args.destination, int(args.duration),
-                    args.source_ip, args.destination_ip,
-                    int(args.port), args.codec,
-                    post_processing_entity, 'VoIP ' + args.id)
+                    args.destination, args.source, args.destination_ip,
+                    args.source_ip, int(args.port), int(args.duration), 
+                    args.codec, post_processing_entity, 'VoIP ' + args.id)
 
         start_scenario = scenario_mix.add_function(
                 'start_scenario_instance',
@@ -208,7 +207,7 @@ def traffic_mix(post_processing_entity, arguments, scenario_name=SCENARIO_NAME):
     return scenario_mix
 
 
-def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAME):
+def build(extra_args_traffic, post_processing_entity, scenario_name=SCENARIO_NAME):
     try:
         with open(extra_args_traffic) as extra_args_file:
             arguments = _load_args(extra_args_file)
@@ -216,7 +215,7 @@ def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAM
         print("\033[91mERROR:", "Cannot open args file, exiting", "\033[0m")
         return
     else:
-        scenario = traffic_mix(post_processing_entity, arguments, scenario_name)
+        scenario = traffic_mix(arguments, post_processing_entity, scenario_name)
 
     if post_processing_entity is not None:
         wait_finished = [function for function in scenario.openbach_functions if isinstance(function, (StartJobInstance, StartScenarioInstance))]

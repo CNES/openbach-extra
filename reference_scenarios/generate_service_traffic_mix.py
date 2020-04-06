@@ -35,16 +35,16 @@ from scenario_builder.scenarios import service_traffic_mix
 def main():
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be performed '
-            '(histogram/time-series jobs must be installed) if defined')
+            '--extra-args-traffic', required=True, help='Extra arguments for traffic generation')
     observer.add_scenario_argument(
-            '--extra_args_traffic', default="", help='Extra arguments for traffic generation')
+            '--entity-pp', help='The entity where the post-processing will be performed '
+            '(histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse()
 
     scenario = service_traffic_mix.build(
-            args.entity_pp,
-            args.extra_args_traffic)
+            args.extra_args_traffic,
+            args.entity_pp)
 
     observer.launch_and_wait(scenario)
 
