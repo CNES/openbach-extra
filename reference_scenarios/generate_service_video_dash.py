@@ -35,13 +35,13 @@ from scenario_builder.scenarios import service_video_dash
 def main():
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--src_entity', required=True,
-            help='name of the source entity for the DASH traffic')
+            '--server-entity', required=True,
+            help='name of the source entity which sends the DASH traffic')
     observer.add_scenario_argument(
-            '--dst_entity', required=True,
-            help='name of the destination entity for the DASH traffic')
+            '--client-entity', required=True,
+            help='name of the entity which receives the DASH traffic')
     observer.add_scenario_argument(
-            '--src_ip', required=True,
+            '--server-ip', required=True,
             help='source ip address for the DASH traffic')
     observer.add_scenario_argument(
             '--protocol', required=True,
@@ -50,16 +50,16 @@ def main():
             '--duration', required=True,
             help='duration of VoIP transmission')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be performed '
+            '--entity-pp', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse()
 
     scenario = service_video_dash.build(
-            args.src_entity,
-            args.dst_entity,
+            args.server_entity,
+            args.client_entity,
+            args.server_ip,
             args.duration,
-            args.src_ip,
             args.protocol,
             True,
             args.entity_pp,

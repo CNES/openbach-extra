@@ -39,12 +39,12 @@ It can then, optionally, plot the bit rate using time-series and CDF.
 SCENARIO_NAME = 'service_video_dash'
 
 
-def video_dash(source, destination, duration, ip, protocol, launch_server, scenario_name=SCENARIO_NAME):
+def video_dash(server_entity, client_entity, server_ip, duration, protocol, launch_server, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     if launch_server:
         server = scenario.add_function('start_job_instance')
-        server.configure('dash player&server', source, offset=0)
+        server.configure('dash player&server', server_entity, offset=0)
 
         traffic = scenario.add_function('start_job_instance', wait_launched=[server], wait_delay=5)
 
@@ -53,17 +53,17 @@ def video_dash(source, destination, duration, ip, protocol, launch_server, scena
     else:
         traffic = scenario.add_function('start_job_instance')
 
-    traffic.configure('dash client', destination, offset=0, dst_ip=ip, protocol=protocol, duration=duration)
+    traffic.configure('dash client', client_entity, offset=0, dst_ip=server_ip, protocol=protocol, duration=duration)
 
     return scenario
 
 
-def build(source, destination, duration, destination_ip, protocol, launch_server=False, post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = video_dash(source, destination, duration, destination_ip, protocol, launch_server, scenario_name)
+def build(server_entity, client_entity, server_ip, duration, protocol, launch_server=False, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    scenario = video_dash(server_entity, client_entity, server_ip, duration, protocol, launch_server, scenario_name)
 
     if launch_server and post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('dash player&server'))
-        legends = ['dash from {} to {}'.format(source, destination)]
+        legends = ['dash from {} to {}'.format(server_entity, client_entity)]
         jobs = [function for function in scenario.openbach_functions if isinstance(function, StartJobInstance)]
 
         time_series_on_same_graph(
