@@ -34,9 +34,9 @@ from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
 SCENARIO_DESCRIPTION = """This scenario launches one iperf3 transfer.
-The server_ip and client_ip values are in accordance with iperf3 logic :
-server = receiver and client = sender.
 It can then, optionally, plot the throughput using time-series and CDF.
+NB : client and server entities/IPs/ports are in accordance
+with iperf3 logic (server = receiver and client = sender)
 """
 SCENARIO_NAME = 'service_data_transfer'
 

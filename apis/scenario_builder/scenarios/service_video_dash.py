@@ -33,9 +33,10 @@ from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
 SCENARIO_DESCRIPTION = """This scenario launches one DASH transfer.
-
 It can then, optionally, plot the bit rate using time-series and CDF.
-Entities logic : server = sends content and client = requests for and receives content
+NB : the entities logic is the following :
+    - server sends  DASH content
+    - client requests for and receives DASH content
 """
 SCENARIO_NAME = 'service_video_dash'
 

@@ -34,8 +34,10 @@ from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
 SCENARIO_DESCRIPTION = """This scenario launches one voip transfer.
-client = transmitter and server = receiver
 It can then, optionally, plot the Mean Opinion Score using time-series and CDF.
+NB : the entities logic is the following :
+    - server receives the voice content
+    - client transmits the voice content
 """
 SCENARIO_NAME = 'service_voip'
 

@@ -38,6 +38,8 @@ SCENARIO_DESCRIPTION = """This transport_tcp_one_flow scenario allows to:
    (Launch one tcp iperf3 flow with a transmitted size).
  - Perform two postprocessing tasks to compare the
    time-series and the CDF of the rate measurements.
+ - NB : client and server entities/IPs/ports are in accordance
+   with iperf3 logic (server = receiver and client = sender)
 """
 SCENARIO_NAME = 'transport_tcp_one_flow'
 

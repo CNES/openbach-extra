@@ -37,7 +37,9 @@ from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 SCENARIO_DESCRIPTION = """This scenario launches one web transfer.
 
 It can then, optionally, plot the page load time using time-series and CDF.
-Entities logic : server = sends content and client = requests for and receives content
+NB : the entities logic is the following :
+    - server sends web content
+    - client requests for and receives web content
 """
 SCENARIO_NAME = 'service_web_browsing'
 
