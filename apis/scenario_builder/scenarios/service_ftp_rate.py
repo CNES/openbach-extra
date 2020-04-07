@@ -43,10 +43,10 @@ It can then, optionally, plot the throughput using time-series and CDF.
 SCENARIO_NAME = 'service_ftp'
 
 
-def multiple_ftp(client, server, ip, port, mode, path, user, password, blocksize, amount, scenario_name=SCENARIO_NAME):
+def multiple_ftp(server_entity, client_entity, server_ip, server_port, mode, path, user, password, blocksize, amount, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format('multiple times'))
-    scenario.add_constant('server_ip', ip)
-    scenario.add_constant('port', port)
+    scenario.add_constant('server_ip', server_ip)
+    scenario.add_constant('server_port', server_port)
     scenario.add_constant('mode', mode)
     scenario.add_constant('file_path', path)
     scenario.add_constant('user', user)
@@ -54,16 +54,16 @@ def multiple_ftp(client, server, ip, port, mode, path, user, password, blocksize
     scenario.add_constant('blocksize', blocksize)
 
     ftp_multiple(
-            scenario, client, server, '$server_ip', '$port', '$mode',
+            scenario, client_entity, server_entity, '$server_ip', '$server_port', '$mode',
             '$file_path', amount, '$user', '$password', '$blocksize')
 
     return scenario
 
 
-def single_ftp(client, server, ip, port, mode, path, user, password, blocksize, scenario_name=SCENARIO_NAME):
+def single_ftp(server_entity, client_entity, server_ip, server_port, mode, path, user, password, blocksize, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format('once'))
-    scenario.add_constant('server_ip', ip)
-    scenario.add_constant('port', port)
+    scenario.add_constant('server_ip', server_ip)
+    scenario.add_constant('server_port', server_port)
     scenario.add_constant('mode', mode)
     scenario.add_constant('file_path', path)
     scenario.add_constant('user', user)
@@ -71,14 +71,14 @@ def single_ftp(client, server, ip, port, mode, path, user, password, blocksize, 
     scenario.add_constant('blocksize', blocksize)
 
     ftp_single(
-            scenario, client, server, '$server_ip', '$port', '$mode',
+            scenario, client_entity, server_entity, '$server_ip', '$server_port', '$mode',
             '$file_path', '$user', '$password', '$blocksize')
 
     return scenario
 
 
 def build(
-        client, server, server_ip, port, mode, file_path, multiple,
+        server_entity, client_entity, server_ip, server_port, mode, file_path, multiple,
         user='openbach', password='openbach', blocksize='8192', 
 	post_processing_entity=None, scenario_name=SCENARIO_NAME):
     # Create core scenario
@@ -97,17 +97,20 @@ def build(
         legend = [['Server throughput {}'.format(server_leg)]] + [
                 ['Client_{} throughput {}'.format(n+1, client_leg)] for n in range(multiple)
         ]
-        scenario = multiple_ftp(client, server, server_ip, port, mode, file_path, user, password, blocksize, multiple, scenario_name)
+        scenario = multiple_ftp(server_entity, client_entity, server_ip, server_port, mode, file_path, user, password, blocksize, multiple, scenario_name)
     elif multiple == 1:
         legend = [['Server throughput {}'.format(server_leg)], ['Client throughput {}'.format(client_leg)]]
-        scenario = single_ftp(client, server, server_ip, port, mode, file_path, user, password, blocksize, scenario_name)
+        scenario = single_ftp(server_entity, client_entity, server_ip, server_port, mode, file_path, user, password, blocksize, scenario_name)
     else :
         raise ValueError("Multiple must be > 0")
 
     if post_processing_entity is not None:
-        post_processed = list(scenario.extract_function_id('ftp_clt', 'ftp_srv'))
-        jobs = scenario.openbach_functions.copy()
+        waiting_jobs = []
+        for function in scenario.openbach_functions:
+            if isinstance(function, StartJobInstance):
+                waiting_jobs.append(function)
 
+        post_processed = list(scenario.extract_function_id('ftp_clt', 'ftp_srv'))
         time_series_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -116,7 +119,7 @@ def build(
                 [['Throughput (b/s)']],
                 [[mode + ' throughput']],
                 legend,
-                jobs, None, 2)
+                waiting_jobs, None, 2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -126,6 +129,6 @@ def build(
                 [['Throughput (b/s)']],
                 [[mode + ' throughput']],
                 legend,
-                jobs, None, 2)
+                waiting_jobs, None, 2)
 
     return scenario

@@ -27,27 +27,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario launches the *service_ftp* scenario
+"""This scenario launches the *service_ftp_rate* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
 """
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios import service_ftp
+from scenario_builder.scenarios import service_ftp_rate
 
-def main(scenario_name='generate_service_ftp', argv=None):
+def main(scenario_name='generate_service_ftp_rate', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--client', '--client-entity', '-c', required=True,
-            help='name of the entity for the FTP client')
-    observer.add_scenario_argument(
-            '--server', '--server-entity', '-s', required=True,
+            '--server-entity', required=True,
             help='name of the entity for the FTP server')
     observer.add_scenario_argument(
-            '--ip_srv', '-i', required=True, help='The server IP address')
-    observer.add_scenario_argument('--mode', required = True,
-            choices=['upload', 'download'], help = 'upload or download')
+            '--client-entity', required=True,
+            help='name of the entity for the FTP client')
     observer.add_scenario_argument(
-            '--port', default = 2121,  help = 'Listened port (default = 2121)')
+            '--server-ip', required=True, help='The server IP address')
+    observer.add_scenario_argument(
+            '--server-port', default = 2121,  help = 'Listened port (default = 2121)')
+    observer.add_scenario_argument(
+            '--mode', required = True,
+            choices=['upload', 'download'], help = 'upload or download')
     observer.add_scenario_argument(
             '--user', default = 'openbach',  help = 'Authorized FTP user')
     observer.add_scenario_argument(
@@ -55,20 +56,20 @@ def main(scenario_name='generate_service_ftp', argv=None):
     observer.add_scenario_argument(
             '--multiple', type = int, default = 1, help = 'Number of transfer of the file')
     observer.add_scenario_argument(
-            '--file_path', required = True, help = 'File path to transfer')
+            '--file-path', required = True, help = 'File path to transfer')
     observer.add_scenario_argument(
             '--blocksize', default = 8192, help = 'Set maximum chunk size  (default = 8192)')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be '
+            '--entity-pp', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
 
-    scenario = service_ftp.build(
-            args.client,
-            args.server,
-            args.ip_srv,
-            args.port,
+    scenario = service_ftp_rate.build(
+            args.server_entity,
+            args.client_entity,
+            args.server_ip,
+            args.server_port,
             args.mode,
             args.file_path,
             args.multiple,
