@@ -100,7 +100,7 @@ def main(scenario_name=None, argv=None):
             help='The core_rmem_max field')
 
     observer.add_scenario_argument(
-            '--congestion_control', required=True, type=str,
+            '--congestion-control', required=True, type=str,
             help='Congestion control name')
 
     observer.add_scenario_argument(
@@ -129,16 +129,16 @@ def main(scenario_name=None, argv=None):
             help='The initial_ssthresh field of CUBIC (only used when congestion_control is CUBIC')
 
     observer.add_scenario_argument(
-            '--iface', '--network_interface',
+            '--iface', '--network-interface',
             help='Interface to configure segementation offload on')
     observer.add_scenario_argument(
-            '--dest_ip', '--destination_ip',
+            '--dest-ip', '--destination-ip',
             help='Ip address of the destination network')
     observer.add_scenario_argument(
             '--operation', choices=["add", "change", "delete"], default="change",
             help='Select the operation to apply')
     observer.add_scenario_argument(
-            '--gw_ip', '--gateway_ip',
+            '--gw-ip', '--gateway-ip',
             help='Ip address of the gateway')
     observer.add_scenario_argument(
             '--dev', '--device',

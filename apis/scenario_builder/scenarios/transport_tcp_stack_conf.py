@@ -45,8 +45,7 @@ the wiki page of the job tcp_conf_linux.
 """
 SCENARIO_NAME = 'transport_tcp_stack_conf'
 
-
-def build(entity, tcp_params, tcp_subparams, interface=None, route=None, scenario_name=SCENARIO_NAME):
+def tcp_stack_conf (entity, tcp_params, tcp_subparams, interface=None, route=None, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     args = {'entity': entity, 'cc': tcp_params['congestion_control'], 'interface': interface}
@@ -55,7 +54,7 @@ def build(entity, tcp_params, tcp_subparams, interface=None, route=None, scenari
 
     for arg, value in args.items():
         if str(value).startswith('$'):
-            scenario.add_argument(value[1:], '')
+            scenario.add_constant(arg, value[1:])
 
     tcp_conf_linux_variable_args_number(scenario, entity, tcp_params, tcp_subparams)
 
@@ -66,4 +65,12 @@ def build(entity, tcp_params, tcp_subparams, interface=None, route=None, scenari
         operation = route.pop('operation')
         ip_route(scenario, entity, operation, **route)
       
+    return scenario
+
+
+
+def build(entity, tcp_params, tcp_subparams, interface=None, route=None, scenario_name=SCENARIO_NAME):
+      
+    scenario = tcp_stack_conf(entity, tcp_params, tcp_subparams, interface, route, scenario_name)
+
     return scenario
