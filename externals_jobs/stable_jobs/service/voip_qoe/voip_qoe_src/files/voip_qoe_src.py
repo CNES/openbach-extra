@@ -47,11 +47,13 @@ from codec import CodecConstants
 from compute_mos import compute_r_value, compute_mos_value
 import random
 import socket
+import threading
 
 job_name = "voip_qoe_src"
 receiver_job_name = "voip_qoe_dest"
 common_prefix = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))  # /opt/openbach/agent/jobs
 
+_FINISHED = False
 
 def get_timestamp():
     """
@@ -120,6 +122,14 @@ def clean(s,run_id):
     s.close()
     print('connection closed')
 
+def socket_keep_alive(s):
+    """
+    Send periodic messages to keep the socket alive
+    """
+    while not _FINISHED:
+        s.send("HI".encode())
+        sleep(5)
+
 
 def main(config, args):
     """
@@ -131,6 +141,9 @@ def main(config, args):
     :type args: object
     :return: nothing
     """
+
+    global _FINISHED
+
     success = collect_agent.register_collect(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                                           '{}_rstats_filter.conf'.format(job_name)))
     if not success:
@@ -189,7 +202,19 @@ def main(config, args):
                                           '-l', local_log_file,
                                           '-x', distant_log_file])
 
+        try:
+            _FINISHED = False
+            th = threading.Thread(target=socket_keep_alive, args=(s,))
+            th.daemon = True
+            th.start()
+        except (KeyboardInterrupt, SystemExit):
+            cleanup_stop_thread()
+            exit()
+
         d_itg_send_ps.wait()
+
+        _FINISHED = True
+
         collect_agent.send_log(syslog.LOG_DEBUG, "Finished run {}".format(run_id))
 
         # We remotely retrieve logs
