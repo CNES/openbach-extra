@@ -167,7 +167,7 @@ def main(config, args):
 
     for _ in range(1, args.nb_runs + 1, 1):
         s = socket.socket()
-        host = args.dest_addr
+        host = args.sig_dest_addr if args.sig_dest_addr else args.dest_addr
         port = args.control_port
 
         s.connect((str(host), port))
