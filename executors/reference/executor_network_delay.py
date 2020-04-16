@@ -27,55 +27,46 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This script launches the *network_jitter* scenario
+"""This script launches the *network_delay* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
 """
 
-
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios import network_jitter
+from scenario_builder.scenarios import network_delay
 
 
-def main(scenario_name='generate_network_jitter', argv=None):
+def main(scenario_name='executor_network_delay', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
-            help='name of the entity for the server of the owamp RTT test')
+            help='name of the entity for the srv of the RTT tests')
     observer.add_scenario_argument(
             '--client-entity', required=True,
             help='name of the entity for the client of the RTT tests')
     observer.add_scenario_argument(
-            '--server-ip', required=True, help='server ip address and target of the pings')
+            '--server-ip', required=True, help='destination ip address and target of the pings')
     observer.add_scenario_argument(
-            '--server-port', default=7000, help='the iperf3 server port for data')
+            '--client-ip', required=True, help='IP address of source of pings and packets')
     observer.add_scenario_argument(
-            '--duration', default=10,
-            help='the duration of iperf3 test')
+            '--duration', default=10, help='duration of delay scenario (s)')
     observer.add_scenario_argument(
-            '--num-flows', default=1,
-            help='the number of flows to launch with iperf3')
-    observer.add_scenario_argument(
-            '--tos', default=0,
-            help='the ToS of iperf3 test')
-    observer.add_scenario_argument(
-            '--bandwidth', default='1M',
-            help='the bandwidth (bits/s) of iperf3 test ')
+            '--simultaneous', action='store_true',
+            help='option whether or not the test is simultaneous. Default sequential')
     observer.add_scenario_argument(
             '--entity-pp', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
 
-    scenario = network_jitter.build(
+    scenario = network_delay.build(
                       args.server_entity,
                       args.client_entity,
                       args.server_ip,
-                      args.server_port,
+                      args.client_ip,
                       args.duration,
-                      args.num_flows,
-                      args.tos,
-                      args.bandwidth,
+                      args.simultaneous,
                       args.entity_pp)
+
     observer.launch_and_wait(scenario)
 
 

@@ -27,58 +27,57 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario launches the *service_ftp_rate* scenario
+"""This script launches the *network_jitter* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
 """
 
-from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios import service_ftp_rate
 
-def main(scenario_name='generate_service_ftp_rate', argv=None):
+from auditorium_scripts.scenario_observer import ScenarioObserver
+from scenario_builder.scenarios import network_jitter
+
+
+def main(scenario_name='executor_network_jitter', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
-            help='name of the entity for the FTP server')
+            help='name of the entity for the server of the owamp RTT test')
     observer.add_scenario_argument(
             '--client-entity', required=True,
-            help='name of the entity for the FTP client')
+            help='name of the entity for the client of the RTT tests')
     observer.add_scenario_argument(
-            '--server-ip', required=True, help='The server IP address')
+            '--server-ip', required=True, help='server ip address and target of the pings')
     observer.add_scenario_argument(
-            '--server-port', default = 2121,  help = 'Listened port (default = 2121)')
+            '--server-port', default=7000, help='the iperf3 server port for data')
     observer.add_scenario_argument(
-            '--mode', required = True,
-            choices=['upload', 'download'], help = 'upload or download')
+            '--duration', default=10,
+            help='the duration of iperf3 test')
     observer.add_scenario_argument(
-            '--user', default = 'openbach',  help = 'Authorized FTP user')
+            '--num-flows', default=1,
+            help='the number of flows to launch with iperf3')
     observer.add_scenario_argument(
-            '--psswrd', default = 'openbach',  help = "Authorized FTP user's password")
+            '--tos', default=0,
+            help='the ToS of iperf3 test')
     observer.add_scenario_argument(
-            '--multiple', type = int, default = 1, help = 'Number of transfer of the file')
-    observer.add_scenario_argument(
-            '--file-path', required = True, help = 'File path to transfer')
-    observer.add_scenario_argument(
-            '--blocksize', default = 8192, help = 'Set maximum chunk size  (default = 8192)')
+            '--bandwidth', default='1M',
+            help='the bandwidth (bits/s) of iperf3 test ')
     observer.add_scenario_argument(
             '--entity-pp', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
 
-    scenario = service_ftp_rate.build(
-            args.server_entity,
-            args.client_entity,
-            args.server_ip,
-            args.server_port,
-            args.mode,
-            args.file_path,
-            args.multiple,
-            args.user,
-            args.psswrd,
-            args.blocksize,
-            args.entity_pp)
+    scenario = network_jitter.build(
+                      args.server_entity,
+                      args.client_entity,
+                      args.server_ip,
+                      args.server_port,
+                      args.duration,
+                      args.num_flows,
+                      args.tos,
+                      args.bandwidth,
+                      args.entity_pp)
     observer.launch_and_wait(scenario)
+
 
 if __name__ == '__main__':
     main()
-

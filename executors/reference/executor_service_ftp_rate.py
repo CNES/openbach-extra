@@ -27,52 +27,58 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario launches the *transport_tcp_one_flow* scenario
+"""This scenario launches the *service_ftp_rate* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
 """
 
-
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios import transport_tcp_one_flow
+from scenario_builder.scenarios import service_ftp_rate
 
-
-def main(scenario_name='generate_transport_tcp_one_flow', argv=None):
+def main(scenario_name='executor_service_ftp_rate', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
-            help='name of the entity for the server iperf3')
+            help='name of the entity for the FTP server')
     observer.add_scenario_argument(
             '--client-entity', required=True,
-            help='name of the entity for the client iperf3')
+            help='name of the entity for the FTP client')
     observer.add_scenario_argument(
             '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--server-port', default=7000,  help='The iperf3 server port for data')
+            '--server-port', default = 2121,  help = 'Listened port (default = 2121)')
     observer.add_scenario_argument(
-            '--transmitted-size', required=True, help='The iperf3 '
-            'transmitted_size (in bytes - you can use [K/M/G]: '
-            'set 100M to send 100 MBytes)')
+            '--mode', required = True,
+            choices=['upload', 'download'], help = 'upload or download')
     observer.add_scenario_argument(
-            '--tos', default=0, help='Type of Service of the trafic (default : 0)')
+            '--user', default = 'openbach',  help = 'Authorized FTP user')
     observer.add_scenario_argument(
-            '--mtu', default=1000-40, help='MTU size (default : 1000-40)')
+            '--psswrd', default = 'openbach',  help = "Authorized FTP user's password")
+    observer.add_scenario_argument(
+            '--multiple', type = int, default = 1, help = 'Number of transfer of the file')
+    observer.add_scenario_argument(
+            '--file-path', required = True, help = 'File path to transfer')
+    observer.add_scenario_argument(
+            '--blocksize', default = 8192, help = 'Set maximum chunk size  (default = 8192)')
     observer.add_scenario_argument(
             '--entity-pp', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
 
-    scenario = transport_tcp_one_flow.build(
+    scenario = service_ftp_rate.build(
             args.server_entity,
             args.client_entity,
             args.server_ip,
             args.server_port,
-            args.transmitted_size,
-            args.tos,
-            args.mtu,
+            args.mode,
+            args.file_path,
+            args.multiple,
+            args.user,
+            args.psswrd,
+            args.blocksize,
             args.entity_pp)
     observer.launch_and_wait(scenario)
 
-
 if __name__ == '__main__':
     main()
+

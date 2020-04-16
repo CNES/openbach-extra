@@ -27,38 +27,31 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario launches the *network_rate* scenario
+"""This scenario launches the *transport_tcp_one_flow* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
 """
 
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios import network_rate
+from scenario_builder.scenarios import transport_tcp_one_flow
 
 
-def main(scenario_name='generate_network_rate', argv=None):
+def main(scenario_name='executor_transport_tcp_one_flow', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
-            help='name of the entity for the server iperf3/nuttcp/d-itg_send')
+            help='name of the entity for the server iperf3')
     observer.add_scenario_argument(
             '--client-entity', required=True,
-            help='name of the entity for the client iperf3/nuttcp/d-itg_recv')
+            help='name of the entity for the client iperf3')
     observer.add_scenario_argument(
             '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--client-ip', required=True, help='The sender IP address')
+            '--server-port', default=7000,  help='The iperf3 server port for data')
     observer.add_scenario_argument(
-            '--server-port', default=7001,  help='The iperf3/nuttcp/d-itg server port for data')
-    observer.add_scenario_argument(
-            '--command-port', default=7000, help='The port of nuttcp/d-itg server for signalling')
-    observer.add_scenario_argument(
-            '--duration', default=30, help='duration of iperf3/nuttcp/d-itg tests')
-    observer.add_scenario_argument(
-            '--rate', help='Set a higher rate (in kb/s) than what you estimate between server and client '
-            'for the UDP test (add M/G to set M/G b/s)', required=True)
-    observer.add_scenario_argument(
-            '--num-flows', default=10, help='Number of iperf3/nuttcp flows generated')
+            '--transmitted-size', required=True, help='The iperf3 '
+            'transmitted_size (in bytes - you can use [K/M/G]: '
+            'set 100M to send 100 MBytes)')
     observer.add_scenario_argument(
             '--tos', default=0, help='Type of Service of the trafic (default : 0)')
     observer.add_scenario_argument(
@@ -69,16 +62,12 @@ def main(scenario_name='generate_network_rate', argv=None):
 
     args = observer.parse(argv, scenario_name)
 
-    scenario = network_rate.build(
+    scenario = transport_tcp_one_flow.build(
             args.server_entity,
             args.client_entity,
             args.server_ip,
-            args.client_ip,
             args.server_port,
-            args.command_port,
-            args.duration,
-            args.rate,
-            args.num_flows,
+            args.transmitted_size,
             args.tos,
             args.mtu,
             args.entity_pp)

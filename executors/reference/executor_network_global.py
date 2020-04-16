@@ -36,7 +36,7 @@ from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_global
 
 
-def main(scenario_name='generate_network_global', argv=None):
+def main(scenario_name='executor_network_global', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,

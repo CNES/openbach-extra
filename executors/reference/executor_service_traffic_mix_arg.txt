@@ -8,7 +8,7 @@
 # voip  		-> dst_port codecs				(Warning: it is impossible to launch several voip_src at same time... should be fixed later)
 # web_browsing	-> nb_runs nb_parallel_runs		(do not forget to edit the config file with correct address)
 
-# Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 generate_service_traffic.py my_project --extra-args-traffic generate_service_traffic_mix_arg.txt --entity-pp ST1 -o run
+# Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 executor_service_traffic.py my_project --extra-args-traffic executor_service_traffic_mix_arg.txt --entity-pp ST1 -o run
 
 1 data_transfer SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 5201 10M 0 1500
 2 dash SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2

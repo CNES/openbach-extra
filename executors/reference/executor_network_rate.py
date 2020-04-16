@@ -27,46 +27,61 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This script launches the *network_delay* scenario
+"""This scenario launches the *network_rate* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
 """
 
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios import network_delay
+from scenario_builder.scenarios import network_rate
 
 
-def main(scenario_name='generate_network_delay', argv=None):
+def main(scenario_name='executor_network_rate', argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
-            help='name of the entity for the srv of the RTT tests')
+            help='name of the entity for the server iperf3/nuttcp/d-itg_send')
     observer.add_scenario_argument(
             '--client-entity', required=True,
-            help='name of the entity for the client of the RTT tests')
+            help='name of the entity for the client iperf3/nuttcp/d-itg_recv')
     observer.add_scenario_argument(
-            '--server-ip', required=True, help='destination ip address and target of the pings')
+            '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--client-ip', required=True, help='IP address of source of pings and packets')
+            '--client-ip', required=True, help='The sender IP address')
     observer.add_scenario_argument(
-            '--duration', default=10, help='duration of delay scenario (s)')
+            '--server-port', default=7001,  help='The iperf3/nuttcp/d-itg server port for data')
     observer.add_scenario_argument(
-            '--simultaneous', action='store_true',
-            help='option whether or not the test is simultaneous. Default sequential')
+            '--command-port', default=7000, help='The port of nuttcp/d-itg server for signalling')
+    observer.add_scenario_argument(
+            '--duration', default=30, help='duration of iperf3/nuttcp/d-itg tests')
+    observer.add_scenario_argument(
+            '--rate', help='Set a higher rate (in kb/s) than what you estimate between server and client '
+            'for the UDP test (add M/G to set M/G b/s)', required=True)
+    observer.add_scenario_argument(
+            '--num-flows', default=10, help='Number of iperf3/nuttcp flows generated')
+    observer.add_scenario_argument(
+            '--tos', default=0, help='Type of Service of the trafic (default : 0)')
+    observer.add_scenario_argument(
+            '--mtu', default=1000-40, help='MTU size (default : 1000-40)')
     observer.add_scenario_argument(
             '--entity-pp', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
 
-    scenario = network_delay.build(
-                      args.server_entity,
-                      args.client_entity,
-                      args.server_ip,
-                      args.client_ip,
-                      args.duration,
-                      args.simultaneous,
-                      args.entity_pp)
-
+    scenario = network_rate.build(
+            args.server_entity,
+            args.client_entity,
+            args.server_ip,
+            args.client_ip,
+            args.server_port,
+            args.command_port,
+            args.duration,
+            args.rate,
+            args.num_flows,
+            args.tos,
+            args.mtu,
+            args.entity_pp)
     observer.launch_and_wait(scenario)
 
 
