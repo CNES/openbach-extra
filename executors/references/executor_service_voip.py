@@ -56,7 +56,7 @@ def main():
             '--duration', required=True,
             help='duration of VoIP transmission in seconds')
     observer.add_scenario_argument(
-            '--entity-pp', help='The entity where the post-processing will be performed '
+            '--postprocessing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse()
@@ -69,7 +69,7 @@ def main():
             args.server_port,
             args.duration,
             args.codec,
-            args.entity_pp,
+            args.postprocessing_entity,
             scenario_name="service_voip")
 
     observer.launch_and_wait(scenario)

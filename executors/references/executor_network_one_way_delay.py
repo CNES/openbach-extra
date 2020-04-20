@@ -49,7 +49,7 @@ def main(scenario_name='executor_network_one_way_delay', argv=None):
     observer.add_scenario_argument(
             '--client-ip', required=True, help='client ip address of d-itg test')
     observer.add_scenario_argument(
-            '--entity-pp', help='The entity where the post-processing will be '
+            '--postprocessing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
@@ -59,7 +59,7 @@ def main(scenario_name='executor_network_one_way_delay', argv=None):
                       args.client_entity,
                       args.server_ip,
                       args.client_ip,
-                      args.entity_pp)
+                      args.postprocessing_entity)
 
     observer.launch_and_wait(scenario)
 

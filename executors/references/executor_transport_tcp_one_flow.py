@@ -57,7 +57,7 @@ def main(scenario_name='executor_transport_tcp_one_flow', argv=None):
     observer.add_scenario_argument(
             '--mtu', default=1000-40, help='MTU size (default : 1000-40)')
     observer.add_scenario_argument(
-            '--entity-pp', help='The entity where the post-processing will be '
+            '--postprocessing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
@@ -70,7 +70,7 @@ def main(scenario_name='executor_transport_tcp_one_flow', argv=None):
             args.transmitted_size,
             args.tos,
             args.mtu,
-            args.entity_pp)
+            args.postprocessing_entity)
     observer.launch_and_wait(scenario)
 
 

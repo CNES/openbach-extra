@@ -26,7 +26,7 @@ def main(scenario_name='Configure Link & Data Download', argv=None):
             '--client', '--data-transfer-client', '-c', required=True,
             help='Name of the entity where the data transfer client should run')
     observer.add_scenario_argument(
-            '--entity-pp', '--post-processing-entity', '-P',
+            '--postprocessing-entity',
             help='Name of the entity where the post-processing jobs should run')
     observer.add_scenario_argument(
             '--file-size', '--size', '-f', required=True,
@@ -109,14 +109,14 @@ def main(scenario_name='Configure Link & Data Download', argv=None):
             args.file_size,
             0x04,
             1400,
-            args.entity_pp)
+            args.postprocessing_entity)
     observer.launch_and_wait(scenario)
 
     results = DataProcessor(observer)
     results.add_callback('transfer', extract_iperf_statistic, *scenario.extract_function_id(iperf3=iperf3_find_server, include_subscenarios=True))
     data = results.post_processing()
     print('Results from data transfer:', data['transfer'])
-    
+
 
     print('Clearing interfaces')
     scenario = network_configure_link.build(

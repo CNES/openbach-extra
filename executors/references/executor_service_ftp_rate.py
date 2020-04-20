@@ -60,7 +60,7 @@ def main(scenario_name='executor_service_ftp_rate', argv=None):
     observer.add_scenario_argument(
             '--blocksize', default = 8192, help = 'Set maximum chunk size  (default = 8192)')
     observer.add_scenario_argument(
-            '--entity-pp', help='The entity where the post-processing will be '
+            '--postprocessing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
@@ -76,9 +76,8 @@ def main(scenario_name='executor_service_ftp_rate', argv=None):
             args.user,
             args.psswrd,
             args.blocksize,
-            args.entity_pp)
+            args.postprocessing_entity)
     observer.launch_and_wait(scenario)
 
 if __name__ == '__main__':
     main()
-

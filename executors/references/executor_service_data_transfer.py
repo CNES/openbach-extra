@@ -58,11 +58,11 @@ def main():
             help='set the MTU of the TCP iperf3 traffic (in bytes, e.g. 1400)')
     observer.add_scenario_argument(
             '--duration', required=True,
-            help='duration of iperf3 transmission (in seconds) - must be set to ' 
+            help='duration of iperf3 transmission (in seconds) - must be set to '
             'an integer value even if the file_size parameter defines the end of'
             'transfer (the value will then be ignored)')
     observer.add_scenario_argument(
-            '--entity-pp', help='The entity where the post-processing will be performed '
+            '--postprocessing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse()
@@ -76,7 +76,7 @@ def main():
             args.file_size,
             args.tos,
             args.mtu,
-            args.entity_pp,
+            args.postprocessing_entity,
             scenario_name="service_data_transfer")
 
     observer.launch_and_wait(scenario)
