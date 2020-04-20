@@ -27,12 +27,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+"""This scenario launches one VoIP flow with the specified parameters"""
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_voip
 
-"""This scenario launches one VoIP flow with the specified parameters"""
 
-def main():
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
@@ -59,7 +60,7 @@ def main():
             '--postprocessing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse()
+    args = observer.parse(argv, service_voip.SCENARIO_NAME)
 
     scenario = service_voip.build(
             args.server_entity,
@@ -70,7 +71,7 @@ def main():
             args.duration,
             args.codec,
             args.postprocessing_entity,
-            scenario_name="service_voip")
+            scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
 
