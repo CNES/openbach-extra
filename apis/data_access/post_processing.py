@@ -201,6 +201,37 @@ class _Plot:
         df.index = bins[:buckets]
         return df
 
+    def temporal_binning_statistics(self, stat_name=None, index=None,
+            time_aggregation='hour', percentiles=[.05, .25, .5, .75, .95]):
+        if stat_name is not None:
+            for col_name, col in self.df.iteritems():
+                if col_name[4] == stat_name:
+                    df = col
+                    break
+        elif index is not None:
+            df = self.df.iloc[:, index]
+        else:
+            df = self.df
+        dates = pd.to_datetime(df.index, unit='ms')
+        df.index = dates.values
+        if time_aggregation == 'year' :
+            groups = df.groupby(df.index.year)
+        elif time_aggregation == 'month' :
+            groups = df.groupby(df.index.month)
+        elif time_aggregation == 'day' :
+            groups = df.groupby(df.index.day)
+        elif time_aggregation == 'hour' :
+            groups = df.groupby(df.index.hour)
+        elif time_aggregation == 'minute' :
+            groups = df.groupby(df.index.minute)
+        elif time_aggregation == 'second' :
+            groups = df.groupby(df.index.second)
+        else:
+            raise ValueError('No valid time aggregation value.')
+        stats = groups.describe(percentiles=percentiles)
+        stats.index.name = 'Time ({}s)'.format(time_aggregation)
+        return stats.drop(columns=['count'])
+        
     def cumulative_histogram(self, buckets):
         return self.histogram(buckets).cumsum()
 
@@ -227,6 +258,40 @@ class _Plot:
         axis = self.histogram(bins).plot(ax=axis, ylim=[-0.01, 1.01], legend=legend)
         if secondary_title is not None:
             axis.set_xlabel(secondary_title)
+        return axis
+
+    def plot_temporal_binning_statistics(self, stat_name=None, index=None,
+            time_aggregation='hour', percentiles=[[5, 95], [25, 75]],
+            axis=None, secondary_title=None, legend=True, median=True,
+            average=True, deviation=True, boundaries=True, min_max=True):
+        colors = ['#ffad60', '#ffdae0']
+        format_percentiles = [p/100 for pair in percentiles for p in pair] if percentiles else []
+        stats = self.temporal_binning_statistics(stat_name, index, time_aggregation, format_percentiles)
+        if average:
+            axis.plot(stats.index, stats['mean'], color='#005b96', label='average')
+        if median:
+            axis.plot(stats.index, stats['50%'], color='#be68be', label='median')
+        if boundaries:
+            axis.plot(stats.index, stats['min'], color='g', linewidth=1)
+            axis.plot(stats.index, stats['max'], color='#e50000', linewidth=1)
+        if min_max:
+            axis.fill_between(stats.index, stats['min'], stats['max'], color='#39c9bb', label='min-max')
+        if percentiles:
+            percentiles.sort(key=lambda x: abs(x[0]-x[1]), reverse=True)
+            for index, pair in enumerate(percentiles):
+                pair.sort()
+                axis.fill_between(stats.index, stats['{}%'.format(pair[0])],
+                        stats['{}%'.format(pair[1])], color=colors[index],
+                        label='{}%-{}%'.format(pair[0], pair[1]))
+        if deviation:        
+            std = stats.pop('std')
+            axis.errorbar(stats.index, stats['mean'], std, uplims=True,
+                    lolims=True, color='#005b96', elinewidth=1, label="deviation")
+        if legend:
+            axis.legend()
+        axis.set_xlabel(stats.index.name)
+        if secondary_title is not None:
+            axis.set_ylabel(secondary_title)
         return axis
 
     def plot_cumulative_histogram(self, axis=None, secondary_title=None, bins=100, legend=True):
