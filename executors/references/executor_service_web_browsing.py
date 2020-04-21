@@ -59,7 +59,7 @@ def main():
             '--proxy-port', type = int, required = False,
             help = 'Set the proxy port (also needs a proxy address)')
     observer.add_scenario_argument(
-            '--postprocessing-entity', help='The entity where the post-processing will be performed '
+            '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse()
@@ -74,7 +74,7 @@ def main():
             args.proxy_address,
             args.proxy_port,
             True,
-            args.postprocessing_entity,
+            args.post_processing_entity,
             scenario_name="service_web_browsing")
 
     observer.launch_and_wait(scenario)

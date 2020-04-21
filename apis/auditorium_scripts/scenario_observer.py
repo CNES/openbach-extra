@@ -27,7 +27,7 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Framework for easier Scenario postprocessing"""
+"""Framework for easier Scenario post-processing"""
 
 
 __author__ = 'Viveris Technologies'
@@ -60,7 +60,7 @@ MAX_RETRIES_STATUS = 5
 
 class ScenarioObserver(FrontendBase):
     def __init__(self, **default_run_arguments):
-        super().__init__('OpenBACH — Run a scenario and postprocess stats')
+        super().__init__('OpenBACH — Run a scenario and post-process stats')
         self._last_instance = {'scenario_instance_id': -1}
         self._default_arguments = default_run_arguments
         self.build_parser()

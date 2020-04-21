@@ -26,7 +26,7 @@ def main(scenario_name='Configure Link & Data Download', argv=None):
             '--client', '--data-transfer-client', '-c', required=True,
             help='Name of the entity where the data transfer client should run')
     observer.add_scenario_argument(
-            '--postprocessing-entity',
+            '--post-processing-entity',
             help='Name of the entity where the post-processing jobs should run')
     observer.add_scenario_argument(
             '--file-size', '--size', '-f', required=True,
@@ -109,7 +109,7 @@ def main(scenario_name='Configure Link & Data Download', argv=None):
             args.file_size,
             0x04,
             1400,
-            args.postprocessing_entity)
+            args.post_processing_entity)
     observer.launch_and_wait(scenario)
 
     results = DataProcessor(observer)

@@ -28,7 +28,7 @@
 
 """ Helpers of time_series job """
 
-def time_series_on_same_graph (scenario, postprocessing_entity, jobs_to_postprocessing, statistics, label, title, legend, wait_finished=None, wait_launched=None, wait_delay=0, no_suffix=False):
+def time_series_on_same_graph (scenario, post_processing_entity, jobs_to_post_processing, statistics, label, title, legend, wait_finished=None, wait_launched=None, wait_delay=0, no_suffix=False):
 
     time_series = scenario.add_function(
             'start_job_instance',
@@ -36,8 +36,8 @@ def time_series_on_same_graph (scenario, postprocessing_entity, jobs_to_postproc
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     time_series.configure(
-            'time_series', postprocessing_entity, offset=0,
-            jobs=[jobs_to_postprocessing],
+            'time_series', post_processing_entity, offset=0,
+            jobs=[jobs_to_post_processing],
             statistics=statistics,
             no_suffix=no_suffix,
             label=label,

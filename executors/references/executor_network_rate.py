@@ -64,7 +64,7 @@ def main(scenario_name='executor_network_rate', argv=None):
     observer.add_scenario_argument(
             '--mtu', default=1000-40, help='MTU size (default : 1000-40)')
     observer.add_scenario_argument(
-            '--postprocessing-entity', help='The entity where the post-processing will be '
+            '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
@@ -81,7 +81,7 @@ def main(scenario_name='executor_network_rate', argv=None):
             args.num_flows,
             args.tos,
             args.mtu,
-            args.postprocessing_entity)
+            args.post_processing_entity)
     observer.launch_and_wait(scenario)
 
 

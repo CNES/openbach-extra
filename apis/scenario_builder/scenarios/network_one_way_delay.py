@@ -38,7 +38,7 @@ from scenario_builder.openbach_functions import StartJobInstance, StartScenarioI
 SCENARIO_DESCRIPTION = """This scenario allows to :
  - Launch the subscenario One Way Delay measurement for both directions
    (with owamp jobs).
- - Perform two postprocessing tasks to compare the
+ - Perform two post-processing tasks to compare the
    time-series and the CDF of the one way delay measurements.
 """
 SCENARIO_NAME = 'network_one_way_delay'

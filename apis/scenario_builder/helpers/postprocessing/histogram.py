@@ -28,7 +28,7 @@
 
 """ Helpers of histogram job """
 
-def cdf_on_same_graph (scenario, postprocessing_entity, jobs_to_postprocessing, bins, statistics, label, title, legend, wait_finished=None, wait_launched=None, wait_delay=0, no_suffix=False):
+def cdf_on_same_graph (scenario, post_processing_entity, jobs_to_post_processing, bins, statistics, label, title, legend, wait_finished=None, wait_launched=None, wait_delay=0, no_suffix=False):
 
     histogram = scenario.add_function(
             'start_job_instance',
@@ -36,8 +36,8 @@ def cdf_on_same_graph (scenario, postprocessing_entity, jobs_to_postprocessing, 
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     histogram.configure(
-            'histogram', postprocessing_entity, offset=0,
-            jobs=[jobs_to_postprocessing],
+            'histogram', post_processing_entity, offset=0,
+            jobs=[jobs_to_post_processing],
             bins=bins,
             statistics=statistics,
             no_suffix=no_suffix,
@@ -48,7 +48,7 @@ def cdf_on_same_graph (scenario, postprocessing_entity, jobs_to_postprocessing, 
 
     return [histogram]
 
-def pdf_on_same_graph (scenario, postprocessing_entity, jobs_to_postprocessing, bins, statistics, label, title, legend, wait_finished=None, wait_launched=None, wait_delay=0, no_suffix=False):
+def pdf_on_same_graph (scenario, post_processing_entity, jobs_to_post_processing, bins, statistics, label, title, legend, wait_finished=None, wait_launched=None, wait_delay=0, no_suffix=False):
 
     histogram = scenario.add_function(
             'start_job_instance',
@@ -56,8 +56,8 @@ def pdf_on_same_graph (scenario, postprocessing_entity, jobs_to_postprocessing, 
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     histogram.configure(
-            'histogram', postprocessing_entity, offset=0,
-            jobs=[jobs_to_postprocessing],
+            'histogram', post_processing_entity, offset=0,
+            jobs=[jobs_to_post_processing],
             bins=bins,
             statistics=statistics,
             no_suffix=no_suffix,

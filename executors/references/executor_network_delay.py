@@ -53,7 +53,7 @@ def main(scenario_name='executor_network_delay', argv=None):
             '--simultaneous', action='store_true',
             help='option whether or not the test is simultaneous. Default sequential')
     observer.add_scenario_argument(
-            '--postprocessing-entity', help='The entity where the post-processing will be '
+            '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
@@ -65,7 +65,7 @@ def main(scenario_name='executor_network_delay', argv=None):
                       args.client_ip,
                       args.duration,
                       args.simultaneous,
-                      args.postprocessing_entity)
+                      args.post_processing_entity)
 
     observer.launch_and_wait(scenario)
 

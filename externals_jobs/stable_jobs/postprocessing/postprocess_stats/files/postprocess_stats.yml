@@ -36,7 +36,7 @@ arguments:
       type:        'str'
       count:       1
       description: >
-          The name of the stat that shall be postprocessed
+          The name of the stat that shall be post-processed
     - name:        job_instance_ids
       type:        'str'
       count:       1 

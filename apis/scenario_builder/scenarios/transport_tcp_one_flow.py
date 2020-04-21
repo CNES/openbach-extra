@@ -36,7 +36,7 @@ from scenario_builder.openbach_functions import StartJobInstance, StartScenarioI
 SCENARIO_DESCRIPTION = """This transport_tcp_one_flow scenario allows to:
  - Launch the subscenario transport_tcp_one_flow_core
    (Launch one tcp iperf3 flow with a transmitted size).
- - Perform two postprocessing tasks to compare the
+ - Perform two post-processing tasks to compare the
    time-series and the CDF of the rate measurements.
  - NB : client and server entities/IPs/ports are in accordance
    with iperf3 logic (server = receiver and client = sender)

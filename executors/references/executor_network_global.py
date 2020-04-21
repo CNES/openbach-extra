@@ -70,7 +70,7 @@ def main(scenario_name='executor_network_global', argv=None):
             '--bandwidth', default='1M',
             help='the bandwidth (bits/s) of iperf3 test')
     observer.add_scenario_argument(
-            '--postprocessing-entity', help='The entity where the post-processing will be '
+            '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, scenario_name)
@@ -88,7 +88,7 @@ def main(scenario_name='executor_network_global', argv=None):
                       args.tos,
                       args.mtu,
                       args.bandwidth,
-                      args.postprocessing_entity)
+                      args.post_processing_entity)
     observer.launch_and_wait(scenario)
 
 

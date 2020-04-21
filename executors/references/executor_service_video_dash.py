@@ -50,7 +50,7 @@ def main():
             '--duration', required=True,
             help='duration of VoIP transmission')
     observer.add_scenario_argument(
-            '--postprocessing-entity', help='The entity where the post-processing will be performed '
+            '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse()
@@ -62,7 +62,7 @@ def main():
             args.duration,
             args.protocol,
             True,
-            args.postprocessing_entity,
+            args.post_processing_entity,
             scenario_name="service_video_dash")
 
     observer.launch_and_wait(scenario)

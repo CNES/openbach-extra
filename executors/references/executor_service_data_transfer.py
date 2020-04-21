@@ -62,7 +62,7 @@ def main():
             'an integer value even if the file_size parameter defines the end of'
             'transfer (the value will then be ignored)')
     observer.add_scenario_argument(
-            '--postprocessing-entity', help='The entity where the post-processing will be performed '
+            '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse()
@@ -76,7 +76,7 @@ def main():
             args.file_size,
             args.tos,
             args.mtu,
-            args.postprocessing_entity,
+            args.post_processing_entity,
             scenario_name="service_data_transfer")
 
     observer.launch_and_wait(scenario)
