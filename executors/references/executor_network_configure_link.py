@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,16 +27,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario builds and launches the *network_configure_link* scenario
+"""This executor builds and launches the *network_configure_link* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
+It permits to configure latency, rate on interfaces with tc component.
 """
-
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_configure_link
 
 
-def main(scenario_name='configure_link', argv=None):
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--entity', '-e', required=True,
@@ -48,7 +48,7 @@ def main(scenario_name='configure_link', argv=None):
             '--mode', choices=['ingress', 'egress', 'all'], required=True,
             help='Targeted direction: ingress, egress or all')
     observer.add_scenario_argument(
-            '--operation', choices=['apply', 'clear'], required=True, 
+            '--operation', choices=['apply', 'clear'], required=True,
             help='Choose apply to add configuration or clear to delete existing ones')
     observer.add_scenario_argument(
             '--bandwidth', type=str,
@@ -74,7 +74,7 @@ def main(scenario_name='configure_link', argv=None):
             '--buffer_size', type=int, default=10000,
             help='Size of the buffer for qlen and netem limit parameter (default=10000)')
 
-    args = observer.parse(argv, scenario_name)
+    args = observer.parse(argv, network_configure_link.SCENARIO_NAME)
 
     scenario = network_configure_link.build(
                 args.entity,
@@ -87,10 +87,10 @@ def main(scenario_name='configure_link', argv=None):
                 args.dd,
                 args.lm,
                 args.lmp,
-                args.buffer_size
-    )
-    observer.launch_and_wait(scenario)
+                args.buffer_size,
+                scenario_name=args.scenario_name)
 
+    observer.launch_and_wait(scenario)
 
 if __name__ == '__main__':
     main()

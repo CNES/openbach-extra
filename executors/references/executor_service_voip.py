@@ -27,7 +27,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario launches one VoIP flow with the specified parameters"""
+"""This scenario builds or launches the *service_voip* scenario
+from /openbach-extra/apis/scenario_builder/scenarios/
+It launches one VoIP flow with the specified parameters.
+"""
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_voip

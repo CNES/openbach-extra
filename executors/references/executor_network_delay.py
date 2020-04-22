@@ -27,15 +27,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This script launches the *network_delay* scenario
+"""This executor builds or launches the *network_delay* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
+It launches network delay test comparison with fping and d-itg.
 """
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_delay
 
 
-def main(scenario_name='executor_network_delay', argv=None):
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
@@ -56,7 +57,7 @@ def main(scenario_name='executor_network_delay', argv=None):
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse(argv, scenario_name)
+    args = observer.parse(argv, network_delay.SCENARIO_NAME)
 
     scenario = network_delay.build(
                       args.server_entity,
@@ -65,7 +66,8 @@ def main(scenario_name='executor_network_delay', argv=None):
                       args.client_ip,
                       args.duration,
                       args.simultaneous,
-                      args.post_processing_entity)
+                      args.post_processing_entity,
+                      scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
 
