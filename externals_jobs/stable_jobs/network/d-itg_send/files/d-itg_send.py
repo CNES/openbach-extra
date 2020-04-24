@@ -189,10 +189,13 @@ def main(target_address, log_address, dest_path, granularity, traffic_type = 'UD
 
     stats.close()
     if meter == "rttm" or meter == "RTTM":
-       for n in range(0, min(len(owd_r),len(owd_s))):
-          owd_return = owd_s[n] - owd_r[n]
+        
+        for time, owdr, owds in zip(timetab, owd_r, owd_s):
+          owd_return = owds - owdr
           statistics = {'owd_return': owd_return}
-          collect_agent.send_stat(timetab[n], **statistics)
+          collect_agent.send_stat(time, **statistics)
+        
+
     
 if __name__ == "__main__":
     # Define Usage
