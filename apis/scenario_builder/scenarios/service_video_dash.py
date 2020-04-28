@@ -31,36 +31,45 @@ from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
-SCENARIO_NAME = 'service_video_dash'
+
 SCENARIO_DESCRIPTION = """This scenario launches one DASH transfer.
 It can then, optionally, plot the bit rate using time-series and CDF.
 NB : the entities logic is the following :
     - server sends  DASH content
     - client requests for and receives DASH content
 """
+SCENARIO_NAME = 'service_video_dash'
 
 
-def video_dash(server_entity, client_entity, server_ip, protocol, launch_server, duration, scenario_name=SCENARIO_NAME):
+def video_dash_and_server(server_entity, client_entity, server_ip, protocol, duration, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
-    if launch_server:
-        server = scenario.add_function('start_job_instance')
-        server.configure('dash player&server', server_entity, offset=0)
+    server = scenario.add_function('start_job_instance')
+    server.configure('dash player&server', server_entity, offset=0)
 
-        traffic = scenario.add_function('start_job_instance', wait_launched=[server], wait_delay=5)
+    traffic = scenario.add_function('start_job_instance', wait_launched=[server], wait_delay=5)
+    traffic.configure('dash client', client_entity, offset=0, dst_ip=server_ip, protocol=protocol, duration=duration)
 
-        stopper = scenario.add_function('stop_job_instance', wait_finished=[traffic], wait_delay=5)
-        stopper.configure(server)
-    else:
-        traffic = scenario.add_function('start_job_instance')
+    stopper = scenario.add_function('stop_job_instance', wait_finished=[traffic], wait_delay=5)
+    stopper.configure(server)
 
+    return scenario
+
+
+def video_dash(client_entity, server_ip, protocol, duration, scenario_name=SCENARIO_NAME):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+
+    traffic = scenario.add_function('start_job_instance')
     traffic.configure('dash client', client_entity, offset=0, dst_ip=server_ip, protocol=protocol, duration=duration)
 
     return scenario
 
 
-def build(server_entity, client_entity, server_ip, protocol, launch_server=False, duration, post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = video_dash(server_entity, client_entity, server_ip, protocol, launch_server, duration, scenario_name)
+def build(server_entity, client_entity, server_ip, protocol, duration, launch_server=False, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    if launch_server:
+        scenario = video_dash_and_server(server_entity, client_entity, server_ip, protocol, duration, scenario_name)
+    else:
+        scenario = video_dash(client_entity, server_ip, protocol, duration, scenario_name)
 
     if launch_server and post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('dash player&server'))

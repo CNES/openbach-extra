@@ -33,6 +33,7 @@ from scenario_builder.helpers.service.web_browsing_qoe import web_browsing_qoe
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
+
 SCENARIO_NAME = 'service_web_browsing'
 SCENARIO_DESCRIPTION = """This scenario launches one web transfer.
 It can then, optionally, plot the page load time using time-series and CDF.
@@ -41,28 +42,48 @@ NB : the entities logic is the following :
     - client requests for and receives web content
 """
 
-def web_browsing(
-        server_entity, client_entity, nb_runs, nb_parallel_runs,
-        compression=True, proxy_address=None, proxy_port=None,
-        launch_server=False, duration, scenario_name=SCENARIO_NAME):
+
+def web_browsing_and_server(
+        server_entity, client_entity, duration,
+        nb_runs, nb_parallel_runs,
+        compression=True, proxy_address=None,
+        proxy_port=None, scenario_name=SCENARIO_NAME):
 
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
-    if launch_server:
-        server = apache2(scenario, server_entity)
-        traffic = web_browsing_qoe(scenario, client_entity, nb_runs, nb_parallel_runs, duration, not compression, proxy_address, proxy_port, wait_launched=server, wait_delay=5)
-        stopper = scenario.add_function('stop_job_instance', wait_finished=traffic, wait_delay=5)
-        stopper.configure(server[0])
-    else:
-        web_browsing_qoe(scenario, client_entity, nb_runs, nb_parallel_runs, duration, not compression, proxy_address, proxy_port)
+    server = apache2(scenario, server_entity)
+    traffic = web_browsing_qoe(
+            scenario, client_entity, nb_runs, nb_parallel_runs, duration,
+            not compression, proxy_address, proxy_port, wait_launched=server, wait_delay=5)
+
+    stopper = scenario.add_function('stop_job_instance', wait_finished=traffic, wait_delay=5)
+    stopper.configure(server[0])
 
     return scenario
 
+
+def web_browsing(
+        client_entity, duration, nb_runs, nb_parallel_runs,
+        compression=True, proxy_address=None, proxy_port=None,
+        scenario_name=SCENARIO_NAME):
+
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+
+    web_browsing_qoe(
+            scenario, client_entity, nb_runs, nb_parallel_runs, duration,
+            not compression, proxy_address, proxy_port)
+
+    return scenario
+
+
 def build(
-        server_entity, client_entity, nb_runs, nb_parallel_runs, compression=True,
-        proxy_address=None, proxy_port=None, launch_server=False, duration,
+        server_entity, client_entity, duration, nb_runs, nb_parallel_runs,
+        compression=True, proxy_address=None, proxy_port=None, launch_server=False,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = web_browsing(server_entity, client_entity, nb_runs, nb_parallel_runs, compression, proxy_address, proxy_port, launch_server, duration, scenario_name)
+    if launch_server:
+        scenario = web_browsing_and_server(server_entity, client_entity, duration, nb_runs, nb_parallel_runs, compression, proxy_address, proxy_port, scenario_name)
+    else:
+        scenario = web_browsing(client_entity, duration, nb_runs, nb_parallel_runs, compression, proxy_address, proxy_port, scenario_name)
 
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('web_browsing_qoe'))

@@ -38,17 +38,17 @@
 
 # Example of trafic mix with data_transfer,dash, web_browsing and voip traffic
 #
-1 data_transfer SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 5201 10M 0 1500
-2 dash SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2
-3 web_browsing SRC ST1 60 None None 0 10.42.42.11 10.42.14.3 10 2
-4 voip SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 8011 G.711.1
+--data-transfer 1 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 5201 10M 0 1500
+--dash 2 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2
+--web-browsing 3 SRC ST1 60 None None 0 10.42.42.11 10.42.14.3 10 2
+--voip 4 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 8011 G.711.1
 
-5 data_transfer SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 5201 10M 0 1500
-6 dash SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 http/2
-7 web_browsing SRC ST2 60 4 None 5 10.42.42.11 10.42.15.3 10 2
-8 voip SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 8012 G.711.1
+--data-transfer 5 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 5201 10M 0 1500
+--dash 6 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 http/2
+--web-browsing 7 SRC ST2 60 4 None 5 10.42.42.11 10.42.15.3 10 2
+--voip 8 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 8012 G.711.1
 
-9 data_transfer SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 5201 0 0 1500
-10 dash SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 http/2
-11 web_browsing SRC ST3 60 8 None 5 10.42.42.11 10.42.16.3 10 2
-12 voip SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 8013 G.711.1
+--data-transfer 9 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 5201 0 0 1500
+--dash 10 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 http/2
+--web-browsing 11 SRC ST3 60 8 None 5 10.42.42.11 10.42.16.3 10 2
+--voip 12 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 8013 G.711.1

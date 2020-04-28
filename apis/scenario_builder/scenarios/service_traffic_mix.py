@@ -39,7 +39,7 @@ from scenario_builder.scenarios import service_data_transfer, service_video_dash
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
-SCENARIO_NAME = 'service_traffic_mix'
+
 SCENARIO_DESCRIPTION = """This scenario launches various traffic generators
 as subscenarios. Possible generators are:
  - VoIP
@@ -48,6 +48,7 @@ as subscenarios. Possible generators are:
  - Data transfer
 It can then, optionally,  post-processes the generated data by plotting time-series and CDF.
 """
+SCENARIO_NAME = 'service_traffic_mix'
 
 
 _Arguments = namedtuple('Arguments', ('id', 'traffic', 'source', 'destination', 'duration', 'wait_launched', 'wait_finished', 'wait_delay', 'source_ip', 'destination_ip'))
@@ -55,57 +56,6 @@ VoipArguments = namedtuple('VoipArguments', _Arguments._fields + ('port', 'codec
 WebBrowsingArguments = namedtuple('WebBrowsingArguments', _Arguments._fields + ('run_count', 'parallel_runs'))
 DashArguments = namedtuple('DashArguments', _Arguments._fields + ('protocol',))
 DataTransferArguments = namedtuple('DataTransferArguments', _Arguments._fields + ('port', 'size', 'tos', 'mtu'))
-ARGUMENTS_PER_TRAFFIC = {
-        'voip': VoipArguments,
-        'web_browsing': WebBrowsingArguments,
-        'dash': DashArguments,
-        'data_transfer': DataTransferArguments,
-}
-
-
-def _parse_waited_ids(ids):
-    if ids == "None":
-        return []
-    return list(map(int, ids.split('-')))
-
-
-def _load_args(args_list):
-    arguments = []
-    id_explored = set()
-    for line in args_list:
-        line = line.strip()
-        if line.startswith('#') or len(line) < 10:
-            continue
-
-        args = shlex.split(line)
-        try:
-            args_parser = ARGUMENTS_PER_TRAFFIC[args[1]]
-        except KeyError:
-            print("\033[91mWARNING:", "Unknown traffic type:", args[1], "... ignoring", "\033[0m")
-            continue
-        try:
-            args = args_parser(*args)
-        except TypeError:
-            print("\033[91mWARNING:", "Wrong argument format,", len(args_parser._fields), "elements needed for", args[1], "traffic:", "\"" + " ".join(args) + "\"", "but got", len(args), "... ignoring", "\033[0m")
-
-        try:
-            ids = _parse_waited_ids(args.wait_launched) + _parse_waited_ids(args.wait_finished)
-            if args.id in id_explored:
-                print("\033[91mWARNING:", "Duplicated id:", " ".join(args), "... ignoring")
-                continue
-            int(args.duration)
-            int(args.wait_delay)
-            for dependency in ids:
-                if dependency not in id_explored:
-                    print("\033[91mWARNING:", "This traffic depends on missing ones:", " ".join(args), "... ignoring", "\033[0m")
-                    break
-            else:
-                arguments.append(args)
-                id_explored.add(int(args.id))
-        except ValueError:
-            print("\033[91mWARNING:", "Cannot parse this line:", line, "\033[0m")
-
-    return arguments
 
 
 def _iperf3_legend(openbach_function):
@@ -155,8 +105,8 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
 
     # Creating and launching traffic scenarios
     for args in arguments:
-        wait_launched_list = [map_scenarios[i] for i in _parse_waited_ids(args.wait_launched)]
-        wait_finished_list = [map_scenarios[i] for i in _parse_waited_ids(args.wait_finished)]
+        wait_launched_list = [map_scenarios[i] for i in args.wait_launched]
+        wait_finished_list = [map_scenarios[i] for i in args.wait_finished]
 
         offset_delay = 0
         if not wait_launched_list and not wait_finished_list:
@@ -165,27 +115,31 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
                 offset_delay = 5
 
         if args.traffic == "data_transfer":
+            scenario_name = '{}_{}'.format(service_data_transfer.SCENARIO_NAME, args.id)
             scenario = service_data_transfer.build(
                     args.destination, args.source, args.destination_ip,
                     int(args.port), int(args.duration), args.size,
                     int(args.tos), int(args.mtu),
-                    post_processing_entity, 'Data Transfer ' + args.id)
+                    post_processing_entity, scenario_name)
         elif args.traffic == "dash":
+            scenario_name = '{}_{}'.format(service_video_dash.SCENARIO_NAME, args.id)
             scenario = service_video_dash.build(
                     args.source, args.destination, args.source_ip,
-                    int(args.duration), args.protocol, False,
-                    post_processing_entity, 'Dash player ' + args.id)
+                    args.protocol, int(args.duration), False,
+                    post_processing_entity, scenario_name)
         elif args.traffic == "web_browsing":
+            scenario_name = '{}_{}'.format(service_web_browsing.SCENARIO_NAME, args.id)
             scenario = service_web_browsing.build(
                     args.source, args.destination, int(args.duration),
                     int(args.run_count), int(args.parallel_runs),
                     post_processing_entity=post_processing_entity,
-                    scenario_name='Web browsing ' + args.id)
+                    scenario_name=scenario_name)
         elif args.traffic == "voip":
+            scenario_name = '{}_{}'.format(service_voip.SCENARIO_NAME, args.id)
             scenario = service_voip.build(
                     args.destination, args.source, args.destination_ip,
-                    args.source_ip, int(args.port), int(args.duration),
-                    args.codec, post_processing_entity, 'VoIP ' + args.id)
+                    args.source_ip, int(args.port), args.codec,
+                    int(args.duration), post_processing_entity, scenario_name)
 
         start_scenario = scenario_mix.add_function(
                 'start_scenario_instance',
@@ -205,15 +159,8 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
     return scenario_mix
 
 
-def build(extra_args_traffic, post_processing_entity, scenario_name=SCENARIO_NAME):
-    try:
-        with open(extra_args_traffic) as extra_args_file:
-            arguments = _load_args(extra_args_file)
-    except (OSError, IOError):
-        print("\033[91mERROR:", "Cannot open args file, exiting", "\033[0m")
-        return
-    else:
-        scenario = traffic_mix(arguments, post_processing_entity, scenario_name)
+def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
+    scenario = traffic_mix(arguments, post_processing_entity, scenario_name)
 
     if post_processing_entity is not None:
         wait_finished = [function for function in scenario.openbach_functions if isinstance(function, (StartJobInstance, StartScenarioInstance))]

@@ -34,13 +34,94 @@ which can mix several services scenarios such as video_dash, voip, web_browsing
 and service_data_transfer in a flexible manner.
 """
 
+import argparse
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_traffic_mix
+
+
+def _parse_waited_ids(ids):
+    if ids == "None":
+        return []
+    return list(map(int, ids.split('-')))
+
+
+class _Validate(argparse.Action):
+    VALIDATOR = (int, None, None, int, _parse_waited_ids, _parse_waited_ids, int, None, None)
+    TRAFFIC_TYPE = None
+    TRAFFIC_NAME = None
+
+    def __call__(self, parser, args, values, option_string=None):
+        items = getattr(args, self.dest)
+        if items is None:
+            items = []
+            setattr(args, self.dest, items)
+
+        try:
+            validated = [
+                    argument if validate is None else validate(argument)
+                    for validate, argument in zip(self.VALIDATOR, values)
+            ]
+        except ValueError as e:
+            raise argparse.ArgumentError(self, e)
+
+        validated.insert(1, self.TRAFFIC_NAME)
+        try:
+            argument = self.TRAFFIC_TYPE(*validated)
+        except (ValueError, TypeError) as e:
+            raise argparse.ArgumentError(self, e)
+
+        existing_ids = {arg.id for arg in items}
+        if argument.id in existing_ids:
+            raise argparse.ArgumentError(self, 'duplicate traffic ID: {}'.format(argument.id))
+
+        for dependency in argument.wait_launched + argument.wait_finished:
+            if dependency not in existing_ids:
+                raise argparse.ArgumentError(self, 'dependency {} not found for traffic ID {}'.format(dependency, argument.id))
+
+        items.append(argument)
+
+
+class ValidateVoip(_Validate):
+    VALIDATOR = _Validate.VALIDATOR + (int, None)
+    TRAFFIC_NAME = 'voip'
+    TRAFFIC_TYPE = service_traffic_mix.VoipArguments
+
+
+class ValidateWebBrowsing(_Validate):
+    VALIDATOR = _Validate.VALIDATOR + (int, int)
+    TRAFFIC_NAME = 'web_browsing'
+    TRAFFIC_TYPE = service_traffic_mix.WebBrowsingArguments
+
+
+class ValidateDash(_Validate):
+    VALIDATOR = _Validate.VALIDATOR + (None,)
+    TRAFFIC_NAME = 'dash'
+    TRAFFIC_TYPE = service_traffic_mix.DashArguments
+
+
+class ValidateDataTransfer(_Validate):
+    VALIDATOR = _Validate.VALIDATOR + (int, None, int, int)
+    TRAFFIC_NAME = 'data_transfer'
+    TRAFFIC_TYPE = service_traffic_mix.DataTransferArguments
+
 
 def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--extra-args-traffic', required=True, help='Extra arguments for traffic generation')
+            '--voip', nargs=len(ValidateVoip.VALIDATOR), action=ValidateVoip, dest='traffic',
+            help='add a VoIP traffic generator sub-scenario')
+    observer.add_scenario_argument(
+            '--dash', nargs=len(ValidateDash.VALIDATOR), action=ValidateDash, dest='traffic',
+            help='add a Dash traffic generator sub-scenario')
+    observer.add_scenario_argument(
+            '--web-browsing', nargs=len(ValidateWebBrowsing.VALIDATOR),
+            action=ValidateWebBrowsing, dest='traffic',
+            help='add a web browsing traffic generator sub-scenario')
+    observer.add_scenario_argument(
+            '--data-transfer', nargs=len(ValidateDataTransfer.VALIDATOR),
+            action=ValidateDataTransfer, dest='traffic',
+            help='add a data transfer traffic generator sub-scenario')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
@@ -48,11 +129,12 @@ def main(argv=None):
     args = observer.parse(argv, service_traffic_mix.SCENARIO_NAME)
 
     scenario = service_traffic_mix.build(
-            args.extra_args_traffic,
+            args.traffic or [],
             args.post_processing_entity,
             scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
+
 
 if __name__ == '__main__':
     main()
