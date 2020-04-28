@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -31,14 +31,13 @@ from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
-
+SCENARIO_NAME = 'service_video_dash'
 SCENARIO_DESCRIPTION = """This scenario launches one DASH transfer.
 It can then, optionally, plot the bit rate using time-series and CDF.
 NB : the entities logic is the following :
     - server sends  DASH content
     - client requests for and receives DASH content
 """
-SCENARIO_NAME = 'service_video_dash'
 
 
 def video_dash(server_entity, client_entity, server_ip, protocol, launch_server, duration, scenario_name=SCENARIO_NAME):

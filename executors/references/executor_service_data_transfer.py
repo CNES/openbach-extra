@@ -75,10 +75,10 @@ def main(argv=None):
             args.client_entity,
             args.server_ip,
             args.server_port,
-            args.duration,
             args.file_size,
             args.tos,
             args.mtu,
+            args.duration,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
 

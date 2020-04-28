@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -35,7 +35,7 @@ from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph,
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 
-
+SCENARIO_NAME = 'network_rate'
 SCENARIO_DESCRIPTION = """This network_rate scenario allows to:
  - Compare the TCP rate measurement of iperf3, d-itg
    and nuttcp jobs and the UDP rate of nuttcp and d-itg
@@ -44,23 +44,22 @@ SCENARIO_DESCRIPTION = """This network_rate scenario allows to:
  - NB : client and server entities/IPs/ports are in accordance
    with iperf3 logic (server = receiver and client = sender)
 """
-SCENARIO_NAME = 'network_rate'
 
 
 def network_rate(
         server_entity, client_entity, server_ip, client_ip,
-        server_port, command_port, duration,
-        num_flows, tos, mtu, rate, scenario_name=SCENARIO_NAME):
+        server_port, command_port, rate, num_flows,
+        tos, mtu, duration, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('client_ip', client_ip)
     scenario.add_constant('server_port', server_port)
     scenario.add_constant('command_port', command_port)
-    scenario.add_constant('duration', duration)
+    scenario.add_constant('rate', rate)
     scenario.add_constant('num_flows', num_flows)
     scenario.add_constant('tos', tos)
     scenario.add_constant('mtu', mtu)
-    scenario.add_constant('rate', rate)
+    scenario.add_constant('duration', duration)
 
     wait = iperf3_rate_tcp(
             scenario, client_entity, server_entity, '$server_ip', '$server_port', '$duration', '$num_flows', '$tos', '$mtu')
@@ -81,12 +80,11 @@ def network_rate(
 
 def build(
         server_entity, client_entity, server_ip, client_ip,
-        server_port, command_port, duration,
-        rate, num_flows, tos, mtu,
+        server_port, command_port, rate, num_flows, tos, mtu, duration,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = network_rate(
             server_entity, client_entity, server_ip, client_ip, server_port,
-            command_port, duration, num_flows, tos, mtu, rate, scenario_name)
+            command_port, rate, num_flows, tos, mtu, duration, scenario_name)
 
     if post_processing_entity is not None:
         waiting_jobs = []

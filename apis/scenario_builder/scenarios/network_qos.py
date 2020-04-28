@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -27,13 +27,13 @@
 #   this program. If not, see http://www.gnu.org/licenses/.
 
 from scenario_builder import Scenario
+# Helpers ?
 
-
+SCENARIO_NAME ="network_qos"
 SCENARIO_DESCRIPTION = """This scenario allows to:
  - Add/Remove a scheduler on ip layer on the chosen interface.
    This scheduler works with three levels of scheduling: per trunk, per destination, and per Class of Service.
 """
-
 
 def add_qos(entity, interface_name, path, scenario_name='add_network_qos'):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
@@ -55,7 +55,5 @@ def build(entity, interface_name, action, path, scenario_name=None):
 
     if scenario_name is not None:
         scenario.name = scenario_name
- 
+
     return scenario
-
-

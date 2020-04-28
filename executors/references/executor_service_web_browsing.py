@@ -73,13 +73,13 @@ def main(argv=None):
     scenario = service_web_browsing.build(
             args.server_entity,
             args.client_entity,
-            args.duration,
             args.nb_runs,
             args.nb_parallel_runs,
             not args.no_compression,
             args.proxy_address,
             args.proxy_port,
             args.launch_server,
+            args.duration,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
 

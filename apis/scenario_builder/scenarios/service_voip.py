@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -32,17 +32,15 @@ from scenario_builder.helpers.service.voip import voip
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
-
+SCENARIO_NAME = 'service_voip'
 SCENARIO_DESCRIPTION = """This scenario launches one voip transfer.
 It can then, optionally, plot the Mean Opinion Score using time-series and CDF.
 NB : the entities logic is the following :
     - server receives the voice content
     - client transmits the voice content
 """
-SCENARIO_NAME = 'service_voip'
 
-
-def service_voip(server_entity, client_entity, server_ip, client_ip, server_port, duration, codec, scenario_name=SCENARIO_NAME):
+def service_voip(server_entity, client_entity, server_ip, client_ip, server_port, codec, duration, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     voip(scenario, server_entity, client_entity, client_ip, server_ip, server_port, codec, duration)
     return scenario
@@ -50,9 +48,9 @@ def service_voip(server_entity, client_entity, server_ip, client_ip, server_port
 
 def build(
         server_entity, client_entity, server_ip, client_ip, server_port,
-        duration, codec, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+        codec, duration, post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
-    scenario = service_voip(server_entity, client_entity, server_ip, client_ip, server_port, duration, codec, scenario_name)
+    scenario = service_voip(server_entity, client_entity, server_ip, client_ip, server_port, codec, duration, scenario_name)
 
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('voip_qoe_src'))

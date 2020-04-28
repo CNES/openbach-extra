@@ -32,23 +32,21 @@ from scenario_builder.helpers.postprocessing.time_series import time_series_on_s
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
-
+SCENARIO_NAME = 'transport_tcp_one_flow'
 SCENARIO_DESCRIPTION = """This transport_tcp_one_flow scenario allows to:
- - Launch the subscenario transport_tcp_one_flow_core
-   (Launch one tcp iperf3 flow with a transmitted size).
+ - Launch one tcp iperf3 flow with a transmitted size).
  - Perform two post-processing tasks to compare the
    time-series and the CDF of the rate measurements.
  - NB : client and server entities/IPs/ports are in accordance
    with iperf3 logic (server = receiver and client = sender)
 """
-SCENARIO_NAME = 'transport_tcp_one_flow'
 
 
-def tcp_one_flow(server_entity, client_entity, server_ip, server_port, size, tos, mtu, scenario_name=SCENARIO_NAME):
+def tcp_one_flow(server_entity, client_entity, server_ip, server_port, transmitted_size, tos, mtu, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('server_port', server_port)
-    scenario.add_constant('transmitted_size', size)
+    scenario.add_constant('transmitted_size', transmitted_size)
     scenario.add_constant('tos', tos)
     scenario.add_constant('mtu', mtu)
 

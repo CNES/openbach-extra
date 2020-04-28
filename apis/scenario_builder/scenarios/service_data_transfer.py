@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -32,16 +32,15 @@ from scenario_builder.helpers.transport.iperf3 import iperf3_send_file_tcp, iper
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
-
+SCENARIO_NAME = 'service_data_transfer'
 SCENARIO_DESCRIPTION = """This scenario launches one iperf3 transfer.
 It can then, optionally, plot the throughput using time-series and CDF.
 NB : client and server entities/IPs/ports are in accordance
 with iperf3 logic (server = receiver and client = sender)
 """
-SCENARIO_NAME = 'service_data_transfer'
 
 
-def data_transfer(server_entity, client_entity, server_ip, server_port, duration, file_size, tos, mtu, scenario_name=SCENARIO_NAME):
+def data_transfer(server_entity, client_entity, server_ip, server_port, file_size, tos, mtu, duration, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     if file_size == '0':
         iperf3_rate_tcp(scenario, client_entity, server_entity, server_ip, server_port, duration, 1, tos, mtu)
@@ -52,10 +51,10 @@ def data_transfer(server_entity, client_entity, server_ip, server_port, duration
 
 
 def build(
-        server_entity, client_entity, server_ip, server_port, duration, file_size, tos,
-        mtu, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+        server_entity, client_entity, server_ip, server_port, file_size, tos,
+        mtu, duration, post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
-    scenario = data_transfer(server_entity, client_entity, server_ip, server_port, duration, file_size, tos, mtu, scenario_name)
+    scenario = data_transfer(server_entity, client_entity, server_ip, server_port, file_size, tos, mtu, duration, scenario_name)
 
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id(iperf3=iperf3_find_server))

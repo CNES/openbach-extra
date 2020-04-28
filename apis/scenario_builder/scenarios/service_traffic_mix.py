@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -39,17 +39,15 @@ from scenario_builder.scenarios import service_data_transfer, service_video_dash
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
-
+SCENARIO_NAME = 'service_traffic_mix'
 SCENARIO_DESCRIPTION = """This scenario launches various traffic generators
 as subscenarios. Possible generators are:
  - VoIP
  - Web browsing
  - Dash video player
  - Data transfer
-
 It can then, optionally,  post-processes the generated data by plotting time-series and CDF.
 """
-SCENARIO_NAME = 'service_traffic_mix'
 
 
 _Arguments = namedtuple('Arguments', ('id', 'traffic', 'source', 'destination', 'duration', 'wait_launched', 'wait_finished', 'wait_delay', 'source_ip', 'destination_ip'))
@@ -186,7 +184,7 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
         elif args.traffic == "voip":
             scenario = service_voip.build(
                     args.destination, args.source, args.destination_ip,
-                    args.source_ip, int(args.port), int(args.duration), 
+                    args.source_ip, int(args.port), int(args.duration),
                     args.codec, post_processing_entity, 'VoIP ' + args.id)
 
         start_scenario = scenario_mix.add_function(
@@ -197,7 +195,7 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
         start_scenario.configure(scenario)
         list_wait_finished += [start_scenario]
         map_scenarios[int(args.id)] = start_scenario
-        
+
     # Stopping all Apache2 servers
     for server_entity,scenario_server in apache_servers.items():
         stopper = scenario_mix.add_function('stop_job_instance',

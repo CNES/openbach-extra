@@ -71,8 +71,8 @@ def main(argv=None):
             args.server_ip,
             args.client_ip,
             args.server_port,
-            args.duration,
             args.codec,
+            args.duration,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
 

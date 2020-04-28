@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -33,15 +33,13 @@ from scenario_builder.helpers.postprocessing.time_series import time_series_on_s
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
-
+SCENARIO_NAME = 'network_delay'
 SCENARIO_DESCRIPTION = """This network_delay scenario allows to
 compare the RTT measurement of fping (ICMP) and d-itg (UDP). It
-can be configured to start the traffics either simultaneously or
+can be configured to start the traffic either simultaneously or
 sequentially.
-
 It can then, optionally, plot the delay measurements using time-series and CDF.
 """
-SCENARIO_NAME = 'network_delay'
 
 
 def simultaneous_traffic(server_entity, client_entity, server_ip, client_ip, duration, scenario_name=SCENARIO_NAME):
@@ -80,7 +78,7 @@ def sequential_traffic(server_entity, client_entity, server_ip, client_ip, durat
 
 def build(
         server_entity, client_entity, server_ip, client_ip,
-        duration, simultaneous,
+         simultaneous, duration,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = (simultaneous_traffic if simultaneous else sequential_traffic)(
             server_entity, client_entity,

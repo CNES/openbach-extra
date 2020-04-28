@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -26,7 +26,6 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-
 from scenario_builder import Scenario
 from scenario_builder.helpers.transport.iperf3 import iperf3_rate_udp, iperf3_find_server
 from scenario_builder.helpers.network.owamp import owamp_measure_owd
@@ -34,25 +33,23 @@ from scenario_builder.helpers.postprocessing.time_series import time_series_on_s
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
-
+SCENARIO_NAME = 'network_jitter'
 SCENARIO_DESCRIPTION = """This scenario allows to retrieve
 jitter information using iperf3 and owamp.
-
 It can then, optionally, plot the jitter measurements using time-series and CDF.
 """
-SCENARIO_NAME = 'network_jitter'
 
 
 def jitter(
         server_entity, client_entity, server_ip, server_port,
-        num_flows, duration, tos, bandwidth, scenario_name=SCENARIO_NAME):
+        num_flows, bandwidth, tos, duration, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('server_port', server_port)
     scenario.add_constant('num_flows', num_flows)
-    scenario.add_constant('duration', duration)
-    scenario.add_constant('tos', tos)
     scenario.add_constant('bandwidth', bandwidth)
+    scenario.add_constant('tos', tos)
+    scenario.add_constant('duration', duration)
 
     # Remove iperf3 jitter test ? Seems 0 when testing
     # Add d-itg if good jitter measure ?
@@ -67,11 +64,11 @@ def jitter(
 
 def build(
         server_entity, client_entity, server_ip, server_port,
-        duration, num_flows, tos, bandwidth,
+        num_flows, bandwidth, duration, tos,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = jitter(
             server_entity, client_entity, server_ip, server_port,
-            num_flows, duration, tos, bandwidth, scenario_name)
+            num_flows, bandwidth, tos, duration, scenario_name)
 
     if post_processing_entity is not None:
         waiting_jobs = []

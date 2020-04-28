@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -31,28 +31,27 @@ from scenario_builder import Scenario
 from scenario_builder.scenarios import network_rate, network_delay, network_jitter, network_one_way_delay
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
-
+SCENARIO_NAME = 'network_global'
 SCENARIO_DESCRIPTION = """This scenario is a wrapper for the following scenarios:
  - network_delay,
  - network_one_way_delay
  - network_jitter
  - network_rate
-
-NB : client = traffic sender and server = traffic receiver 
+ NB : client = traffic sender and server = traffic receiver
+It is a general network QoS metrics scenario.
 """
-SCENARIO_NAME = 'network_global'
 
 
 def build(
         server_entity, client_entity, server_ip, client_ip, server_port, command_port,
-        duration, rate, num_flows, tos, mtu, bandwidth,
+        rate, num_flows, bandwidth, tos, mtu, duration,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
     #Create top network_global scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     # Add Delay metrology sub scenario
-    scenario_network_delay = network_delay.build(server_entity, client_entity, server_ip, client_ip, duration, False, post_processing_entity)
+    scenario_network_delay = network_delay.build(server_entity, client_entity, server_ip, client_ip, False, duration, post_processing_entity)
     start_network_delay = scenario.add_function('start_scenario_instance')
     start_network_delay.configure(scenario_network_delay)
 
@@ -68,7 +67,7 @@ def build(
     # Add Jitter metrology sub scenario
     scenario_network_jitter = network_jitter.build(
             server_entity, client_entity, server_ip, server_port,
-            duration, num_flows, tos, bandwidth, post_processing_entity)
+            num_flows, bandwidth, tos, duration, post_processing_entity)
     start_network_jitter = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_network_one_way_delay],
@@ -78,7 +77,7 @@ def build(
     # Add Rate metrology sub scenario
     scenario_network_rate = network_rate.build(
             server_entity, client_entity, server_ip, client_ip, server_port, command_port,
-            duration, rate, num_flows, tos, mtu, post_processing_entity)
+            rate, num_flows, tos, mtu, duration, post_processing_entity)
     start_network_rate = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_network_jitter],

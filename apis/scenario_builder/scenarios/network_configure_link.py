@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -31,12 +31,12 @@ from scenario_builder.helpers.network.configure_link import configure_link_apply
 from scenario_builder.helpers.network.configure_link import configure_link_clear
 from inspect import signature
 
-
-SCENARIO_DESCRIPTION = """This scenario allows to:
- - {} a configuration on network interfaces in ingress, egress or both directions 
-   in order to emulate/stop emulation of a network link like WIFI link. 
+SCENARIO_NAME = 'network_configure_link'
+SCENARIO_DESCRIPTION = """This scenario allows a configuration on network interfaces
+in ingress, egress or both directions in order to emulate/stop emulation of a network link like WIFI link.
 Many link characteristiscs can be emulated including: bandwidth, delay, jitter and losses
 """
+
 
 
 def apply_configure_link(
@@ -57,7 +57,7 @@ def clear_configure_link(entity, ifaces, mode, scenario_name='clear_configure_li
 
 
 def build(entity, ifaces, mode, operation, bandwidth=None, delay=0, jitter=0,
-          delay_distribution='normal', loss_model='random', loss_model_params=[0.0], 
+          delay_distribution='normal', loss_model='random', loss_model_params=[0.0],
           buffer_size=10000, scenario_name=None):
     scenario = clear_configure_link(entity, ifaces, mode) if operation != 'apply' else apply_configure_link(
             entity, ifaces, mode, bandwidth, delay_distribution,

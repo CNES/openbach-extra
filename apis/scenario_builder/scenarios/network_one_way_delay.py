@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -34,14 +34,13 @@ from scenario_builder.helpers.postprocessing.time_series import time_series_on_s
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
-
+SCENARIO_NAME = 'network_one_way_delay'
 SCENARIO_DESCRIPTION = """This scenario allows to :
- - Launch the subscenario One Way Delay measurement for both directions
+ - Launch One Way Delay measurement for both directions
    (with owamp jobs).
  - Perform two post-processing tasks to compare the
    time-series and the CDF of the one way delay measurements.
 """
-SCENARIO_NAME = 'network_one_way_delay'
 
 
 def one_way_delay(server_entity, client_entity, server_ip, client_ip, scenario_name=SCENARIO_NAME):

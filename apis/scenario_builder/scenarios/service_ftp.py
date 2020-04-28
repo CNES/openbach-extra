@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -32,7 +32,7 @@ from scenario_builder.helpers.postprocessing.time_series import time_series_on_s
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
-
+SCENARIO_NAME = 'service_ftp'
 SCENARIO_DESCRIPTION = """This service_ftp scenario allows to :
  — Launch a ftp server;
  — Launch a ftp client;
@@ -40,7 +40,6 @@ SCENARIO_DESCRIPTION = """This service_ftp scenario allows to :
 
 It can then, optionally, plot the throughput using time-series and CDF.
 """
-SCENARIO_NAME = 'service_ftp'
 
 
 def multiple_ftp(server_entity, client_entity, server_ip, server_port, mode, path, user, password, blocksize, amount, scenario_name=SCENARIO_NAME):

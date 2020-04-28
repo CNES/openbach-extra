@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -32,7 +32,7 @@ from scenario_builder.helpers.transport.ethtool import ethtool_disable_segmentat
 from scenario_builder.helpers.network.ip_route import ip_route
 from inspect import signature
 
-
+SCENARIO_NAME = 'transport_tcp_stack_conf'
 SCENARIO_DESCRIPTION = """This *transport_tcp_stack_conf* scenario allows to configure:
  - TCP congestion control and associated parameters,
  - route including TCP parameters like initial congestion and receive windows
@@ -43,7 +43,6 @@ they had at the installation of the job of tcp_conf_linux. Then the parameters
 are updated only if a new value is set in the arguments. More information on
 the wiki page of the job tcp_conf_linux.
 """
-SCENARIO_NAME = 'transport_tcp_stack_conf'
 
 def tcp_stack_conf (entity, tcp_params, tcp_subparams, interface=None, route=None, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
