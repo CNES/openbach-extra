@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,7 +27,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario builds or launches the *service_voip* scenario
+"""This executor builds or launches the *service_voip* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
 It launches one VoIP flow with the specified parameters.
 """

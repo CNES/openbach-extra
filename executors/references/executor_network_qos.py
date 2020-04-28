@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,16 +27,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario builds and launches the *network_qos* scenario
+"""This executor builds or launches the *network_qos* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
+It creates a scheduler linked to an interface to put network qos rules
 """
-
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_qos
 
 
-def main(scenario_name='network_qos', argv=None):
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--entity', required=True,
@@ -49,10 +49,10 @@ def main(scenario_name='network_qos', argv=None):
             help='Add a new scheduler or remove the existing one')
     observer.add_scenario_argument(
             '-c', '--configuration-file', metavar='PATH',
-            help='The path to the scheduler configuartion file, on the entity, mandatory if action is add')
+            help='The path to the scheduler configuration file, on the entity, mandatory if action is add')
 
-    args = observer.parse(argv, scenario_name)
- 
+    args = observer.parse(argv, network_qos.SCENARIO_NAME)
+
     if args.action == "add":
         if not args.configuration_file:
             raise AttributeError("Path must be specified if the action is add")
@@ -62,9 +62,9 @@ def main(scenario_name='network_qos', argv=None):
                 args.interface,
                 args.action,
                 args.configuration_file,
-    )
-    observer.launch_and_wait(scenario)
+                scenario_name=args.scenarios_name)
 
+    observer.launch_and_wait(scenario)
 
 if __name__ == '__main__':
     main()

@@ -45,9 +45,9 @@ SCENARIO_NAME = 'service_web_browsing'
 
 
 def web_browsing(
-        server_entity, client_entity, duration, nb_runs, parallel_runs,
+        server_entity, client_entity, nb_runs, parallel_runs,
         compression=True, proxy_address=None, proxy_port=None,
-        launch_server=False, scenario_name=SCENARIO_NAME):
+        launch_server=False, duration, scenario_name=SCENARIO_NAME):
 
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
@@ -63,10 +63,10 @@ def web_browsing(
 
 
 def build(
-        server_entity, client_entity, duration, nb_runs, parallel_runs,
-        compression=True, proxy_address=None, proxy_port=None, launch_server=False,
+        server_entity, client_entity, nb_runs, parallel_runs, compression=True,
+        proxy_address=None, proxy_port=None, launch_server=False, duration,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = web_browsing(server_entity, client_entity, duration, nb_runs, parallel_runs, compression, proxy_address, proxy_port, launch_server, scenario_name)
+    scenario = web_browsing(server_entity, client_entity, nb_runs, parallel_runs, compression, proxy_address, proxy_port, launch_server, duration, scenario_name)
 
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('web_browsing_qoe'))

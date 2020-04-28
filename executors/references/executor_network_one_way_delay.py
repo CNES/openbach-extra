@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,8 +27,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This script launches the *network_one_way_delay* scenario
+"""This executor builds or launches the *network_one_way_delay* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
+It uses the owamp test of perfsonar project to get a network one way delay
 """
 
 
@@ -52,17 +53,17 @@ def main(scenario_name='executor_network_one_way_delay', argv=None):
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse(argv, scenario_name)
+    args = observer.parse(argv, network_one_way_delay.SCENARIO_NAME)
 
     scenario = network_one_way_delay.build(
                       args.server_entity,
                       args.client_entity,
                       args.server_ip,
                       args.client_ip,
-                      args.post_processing_entity)
+                      args.post_processing_entity,
+                      scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
-
 
 if __name__ == '__main__':
     main()

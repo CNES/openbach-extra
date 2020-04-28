@@ -79,14 +79,14 @@ def single_ftp(server_entity, client_entity, server_ip, server_port, mode, path,
 
 def build(
         server_entity, client_entity, server_ip, server_port, mode, file_path, multiple,
-        user='openbach', password='openbach', blocksize='8192', 
-	post_processing_entity=None, scenario_name=SCENARIO_NAME):
+        user='openbach', password='openbach', blocksize='8192',
+	    post_processing_entity=None, scenario_name=SCENARIO_NAME):
     # Create core scenario
     if mode == 'download':
         name_stat = 'throughput_sent'
         server_leg = 'sent'
         client_leg = 'received'
-    elif mode == 'upload': 
+    elif mode == 'upload':
         name_stat = 'throughput_received'
         server_leg = 'received'
         client_leg = 'sent'

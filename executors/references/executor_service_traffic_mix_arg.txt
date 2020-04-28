@@ -1,15 +1,43 @@
-# arguments format:
-# id traffic_type src_entity dst_entity duration wait_launched wait_finished wait_delay src_ip dst_ip extra_args
-# wait_launched and wait_finished can contain several elements -> they must be separated by a '-'. If no element, put None
+# OpenBACH is a generic testbed able to control/configure multiple
+# network/physical entities (under test) and collect data from them.
+# It is composed of an Auditorium (HMIs), a Controller, a Collector
+# and multiple Agents (one for each network entity that wants to be
+# tested).
+#
+# Copyright © 2020 CNES
+# This file is part of the OpenBACH testbed.
+#
+# OpenBACH is a free software : you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY, without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see http://www.gnu.org/licenses/.
 
+
+# File configuration example for executor_service_traffic_mix scenario.
+# Author : Bastien Tauran, Vivéris Technologies
+#
+# file configuration arguments format (see below for example) :
+### id traffic_type src_entity dst_entity duration wait_launched wait_finished wait_delay src_ip dst_ip extra_args
+### wait_launched and wait_finished can contain several elements -> they must be separated by a '-'. If no element, put None
+#
 # extra_args:
-# data_transfer	-> dst_port file_size tos mtu 	(if file_size is 0, the transfer will last duration seconds. Otherwise, it will transfer the whole specified file_size, regardless of the duration)
-# dash  		-> protocol
-# voip  		-> dst_port codecs				(Warning: it is impossible to launch several voip_src at same time... should be fixed later)
-# web_browsing	-> nb_runs nb_parallel_runs		(do not forget to edit the config file with correct address)
+### data_transfer	-> dst_port file_size tos mtu 	(if file_size is 0, the transfer will last duration seconds. Otherwise, it will transfer the whole specified file_size, regardless of the duration)
+### dash  		-> protocol
+### voip  		-> dst_port codecs				(Warning: it is impossible to launch several voip_src at same time... should be fixed later)
+### web_browsing	-> nb_runs nb_parallel_runs		(do not forget to edit the config file with correct address)
 
-# Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 executor_service_traffic.py my_project --extra-args-traffic executor_service_traffic_mix_arg.txt --post-processing-entity ST1 -o run
+# Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 executor_service_traffic_mix.py my_project --extra-args-traffic executor_service_traffic_mix_arg.txt --post-processing-entity name_entity_post_processing -o run
 
+# Example of trafic mix with data_transfer,dash, web_browsing and voip traffic
+#
 1 data_transfer SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 5201 10M 0 1500
 2 dash SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2
 3 web_browsing SRC ST1 60 None None 0 10.42.42.11 10.42.14.3 10 2

@@ -35,7 +35,7 @@ from inspect import signature
 
 SCENARIO_DESCRIPTION = """This *transport_tcp_stack_conf* scenario allows to configure:
  - TCP congestion control and associated parameters,
- - route including TCP parameters like initial congestion and receive windows 
+ - route including TCP parameters like initial congestion and receive windows
  - TCP segmentation offloading on a network interface.
 
 If reset option is set, the sysctl and CUBIC parameters are reset to the value
@@ -64,13 +64,13 @@ def tcp_stack_conf (entity, tcp_params, tcp_subparams, interface=None, route=Non
     if route and route.get('destination_ip') is not None:
         operation = route.pop('operation')
         ip_route(scenario, entity, operation, **route)
-      
+
     return scenario
 
 
 
 def build(entity, tcp_params, tcp_subparams, interface=None, route=None, scenario_name=SCENARIO_NAME):
-      
+
     scenario = tcp_stack_conf(entity, tcp_params, tcp_subparams, interface, route, scenario_name)
 
     return scenario

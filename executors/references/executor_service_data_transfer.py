@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,12 +27,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+"""This executor builds or launches the *service_data_transfer* scenario
+from /openbach-extra/apis/scenario_builder/scenarios/
+This scenario launches one TCP iperf3 flow with the specified parameters
+"""
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_data_transfer
 
-"""This scenario launches one TCP iperf3 flow with the specified parameters"""
-
-def main():
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
@@ -51,10 +54,10 @@ def main():
             help='size of the file to transmit (in bytes) - must be set to 0 if '
             'the end of the transfer is defined by the duration parameter')
     observer.add_scenario_argument(
-            '--tos', required=True,
+            '--tos', default=0,
             help='set the ToS field of the TCP iperf3 traffic (e.g. 0x04)')
     observer.add_scenario_argument(
-            '--mtu', required=True,
+            '--mtu', default=1400,
             help='set the MTU of the TCP iperf3 traffic (in bytes, e.g. 1400)')
     observer.add_scenario_argument(
             '--duration', required=True,
@@ -65,7 +68,7 @@ def main():
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse()
+    args = observer.parse(argv, service_data_transfer.SERVICE_NAME)
 
     scenario = service_data_transfer.build(
             args.server_entity,
@@ -77,7 +80,7 @@ def main():
             args.tos,
             args.mtu,
             args.post_processing_entity,
-            scenario_name="service_data_transfer")
+            scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
 

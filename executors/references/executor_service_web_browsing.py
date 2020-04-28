@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,12 +27,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+"""This executor builds or launches *web_browsing* scenario
+from /openbach-extra/apis/scenario_builder/scenarios/
+ It launches one web_browsing flow with the specified parameters
+ """
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_web_browsing
 
-"""This scenario launches one web_browsing flow with the specified parameters"""
-
-def main():
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
@@ -47,9 +50,6 @@ def main():
             '--nb-parallel-runs', required=True,
             help='the maximum number of fetches that can work simultaneously')
     observer.add_scenario_argument(
-            '--duration', required=True,
-            help='duration of VoIP transmission')
-    observer.add_scenario_argument(
             '--no-compression', action = 'store_true', required = False,
             help = 'Prevent compression for transmission')
     observer.add_scenario_argument(
@@ -59,10 +59,16 @@ def main():
             '--proxy-port', type = int, required = False,
             help = 'Set the proxy port (also needs a proxy address)')
     observer.add_scenario_argument(
+            '--launch-server', default=True,
+            help='Launch server or not. Optional. Default : True')
+    observer.add_scenario_argument(
+            '--duration', required=True,
+            help='duration of Web browsing transmission')
+    observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse()
+    args = observer.parse(argv, service_web_browsing.SCENARIO_NAME)
 
     scenario = service_web_browsing.build(
             args.server_entity,
@@ -73,9 +79,9 @@ def main():
             not args.no_compression,
             args.proxy_address,
             args.proxy_port,
-            True,
+            args.launch_server,
             args.post_processing_entity,
-            scenario_name="service_web_browsing")
+            scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
 

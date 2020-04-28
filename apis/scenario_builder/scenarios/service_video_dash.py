@@ -41,7 +41,7 @@ NB : the entities logic is the following :
 SCENARIO_NAME = 'service_video_dash'
 
 
-def video_dash(server_entity, client_entity, server_ip, duration, protocol, launch_server, scenario_name=SCENARIO_NAME):
+def video_dash(server_entity, client_entity, server_ip, protocol, launch_server, duration, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     if launch_server:
@@ -60,8 +60,8 @@ def video_dash(server_entity, client_entity, server_ip, duration, protocol, laun
     return scenario
 
 
-def build(server_entity, client_entity, server_ip, duration, protocol, launch_server=False, post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = video_dash(server_entity, client_entity, server_ip, duration, protocol, launch_server, scenario_name)
+def build(server_entity, client_entity, server_ip, protocol, launch_server=False, duration, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    scenario = video_dash(server_entity, client_entity, server_ip, protocol, launch_server, duration, scenario_name)
 
     if launch_server and post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('dash player&server'))

@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,12 +27,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+"""This executor builds or launches the *service_traffic_mix* scenario
+from /openbach-extra/apis/scenario_builder/scenarios/
+It is a complex executor configured by "executor_service_traffic_mix_arg.txt" file
+which can mix several services scenarios such as video_dash, voip, web_browsing
+and service_data_transfer in a flexible manner.
+"""
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_traffic_mix
 
-"""This scenario launches the *service_traffic_mix* scenario from /openbach-extra/apis/scenario_builder/scenarios/ """
-
-def main():
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--extra-args-traffic', required=True, help='Extra arguments for traffic generation')
@@ -40,11 +45,12 @@ def main():
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse()
+    args = observer.parse(argv, service_traffic_mix.SCENARIO_NAME)
 
     scenario = service_traffic_mix.build(
             args.extra_args_traffic,
-            args.post_processing_entity)
+            args.post_processing_entity,
+            scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
 

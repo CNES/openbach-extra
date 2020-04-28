@@ -27,16 +27,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario launches the *network_rate* scenario
+"""This executor builds or launches the *network_rate* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
+It launches three tools to get different rate metrics to compare.
 """
-
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_rate
 
-
-def main(scenario_name='executor_network_rate', argv=None):
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
@@ -62,12 +61,12 @@ def main(scenario_name='executor_network_rate', argv=None):
     observer.add_scenario_argument(
             '--tos', default=0, help='Type of Service of the trafic (default : 0)')
     observer.add_scenario_argument(
-            '--mtu', default=1000-40, help='MTU size (default : 1000-40)')
+            '--mtu', default=1400, help='MTU size (default : 1400)')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse(argv, scenario_name)
+    args = observer.parse(argv, network_rate.SCENARIO_NAME)
 
     scenario = network_rate.build(
             args.server_entity,
@@ -81,9 +80,10 @@ def main(scenario_name='executor_network_rate', argv=None):
             args.num_flows,
             args.tos,
             args.mtu,
-            args.post_processing_entity)
-    observer.launch_and_wait(scenario)
+            args.post_processing_entity,
+            scenario_name=args.scenario_name)
 
+    observer.launch_and_wait(scenario)
 
 if __name__ == '__main__':
     main()
