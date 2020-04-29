@@ -51,7 +51,7 @@ def main(argv=None):
             '--duration', required=True,
             help='duration of DASH traffic transmission')
     observer.add_scenario_argument(
-            '--protocol', required=True,
+            '--protocol', default='http/2',
             help='protocol used by DASH. Possible values are http/1.1 and http/2')
     observer.add_scenario_argument(
             '--launch-server', default=True,
