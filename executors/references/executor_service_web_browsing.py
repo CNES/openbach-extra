@@ -44,13 +44,13 @@ def main(argv=None):
             '--client-entity', required=True,
             help='name of the client entity which receives the web_browsing traffic')
     observer.add_scenario_argument(
-            '--duration', required=True,
+            '--duration', required=False,
             help='duration of Web browsing transmission')
     observer.add_scenario_argument(
-            '--nb-runs', required=True,
+            '--nb-runs', default=1,
             help='the number of fetches to perform for each website')
     observer.add_scenario_argument(
-            '--nb-parallel-runs', required=True,
+            '--nb-parallel-runs', default=1,
             help='the maximum number of fetches that can work simultaneously')
     observer.add_scenario_argument(
             '--no-compression', action = 'store_true', required = False,
