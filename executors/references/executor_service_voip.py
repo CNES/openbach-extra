@@ -54,11 +54,11 @@ def main(argv=None):
             '--server-port', required=True,
             help='destination port for the VoIP traffic')
     observer.add_scenario_argument(
-            '--duration', required=True,
+            '--duration', default=10,
             help='duration of VoIP transmission in seconds')
     observer.add_scenario_argument(
-            '--codec', required=True,
-            help='codec used by the VoIP traffic. Possible values are: G.711.1, G.711.2, G.723.1, G.729.2, G.729.3.')
+            '--codec', default='G.711.1',
+            help='codec used by the VoIP traffic. Possible values are: G.711.1, G.711.2, G.723.1, G.729.2, G.729.3. Default : G.711.1')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
