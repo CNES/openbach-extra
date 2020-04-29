@@ -44,6 +44,9 @@ def main(argv=None):
             '--client-entity', required=True,
             help='name of the client entity which receives the web_browsing traffic')
     observer.add_scenario_argument(
+            '--duration', required=True,
+            help='duration of Web browsing transmission')
+    observer.add_scenario_argument(
             '--nb-runs', required=True,
             help='the number of fetches to perform for each website')
     observer.add_scenario_argument(
@@ -62,9 +65,6 @@ def main(argv=None):
             '--launch-server', default=True,
             help='Launch server or not. Optional. Default : True')
     observer.add_scenario_argument(
-            '--duration', required=True,
-            help='duration of Web browsing transmission')
-    observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
@@ -73,13 +73,13 @@ def main(argv=None):
     scenario = service_web_browsing.build(
             args.server_entity,
             args.client_entity,
+            args.duration,
             args.nb_runs,
             args.nb_parallel_runs,
             not args.no_compression,
             args.proxy_address,
             args.proxy_port,
             args.launch_server,
-            args.duration,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
 

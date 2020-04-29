@@ -49,10 +49,10 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--client-ip', required=True, help='IP address of source of pings and packets')
     observer.add_scenario_argument(
+            '--duration', default=10, help='duration of delay scenario (s)')
+    observer.add_scenario_argument(
             '--simultaneous', action='store_true',
             help='option whether or not the test is simultaneous. Default sequential')
-    observer.add_scenario_argument(
-            '--duration', default=10, help='duration of delay scenario (s)')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
@@ -64,8 +64,8 @@ def main(argv=None):
                       args.client_entity,
                       args.server_ip,
                       args.client_ip,
-                      args.simultaneous,
                       args.duration,
+                      args.simultaneous,
                       args.post_processing_entity,
                       scenario_name=args.scenario_name)
 

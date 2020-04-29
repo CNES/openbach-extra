@@ -78,7 +78,7 @@ def sequential_traffic(server_entity, client_entity, server_ip, client_ip, durat
 
 def build(
         server_entity, client_entity, server_ip, client_ip,
-         simultaneous, duration,
+         duration, simultaneous,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = (simultaneous_traffic if simultaneous else sequential_traffic)(
             server_entity, client_entity,

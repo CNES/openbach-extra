@@ -40,7 +40,7 @@ NB : the entities logic is the following :
 """
 
 
-def video_dash_and_server(server_entity, client_entity, server_ip, protocol, duration, scenario_name=SCENARIO_NAME):
+def video_dash_and_server(server_entity, client_entity, server_ip, duration, protocol, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     server = scenario.add_function('start_job_instance')
@@ -55,7 +55,7 @@ def video_dash_and_server(server_entity, client_entity, server_ip, protocol, dur
     return scenario
 
 
-def video_dash(client_entity, server_ip, protocol, duration, scenario_name=SCENARIO_NAME):
+def video_dash(client_entity, server_ip, duration, protocol, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     traffic = scenario.add_function('start_job_instance')
@@ -64,11 +64,11 @@ def video_dash(client_entity, server_ip, protocol, duration, scenario_name=SCENA
     return scenario
 
 
-def build(server_entity, client_entity, server_ip, protocol, duration, launch_server=False, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+def build(server_entity, client_entity, server_ip, duration, protocol, launch_server=False, post_processing_entity=None, scenario_name=SCENARIO_NAME):
     if launch_server:
-        scenario = video_dash_and_server(server_entity, client_entity, server_ip, protocol, duration, scenario_name)
+        scenario = video_dash_and_server(server_entity, client_entity, server_ip, duration, protocol, scenario_name)
     else:
-        scenario = video_dash(client_entity, server_ip, protocol, duration, scenario_name)
+        scenario = video_dash(client_entity, server_ip, duration, protocol, scenario_name)
 
     if launch_server and post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('dash player&server'))

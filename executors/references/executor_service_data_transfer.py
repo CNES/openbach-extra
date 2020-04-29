@@ -50,6 +50,11 @@ def main(argv=None):
             '--server-port', required=True,
             help='destination port for the iperf3 traffic (e.g. 5201)')
     observer.add_scenario_argument(
+            '--duration', required=True,
+            help='duration of iperf3 transmission (in seconds) - must be set to '
+            'an integer value even if the file_size parameter defines the end of'
+            'transfer (the value will then be ignored)')
+    observer.add_scenario_argument(
             '--file-size', required=True,
             help='size of the file to transmit (in bytes) - must be set to 0 if '
             'the end of the transfer is defined by the duration parameter')
@@ -59,11 +64,6 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--mtu', default=1400,
             help='set the MTU of the TCP iperf3 traffic (in bytes, e.g. 1400)')
-    observer.add_scenario_argument(
-            '--duration', required=True,
-            help='duration of iperf3 transmission (in seconds) - must be set to '
-            'an integer value even if the file_size parameter defines the end of'
-            'transfer (the value will then be ignored)')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
@@ -75,10 +75,10 @@ def main(argv=None):
             args.client_entity,
             args.server_ip,
             args.server_port,
+            args.duration,
             args.file_size,
             args.tos,
             args.mtu,
-            args.duration,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
 

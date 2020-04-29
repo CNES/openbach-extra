@@ -44,18 +44,19 @@ It is a general network QoS metrics scenario.
 
 def build(
         server_entity, client_entity, server_ip, client_ip, server_port, command_port,
-        rate, num_flows, bandwidth, tos, mtu, duration,
+        duration, rate, num_flows, bandwidth, tos, mtu,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
     #Create top network_global scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
-    # Add Delay metrology sub scenario
-    scenario_network_delay = network_delay.build(server_entity, client_entity, server_ip, client_ip, False, duration, post_processing_entity)
+    # Add Delay metrology scenario in sequential mode.
+    simultaneous=False
+    scenario_network_delay = network_delay.build(server_entity, client_entity, server_ip, client_ip, duration, simultaneous, post_processing_entity)
     start_network_delay = scenario.add_function('start_scenario_instance')
     start_network_delay.configure(scenario_network_delay)
 
-    # Add One Way Delay metrology sub scenario
+    # Add One Way Delay metrology scenario
     scenario_network_one_way_delay = network_one_way_delay.build(
             server_entity, client_entity, server_ip, client_ip, post_processing_entity)
     start_network_one_way_delay = scenario.add_function(
@@ -64,10 +65,10 @@ def build(
             wait_delay=2)
     start_network_one_way_delay.configure(scenario_network_one_way_delay)
 
-    # Add Jitter metrology sub scenario
+    # Add Jitter metrology scenario
     scenario_network_jitter = network_jitter.build(
             server_entity, client_entity, server_ip, server_port,
-            num_flows, bandwidth, tos, duration, post_processing_entity)
+            duration, num_flows, bandwidth, tos,  post_processing_entity)
     start_network_jitter = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_network_one_way_delay],
@@ -77,7 +78,7 @@ def build(
     # Add Rate metrology sub scenario
     scenario_network_rate = network_rate.build(
             server_entity, client_entity, server_ip, client_ip, server_port, command_port,
-            rate, num_flows, tos, mtu, duration, post_processing_entity)
+            duration, rate, num_flows, tos, mtu, post_processing_entity)
     start_network_rate = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_network_jitter],

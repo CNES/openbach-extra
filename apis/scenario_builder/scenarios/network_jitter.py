@@ -39,17 +39,16 @@ jitter information using iperf3 and owamp.
 It can then, optionally, plot the jitter measurements using time-series and CDF.
 """
 
-
 def jitter(
-        server_entity, client_entity, server_ip, server_port,
-        num_flows, bandwidth, tos, duration, scenario_name=SCENARIO_NAME):
+        server_entity, client_entity, server_ip, server_port, duration,
+        num_flows, bandwidth, tos, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('server_port', server_port)
+    scenario.add_constant('duration', duration)
     scenario.add_constant('num_flows', num_flows)
     scenario.add_constant('bandwidth', bandwidth)
     scenario.add_constant('tos', tos)
-    scenario.add_constant('duration', duration)
 
     # Remove iperf3 jitter test ? Seems 0 when testing
     # Add d-itg if good jitter measure ?
@@ -63,12 +62,12 @@ def jitter(
 
 
 def build(
-        server_entity, client_entity, server_ip, server_port,
-        num_flows, bandwidth, duration, tos,
+        server_entity, client_entity, server_ip, server_port, duration,
+        num_flows, bandwidth, tos,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = jitter(
-            server_entity, client_entity, server_ip, server_port,
-            num_flows, bandwidth, tos, duration, scenario_name)
+            server_entity, client_entity, server_ip, server_port, duration,
+            num_flows, bandwidth, tos, scenario_name)
 
     if post_processing_entity is not None:
         waiting_jobs = []

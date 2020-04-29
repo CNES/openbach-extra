@@ -48,14 +48,14 @@ def main(argv=None):
             '--server-ip', required=True,
             help='source ip address for the DASH traffic')
     observer.add_scenario_argument(
+            '--duration', required=True,
+            help='duration of DASH traffic transmission')
+    observer.add_scenario_argument(
             '--protocol', required=True,
             help='protocol used by DASH. Possible values are http/1.1 and http/2')
     observer.add_scenario_argument(
             '--launch-server', default=True,
             help='Launch video dash server or not. Optional. Default : True')
-    observer.add_scenario_argument(
-            '--duration', required=True,
-            help='duration of VoIP transmission')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
@@ -66,9 +66,9 @@ def main(argv=None):
             args.server_entity,
             args.client_entity,
             args.server_ip,
+            args.duration,
             args.protocol,
             args.launch_server,
-            args.duration,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
 

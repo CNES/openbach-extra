@@ -40,17 +40,17 @@ NB : the entities logic is the following :
     - client transmits the voice content
 """
 
-def service_voip(server_entity, client_entity, server_ip, client_ip, server_port, codec, duration, scenario_name=SCENARIO_NAME):
+def service_voip(server_entity, client_entity, server_ip, client_ip, server_port, duration, codec, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     voip(scenario, server_entity, client_entity, client_ip, server_ip, server_port, codec, duration)
     return scenario
 
 
 def build(
-        server_entity, client_entity, server_ip, client_ip, server_port,
-        codec, duration, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+        server_entity, client_entity, server_ip, client_ip, server_port, duration,
+        codec, post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
-    scenario = service_voip(server_entity, client_entity, server_ip, client_ip, server_port, codec, duration, scenario_name)
+    scenario = service_voip(server_entity, client_entity, server_ip, client_ip, server_port, duration, codec, scenario_name)
 
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('voip_qoe_src'))

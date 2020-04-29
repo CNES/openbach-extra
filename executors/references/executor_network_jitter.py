@@ -49,6 +49,9 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--server-port', default=7000, help='the iperf3 server port for data')
     observer.add_scenario_argument(
+            '--duration', default=10,
+            help='the duration of iperf3 test')
+    observer.add_scenario_argument(
             '--num-flows', default=1,
             help='the number of flows to launch with iperf3')
     observer.add_scenario_argument(
@@ -57,9 +60,6 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--tos', default=0,
             help='the ToS of iperf3 test')
-    observer.add_scenario_argument(
-            '--duration', default=10,
-            help='the duration of iperf3 test')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
@@ -71,10 +71,10 @@ def main(argv=None):
                       args.client_entity,
                       args.server_ip,
                       args.server_port,
+                      args.duration,
                       args.num_flows,
                       args.bandwidth,
                       args.tos,
-                      args.duration,
                       args.post_processing_entity,
                       scenario_name=args.scenario_name)
 

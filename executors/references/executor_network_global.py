@@ -33,10 +33,8 @@ composed of all basic network qos basics : network_delay, network_jitter,
 network_rate, network_one_way_delay.
 """
 
-
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_global
-
 
 def main(argv=None):
     observer = ScenarioObserver()
@@ -57,6 +55,8 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--command-port', default=7000, help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
+            '--duration', default=30, help='duration of each delay, rate,   scenario (s)')
+    observer.add_scenario_argument(
             '--rate', required=True, help='Set a higher rate (in kb/s) '
             'than what you estimate between server and client for the '
             'UDP test (add m/g to set M/G b/s)')
@@ -70,8 +70,6 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--mtu', default=1400, help='MTU size (default : 1400)')
     observer.add_scenario_argument(
-            '--duration', default=30, help='duration of each delay, rate,   scenario (s)')
-    observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
@@ -84,12 +82,12 @@ def main(argv=None):
                       args.client_ip,
                       args.server_port,
                       args.command_port,
+                      args.duration,
                       args.rate,
                       args.num_flows,
                       args.bandwidth,
                       args.tos,
                       args.mtu,
-                      args.duration,
                       args.post_processing_entity,
                       scenario_name=args.scenario_name)
 

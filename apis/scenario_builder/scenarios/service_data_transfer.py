@@ -40,7 +40,7 @@ with iperf3 logic (server = receiver and client = sender)
 """
 
 
-def data_transfer(server_entity, client_entity, server_ip, server_port, file_size, tos, mtu, duration, scenario_name=SCENARIO_NAME):
+def data_transfer(server_entity, client_entity, server_ip, server_port, duration, file_size, tos, mtu, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     if file_size == '0':
         iperf3_rate_tcp(scenario, client_entity, server_entity, server_ip, server_port, duration, 1, tos, mtu)
@@ -54,7 +54,7 @@ def build(
         server_entity, client_entity, server_ip, server_port, duration,
         file_size, tos, mtu, post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
-    scenario = data_transfer(server_entity, client_entity, server_ip, server_port, file_size, tos, mtu, duration, scenario_name)
+    scenario = data_transfer(server_entity, client_entity, server_ip, server_port, duration, file_size, tos, mtu, scenario_name)
 
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id(iperf3=iperf3_find_server))

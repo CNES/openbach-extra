@@ -48,8 +48,8 @@ SCENARIO_DESCRIPTION = """This network_rate scenario allows to:
 
 def network_rate(
         server_entity, client_entity, server_ip, client_ip,
-        server_port, command_port, rate, num_flows,
-        tos, mtu, duration, scenario_name=SCENARIO_NAME):
+        server_port, command_port, duration, rate, num_flows,
+        tos, mtu, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('client_ip', client_ip)
@@ -80,11 +80,11 @@ def network_rate(
 
 def build(
         server_entity, client_entity, server_ip, client_ip,
-        server_port, command_port, rate, num_flows, tos, mtu, duration,
+        server_port, command_port, duration, rate, num_flows, tos, mtu,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = network_rate(
             server_entity, client_entity, server_ip, client_ip, server_port,
-            command_port, rate, num_flows, tos, mtu, duration, scenario_name)
+            command_port, duration, rate, num_flows, tos, mtu, scenario_name)
 
     if post_processing_entity is not None:
         waiting_jobs = []
