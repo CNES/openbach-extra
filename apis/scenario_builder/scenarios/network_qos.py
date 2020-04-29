@@ -27,9 +27,8 @@
 #   this program. If not, see http://www.gnu.org/licenses/.
 
 from scenario_builder import Scenario
-# Helpers ?
 
-SCENARIO_NAME ="network_qos"
+SCENARIO_NAME ='network_qos'
 SCENARIO_DESCRIPTION = """This scenario allows to:
  - Add/Remove a scheduler on ip layer on the chosen interface.
    This scheduler works with three levels of scheduling: per trunk, per destination, and per Class of Service.

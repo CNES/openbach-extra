@@ -32,13 +32,12 @@ from scenario_builder.helpers.transport.iperf3 import iperf3_send_file_tcp, iper
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
-
+SCENARIO_NAME = 'service_data_transfer'
 SCENARIO_DESCRIPTION = """This scenario launches one iperf3 transfer.
 It can then, optionally, plot the throughput using time-series and CDF.
 NB : client and server entities/IPs/ports are in accordance
 with iperf3 logic (server = receiver and client = sender)
 """
-SCENARIO_NAME = 'service_data_transfer'
 
 
 def data_transfer(server_entity, client_entity, server_ip, server_port, file_size, tos, mtu, duration, scenario_name=SCENARIO_NAME):

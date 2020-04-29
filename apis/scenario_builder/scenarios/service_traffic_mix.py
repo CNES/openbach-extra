@@ -39,7 +39,7 @@ from scenario_builder.scenarios import service_data_transfer, service_video_dash
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
-
+SCENARIO_NAME = 'service_traffic_mix'
 SCENARIO_DESCRIPTION = """This scenario launches various traffic generators
 as subscenarios. Possible generators are:
  - VoIP
@@ -48,7 +48,6 @@ as subscenarios. Possible generators are:
  - Data transfer
 It can then, optionally,  post-processes the generated data by plotting time-series and CDF.
 """
-SCENARIO_NAME = 'service_traffic_mix'
 
 
 _Arguments = namedtuple('Arguments', ('id', 'traffic', 'source', 'destination', 'duration', 'wait_launched', 'wait_finished', 'wait_delay', 'source_ip', 'destination_ip'))
