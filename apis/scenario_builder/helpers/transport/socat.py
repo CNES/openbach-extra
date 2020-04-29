@@ -26,11 +26,12 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of socat job """
+"""Helpers of socat job"""
+
 
 def socat_send_files_tcp(
         scenario, server_entity, client_entity,
-        filesize, destination_ip, port, clients_count,
+        destination_ip, port, filesize, clients_count,
         wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
             'start_job_instance',
@@ -38,23 +39,31 @@ def socat_send_files_tcp(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     server.configure(
-            'socat', server_entity, offset=0,
-            server=True, port=port, file=filesize,
-            create_file=True, measure_time=False)
+            'socat', server_entity,
+            offset=0,
+            server=True,
+            port=port,
+            file=filesize,
+            create_file=True,
+            measure_time=False)
 
     wait = []
-    delay = 20  # Need big delay because file copy is slow
-    for client_id in range(clients_count):
+    delay = 20  # Need big initial delay because file copy is slow
+    for _ in range(clients_count):
         client = scenario.add_function(
                 'start_job_instance',
                 wait_launched=[server],
                 wait_finished=wait,
                 wait_delay=delay)
         client.configure(
-                'socat', client_entity, offset=2,
-                server=False, dst_ip=destination_ip,
-                port=port, file=filesize,
-                create_file=False, measure_time=True)
+                'socat', client_entity,
+                offset=2,
+                server=False,
+                dst_ip=destination_ip,
+                port=port,
+                file=filesize,
+                create_file=False,
+                measure_time=True)
         wait = [client]
         delay = 1
 

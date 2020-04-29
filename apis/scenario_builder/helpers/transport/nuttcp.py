@@ -26,7 +26,7 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of nuttcp job """
+"""Helpers of nuttcp job"""
 
 
 def nuttcp_rate_udp(
@@ -39,15 +39,18 @@ def nuttcp_rate_udp(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     server.configure(
-            'nuttcp', server_entity, offset=0,
-            command_port=command_port, server={})
+            'nuttcp', server_entity,
+            offset=0,
+            command_port=command_port,
+            server={})
 
     client = scenario.add_function(
             'start_job_instance',
             wait_launched=[server],
             wait_delay=2)
     client.configure(
-            'nuttcp', client_entity, offset=0,
+            'nuttcp', client_entity,
+            offset=0,
             command_port=command_port,
             client={
                 'server_ip': server_ip,

@@ -28,16 +28,20 @@
 
 """ Helpers of histogram job """
 
-def cdf_on_same_graph (scenario, post_processing_entity, jobs_to_post_processing, bins, statistics, label, title, legend, wait_finished=None, wait_launched=None, wait_delay=0, no_suffix=False):
 
+def cdf_on_same_graph(
+        scenario, post_processing_entity, job_instances, bins,
+        statistics, label, title, legend, no_suffix=False,
+        wait_finished=None, wait_launched=None, wait_delay=0):
     histogram = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     histogram.configure(
-            'histogram', post_processing_entity, offset=0,
-            jobs=[jobs_to_post_processing],
+            'histogram', post_processing_entity,
+            offset=0,
+            jobs=[job_instances],
             bins=bins,
             statistics=statistics,
             no_suffix=no_suffix,
@@ -48,16 +52,20 @@ def cdf_on_same_graph (scenario, post_processing_entity, jobs_to_post_processing
 
     return [histogram]
 
-def pdf_on_same_graph (scenario, post_processing_entity, jobs_to_post_processing, bins, statistics, label, title, legend, wait_finished=None, wait_launched=None, wait_delay=0, no_suffix=False):
 
+def pdf_on_same_graph(
+        scenario, post_processing_entity, job_instances, bins,
+        statistics, label, title, legend, no_suffix=False,
+        wait_finished=None, wait_launched=None, wait_delay=0):
     histogram = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     histogram.configure(
-            'histogram', post_processing_entity, offset=0,
-            jobs=[jobs_to_post_processing],
+            'histogram', post_processing_entity,
+            offset=0,
+            jobs=[job_instances],
             bins=bins,
             statistics=statistics,
             no_suffix=no_suffix,

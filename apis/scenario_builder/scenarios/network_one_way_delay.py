@@ -29,9 +29,9 @@
 
 from scenario_builder import Scenario
 from scenario_builder.helpers.network.owamp import owamp_measure_owd
-from scenario_builder.helpers.metrology.d_itg import ditg_pcket_rate
+from scenario_builder.helpers.metrology.d_itg import ditg_packet_rate
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
-from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
+from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 SCENARIO_NAME = 'network_one_way_delay'
@@ -49,7 +49,7 @@ def one_way_delay(server_entity, client_entity, server_ip, client_ip, scenario_n
     scenario.add_constant('client_ip', client_ip)
 
     owamp_measure_owd(scenario, client_entity, server_entity, '$server_ip')
-    ditg_pcket_rate(scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', packet_rate=1)
+    ditg_packet_rate(scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', packet_rate=1)
 
     return scenario
 
@@ -71,6 +71,7 @@ def build(server_entity, client_entity, server_ip, client_ip, post_processing_en
                 [['owd_sent','owd_received', 'owd_receiver', 'owd_return']],
                 [['One Way Delay (ms)']], [['Both One Way delays time series']],
                 [['owd_received_owamp'],['owd_sent_owamp'], ['owd_sent_d-itg'], ['owd_received_d-itg']],
+                False,
                 waiting_jobs, None, 2)
         cdf_on_same_graph(
                 scenario,
@@ -80,6 +81,7 @@ def build(server_entity, client_entity, server_ip, client_ip, post_processing_en
                 [['owd_sent','owd_received', 'owd_receiver', 'owd_return']],
                 [['One Way Delay (ms)']], [['Both One Way delay CDF']],
                 [['owd_received_owamp'],['owd_sent_owamp'], ['owd_sent_d-itg'], ['owd_received_d-itg']],
+                False,
                 waiting_jobs, None, 2)
 
     return scenario

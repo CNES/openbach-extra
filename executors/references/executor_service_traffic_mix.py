@@ -46,6 +46,16 @@ def _parse_waited_ids(ids):
     return list(map(int, ids.split('-')))
 
 
+def _prepare_argparse_arguments(validator):
+    fields = validator.TRAFFIC_TYPE._fields
+    return {
+            'nargs': len(validator.VALIDATOR),
+            'metavar': fields[:1] + fields[2:],
+            'action': validator,
+            'dest': 'traffic',
+    }
+
+
 class _Validate(argparse.Action):
     VALIDATOR = (int, None, None, int, _parse_waited_ids, _parse_waited_ids, int, None, None)
     TRAFFIC_TYPE = None
@@ -109,18 +119,16 @@ class ValidateDataTransfer(_Validate):
 def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--voip', nargs=len(ValidateVoip.VALIDATOR), action=ValidateVoip, dest='traffic',
+            '--voip', **_prepare_argparse_arguments(ValidateVoip),
             help='add a VoIP traffic generator sub-scenario')
     observer.add_scenario_argument(
-            '--dash', nargs=len(ValidateDash.VALIDATOR), action=ValidateDash, dest='traffic',
+            '--dash', **_prepare_argparse_arguments(ValidateDash),
             help='add a Dash traffic generator sub-scenario')
     observer.add_scenario_argument(
-            '--web-browsing', nargs=len(ValidateWebBrowsing.VALIDATOR),
-            action=ValidateWebBrowsing, dest='traffic',
+            '--web-browsing', **_prepare_argparse_arguments(ValidateWebBrowsing),
             help='add a web browsing traffic generator sub-scenario')
     observer.add_scenario_argument(
-            '--data-transfer', nargs=len(ValidateDataTransfer.VALIDATOR),
-            action=ValidateDataTransfer, dest='traffic',
+            '--data-transfer', **_prepare_argparse_arguments(ValidateDataTransfer),
             help='add a data transfer traffic generator sub-scenario')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '

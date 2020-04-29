@@ -26,27 +26,35 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of VoIP_qoe job """
+"""Helpers of VoIP_qoe job"""
+
 
 def voip(
-       scenario, server_entity, client_entity, src_ip, dest_ip, port, codec, duration,
-       wait_finished=None, wait_launched=None, wait_delay=0):
+        scenario, server_entity, client_entity,
+        source_ip, destination_ip, port, duration, codec,
+        wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     server.configure(
-            'voip_qoe_dest', server_entity, dest_addr=dest_ip, offset=0)
+            'voip_qoe_dest', server_entity,
+            dest_addr=destination_ip,
+            offset=0)
 
     client = scenario.add_function(
             'start_job_instance',
             wait_launched=[server],
             wait_delay=5)
     client.configure(
-            'voip_qoe_src', client_entity, offset=0,
-             src_addr=src_ip, dest_addr=dest_ip,
-             codec=codec, duration=duration, starting_port=port)
+            'voip_qoe_src', client_entity,
+            offset=0,
+            src_addr=source_ip,
+            dest_addr=destination_ip,
+            codec=codec,
+            duration=duration,
+            starting_port=port)
 
     stopper = scenario.add_function(
             'stop_job_instance',

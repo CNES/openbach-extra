@@ -35,6 +35,7 @@ This scenario launches one TCP iperf3 flow with the specified parameters
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_data_transfer
 
+
 def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
@@ -49,15 +50,11 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--server-port', required=True,
             help='destination port for the iperf3 traffic (e.g. 5201)')
-    observer.add_scenario_argument(
-            '--duration', required=True,
-            help='duration of iperf3 transmission (in seconds) - must be set to '
-            'an integer value even if the file_size parameter defines the end of'
-            'transfer (the value will then be ignored)')
-    observer.add_scenario_argument(
-            '--file-size', required=True,
-            help='size of the file to transmit (in bytes) - must be set to 0 if '
-            'the end of the transfer is defined by the duration parameter')
+    group = observer.scenario_group.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+            '--duration', type=int,
+            help='duration of iperf3 transmission (in seconds)')
+    group.add_argument('--file-size', help='size of the file to transmit (in bytes)')
     observer.add_scenario_argument(
             '--tos', default=0,
             help='set the ToS field of the TCP iperf3 traffic (e.g. 0x04)')
@@ -68,7 +65,7 @@ def main(argv=None):
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse(argv, service_data_transfer.SERVICE_NAME)
+    args = observer.parse(argv, service_data_transfer.SCENARIO_NAME)
 
     scenario = service_data_transfer.build(
             args.server_entity,

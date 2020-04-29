@@ -98,6 +98,7 @@ def build(
                 [['PLT (ms)']],
                 [['PLT time series']],
                 [legends],
+                False,
                 jobs, None, 5)
         cdf_on_same_graph(
                 scenario,
@@ -108,6 +109,7 @@ def build(
                 [['PLT (ms)']],
                 [['PLT CDF']],
                 [legends],
+                False,
                 jobs, None, 5)
 
     return scenario

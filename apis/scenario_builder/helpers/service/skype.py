@@ -26,43 +26,43 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of skype job """
+"""Helpers of skype job"""
+
 
 def skype(
-       scenario, receiver_entity, receiver_email_address, receiver_password,
-       caller_entity, caller_email_address, caller_password, receiver_contact,
-       call_type, duration, timeout, wait_finished=None, wait_launched=None, wait_delay=0):
+        scenario, receiver_entity, receiver_email_address, receiver_password,
+        caller_entity, caller_email_address, caller_password, receiver_contact,
+        call_type, duration, timeout,
+        wait_finished=None, wait_launched=None, wait_delay=0):
     receive = scenario.add_function(
-                'start_job_instance',
-                wait_finished=wait_finished,
-                wait_launched=wait_launched,
-                wait_delay=wait_delay)
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
     receive.configure(
-                'skype', receiver_entity, offset=0,
-                email_address=receiver_email_address,
-                password=receiver_password,
-                call_type=call_type,
-                timeout=timeout,
-                receiver={})
+            'skype', receiver_entity, offset=0,
+            email_address=receiver_email_address,
+            password=receiver_password,
+            call_type=call_type,
+            timeout=timeout,
+            receiver={})
 
     call = scenario.add_function(
-             'start_job_instance',
-             wait_launched=[receive],
-             wait_delay=5)
+            'start_job_instance',
+            wait_launched=[receive],
+            wait_delay=5)
     call.configure(
-             'skype', caller_entity, offset=0,
-             email_address=caller_email_address,
-             password=caller_password,
-             call_type=call_type,
-             timeout=timeout,
-             caller={'contact':receiver_contact,
-                     'call_duration':duration}
-             )
+            'skype', caller_entity, offset=0,
+            email_address=caller_email_address,
+            password=caller_password,
+            call_type=call_type,
+            timeout=timeout,
+            caller={
+                'contact': receiver_contact,
+                'call_duration': duration,
+            })
 
-    stop = scenario.add_function(
-            'stop_job_instance',
-            wait_finished=[call]
-            )
+    stop = scenario.add_function('stop_job_instance', wait_finished=[call])
     stop.configure(receive)
 
     return [receive]

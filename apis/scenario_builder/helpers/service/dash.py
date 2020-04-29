@@ -28,9 +28,10 @@
 
 """ Helpers of DASH job """
 
-def dash(
-       scenario, server_entity, client_entity, protocol, server_ip, duration,
-       wait_finished=None, wait_launched=None, wait_delay=0):
+
+def dash_player_and_server(
+        scenario, server_entity, client_entity, server_ip, duration, protocol,
+        wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
@@ -44,7 +45,7 @@ def dash(
             wait_delay=2)
     client.configure(
             'dash client', client_entity, offset=0,
-             dst_ip=server_ip, protocol=protocol, duration=duration)
+            dst_ip=server_ip, protocol=protocol, duration=duration)
 
     stopper = scenario.add_function(
             'stop_job_instance',
@@ -53,3 +54,18 @@ def dash(
     stopper.configure(server)
 
     return [server]
+
+
+def dash_client(
+        scenario, client_entity, server_ip, duration, protocol,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    client = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    client.configure(
+            'dash client', client_entity, offset=0,
+            dst_ip=server_ip, protocol=protocol, duration=duration)
+
+    return [client]

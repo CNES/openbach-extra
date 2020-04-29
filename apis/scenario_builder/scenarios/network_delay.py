@@ -28,9 +28,9 @@
 
 from scenario_builder import Scenario
 from scenario_builder.helpers.network.fping import fping_measure_rtt
-from scenario_builder.helpers.metrology.d_itg import ditg_pcket_rate
+from scenario_builder.helpers.metrology.d_itg import ditg_packet_rate
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
-from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
+from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 SCENARIO_NAME = 'network_delay'
@@ -48,7 +48,7 @@ def simultaneous_traffic(server_entity, client_entity, server_ip, client_ip, dur
     scenario.add_constant('client_ip', client_ip)
     scenario.add_constant('duration', duration)
 
-    srv = ditg_pcket_rate(
+    srv = ditg_packet_rate(
             scenario, client_entity, server_entity,
             '$server_ip', '$client_ip', 'UDP', packet_rate=1,
             duration='$duration', meter='rttm')
@@ -65,7 +65,7 @@ def sequential_traffic(server_entity, client_entity, server_ip, client_ip, durat
     scenario.add_constant('client_ip', client_ip)
     scenario.add_constant('duration', duration)
 
-    ditg = ditg_pcket_rate(
+    ditg = ditg_packet_rate(
             scenario, client_entity, server_entity,
             '$server_ip', '$client_ip', 'UDP', packet_rate=1,
             duration='$duration', meter='rttm')
@@ -100,6 +100,7 @@ def build(
                 [['RTT delay (ms)']],
                 [['RTTs time series']],
                 [['d-itg_send'], ['fping']],
+                False,
                 waiting_jobs, None, 2)
         cdf_on_same_graph(
                 scenario,
@@ -110,6 +111,7 @@ def build(
                 [['RTT delay (ms)']],
                 [['RTT CDF']],
                 [['d-itg_send'], ['fping']],
+                False,
                 waiting_jobs, None, 2)
 
     return scenario

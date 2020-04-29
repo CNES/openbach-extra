@@ -30,7 +30,7 @@ from scenario_builder import Scenario
 from scenario_builder.helpers.transport.iperf3 import iperf3_rate_udp, iperf3_find_server
 from scenario_builder.helpers.network.owamp import owamp_measure_owd
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
-from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
+from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 SCENARIO_NAME = 'network_jitter'
@@ -84,6 +84,7 @@ def build(
                 [['Jitter (ms)']],
                 [['Jitters time series']],
                 [['iperf3 jitter'], ['owamp ipdv_sent'], ['owamp ipdv_received'], ['owamp pdv_send'], ['owamp pdv_received']],
+                False,
                 waiting_jobs, None, 2)
         cdf_on_same_graph(
                 scenario,
@@ -94,6 +95,7 @@ def build(
                 [['Jitter (ms)']],
                 [['Jitters CDF']],
                 [['iperf3 jitter'], ['owamp ipdv_sent'], ['owamp ipdv_received'], ['owamp pdv_send'], ['owamp pdv_received']],
+                False,
                 waiting_jobs, None, 2)
 
     return scenario

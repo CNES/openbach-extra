@@ -35,6 +35,7 @@ from /openbach-extra/apis/scenario_builder/scenarios/
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_web_browsing
 
+
 def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
@@ -44,7 +45,7 @@ def main(argv=None):
             '--client-entity', required=True,
             help='name of the client entity which receives the web_browsing traffic')
     observer.add_scenario_argument(
-            '--duration', required=False,
+            '--duration', required=False, type=int,
             help='duration of Web browsing transmission')
     observer.add_scenario_argument(
             '--nb-runs', default=1,

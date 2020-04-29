@@ -64,7 +64,7 @@ def main(argv=None):
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse(argv, service_ftp.SERVICE_NAME)
+    args = observer.parse(argv, service_ftp.SCENARIO_NAME)
 
     scenario = service_ftp_rate.build(
             args.server_entity,

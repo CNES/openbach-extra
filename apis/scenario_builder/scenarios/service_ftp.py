@@ -29,7 +29,7 @@
 from scenario_builder import Scenario
 from scenario_builder.helpers.service.ftp import ftp_multiple, ftp_single
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
-from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
+from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 SCENARIO_NAME = 'service_ftp'
@@ -118,6 +118,7 @@ def build(
                 [['Throughput (b/s)']],
                 [[mode + ' throughput']],
                 legend,
+                False,
                 waiting_jobs, None, 2)
         cdf_on_same_graph(
                 scenario,
@@ -128,6 +129,7 @@ def build(
                 [['Throughput (b/s)']],
                 [[mode + ' throughput']],
                 legend,
+                False,
                 waiting_jobs, None, 2)
 
     return scenario

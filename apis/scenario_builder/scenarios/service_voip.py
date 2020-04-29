@@ -42,7 +42,7 @@ NB : the entities logic is the following :
 
 def service_voip(server_entity, client_entity, server_ip, client_ip, server_port, duration, codec, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    voip(scenario, server_entity, client_entity, client_ip, server_ip, server_port, codec, duration)
+    voip(scenario, server_entity, client_entity, client_ip, server_ip, server_port, duration, codec)
     return scenario
 
 
@@ -65,6 +65,7 @@ def build(
                 [['MOS']],
                 [['MOS time series']],
                 [legends],
+                False,
                 jobs, None, 5)
         cdf_on_same_graph(
                 scenario,
@@ -75,6 +76,7 @@ def build(
                 [['MOS']],
                 [['MOS CDF']],
                 [legends],
+                False,
                 jobs, None, 5)
 
     return scenario

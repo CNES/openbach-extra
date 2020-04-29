@@ -183,6 +183,7 @@ def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
                         [[axis]],
                         [['{} time series'.format(title)]],
                         [legends],
+                        False,
                         wait_finished, None, 2)
                 cdf_on_same_graph(
                         scenario,
@@ -193,6 +194,7 @@ def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
                         [[axis]],
                         [['{} CDF'.format(title)]],
                         [legends],
+                        False,
                         wait_finished, None, 2)
 
     return scenario

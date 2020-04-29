@@ -26,29 +26,12 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-"""Helpers of socket_stats_forwarder job"""
+"""Generic tools to build helpers"""
+
+from collections import ChainMap
 
 
-def socket_stats_forwarder(
-        scenario, agent_entity, ip, port, stats, buffersize, duration=None,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    forwarder = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    forwarder.configure(
-            'socket_stats_forwarder', agent_entity,
-            stats=stats,
-            ip=ip,
-            port=port,
-            buffersize=buffersize)
-
-    if duration:
-        stopper = scenario.add_function(
-                'stop_job_instance',
-                wait_launched=[forwarder],
-                wait_delay=duration)
-        stopper.configure(forwarder)
-
-    return [forwarder]
+def filter_none(_=None, **kwargs):
+    """Filter out entries in dictionnary whose associated values are None"""
+    dictionnary = ChainMap(kwargs, _ or {})
+    return {key: value for key, value in dictionnary.items() if value is not None}

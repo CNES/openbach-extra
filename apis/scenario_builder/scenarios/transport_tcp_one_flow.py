@@ -29,7 +29,7 @@
 from scenario_builder import Scenario
 from scenario_builder.helpers.transport.iperf3 import iperf3_send_file_tcp, iperf3_find_server
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
-from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
+from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 SCENARIO_NAME = 'transport_tcp_one_flow'
@@ -76,6 +76,7 @@ def build(
                 [['Rate (b/s)']],
                 [['Rate time series']],
                 [['iperf3']],
+                False,
                 waiting_jobs, None, 2)
         cdf_on_same_graph(
                 scenario,
@@ -86,6 +87,7 @@ def build(
                 [['Rate (b/s)']],
                 [['Rate CDF']],
                 [['iperf3']],
+                False,
                 waiting_jobs, None, 2)
 
     return scenario

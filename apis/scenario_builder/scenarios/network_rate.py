@@ -29,9 +29,9 @@
 from scenario_builder import Scenario
 from scenario_builder.helpers.transport.iperf3 import iperf3_rate_tcp, iperf3_find_server
 from scenario_builder.helpers.transport.nuttcp import nuttcp_rate_tcp, nuttcp_rate_udp, nuttcp_find_client
-from scenario_builder.helpers.metrology.d_itg import ditg_rate, ditg_pcket_rate
+from scenario_builder.helpers.metrology.d_itg import ditg_rate, ditg_packet_rate
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
-from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph, pdf_on_same_graph
+from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 
@@ -66,7 +66,7 @@ def network_rate(
     wait = nuttcp_rate_tcp(
             scenario, client_entity, server_entity, '$server_ip', '$server_port', '$command_port',
             '$duration', '$num_flows', '$tos', '$mtu', wait, None, 2)
-    wait = ditg_pcket_rate(
+    wait = ditg_packet_rate(
             scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'TCP', '/tmp/',
             1000, '$mtu', 100000, '$duration', 'owdm', 50, '$server_port', '$command_port', wait, None, 2)
     wait = nuttcp_rate_udp(
@@ -110,7 +110,8 @@ def build(
                 [['bitrate_receiver', 'rate', 'throughput']],
                 [['Rate (b/s)']], [['Rate time series']],
                 legends,
-                waiting_jobs, None, 2, no_suffix)
+                no_suffix,
+                waiting_jobs, None, 2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -119,6 +120,7 @@ def build(
                 [['rate', 'throughput', 'bitrate_receiver']],
                 [['Rate (b/s)']], [['Rate CDF']],
                 legends,
-                waiting_jobs, None, 2, no_suffix)
+                no_suffix,
+                waiting_jobs, None, 2)
 
     return scenario

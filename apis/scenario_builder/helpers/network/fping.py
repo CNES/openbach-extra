@@ -27,16 +27,14 @@
 
 
 def fping_measure_rtt(
-        scenario, client_entity, srv_ip, duration,
+        scenario, client_entity, server_ip, duration,
         wait_finished=None, wait_launched=None, wait_delay=0):
     ping = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    ping.configure(
-            'fping', client_entity, offset=0,
-            destination_ip=srv_ip)
+    ping.configure('fping', client_entity, offset=0, destination_ip=server_ip)
 
     stop = scenario.add_function(
             'stop_job_instance',

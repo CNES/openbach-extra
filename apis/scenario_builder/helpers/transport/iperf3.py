@@ -26,12 +26,12 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of iperf3 job """
+"""Helpers of iperf3 job"""
 
 
 def iperf3_rate_tcp(
-        scenario, clt_entity, srv_entity,
-        srv_ip, port, duration, num_flows, tos, mtu,
+        scenario, client_entity, server_entity,
+        server_ip, port, duration, num_flows, tos, mtu,
         wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
             'start_job_instance',
@@ -39,31 +39,38 @@ def iperf3_rate_tcp(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     server.configure(
-            'iperf3', srv_entity, offset=0,
-            num_flows=num_flows, port=port,
-            interval=1.0, server={'exit':True, 'bind':srv_ip})
+            'iperf3', server_entity,
+            offset=0,
+            num_flows=num_flows,
+            port=port,
+            interval=1.0,
+            server={
+                'exit': True,
+                'bind': server_ip,
+            })
 
     client = scenario.add_function(
             'start_job_instance',
             wait_launched=[server],
             wait_delay=2)
     client.configure(
-            'iperf3', clt_entity, offset=0,
-             num_flows=num_flows, port=port,
-             client={
-                'server_ip': srv_ip,
+            'iperf3', client_entity,
+            offset=0,
+            num_flows=num_flows,
+            port=port,
+            client={
+                'server_ip': server_ip,
                 'duration_time': duration,
                 'tos': '{0}'.format(tos),
-                'tcp': {'mss':'{0}'.format(mtu)},
+                'tcp': {'mss': '{0}'.format(mtu)},
             })
 
     return [server]
 
 
 def iperf3_rate_udp(
-        scenario, clt_entity, srv_entity,
-        srv_ip, port, num_flows, duration,
-        tos, bandwidth,
+        scenario, client_entity, server_entity,
+        server_ip, port, num_flows, duration, tos, bandwidth,
         wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
             'start_job_instance',
@@ -71,19 +78,27 @@ def iperf3_rate_udp(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     server.configure(
-            'iperf3', srv_entity, offset=0,
-            num_flows=num_flows, port=port,
-            interval=1.0, server={'exit':True, 'bind':srv_ip})
+            'iperf3', server_entity,
+            offset=0,
+            num_flows=num_flows,
+            port=port,
+            interval=1.0,
+            server={
+                'exit': True,
+                'bind': server_ip,
+            })
 
     client = scenario.add_function(
             'start_job_instance',
             wait_launched=[server],
             wait_delay=2)
     client.configure(
-            'iperf3', clt_entity, offset=0,
-             num_flows=num_flows, port=port,
-             client={
-                'server_ip': srv_ip,
+            'iperf3', client_entity,
+            offset=0,
+            num_flows=num_flows,
+            port=port,
+            client={
+                'server_ip': server_ip,
                 'duration_time': duration,
                 'tos': '{0}'.format(tos),
                 'udp': {'bandwidth':'{0}'.format(bandwidth)},
@@ -93,8 +108,8 @@ def iperf3_rate_udp(
 
 
 def iperf3_send_file_tcp(
-        scenario, clt_entity, srv_entity,
-        srv_ip, port, transmitted_size, tos, mtu,
+        scenario, client_entity, server_entity,
+        server_ip, port, transmitted_size, tos, mtu,
         wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
             'start_job_instance',
@@ -102,17 +117,24 @@ def iperf3_send_file_tcp(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     server.configure(
-            'iperf3', srv_entity, offset=0,
-            port=port, server={'exit': True, 'bind':srv_ip})
+            'iperf3', server_entity,
+            offset=0,
+            port=port,
+            server={
+                'exit': True,
+                'bind': server_ip,
+            })
 
     client = scenario.add_function(
             'start_job_instance',
             wait_launched=[server],
             wait_delay=2)
     client.configure(
-            'iperf3', clt_entity, offset=0,
-            port=port, client={
-                'server_ip': srv_ip,
+            'iperf3', client_entity,
+            offset=0,
+            port=port,
+            client={
+                'server_ip': server_ip,
                 'transmitted_size': transmitted_size,
                 'tos': '{0}'.format(tos),
                 'tcp': {'mss':'{0}'.format(mtu)},

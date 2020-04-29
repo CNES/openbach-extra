@@ -28,6 +28,7 @@
 
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
+from scenario_builder.helpers.service.dash import dash_client, dash_player_and_server
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
@@ -42,25 +43,13 @@ NB : the entities logic is the following :
 
 def video_dash_and_server(server_entity, client_entity, server_ip, duration, protocol, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-
-    server = scenario.add_function('start_job_instance')
-    server.configure('dash player&server', server_entity, offset=0)
-
-    traffic = scenario.add_function('start_job_instance', wait_launched=[server], wait_delay=5)
-    traffic.configure('dash client', client_entity, offset=0, dst_ip=server_ip, protocol=protocol, duration=duration)
-
-    stopper = scenario.add_function('stop_job_instance', wait_finished=[traffic], wait_delay=5)
-    stopper.configure(server)
-
+    dash_player_and_server(scenario, server_entity, client_entity, server_ip, duration, protocol)
     return scenario
 
 
 def video_dash(client_entity, server_ip, duration, protocol, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-
-    traffic = scenario.add_function('start_job_instance')
-    traffic.configure('dash client', client_entity, offset=0, dst_ip=server_ip, protocol=protocol, duration=duration)
-
+    dash_client(scenario, client_entity, server_ip, duration, protocol)
     return scenario
 
 
@@ -83,6 +72,7 @@ def build(server_entity, client_entity, server_ip, duration, protocol, launch_se
                 [['Rate (b/s)']],
                 [['Rate time series']],
                 [legends],
+                False,
                 jobs, None, 5)
         cdf_on_same_graph(
                 scenario,
@@ -93,6 +83,7 @@ def build(server_entity, client_entity, server_ip, duration, protocol, launch_se
                 [['Rate (b/s)']],
                 [['Rate CDF']],
                 [legends],
+                False,
                 jobs, None, 5)
 
     return scenario
