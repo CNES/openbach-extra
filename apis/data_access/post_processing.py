@@ -33,6 +33,7 @@
 __author__ = 'Mathias ETTINGER <mettinger@toulouse.viveris.com>'
 __all__ = ['save', 'Statistics']
 
+import math
 import pickle
 import itertools
 from functools import partial
@@ -81,7 +82,15 @@ def compute_histogram(bins):
     return _compute_histogram
 
 
-def save(figure, filename, use_pickle=False):
+def compute_annotated_histogram(bins):
+    _hist = compute_histogram(bins)
+    _bins = bins[1:]
+    def _compute_annotated_histogram(series):
+        return pd.DataFrame(dict(zip(_bins, _hist(series))), index=[series.name])
+    return _compute_annotated_histogram
+
+
+def save(figure, filename, use_pickle=False, set_legend=True):
     if use_pickle:
         with open(filename, 'wb') as storage:
             pickle.dump(figure, storage)
@@ -89,7 +98,7 @@ def save(figure, filename, use_pickle=False):
         artists = [
                 axis.legend(loc='center left', bbox_to_anchor=(1., .5))
                 for axis in figure.axes
-                if axis.get_legend()
+                if axis.get_legend() and set_legend
         ]
         figure.savefig(filename, additional_artists=[artists], bbox_inches='tight')
 
@@ -202,6 +211,16 @@ class _Plot:
         df.index = bins[:buckets]
         return df
 
+    def cumulative_histogram(self, buckets):
+        return self.histogram(buckets).cumsum()
+
+    def comparison(self):
+        mean = self.df.mean()
+        std = self.df.std().fillna(0)
+        df = pd.concat([mean, std], axis=1)
+        df.columns = ['Ε', 'δ']
+        return df
+
     def temporal_binning_statistics(self, stat_name=None, index=None,
             time_aggregation='hour', percentiles=[.05, .25, .75, .95]):
         if stat_name is not None:
@@ -221,17 +240,40 @@ class _Plot:
             stats = groups.describe(percentiles=percentiles)
             stats.index.name = 'Time ({}s)'.format(time_aggregation)
             yield stats.drop(columns=['count'])
+
+    def temporal_binning_histogram(self, stat_name=None, index=None,
+            time_aggregation='hour', bin_size=100, offset=0, add_global=True):
+        if stat_name is not None:
+            for col_name, col in self.df.iteritems():
+                if col_name[4] == stat_name:
+                    df = col.to_frame()
+                    break
+        elif index is not None:
+            df = self.df.iloc[:, index].to_frame()
+        else:
+            df = self.df
+        dates = pd.to_datetime(df.index, unit='ms')
+        for col_name, col in df.iteritems():
+            nb_segments = math.ceil((col.max() - offset) / bin_size)
+            maximum = nb_segments * bin_size + offset
+            bins = np.linspace(offset, maximum, nb_segments + 1, dtype='int')
+            col.index = dates.values
+            time = getattr(col.index, time_aggregation)
+            groups = col.groupby(time)
+            stats = groups.apply(compute_annotated_histogram(bins)) 
+            stats.index = stats.index.droplevel()
+            stats.index = ['{}-{}'.format(i, i+1) for i in stats.index]
+            stats = stats * 100
+            if add_global:
+                stats_global = col.to_frame().apply(compute_histogram(bins))
+                stats_global.index = np.roll(bins, -1)[:nb_segments]
+                stats_global = stats_global.transpose()
+                stats_global.index = ['global']
+                stats_global = stats_global * 100
+                stats = stats.append(stats_global)
+            stats.index.name = 'Time ({}s)'.format(time_aggregation)
+            yield stats
         
-    def cumulative_histogram(self, buckets):
-        return self.histogram(buckets).cumsum()
-
-    def comparison(self):
-        mean = self.df.mean()
-        std = self.df.std().fillna(0)
-        df = pd.concat([mean, std], axis=1)
-        df.columns = ['Ε', 'δ']
-        return df
-
     def plot_time_series(self, axis=None, secondary_title=None, legend=True):
         axis = self.time_series().plot(ax=axis, legend=legend)
         if secondary_title is not None:
@@ -248,6 +290,19 @@ class _Plot:
         axis = self.histogram(bins).plot(ax=axis, ylim=[-0.01, 1.01], legend=legend)
         if secondary_title is not None:
             axis.set_xlabel(secondary_title)
+        return axis
+
+    def plot_cumulative_histogram(self, axis=None, secondary_title=None, bins=100, legend=True):
+        axis = self.cumulative_histogram(bins).plot(ax=axis, ylim=[-0.01, 1.01], legend=legend)
+        if secondary_title is not None:
+            axis.set_xlabel(secondary_title)
+        return axis
+
+    def plot_comparison(self, axis=None, secondary_title=None, legend=True):
+        df = self.comparison()
+        axis = df.Ε.plot.bar(ax=axis, yerr=df.δ, rot=30, legend=legend)
+        if secondary_title is not None:
+            axis.set_ylabel(secondary_title)
         return axis
 
     def plot_temporal_binning_statistics(self, stat_name=None, index=None,
@@ -287,15 +342,27 @@ class _Plot:
                 axis.set_ylabel(secondary_title)
             yield (figure, axis)
 
-    def plot_cumulative_histogram(self, axis=None, secondary_title=None, bins=100, legend=True):
-        axis = self.cumulative_histogram(bins).plot(ax=axis, ylim=[-0.01, 1.01], legend=legend)
-        if secondary_title is not None:
-            axis.set_xlabel(secondary_title)
-        return axis
-
-    def plot_comparison(self, axis=None, secondary_title=None, legend=True):
-        df = self.comparison()
-        axis = df.Ε.plot.bar(ax=axis, yerr=df.δ, rot=30, legend=legend)
-        if secondary_title is not None:
-            axis.set_ylabel(secondary_title)
-        return axis
+    def plot_temporal_binning_histogram(self, stat_name=None, index=None,
+            time_aggregation='hour', bin_size=100, offset=0, add_global=True,
+            figure=None, axis=None, secondary_title=None, legend=True, legend_title=None):
+        it_stats = self.temporal_binning_histogram(
+                stat_name, index, time_aggregation, bin_size, offset, add_global)
+        for stats in it_stats:
+            if axis is None or figure is None:
+                figure , axis = plt.subplots()
+            colors = plt.cm.rainbow(np.linspace(0, 1, len(stats.columns)))
+            xticks_size, xtick_weight = (5, 'bold') if len(stats.index) > 50 else (None, None)
+            for index, segments in stats.iterrows():
+                starts = segments.cumsum() - segments
+                bars = axis.bar(index, segments, bottom=starts, width=0.5,
+                        label=index, color=colors, edgecolor='k', linewidth='0.1')
+                axis.set_xticklabels(stats.index, rotation=90, fontsize=xticks_size, weight=xtick_weight)
+            if legend:
+                axis.legend(
+                        handles=reversed(bars.patches), labels=reversed(list(stats.columns)), labelspacing=0.3,
+                        title=legend_title, loc='center left', bbox_to_anchor=(1., .5), fontsize='small')
+            axis.set_xlabel(stats.index.name)
+            if secondary_title is not None:
+                axis.set_ylabel(secondary_title)
+            yield (figure, axis)
+        
