@@ -27,6 +27,7 @@
 #   this program. If not, see http://www.gnu.org/licenses/.
 
 from scenario_builder import Scenario
+from scenario_builder.helpers.network.ip_scheduler import add_scheduler, remove_scheduler
 
 SCENARIO_NAME ='network_qos'
 SCENARIO_DESCRIPTION = """This scenario allows to:
@@ -36,15 +37,13 @@ SCENARIO_DESCRIPTION = """This scenario allows to:
 
 def add_qos(entity, interface_name, path, scenario_name='add_network_qos'):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    function = scenario.add_function('start_job_instance')
-    function.configure('ip_scheduler', entity, interface_name=interface_name, add={"file_path":path})
+    add_scheduler(scenario, entity, interface_name, path)
     return scenario
 
 
 def remove_qos(entity, interface_name, scenario_name='remove_network_qos'):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    function = scenario.add_function('start_job_instance')
-    function.configure('ip_scheduler', entity, interface_name=interface_name, remove={})
+    remove_scheduler(scenario, entity, interface_name)
     return scenario
 
 

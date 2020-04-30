@@ -62,7 +62,7 @@ def main(argv=None):
                 args.interface,
                 args.action,
                 args.configuration_file,
-                scenario_name=args.scenarios_name)
+                scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
 
