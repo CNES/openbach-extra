@@ -167,6 +167,7 @@ def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
         for jobs, filters, legend, statistic, axis in [
                 ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'Rate (b/s)'),
                 (['dash player&server'], {}, _dash_legend, 'bitrate', 'Rate (b/s)'),
+                (['dash player&server'], {}, _dash_legend, 'buffer_length', 'Buffer length (s)'),
                 (['web_browsing_qoe'], {}, _web_browsing_legend, 'page_load_time', 'PLT (ms)'),
                 (['voip_qoe_src'], {}, _voip_legend, 'instant_mos', 'MOS'),
         ]:
