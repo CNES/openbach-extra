@@ -197,6 +197,19 @@ class _Plot:
         self.dataframe = dataframe
         self.df = dataframe[dataframe.index >= 0]
 
+    def _find_statistic(self, statistic_name=None, index=None):
+        if statistic_name is not None:
+            index = self.df.columns.get_level_values(4) == statistic_name
+
+        if index is None:
+            return self.df
+        else:
+            df = self.df.iloc[:, index]
+            if isinstance(df, pd.DataFrame):
+                return df
+            else:
+                return df.to_frame()
+
     def time_series(self):
         df = self.dataframe.interpolate()
         return df[df.index >= 0]
@@ -221,58 +234,43 @@ class _Plot:
         df.columns = ['Ε', 'δ']
         return df
 
-    def temporal_binning_statistics(self, stat_name=None, index=None,
+    def temporal_binning_statistics(
+            self, statistic_name=None, index=None,
             time_aggregation='hour', percentiles=[.05, .25, .75, .95]):
-        if stat_name is not None:
-            for col_name, col in self.df.iteritems():
-                if col_name[4] == stat_name:
-                    df = col.to_frame()
-                    break
-        elif index is not None:
-            df = self.df.iloc[:, index].to_frame()
-        else:
-            df = self.df
-        dates = pd.to_datetime(df.index, unit='ms')
-        for col_name, col in df.iteritems():
-            col.index = dates.values
-            time = getattr(col.index, time_aggregation)
-            groups = col.groupby(time)
+        df = self._find_statistic(statistic_name, index)
+        df.index = pd.to_datetime(df.index, unit='ms')
+
+        for _, column in df.iteritems():
+            groups = column.groupby(getattr(column.index, time_aggregation))
             stats = groups.describe(percentiles=percentiles)
             stats.index.name = 'Time ({}s)'.format(time_aggregation)
-            yield stats.drop(columns=['count'])
-
-    def temporal_binning_histogram(self, stat_name=None, index=None,
-            time_aggregation='hour', bin_size=100, offset=0, add_global=True):
-        if stat_name is not None:
-            for col_name, col in self.df.iteritems():
-                if col_name[4] == stat_name:
-                    df = col.to_frame()
-                    break
-        elif index is not None:
-            df = self.df.iloc[:, index].to_frame()
-        else:
-            df = self.df
-        dates = pd.to_datetime(df.index, unit='ms')
-        for col_name, col in df.iteritems():
-            nb_segments = math.ceil((col.max() - offset) / bin_size)
-            maximum = nb_segments * bin_size + offset
-            bins = np.linspace(offset, maximum, nb_segments + 1, dtype='int')
-            col.index = dates.values
-            time = getattr(col.index, time_aggregation)
-            groups = col.groupby(time)
-            stats = groups.apply(compute_annotated_histogram(bins)) 
-            stats.index = stats.index.droplevel()
-            stats.index = ['{}-{}'.format(i, i+1) for i in stats.index]
-            stats = stats * 100
-            if add_global:
-                stats_global = col.to_frame().apply(compute_histogram(bins))
-                stats_global.index = np.roll(bins, -1)[:nb_segments]
-                stats_global = stats_global.transpose()
-                stats_global.index = ['global']
-                stats_global = stats_global * 100
-                stats = stats.append(stats_global)
-            stats.index.name = 'Time ({}s)'.format(time_aggregation)
             yield stats
+
+    def temporal_binning_histogram(
+            self, statistic_name=None, index=None,
+            bin_size=100, offset=0, maximum=None,
+            time_aggregation='hour', add_total=True):
+        df = self._find_statistic(statistic_name, index)
+        df.index = pd.to_datetime(df.index, unit='ms')
+
+        if maximum is None:
+            nb_segments = math.ceil((df.max().max() - offset) / bin_size)
+            maximum = nb_segments * bin_size + offset
+
+        nb_segments = math.ceil((maximum - offset) / bin_size)
+        bins = np.linspace(offset, maximum, nb_segments + 1, dtype='int')
+
+        for _, column in df.iteritems():
+            groups = column.groupby(getattr(column.index, time_aggregation))
+            stats = groups.apply(compute_annotated_histogram(bins))
+            stats.index = ['{}-{}'.format(i, i+1) for i in stats.index.droplevel()]
+            stats.index.name = 'Time ({}s)'.format(time_aggregation)
+            if add_total:
+                total = column.to_frame().apply(compute_histogram(bins))
+                total.index = bins[1:]
+                total.columns = ['total']
+                stats = stats.append(total.transpose())
+            yield stats * 100
         
     def plot_time_series(self, axis=None, secondary_title=None, legend=True):
         axis = self.time_series().plot(ax=axis, legend=legend)
@@ -305,17 +303,27 @@ class _Plot:
             axis.set_ylabel(secondary_title)
         return axis
 
-    def plot_temporal_binning_statistics(self, stat_name=None, index=None,
-            time_aggregation='hour', percentiles=[[5, 95], [25, 75]],
-            figure=None, axis=None, secondary_title=None, legend=True, median=True,
-            average=True, deviation=True, boundaries=True, min_max=True):
+    def plot_temporal_binning_statistics(
+            self, axis=None, secondary_title=None,
+            statistic_name=None, index=None,
+            percentiles=[[5, 95], [25, 75]], time_aggregation='hour',
+            median=True, average=True, deviation=True,
+            boundaries=True, min_max=True, legend=True):
+        if not percentiles:
+            percentiles = []
+        else:
+            percentiles.sort(key=lambda x: abs(x[0] - x[1]), reverse=True)
+
+        format_percentiles = [p / 100 for pair in percentiles for p in pair]
+        temporal_binning = self.temporal_binning_statistics(
+                statistic_name, index,
+                time_aggregation, format_percentiles)
+
+        if axis is None:
+            _, axis = plt.subplots()
         colors = ['#ffad60', '#ffdae0']
-        format_percentiles = [p/100 for pair in percentiles for p in pair] if percentiles else []
-        it_stats = self.temporal_binning_statistics(stat_name, index, time_aggregation, format_percentiles)
-        for stats in it_stats:
-            if axis is None or figure is None:
-                figure , axis = plt.subplots()
-            std = stats.pop('std')
+
+        for stats in temporal_binning:
             if average:
                 axis.plot(stats.index, stats['mean'], color='#005b96', label='average')
             if median:
@@ -325,32 +333,41 @@ class _Plot:
                 axis.plot(stats.index, stats['max'], color='#e50000', linewidth=1)
             if min_max:
                 axis.fill_between(stats.index, stats['min'], stats['max'], color='#39c9bb', label='min-max')
-            if percentiles:
-                percentiles.sort(key=lambda x: abs(x[0]-x[1]), reverse=True)
-                for index, pair in enumerate(percentiles):
-                    pair.sort()
-                    axis.fill_between(stats.index, stats['{}%'.format(pair[0])],
-                            stats['{}%'.format(pair[1])], color=colors[index],
-                            label='{}%-{}%'.format(pair[0], pair[1]))
+            for color, pair in zip(colors, percentiles):
+                low, high = sorted(pair)
+                axis.fill_between(
+                        stats.index, stats['{}%'.format(low)],
+                        stats['{}%'.format(high)], color=color,
+                        label='{}%-{}%'.format(low, high))
             if deviation:        
-                axis.errorbar(stats.index, stats['mean'], std, uplims=True,
+                axis.errorbar(
+                        stats.index, stats['mean'], stats['std'], uplims=True,
                         lolims=True, color='#005b96', elinewidth=1, label="deviation")
             if legend:
                 axis.legend()
+
             axis.set_xlabel(stats.index.name)
             if secondary_title is not None:
                 axis.set_ylabel(secondary_title)
-            yield (figure, axis)
 
-    def plot_temporal_binning_histogram(self, stat_name=None, index=None,
-            time_aggregation='hour', bin_size=100, offset=0, add_global=True,
-            figure=None, axis=None, secondary_title=None, legend=True, legend_title=None):
-        it_stats = self.temporal_binning_histogram(
-                stat_name, index, time_aggregation, bin_size, offset, add_global)
-        for stats in it_stats:
-            if axis is None or figure is None:
-                figure , axis = plt.subplots()
-            colors = plt.cm.rainbow(np.linspace(0, 1, len(stats.columns)))
+        return axis
+
+    def plot_temporal_binning_histogram(
+            self, axis=None, secondary_title=None,
+            statistic_name=None, index=None,
+            bin_size=100, offset=0, maximum=None,
+            time_aggregation='hour', add_total=True,
+            legend=True, legend_title=None):
+        temporal_binning = self.temporal_binning_histogram(
+                statistic_name, index,
+                bin_size, offset, maximum,
+                time_aggregation, add_total)
+
+        if axis is None:
+            _, axis = plt.subplots()
+
+        for stats in temporal_binning:
+            colors = plt.cm.jet(np.linspace(0, 1, len(stats.columns)))
             xticks_size, xtick_weight = (5, 'bold') if len(stats.index) > 50 else (None, None)
             for index, segments in stats.iterrows():
                 starts = segments.cumsum() - segments
@@ -364,5 +381,5 @@ class _Plot:
             axis.set_xlabel(stats.index.name)
             if secondary_title is not None:
                 axis.set_ylabel(secondary_title)
-            yield (figure, axis)
-        
+
+        return axis
