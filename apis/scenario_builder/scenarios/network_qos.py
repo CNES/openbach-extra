@@ -35,13 +35,13 @@ SCENARIO_DESCRIPTION = """This scenario allows to:
    This scheduler works with three levels of scheduling: per trunk, per destination, and per Class of Service.
 """
 
-def add_qos(entity, interface_name, path, scenario_name='add_network_qos'):
+def qos_add(entity, interface_name, path, scenario_name='add_network_qos'):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     add_scheduler(scenario, entity, interface_name, path)
     return scenario
 
 
-def remove_qos(entity, interface_name, scenario_name='remove_network_qos'):
+def qos_remove(entity, interface_name, scenario_name='remove_network_qos'):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     remove_scheduler(scenario, entity, interface_name)
     return scenario
@@ -49,7 +49,7 @@ def remove_qos(entity, interface_name, scenario_name='remove_network_qos'):
 
 def build(entity, interface_name, action, path, scenario_name=None):
 
-    scenario = add_qos(entity, interface_name, path) if action == "add" else remove_qos(entity, interface_name)
+    scenario = qos_add(entity, interface_name, path) if action == "add" else qos_remove(entity, interface_name)
 
     if scenario_name is not None:
         scenario.name = scenario_name

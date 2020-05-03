@@ -46,7 +46,7 @@ SCENARIO_DESCRIPTION = """This network_rate scenario allows to:
 """
 
 
-def network_rate(
+def rate(
         server_entity, client_entity, server_ip, client_ip,
         server_port, command_port, duration, rate, num_flows,
         tos, mtu, scenario_name=SCENARIO_NAME):
@@ -82,7 +82,7 @@ def build(
         server_entity, client_entity, server_ip, client_ip,
         server_port, command_port, duration, rate, num_flows, tos, mtu,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = network_rate(
+    scenario = rate(
             server_entity, client_entity, server_ip, client_ip, server_port,
             command_port, duration, rate, num_flows, tos, mtu, scenario_name)
 

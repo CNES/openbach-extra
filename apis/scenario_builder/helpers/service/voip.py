@@ -29,7 +29,7 @@
 """Helpers of VoIP_qoe job"""
 
 
-def voip(
+def voip_qoe(
         scenario, server_entity, client_entity,
         source_ip, destination_ip, port, duration, codec,
         wait_finished=None, wait_launched=None, wait_delay=0):

@@ -42,7 +42,7 @@ It can then, optionally, plot the delay measurements using time-series and CDF.
 """
 
 
-def simultaneous_traffic(server_entity, client_entity, server_ip, client_ip, duration, scenario_name=SCENARIO_NAME):
+def delay_simultaneous(server_entity, client_entity, server_ip, client_ip, duration, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('client_ip', client_ip)
@@ -59,7 +59,7 @@ def simultaneous_traffic(server_entity, client_entity, server_ip, client_ip, dur
     return scenario
 
 
-def sequential_traffic(server_entity, client_entity, server_ip, client_ip, duration, scenario_name=SCENARIO_NAME):
+def delay_sequential(server_entity, client_entity, server_ip, client_ip, duration, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('client_ip', client_ip)
@@ -80,7 +80,7 @@ def build(
         server_entity, client_entity, server_ip, client_ip,
          duration, simultaneous,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = (simultaneous_traffic if simultaneous else sequential_traffic)(
+    scenario = (delay_simultaneous if simultaneous else delay_sequential)(
             server_entity, client_entity,
             server_ip, client_ip,
             duration, scenario_name)

@@ -39,10 +39,10 @@ Many link characteristiscs can be emulated including: bandwidth, delay, jitter a
 
 
 
-def apply_configure_link(
+def configure_link_apply(
         entity, ifaces, mode, bandwidth, delay_distribution,
         delay, jitter, loss_model, loss_model_params,
-        buffer_size, scenario_name='apply_configure_link'):
+        buffer_size, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format('Apply'))
     configure_link_apply(
             scenario, entity, ifaces, mode, bandwidth, delay_distribution,
@@ -50,7 +50,7 @@ def apply_configure_link(
     return scenario
 
 
-def clear_configure_link(entity, ifaces, mode, scenario_name='clear_configure_link'):
+def configure_link_clear(entity, ifaces, mode, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format('Clear'))
     configure_link_clear(scenario, entity, ifaces, mode)
     return scenario
@@ -58,8 +58,8 @@ def clear_configure_link(entity, ifaces, mode, scenario_name='clear_configure_li
 
 def build(entity, ifaces, mode, operation, bandwidth=None, delay=0, jitter=0,
           delay_distribution='normal', loss_model='random', loss_model_params=[0.0],
-          buffer_size=10000, scenario_name=None):
-    scenario = clear_configure_link(entity, ifaces, mode) if operation != 'apply' else apply_configure_link(
+          buffer_size=10000, scenario_name=SCENARIO_NAME):
+    scenario = configure_link_clear(entity, ifaces, mode) if operation != 'apply' else configure_link_apply (
             entity, ifaces, mode, bandwidth, delay_distribution,
             delay, jitter, loss_model, loss_model_params, buffer_size)
 
