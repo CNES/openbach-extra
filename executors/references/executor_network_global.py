@@ -57,7 +57,7 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--duration', default=30, help='duration of each delay, rate,   scenario (s)')
     observer.add_scenario_argument(
-            '--rate', required=True, help='Set a higher rate (in kb/s) '
+            '--rate-limit', required=True, help='Set a higher rate (in kb/s) '
             'than what you estimate between server and client for the '
             'UDP test (add m/g to set M/G b/s)')
     observer.add_scenario_argument(
@@ -83,7 +83,7 @@ def main(argv=None):
                       args.server_port,
                       args.command_port,
                       args.duration,
-                      args.rate,
+                      args.rate_limit,
                       args.num_flows,
                       args.bandwidth,
                       args.tos,
