@@ -48,8 +48,8 @@ def main(argv=None):
             '--server-ip', required=True,
             help='destination ip address for the iperf3 traffic')
     observer.add_scenario_argument(
-            '--server-port', required=True,
-            help='destination port for the iperf3 traffic (e.g. 5201)')
+            '--server-port', default=7001,
+            help='destination port for the iperf3 traffic (default : 7001)')
     group = observer.scenario_group.add_mutually_exclusive_group(required=True)
     group.add_argument(
             '--duration', type=int,
