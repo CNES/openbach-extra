@@ -54,7 +54,7 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--duration', default=30, help='duration of iperf3/nuttcp/d-itg tests')
     observer.add_scenario_argument(
-            '--rate', help='Set a higher rate (in kb/s) than what you estimate between server and client '
+            '--rate-limit', help='Set a higher rate (in kb/s) than what you estimate between server and client '
             'for the UDP test (add M/G to set M/G b/s)', required=True)
     observer.add_scenario_argument(
             '--num-flows', default=10, help='Number of iperf3/nuttcp flows generated')
@@ -76,7 +76,7 @@ def main(argv=None):
             args.server_port,
             args.command_port,
             args.duration,
-            args.rate,
+            args.rate_limit,
             args.num_flows,
             args.tos,
             args.mtu,

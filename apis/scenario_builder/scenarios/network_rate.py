@@ -48,14 +48,14 @@ SCENARIO_DESCRIPTION = """This network_rate scenario allows to:
 
 def rate(
         server_entity, client_entity, server_ip, client_ip,
-        server_port, command_port, duration, rate, num_flows,
+        server_port, command_port, duration, rate_limit, num_flows,
         tos, mtu, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('client_ip', client_ip)
     scenario.add_constant('server_port', server_port)
     scenario.add_constant('command_port', command_port)
-    scenario.add_constant('rate', rate)
+    scenario.add_constant('rate_limit', rate_limit)
     scenario.add_constant('num_flows', num_flows)
     scenario.add_constant('tos', tos)
     scenario.add_constant('mtu', mtu)
@@ -70,21 +70,21 @@ def rate(
             scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'TCP', '/tmp/',
             1000, '$mtu', 100000, '$duration', 'owdm', 50, '$server_port', '$command_port', wait, None, 2)
     wait = nuttcp_rate_udp(
-            scenario, client_entity, server_entity, '$server_ip', '$server_port', '$command_port', '$duration', '$rate', wait, None, 2)
+            scenario, client_entity, server_entity, '$server_ip', '$server_port', '$command_port', '$duration', '$rate_limit', wait, None, 2)
     ditg_rate(
             scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', '/tmp/',
-            1000, '$mtu', '$rate', '$duration', 'owdm', 50, '$server_port', '$command_port', wait, None, 2)
+            1000, '$mtu', '$rate_limit', '$duration', 'owdm', 50, '$server_port', '$command_port', wait, None, 2)
 
     return scenario
 
 
 def build(
         server_entity, client_entity, server_ip, client_ip,
-        server_port, command_port, duration, rate, num_flows, tos, mtu,
+        server_port, command_port, duration, rate_limit, num_flows, tos, mtu,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = rate(
             server_entity, client_entity, server_ip, client_ip, server_port,
-            command_port, duration, rate, num_flows, tos, mtu, scenario_name)
+            command_port, duration, rate_limit, num_flows, tos, mtu, scenario_name)
 
     if post_processing_entity is not None:
         waiting_jobs = []
