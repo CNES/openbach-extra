@@ -60,6 +60,11 @@ def rate(
     scenario.add_constant('tos', tos)
     scenario.add_constant('mtu', mtu)
     scenario.add_constant('duration', duration)
+    scenario.add_constant('dest_path', '/tmp/')
+    scenario.add_constant('granularity', 1000)
+    scenario.add_constant('packet_rate', 100000)
+    scenario.add_constant('meter', 'owdm')
+    scenario.add_constant('log_buffer_size', 50)
 
     wait = iperf3_rate_tcp(
             scenario, client_entity, server_entity, '$server_ip', '$server_port', '$duration', '$num_flows', '$tos', '$mtu')
@@ -67,13 +72,13 @@ def rate(
             scenario, client_entity, server_entity, '$server_ip', '$server_port', '$command_port',
             '$duration', '$num_flows', '$tos', '$mtu', wait, None, 2)
     wait = ditg_packet_rate(
-            scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'TCP', '/tmp/',
-            1000, '$mtu', 100000, '$duration', 'owdm', 50, '$server_port', '$command_port', wait, None, 2)
+            scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'TCP', '$dest_path',
+            '$granularity', '$mtu', '$packet_rate', '$duration', '$meter', '$log_buffer_size', '$server_port', '$command_port', wait, None, 2)
     wait = nuttcp_rate_udp(
             scenario, client_entity, server_entity, '$server_ip', '$server_port', '$command_port', '$duration', '$rate_limit', wait, None, 2)
     ditg_rate(
-            scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', '/tmp/',
-            1000, '$mtu', '$rate_limit', '$duration', 'owdm', 50, '$server_port', '$command_port', wait, None, 2)
+            scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', '$dest_path',
+            '$granularity', '$mtu', '$rate_limit', '$duration', '$meter', '$log_buffer_size', '$server_port', '$command_port', wait, None, 2)
 
     return scenario
 
