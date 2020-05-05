@@ -66,7 +66,7 @@ def main(argv=None):
 
     args = observer.parse(argv, service_ftp.SCENARIO_NAME)
 
-    scenario = service_ftp_rate.build(
+    scenario = service_ftp.build(
             args.server_entity,
             args.client_entity,
             args.server_ip,
