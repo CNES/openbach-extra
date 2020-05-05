@@ -55,9 +55,9 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--multiple', type = int, default = 1, help = 'Number of transfer of the file')
     observer.add_scenario_argument(
-            '--user', default = 'openbach',  help = 'Authorized FTP user')
+            '--ftp-user', default = 'openbach',  help = 'Authorized FTP user')
     observer.add_scenario_argument(
-            '--password', default = 'openbach',  help = "Authorized FTP user's password")
+            '--ftp-password', default = 'openbach',  help = "Authorized FTP user's password")
     observer.add_scenario_argument(
             '--blocksize', default = 8192, help = 'Set maximum chunk size  (default = 8192)')
     observer.add_scenario_argument(
@@ -74,8 +74,8 @@ def main(argv=None):
             args.mode,
             args.file_path,
             args.multiple,
-            args.user,
-            args.password,
+            args.ftp_user,
+            args.ftp_password,
             args.blocksize,
             args.post_processing_entity,
             scenario_name=args.scenario_name)

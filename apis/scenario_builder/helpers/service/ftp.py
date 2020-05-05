@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ftp_ftp_user#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 #   OpenBACH is a generic testbed able to control/configure multiple
@@ -31,7 +31,7 @@
 
 def ftp_single(
         scenario, client_entity, server_entity, server_ip, port, mode,
-        file_path, user=None, password=None, blocksize=None,
+        file_path, ftp_user=None, ftp_password=None, blocksize=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     """File transfer (upload or download) between FTP server and client.
 
@@ -48,8 +48,8 @@ def ftp_single(
     server.configure(
             'ftp_srv', server_entity,
             server_ip=server_ip,
-            port=port, user=user,
-            password=password)
+            port=port, user=ftp_user,
+            password=ftp_password)
 
     client = scenario.add_function(
             'start_job_instance',
@@ -58,8 +58,8 @@ def ftp_single(
     client.configure(
             'ftp_clt', client_entity,
             server_ip=server_ip,
-            port=port, user=user,
-            password=password,
+            port=port, user=ftp_user,
+            password=ftp_password,
             blocksize=blocksize,
             mode=mode,
             own={
@@ -73,7 +73,7 @@ def ftp_single(
 
 def ftp_multiple(
         scenario, client_entity, server_entity, server_ip, port, mode,
-        file_path, multiple, user=None, password=None, blocksize=None,
+        file_path, multiple, ftp_user=None, ftp_password=None, blocksize=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     """Multiple file transfer (upload or download) between FTP server and client.
 
@@ -90,18 +90,18 @@ def ftp_multiple(
     server.configure(
             'ftp_srv', server_entity,
             server_ip=server_ip,
-            port=port, user=user,
-            password=password)
+            port=port, user=ftp_user,
+            password=ftp_password)
 
     client = scenario.add_function(
-            'start_job_instance', 
+            'start_job_instance',
             wait_launched=[server],
             wait_delay=1)
     client.configure(
             'ftp_clt', client_entity,
             server_ip=server_ip,
-            port=port, user=user,
-            password=password,
+            port=port, user=ftp_user,
+            password=ftp_password,
             blocksize=blocksize,
             mode=mode,
             own={
@@ -115,8 +115,8 @@ def ftp_multiple(
         client.configure(
                 'ftp_clt', client_entity,
                 server_ip=server_ip,
-                port=port, user=user,
-                password=password,
+                port=port, user=ftp_user,
+                password=ftp_password,
                 blocksize=blocksize,
                 mode=mode,
                 own={
