@@ -1,4 +1,4 @@
-ftp_ftp_user#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 #   OpenBACH is a generic testbed able to control/configure multiple
