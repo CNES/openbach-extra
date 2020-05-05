@@ -37,7 +37,7 @@ from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_one_way_delay
 
 
-def main(scenario_name='executor_network_one_way_delay', argv=None):
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,

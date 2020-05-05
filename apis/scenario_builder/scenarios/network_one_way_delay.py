@@ -55,7 +55,7 @@ def one_way_delay(server_entity, client_entity, server_ip, client_ip, scenario_n
 
 
 def build(server_entity, client_entity, server_ip, client_ip, post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = one_way_delay(server_entity, client_entity, server_ip, client_ip)
+    scenario = one_way_delay(server_entity, client_entity, server_ip, client_ip, scenario_name)
 
     if post_processing_entity is not None:
         waiting_jobs = []
