@@ -43,6 +43,9 @@ SCENARIO_DESCRIPTION = """This network_rate scenario allows to:
    time-series and the CDF of the rate measurements.
  - NB : client and server entities/IPs/ports are in accordance
    with iperf3 logic (server = receiver and client = sender)
+ - Important Note :
+   The accuracy of D-ITG as rate measurement tool has not been proved yet.
+   Its usage is in experimental phase.
 """
 
 

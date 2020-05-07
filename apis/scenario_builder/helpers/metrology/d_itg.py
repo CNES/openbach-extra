@@ -29,6 +29,11 @@
 """Helpers of d-itg_send and d-itg_receiv jobs"""
 
 
+#   Important Note :
+#   The accuracy of D-ITG as rate measurement tool has not been proved yet.
+#   Its usage is in experimental phase.
+
+
 def ditg_packet_rate(
         scenario, sender_entity, recv_entity, recv_ip, sender_ip, protocol,
         dest_path="/tmp/", granularity=1000, packet_size=512,
