@@ -77,7 +77,7 @@ def build(
 
     # Add Rate metrology sub scenario
     scenario_network_rate = network_rate.build(
-            server_entity, client_entity, server_ip, client_ip, server_port, command_port,
+            server_entity, client_entity, server_ip, server_port, command_port,
             duration, rate_limit, num_flows, tos, mtu, post_processing_entity)
     start_network_rate = scenario.add_function(
             'start_scenario_instance',

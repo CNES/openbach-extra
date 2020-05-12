@@ -46,8 +46,6 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--client-ip', required=True, help='The sender IP address')
-    observer.add_scenario_argument(
             '--server-port', default=7001,  help='The iperf3/nuttcp/d-itg server port for data')
     observer.add_scenario_argument(
             '--command-port', default=7000, help='The port of nuttcp/d-itg server for signalling')
@@ -72,7 +70,6 @@ def main(argv=None):
             args.server_entity,
             args.client_entity,
             args.server_ip,
-            args.client_ip,
             args.server_port,
             args.command_port,
             args.duration,
