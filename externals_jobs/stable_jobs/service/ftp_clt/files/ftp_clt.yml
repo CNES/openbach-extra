@@ -97,7 +97,7 @@ arguments:
             - name: file_path
               type: str
               count: 1
-              description: 'Path of the file to download or upload (be sure the file exists)'
+              description: 'Path of the file to download or upload (consider /srv/ as the home directory, be sure the file exists)'
 
 statistics:
     - name: throughput_upload
