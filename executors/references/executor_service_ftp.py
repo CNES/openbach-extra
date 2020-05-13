@@ -46,20 +46,20 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--server-port', default = 2121,  help = 'Listened port (default = 2121)')
+            '--server-port', default=2121, help='Listened port (default = 2121)')
     observer.add_scenario_argument(
-            '--mode', required = True,
-            choices=['upload', 'download'], help = 'upload or download')
+            '--mode', required=True,
+            choices=['upload', 'download'], help='upload or download')
     observer.add_scenario_argument(
-            '--file-path', required = True, help = 'File path to transfer')
+            '--file-path', default='100M_file.txt', help='File path to transfer')
     observer.add_scenario_argument(
-            '--multiple', type = int, default = 1, help = 'Number of transfer of the file')
+            '--multiple', type=int, default=1, help='Number of transfer of the file')
     observer.add_scenario_argument(
-            '--ftp-user', default = 'openbach',  help = 'Authorized FTP user')
+            '--ftp-user', default='openbach', help='Authorized FTP user')
     observer.add_scenario_argument(
-            '--ftp-password', default = 'openbach',  help = "Authorized FTP user's password")
+            '--ftp-password', default='openbach', help="Authorized FTP user's password")
     observer.add_scenario_argument(
-            '--blocksize', default = 8192, help = 'Set maximum chunk size  (default = 8192)')
+            '--blocksize', default=8192, help='Set maximum chunk size  (default = 8192)')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
