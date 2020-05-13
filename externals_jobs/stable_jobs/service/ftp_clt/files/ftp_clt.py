@@ -103,9 +103,16 @@ def download(server_ip, port, user, password, blocksize, file_path):
     os.mkdir(dl_dir)
     #Download the file
     file_name = file_path.split('/')[-1]
-    file_download = open(dl_dir + file_name, 'wb')
     stat_data.timer = time.time() * 1000
-    ftp.retrbinary('RETR ' + file_path, lambda block: handleDownload(block, stat_data, file_download), blocksize)
+    file_download = open(dl_dir + file_name, 'wb')
+    try:
+        ftp.retrbinary('RETR ' + file_path,
+                lambda block: handleDownload(block, stat_data, file_download),
+                blocksize)
+    except Exception as ex:
+        message = 'Error downloading file : {}'.format(ex)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        exit(message)
     #Collect stats
     timestamp = time.time() * 1000
     stat_data.total_block_len += stat_data.block_len
@@ -126,10 +133,15 @@ def upload(server_ip, port, user, password, blocksize, file_path):
     ftp.mkd(srv_store_dir)
     #Upload the file 
     file_name = file_path.split('/')[-1]
-    file_upload = open(file_path, 'rb')
     stat_data.timer = time.time() * 1000
-    ftp.storbinary('STOR ' + srv_store_dir + file_name, file_upload,
-            blocksize, lambda block: handleUpload(block, stat_data))
+    try:
+        file_upload = open(file_path, 'rb')
+        ftp.storbinary('STOR ' + srv_store_dir + file_name, file_upload,
+                blocksize, lambda block: handleUpload(block, stat_data))
+    except Exception as ex:
+        message = 'Error uploading file : {}'.format(ex)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        exit(message)
     #Collect stats
     timestamp = time.time() * 1000
     stat_data.total_block_len += stat_data.block_len
@@ -177,7 +189,7 @@ if __name__ == '__main__':
     if not success:
         message = 'ERROR connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
+        exit(message)
 
     #set file path
     if args.file == 'existing':
@@ -187,7 +199,7 @@ if __name__ == '__main__':
     else:
         message = 'No file chosen'
         collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
+        exit(message)
 
     #Depending on the mode, call the dedicated function
     if args.mode == 'upload':
