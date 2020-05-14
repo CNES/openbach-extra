@@ -56,7 +56,11 @@ class Scenario:
     def add_argument(self, name, description):
         """Add an argument for this scenario"""
 
-        self.arguments[name] = description
+        self.arguments[name] = str(description)
+
+    def add_arguments(self, **arguments):
+        for name, description in arguments.items():
+            self.add_argument(name, description)
 
     def remove_argument(self, name):
         """Remove the given argument from this scenario"""
@@ -66,18 +70,30 @@ class Scenario:
         except KeyError:
             pass
 
+    def remove_arguments(self, *names):
+        for name in names:
+            self.remove_argument(name)
+
     def add_constant(self, name, value):
         """Associate a value to a constant for this scenario"""
 
-        self.constants[name] = value
+        self.constants[name] = str(value)
 
-    def remove_constants(self, name):
+    def add_constants(self, **constants):
+        for name, value in constants.items():
+            self.add_constant(name, value)
+
+    def remove_constant(self, name):
         """Remove the given constant from this scenario"""
 
         try:
             del self.contants[name]
         except KeyError:
             pass
+
+    def remove_constants(self, *names):
+        for name in names:
+            self.remove_constant(name)
 
     def add_function(self, name, wait_delay=0, wait_launched=None, wait_finished=None, label=None):
         """Add an openbach function to this scenario.
