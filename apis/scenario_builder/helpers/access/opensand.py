@@ -32,67 +32,81 @@ import itertools
 
 from ..network.ip_address import ip_address
 from ..network.ip_route import ip_route
+from ..network.ip_link import ip_link_add, ip_link_set, ip_link_del
 from ..admin.command_shell import command_shell
 
-def opensand_network_ip(
-        scenario, entity, address_mask, tap_name=None, bridge_name=None,
-        wait_finished=None, wait_launched=None, wait_delay=0):
 
-    opensand = scenario.add_function(
-            'start_job_instance',
+def opensand_network_ip(
+        scenario, entity, address_mask, tap_name='opensand_tap',
+        bridge_name='opensand_br', tap_mac_address=None,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    tap_add = ip_tuntap(
+            scenario, entity, tap_name, 'add',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    bridge_add = ip_link_add(
+            scenario, entity, bridge_name, type='bridge',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
 
-    network = {'ip': {'address_mask': address_mask}}
-    if tap_name:
-        network['tap_name'] = tap_name
-    if bridge_name:
-        network['bridge_name'] = bridge_name
+    if tap_mac_address is not None:
+        tap_add = ip_link_set(scenario, entity, tap_name, address=tap_mac_address, wait_finished=tap_add)
 
-    opensand.configure('opensand', entity, network=network)
+    bridge_add = ip_address(scenario, entity, bridge_name, 'add', address_mask, wait_finished=bridge_add)
+    tap_in_bridge = ip_link_set(scenario, entity, tap_name, master=bridge_name, wait_finished=tap_add + bridge_add)
 
-    return [opensand]
+    tap_up = ip_link_set(scenario, entity, tap_name, up=True, wait_finished=tap_in_bridge)
+    bridge_up = ip_link_set(scenario, entity, bridge_name, up=True, wait_finished=tap_in_bridge)
+
+    # forward
+
+    return tap_up + bridge_up
 
 
 def opensand_network_ethernet(
-        scenario, entity, interface, tap_name=None, bridge_name=None,
+        scenario, entity, interface, tap_name, bridge_name, tap_mac_address=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
-
-    opensand = scenario.add_function(
-            'start_job_instance',
+    tap_add = ip_tuntap(
+            scenario, entity, tap_name, 'add',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    bridge_add = ip_link_add(
+            scenario, entity, bridge_name, type='bridge',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
 
-    network = {'eth': {'interface': interface}}
-    if tap_name:
-        network['tap_name'] = tap_name
-    if bridge_name:
-        network['bridge_name'] = bridge_name
-    opensand.configure('opensand', entity, network=network)
+    if tap_mac_address is not None:
+        tap_add = ip_link_set(scenario, entity, tap_name, address=tap_mac_address, wait_finished=tap_add)
 
-    return [opensand]
+    tap_in_bridge = ip_link_set(scenario, entity, tap_name, master=bridge_name, wait_finished=tap_add + bridge_add)
+    interface_in_bridge = ip_link_set(scenario, entity, interface, master=bridge_name, wait_finished=bridge_add)
+
+    wait = tap_in_bridge + interface_in_bridge
+    tap_up = ip_link_set(scenario, entity, tap_name, up=True, wait_finished=wait)
+    bridge_up = ip_link_set(scenario, entity, bridge_name, up=True, wait_finished=wait)
+
+    return tap_up + bridge_up
 
 
 def opensand_network_clear(
-        scenario, entity, tap_name=None, bridge_name=None,
+        scenario, entity, tap_name, bridge_name,
         wait_finished=None, wait_launched=None, wait_delay=0):
-
-    opensand = scenario.add_function(
-            'start_job_instance',
+    tap_del = ip_link_del(
+            scenario, entity, tap_name,
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    bridge_del = ip_link_del(
+            scenario, entity, bridge_name,
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
 
-    network = {'clear': {}}
-    if tap_name:
-        network['tap_name'] = tap_name
-    if bridge_name:
-        network['bridge_name'] = bridge_name
-    opensand.configure('opensand', entity, network=network)
-
-    return [opensand]
+    return tap_del + bridge_del
 
 
 def opensand_run(
@@ -130,7 +144,7 @@ def opensand_run(
     elif entity == 'gw-net-acc':
         del run[entity]['emulation_address']
         run[entity]['interconnection address'] = interconnection_address
-    opensand.configure('opensand', agent_entity, run=run)
+    opensand.configure('opensand', agent_entity, **run)
 
     return [opensand]
 
@@ -153,17 +167,14 @@ def configure_interfaces(
 
 def configure_routing(
         scenario, entity, network_mask, ips, gateway_ips, bridge_mac_address,
+        tap_name='opensand_tap', bridge_name='opensand_br',
         wait_finished=None, wait_launched=None, wait_delay=0):
     wait_finished = opensand_network_ip(
             scenario, entity, network_mask,
+            tap_name, bridge_name, bridge_mac_address,
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-
-    wait_finished = command_shell(
-            scenario, entity,
-            "ip link set dev opensand_tap address " + bridge_mac_address,
-            wait_finished=wait_finished)
 
     for ip, gateway_ip in zip(ips, gateway_ips):
         wait_finished = ip_route(scenario, entity, 'add', ip, gateway_ip, wait_finished=wait_finished)

@@ -35,20 +35,19 @@
 """
 
 
-import argparse
-import opensand_network.opensand_network_utils as onu
-import subprocess
-import signal
-import netifaces as ni
-import ipaddress
-import socket
-import threading
-import select
-import syslog
-import collect_agent
-import json
 import re
 import sys
+import json
+import select
+import socket
+import signal
+import syslog
+import argparse
+import ipaddress
+import threading
+import subprocess
+
+import collect_agent
 
 
 DFLT_TAPNAME = 'opensand_tap'
@@ -207,18 +206,6 @@ def ip_address_mask(text):
     return text
 
 
-def existing_iface(text):
-    '''
-    Check a text represents an existing interface
-
-    Args:
-        text   text to check
-    '''
-    if text not in ni.interfaces():
-        raise ValueError('No "{}" interface'.format(text))
-    return text
-
-
 def udp_port(text):
     '''
     Check a text represents a UDP port
@@ -237,102 +224,39 @@ if __name__ == '__main__':
         description='Set up the network configuration and launch an OpenSAND entity',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    action_cmd = parser.add_subparsers(
-        dest='action_type',
-        metavar='action_type',
-        help='the OpenSAND action type',
-    )
-    action_cmd.required = True
 
-    # Network parsers
-    net_parser = action_cmd.add_parser(
-        'network',
-        help='Configure the network for an OpenSAND entity',
-    )
-    net_parser.add_argument(
-        '-t',
-        '--tap-name',
-        type=str,
-        default=DFLT_TAPNAME,
-        help='the TAP interface name (default: {})'.format(DFLT_TAPNAME),
-    )
-    net_parser.add_argument(
-        '-b',
-        '--bridge-name',
-        type=str,
-        default=DFLT_BRNAME,
-        help='the bridge name (default: {})'.format(DFLT_BRNAME),
-    )
-
-    subaction_cmd = net_parser.add_subparsers(
-        dest='action',
-        metavar='action',
-        help='the action to perform',
-    )
-    subaction_cmd.required = True
-
-    ip_parser = subaction_cmd.add_parser(
-        onu.IP_TYPE,
-        help='create interfaces to connect an IP terrestrial network',
-    )
-    ip_parser.add_argument(
-        'address_mask',
-        type=ip_address_mask,
-        help='the terrestrial network address (format: "ADDRESS/NET_DIGIT")',
-    )
-
-    eth_parser = subaction_cmd.add_parser(
-        onu.ETH_TYPE,
-        help='create interfaces to connect an Ethernet terrestrial network',
-    )
-    eth_parser.add_argument(
-        'interface',
-        type=existing_iface,
-        help='the terrestrial network interface',
-    )
-
-    clear_parser = subaction_cmd.add_parser(
-        'clear',
-        help='clear interfaces to connect terrestrial network',
-    )
-
-    # Run parsers
-    run_parser = action_cmd.add_parser(
-        'run',
-        help='Run an OpenSAND entity',
-    )
-    run_parser.add_argument(
+    parser.add_argument(
         '--conf-dir',
         type=str,
         default='/etc/opensand/',
         help='The directory of the OpenSAND entity configuration',
     )
-    run_parser.add_argument(
+    parser.add_argument(
         '--output-addr',
         type=str,
         default='127.0.0.1',
         help='The internal output address (format: "ADDRESS")',
     )
-    run_parser.add_argument(
+    parser.add_argument(
         '--logs-port',
         type=udp_port,
         default=63000,
         help='The internal logs UDP port',
     )
-    run_parser.add_argument(
+    parser.add_argument(
         '--stats-port',
         type=udp_port,
         default=63001,
         help='The internal stats UDP port',
     )
-    run_parser.add_argument(
+    parser.add_argument(
         '--bin-dir',
         type=str,
         default='/usr/bin/',
         help='The directory of OpenSAND binaries',
     )
 
-    run_entity_cmd = run_parser.add_subparsers(
+    run_entity_cmd = parser.add_subparsers(
         dest='entity',
         metavar='entity',
         help='the OpenSAND entity type',
@@ -396,78 +320,42 @@ if __name__ == '__main__':
         '/opt/openbach/agent/jobs/opensand/opensand_rstats_filter.conf',
     )
 
-    if args.action_type == 'network':
+    command = None
+    if args.entity == 'sat':
+        command = [
+            '{}/{}'.format(args.bin_dir, args.entity),
+            '-a', args.emu_addr,
+            '-c', args.conf_dir,
+        ]
+    elif args.entity in [ 'st', 'gw' ]:
+        command = [
+            '{}/{}'.format(args.bin_dir, args.entity),
+            '-i', str(args.id),
+            '-a', args.emu_addr,
+            '-t', args.tap_name,
+            '-c', args.conf_dir,
+        ]
+    elif args.entity == 'gw-net-acc':
+        command = [
+            '{}/{}'.format(args.bin_dir, args.entity),
+            '-i', str(args.id),
+            '-t', args.tap_name,
+            '-w', args.interco_addr,
+            '-c', args.conf_dir,
+        ]
+    elif args.entity == 'gw-phy':
+        command = [
+            '{}/{}'.format(args.bin_dir, args.entity),
+            '-i', str(args.id),
+            '-a', args.emu_addr,
+            '-w', args.interco_addr,
+            '-c', args.conf_dir,
+        ]
+    else:
+        collect_agent.send_message(
+            syslog.LOG_ERR,
+            'The OpenSAND entity "{}" is not handled by this script'.format(args.entity)
+        )
+        sys.exit(-1)
 
-        try:
-            if args.action == onu.IP_TYPE:
-                onu.create_tap_iface(args.tap_name)
-                onu.set_up(args.tap_name)
-                onu.create_bridge(args.bridge_name, [ args.tap_name ])
-                onu.set_up(args.bridge_name)
-
-                onu.add_address(args.bridge_name, args.address_mask)
-
-                try:
-                    ipaddress.IPv4Network(args.address_mask, False)
-                    onu.enable_ipv4_forward()
-                except ipaddress.AddressValueError:
-                    pass
-                try:
-                    ipaddress.IPv6Network(args.address_mask, False)
-                    onu.enable_ipv6_forwarding('all')
-                except ipaddress.AddressValueError:
-                    pass
-              
-            elif args.action == onu.ETH_TYPE:
-                onu.create_tap_iface(args.tap_name)
-                onu.set_up(args.tap_name)
-                onu.create_bridge(args.bridge_name, [ args.tap_name, args.interface ])
-                onu.set_up(args.bridge_name)
-
-            elif args.action == 'clear':
-                onu.delete_iface(args.bridge_name)
-                onu.delete_iface(args.tap_name)
-        except onu.NetworkUtilsError as err:
-            collect_agent.send_message(syslog.LOG_ERR, str(err))
-            sys.exit(-1)
-
-    elif args.action_type == 'run':
-        command = None
-        if args.entity == 'sat':
-            command = [
-                '{}/{}'.format(args.bin_dir, args.entity),
-                '-a', args.emu_addr,
-                '-c', args.conf_dir,
-            ]
-        elif args.entity in [ 'st', 'gw' ]:
-            command = [
-                '{}/{}'.format(args.bin_dir, args.entity),
-                '-i', str(args.id),
-                '-a', args.emu_addr,
-                '-t', args.tap_name,
-                '-c', args.conf_dir,
-            ]
-        elif args.entity == 'gw-net-acc':
-            command = [
-                '{}/{}'.format(args.bin_dir, args.entity),
-                '-i', str(args.id),
-                '-t', args.tap_name,
-                '-w', args.interco_addr,
-                '-c', args.conf_dir,
-            ]
-        elif args.entity == 'gw-phy':
-            command = [
-                '{}/{}'.format(args.bin_dir, args.entity),
-                '-i', str(args.id),
-                '-a', args.emu_addr,
-                '-w', args.interco_addr,
-                '-c', args.conf_dir,
-            ]
-        else:
-            collect_agent.send_message(
-                syslog.LOG_ERR,
-                'The OpenSAND entity "{}" is not handled by this script'.format(args.entity)
-            )
-            sys.exit(-1)
-
-        run_entity(command, args.output_addr, args.logs_port, args.stats_port)
+    run_entity(command, args.output_addr, args.logs_port, args.stats_port)
