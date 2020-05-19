@@ -66,7 +66,8 @@ def opensand_network_ip(
 
 
 def opensand_network_ethernet(
-        scenario, entity, interface, tap_name, bridge_name, tap_mac_address=None,
+        scenario, entity, interface, tap_name='opensand_tap',
+        bridge_name='opensand_br', tap_mac_address=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     tap_add = ip_tuntap(
             scenario, entity, tap_name, 'add',

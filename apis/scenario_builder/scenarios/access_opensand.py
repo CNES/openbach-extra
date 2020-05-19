@@ -30,25 +30,28 @@ from collections import namedtuple
 
 from scenario_builder import Scenario
 from scenario_builder.scenarios.access_opensand_configuration import push_conf
-from scenario_builder.openbach_functions import StartJobInstance
+from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 from scenario_builder.helpers.access import opensand
+from scenario_builder.helpers.admin.push_file import push_file
 
 
-SCENARIO_DESCRIPTION = """This run opensand scenario allows to:
+SCENARIO_DESCRIPTION = """This opensand scenario allows to:
+ - Configure bridge/tap interfaces on entities for OpenSAND to communicate with the real world
+ - Optionnaly send configuration files on entities
  - Run opensand in the satellite, the gateways and the STs for an opensand test
 """
-SCENARIO_NAME = 'access_opensand_run'
+SCENARIO_NAME = 'access_opensand'
 
 
 SAT = namedtuple('SAT', ('entity', 'ip'))
-ST = namedtuple('ST', ('entity', 'opensand_id', 'emulation_ip'))
-GW = namedtuple('GW', ('entity', 'opensand_id', 'emulation_ip'))
+ST = namedtuple('ST', ('entity', 'opensand_id', 'tap_name', 'bridge_name', 'emulation_ip', 'lan_ip'))
+GW = namedtuple('GW', ('entity', 'opensand_id', 'tap_name', 'bridge_name', 'emulation_ip', 'lan_ip'))
 SPLIT_GW = namedtuple('SPLIT_GW', (
-    'entity_net_acc', 'entity_phy', 'opensand_id', 'emulation_ip',
-    'interconnect_ip_net_acc', 'interconnect_ip_phy'))
+    'entity_net_acc', 'entity_phy', 'opensand_id', 'tap_name', 'bridge_name',
+    'emulation_ip', 'lan_ip', 'interconnect_ip_net_acc', 'interconnect_ip_phy'))
 
 
-def run(satellite, gateways, terminals, scenario_name=SCENARIO_NAME):
+def run(satellite, gateways, terminals, scenario_name=SCENARIO_NAME + '_run'):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     opensand.opensand_run(scenario, satellite.entity, 'sat', emulation_address=satellite.ip)
 
@@ -69,7 +72,7 @@ def run(satellite, gateways, terminals, scenario_name=SCENARIO_NAME):
                     emulation_address=gateway.emulation_ip,
                     interconnection_address=gateway.interconnect_ip_phy)
         else:
-            continue  # TODO:~fail ?
+            continue  # TODO: fail?
 
     for terminal in terminals:
         opensand.opensand_run(
@@ -80,23 +83,93 @@ def run(satellite, gateways, terminals, scenario_name=SCENARIO_NAME):
     return scenario
 
 
+def access_opensand(satellite, gateways, terminals, configuration_files=None, scenario_name=SCENARIO_NAME):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+
+    wait = []
+    for gateway in gateways:
+        if isinstance(gateway, GW):
+            entity = gateway.entity
+        elif isinstance(gateway, SPLIT_GW):
+            entity = gateway.entity_net_acc
+        else:
+            continue  # TODO: fail?
+        wait += opensand.opensand_network_ip(
+                scenario, entity, gateway.lan_ip,
+                gateway.tap_name, gateway.bridge_name,
+                gateway.lan_mac_address)
+
+    for terminal in terminals:
+        wait += opensand.opensand_network_ip(
+                scenario, terminal.entity, terminal.lan_ip,
+                terminal.tap_name, terminal.bridge_name,
+                terminal.lan_mac_address)
+
+    if configuration_files:
+        configuration_per_entity = {
+                'sat': [],
+                'st': [],
+                'gw': [],
+                None: [],
+        }
+
+        for config_file in configuration_files:
+            entity = config_file.parts[0]
+
+            if entity not in configuration_per_entity:
+                entity = None
+            configuration_per_entity[entity].append(config_file)
+
+        def _build_remote_and_users(entity_name, prefix='/etc/opensand/'):
+            common_files = configuration_per_entity[None]
+            entity_files = configuration_per_entity[entity_name]
+            local_files = [f.as_posix() for f in itertools.chain(common_files, entity_files)]
+            remote_files = [(prefix / f).as_posix() for f in common_files]
+            remote_files.extend((prefix / f.relative_to(entity_name)).as_posix() for f in entity_files)
+            users = ['opensand'] * len(local_files)
+            groups = ['root'] * len(local_files)
+            return remote_files, local_files, users, groups
+
+        wait += push_file(scenario, satellite.entity, *_build_remote_and_users('sat'))
+
+        files = _build_remote_and_users('gw')
+        for gateway in gateways:
+            if isinstance(gateway, GW):
+                wait += push_file(scenario, gateway.entity, *files)
+            elif isinstance(gateway, SPLIT_GW):
+                wait += push_file(scenario, gateway.entity_net_acc, *files)
+                wait += push_file(scenario, gateway.entity_phy, *files)
+
+        files = _build_remote_and_users('st')
+        for terminal in terminals:
+            wait += push_file(scenario, terminal.entity, *files)
+
+    opensand_run = scenario.add_function('start_scenario_instance', wait_finished=wait)
+    opensand_run.configure(run(satellite, gateways, terminals, scenario_name + '_run'))
+
+    for gateway in gateways:
+        if isinstance(gateway, GW):
+            entity = gateway.entity
+        elif isinstance(gateway, SPLIT_GW):
+            entity = gateway.entity_net_acc
+        else:
+            continue
+        opensand.opensand_network_clear(
+                scenario, entity, gateway.tap_name,
+                gateway.bridge_name, wait_finished=[opensand_run])
+
+    for terminal in terminals:
+        opensand.opensand_network_clear(
+                scenario, terminal.entity, terminal.tap_name,
+                terminal.bridge_name, wait_finished=[opensand_run])
+
+
 def build(satellite, gateways, terminals, duration=0, configuration_files=None, scenario_name=SCENARIO_NAME):
-    scenario_run = run(satellite, gateways, terminals, scenario_name)
+    scenario = access_opensand(satellite, gateways, terminals, configuration_files, scenario_name)
 
     if duration:
+        scenario_run, = (s for s in scenario.openbach_functions if isinstance(s, StartScenarioInstance))
         jobs = [f for f in scenario_run.openbach_functions if isinstance(f, StartJobInstance)]
         scenario_run.add_function('stop_job_instance', wait_launched=jobs, wait_delay=duration).configure(*jobs)
-
-    if not configuration_files:
-        return scenario_run
-
-    scenario = Scenario(scenario_name + '_with_configuration_files')
-    scenario_push = push_conf(satellite.entity, gateways, terminals, configuration_files)
-
-    start_scenario = scenario.add_function('start_scenario_instance')
-    start_scenario.configure(scenario_push)
-
-    start_scenario = scenario.add_function('start_scenario_instance', wait_finished=[start_scenario])
-    start_scenario.configure(scenario_run)
 
     return scenario
