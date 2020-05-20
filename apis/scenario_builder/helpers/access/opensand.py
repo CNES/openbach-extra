@@ -29,11 +29,13 @@
 """ Helpers of opensand job """
 
 import itertools
+import ipaddress
 
 from ..network.ip_address import ip_address
 from ..network.ip_route import ip_route
 from ..network.ip_link import ip_link_add, ip_link_set, ip_link_del
 from ..admin.command_shell import command_shell
+from ..transport.sysctl import sysctl_configure_ip_forwarding
 
 
 def opensand_network_ip(
@@ -60,9 +62,16 @@ def opensand_network_ip(
     tap_up = ip_link_set(scenario, entity, tap_name, up=True, wait_finished=tap_in_bridge)
     bridge_up = ip_link_set(scenario, entity, bridge_name, up=True, wait_finished=tap_in_bridge)
 
-    # forward
-
-    return tap_up + bridge_up
+    try:
+        interface = ipaddress.ip_interface(address_mask)
+    except ValueError:
+        # Do not bother much as `ip_address` will likely fail anyway
+        return tap_up + bridge_up
+    else:
+        return sysctl_configure_ip_forwarding(
+                scenario, entity, bridge_name,
+                version=interface.version,
+                wait_finished=tap_up + bridge_up)
 
 
 def opensand_network_ethernet(

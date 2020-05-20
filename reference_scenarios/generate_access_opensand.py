@@ -35,6 +35,7 @@ from /openbach-extra/apis/scenario_builder/scenarios/
 import argparse 
 import tempfile
 import warnings
+import functools
 import ipaddress
 from pathlib import Path
 from collections import defaultdict
@@ -46,11 +47,11 @@ from scenario_builder.scenarios.access_opensand import SAT, GW, SPLIT_GW, ST  # 
 
 
 class Entity:
-    def __init__(self, entity, emulation_ip, lan_ip, opensand_id, tap_name='opensand_tap', bridge_name='opensand_br'):
+    def __init__(self, entity, emulation_ip, bridge_to_lan, opensand_id, tap_name='opensand_tap', bridge_name='opensand_br'):
         self.entity = entity
         self.opensand_id = int(opensand_id)
         self.emulation_ip = validate_ip(emulation_ip)
-        self.lan_ip = validate_ip(lan_ip)
+        self.bridge_to_lan = bridge_to_lan
         self.tap_name = tap_name
         self.bridge_name = bridge_name
 
@@ -92,7 +93,11 @@ class _Validate(argparse.Action):
         setattr(args, self.dest, self.items)
 
 
-class ValidateGateway(_Validate):
+class _ValidateOptional:
+    pass
+
+
+class ValidateGateway(_ValidateOptional, _Validate):
     ENTITY_TYPE = Entity
 
 
@@ -100,12 +105,32 @@ class ValidateGatewayPhy(_Validate):
     ENTITY_TYPE = GatewayPhy
 
 
-class ValidateSatelliteTerminal(_Validate):
+class ValidateSatelliteTerminal(_ValidateOptional, _Validate):
     ENTITY_TYPE = Entity
 
 
 def validate_ip(ip):
     return ipaddress.ip_address(ip).compressed
+
+
+def patch_print_help(parser):
+    def decorate(printer):
+        @functools.wraps(printer)
+        def wrapper(file=None):
+            nargs = [action.nargs for action in parser._actions]
+
+            for action in parser._actions:
+                if isinstance(action, _ValidateOptional):
+                    action.nargs = None
+            printer(file)
+
+            for action, narg in zip(parser._actions, nargs):
+                action.nargs = narg
+
+        return wrapper
+
+    parser.print_help = decorate(parser.print_help)
+    parser.print_usage = decorate(parser.print_usage)
 
 
 def create_gateways(gateways, gateways_phy):
@@ -116,7 +141,7 @@ def create_gateways(gateways, gateways_phy):
                         gateway.entity, gateway_phy.entity,
                         gateway.opensand_id,
                         gateway.tap_name, gateway.bridge_name,
-                        gateway.emulation_ip, gateway.lan_ip,
+                        gateway.bridge_to_lan, gateway.emulation_ip,
                         gateway_phy.interconnect_net_access,
                         gateway_phy.interconnect_phy)
                 break
@@ -124,7 +149,7 @@ def create_gateways(gateways, gateways_phy):
             yield GW(
                     gateway.entity, gateway.opensand_id,
                     gateway.tap_name, gateway.bridge_name,
-                    gateway.emulation_ip, gateway.lan_ip)
+                    gateway.bridge_to_lan, gateway.emulation_ip)
 
 
 def main(argv=None):
@@ -134,8 +159,8 @@ def main(argv=None):
             nargs=2, metavar=('ENTITY', 'EMULATION_IP'),
             help='The satellite of the platform. Must be supplied only once.')
     observer.add_scenario_argument(
-            '--gateway', '-gw', required=True, action=ValidateGateway,
-            nargs=3, metavar=('ENTITY', 'EMULATION_IP', 'OPENSAND_ID'),
+            '--gateway', '-gw', required=True, action=ValidateGateway, nargs='*',
+            metavar='ENTITY EMULATION_IP (BRIDGE_IP | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME]]',
             help='A gateway in the platform. Must be supplied at least once.')
     observer.add_scenario_argument(
             '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy,
@@ -144,8 +169,8 @@ def main(argv=None):
             'net access part previously provided using the --gateway option. '
             'Optional, can be supplied only once per gateway.')
     observer.add_scenario_argument(
-            '--satellite-terminal', '-st', required=True, action=ValidateSatelliteTerminal,
-            nargs=3, metavar=('ENTITY', 'EMULATION_IP', 'OPENSAND_ID'),
+            '--satellite-terminal', '-st', required=True, action=ValidateSatelliteTerminal, nargs='*',
+            metavar='ENTITY EMULATION_IP (BRIDGE_IP | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME]]',
             help='A satellite terminal in the platform. Must be supplied at least once.')
     observer.add_scenario_argument(
             '--duration', '-d', required=False, default=0, type=int,
@@ -156,10 +181,14 @@ def main(argv=None):
             help='Path to a configuration folder that should be '
             'dispatched on agents before the simulation.')
 
+    patch_print_help(observer.parser)
     args = observer.parse(argv, access_opensand.SCENARIO_NAME)
 
     gateways = list(create_gateways(args.gateway, args.gateway_phy or []))
-    terminals = [ST(st.entity, st.opensand_id, st.emulation_ip) for st in args.satellite_terminal]
+    terminals = [
+            ST(st.entity, st.opensand_id, st.tap_name, st.bridge_name, st.bridge_to_lan, st.emulation_ip)
+            for st in args.satellite_terminal
+    ]
     satellite = SAT(args.sat.entity, args.sat.ip)
   
     config_files = None

@@ -26,29 +26,38 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
+import ipaddress
 from collections import namedtuple
 
 from scenario_builder import Scenario
-from scenario_builder.scenarios.access_opensand_configuration import push_conf
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 from scenario_builder.helpers.access import opensand
 from scenario_builder.helpers.admin.push_file import push_file
 
 
+SCENARIO_NAME = 'access_opensand'
 SCENARIO_DESCRIPTION = """This opensand scenario allows to:
  - Configure bridge/tap interfaces on entities for OpenSAND to communicate with the real world
  - Optionnaly send configuration files on entities
  - Run opensand in the satellite, the gateways and the STs for an opensand test
 """
-SCENARIO_NAME = 'access_opensand'
 
 
 SAT = namedtuple('SAT', ('entity', 'ip'))
-ST = namedtuple('ST', ('entity', 'opensand_id', 'tap_name', 'bridge_name', 'emulation_ip', 'lan_ip'))
-GW = namedtuple('GW', ('entity', 'opensand_id', 'tap_name', 'bridge_name', 'emulation_ip', 'lan_ip'))
+ST = namedtuple('ST', ('entity', 'opensand_id', 'tap_name', 'bridge_name', 'bridge_to_lan', 'emulation_ip'))
+GW = namedtuple('GW', ('entity', 'opensand_id', 'tap_name', 'bridge_name', 'bridge_to_lan', 'emulation_ip'))
 SPLIT_GW = namedtuple('SPLIT_GW', (
     'entity_net_acc', 'entity_phy', 'opensand_id', 'tap_name', 'bridge_name',
-    'emulation_ip', 'lan_ip', 'interconnect_ip_net_acc', 'interconnect_ip_phy'))
+    'bridge_to_lan', 'emulation_ip', 'interconnect_ip_net_acc', 'interconnect_ip_phy'))
+
+
+def _opensand_network_implementation(bridge_to_lan_interface):
+    try:
+        ipaddress.ip_interface(bridge_to_lan_interface)
+    except ValueError:
+        return opensand.opensand_network_ethernet
+    else:
+        return opensand.opensand_network_ip
 
 
 def run(satellite, gateways, terminals, scenario_name=SCENARIO_NAME + '_run'):
@@ -94,14 +103,14 @@ def access_opensand(satellite, gateways, terminals, configuration_files=None, sc
             entity = gateway.entity_net_acc
         else:
             continue  # TODO: fail?
-        wait += opensand.opensand_network_ip(
-                scenario, entity, gateway.lan_ip,
+        wait += _opensand_network_implementation(gateway.bridge_to_lan)(
+                scenario, entity, gateway.bridge_to_lan,
                 gateway.tap_name, gateway.bridge_name,
                 gateway.lan_mac_address)
 
     for terminal in terminals:
-        wait += opensand.opensand_network_ip(
-                scenario, terminal.entity, terminal.lan_ip,
+        wait += _opensand_network_implementation(terminal.bridge_to_lan)(
+                scenario, terminal.entity, terminal.bridge_to_lan,
                 terminal.tap_name, terminal.bridge_name,
                 terminal.lan_mac_address)
 
