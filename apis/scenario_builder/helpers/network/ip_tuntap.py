@@ -29,7 +29,7 @@
 """ Helpers of ip_tuntap job """
 
 
-def ip_address(scenario, entity, name, cmd, mode='tap',
+def ip_tuntap(scenario, entity, name, cmd, mode='tap',
         wait_finished=None, wait_launched=None, wait_delay=0):
     ip_tuntap = scenario.add_function(
             'start_job_instance',
