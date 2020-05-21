@@ -31,11 +31,12 @@
 import itertools
 import ipaddress
 
-from ..network.ip_address import ip_address
 from ..network.ip_route import ip_route
-from ..network.ip_link import ip_link_add, ip_link_set, ip_link_del
+from ..network.ip_tuntap import ip_tuntap
+from ..network.ip_address import ip_address
 from ..admin.command_shell import command_shell
 from ..transport.sysctl import sysctl_configure_ip_forwarding
+from ..network.ip_link import ip_link_add, ip_link_set, ip_link_del
 
 
 def opensand_network_ip(
@@ -59,8 +60,8 @@ def opensand_network_ip(
     bridge_add = ip_address(scenario, entity, bridge_name, 'add', address_mask, wait_finished=bridge_add)
     tap_in_bridge = ip_link_set(scenario, entity, tap_name, master=bridge_name, wait_finished=tap_add + bridge_add)
 
-    tap_up = ip_link_set(scenario, entity, tap_name, up=True, wait_finished=tap_in_bridge)
-    bridge_up = ip_link_set(scenario, entity, bridge_name, up=True, wait_finished=tap_in_bridge)
+    tap_up = ip_link_set(scenario, entity, tap_name, state='up', wait_finished=tap_in_bridge)
+    bridge_up = ip_link_set(scenario, entity, bridge_name, state='up', wait_finished=tap_in_bridge)
 
     try:
         interface = ipaddress.ip_interface(address_mask)
@@ -96,8 +97,8 @@ def opensand_network_ethernet(
     interface_in_bridge = ip_link_set(scenario, entity, interface, master=bridge_name, wait_finished=bridge_add)
 
     wait = tap_in_bridge + interface_in_bridge
-    tap_up = ip_link_set(scenario, entity, tap_name, up=True, wait_finished=wait)
-    bridge_up = ip_link_set(scenario, entity, bridge_name, up=True, wait_finished=wait)
+    tap_up = ip_link_set(scenario, entity, tap_name, state='up', wait_finished=wait)
+    bridge_up = ip_link_set(scenario, entity, bridge_name, state='up', wait_finished=wait)
 
     return tap_up + bridge_up
 
