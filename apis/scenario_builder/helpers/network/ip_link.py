@@ -30,10 +30,11 @@
 
 
 def ip_link_set(
-        scenario, entity, name, up=None,
+        scenario, entity, name, state=None,
         arp=None, dynamic=None, multicast=None,
         address=None, broadcast=None, mtu=None,
-        txqueuelen=None, netns=None, master=None, type=None,
+        txqueuelen=None, netns=None, master=None,
+        nomaster=None, type=None,
         wait_finished=None, wait_launched=None, wait_delay=0,
         **type_args):
     ip_link = scenario.add_function(
@@ -42,9 +43,9 @@ def ip_link_set(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
 
-    parameters = {'name': name}
-    if up is not None:
-        parameters['up'] = up
+    parameters = {'device': name}
+    if state is not None:
+        parameters['state'] = state
     if arp is not None:
         parameters['arp'] = arp
     if dynamic is not None:
@@ -61,6 +62,8 @@ def ip_link_set(
         parameters['txqueuelen'] = txqueuelen
     if master is not None:
         parameters['master'] = master
+    if nomaster:
+        parameters['nomaster'] = nomaster
     if type is not None:
         parameters[type] = type_args
 
@@ -108,7 +111,7 @@ def ip_link_del(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
 
-    parameters = {'name': name}
+    parameters = {'device': name}
     if type is not None:
         parameters[type] = type_args
 

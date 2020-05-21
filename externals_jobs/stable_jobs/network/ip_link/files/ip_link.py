@@ -182,7 +182,6 @@ if __name__ == '__main__':
     parser_add.set_defaults(function=ip_link_add)
     parser_set.set_defaults(function=ip_link_set)
     args = vars(parser.parse_args())
-    print(args)
     main = args.pop('function')
     register_collector()
     main(**args)
