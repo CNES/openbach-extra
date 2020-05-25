@@ -44,10 +44,10 @@ SCENARIO_DESCRIPTION = """This opensand scenario allows to:
 
 
 SAT = namedtuple('SAT', ('entity', 'ip'))
-ST = namedtuple('ST', ('entity', 'opensand_id', 'tap_name', 'bridge_name', 'bridge_to_lan', 'emulation_ip'))
-GW = namedtuple('GW', ('entity', 'opensand_id', 'tap_name', 'bridge_name', 'bridge_to_lan', 'emulation_ip'))
+ST = namedtuple('ST', ('entity', 'opensand_id', 'tap_mac', 'tap_name', 'bridge_name', 'bridge_to_lan', 'emulation_ip'))
+GW = namedtuple('GW', ('entity', 'opensand_id', 'tap_mac', 'tap_name', 'bridge_name', 'bridge_to_lan', 'emulation_ip'))
 SPLIT_GW = namedtuple('SPLIT_GW', (
-    'entity_net_acc', 'entity_phy', 'opensand_id', 'tap_name', 'bridge_name',
+    'entity_net_acc', 'entity_phy', 'opensand_id', 'tap_mac', 'tap_name', 'bridge_name',
     'bridge_to_lan', 'emulation_ip', 'interconnect_ip_net_acc', 'interconnect_ip_phy'))
 
 
@@ -105,14 +105,12 @@ def access_opensand(satellite, gateways, terminals, configuration_files=None, sc
             continue  # TODO: fail?
         wait += _opensand_network_implementation(gateway.bridge_to_lan)(
                 scenario, entity, gateway.bridge_to_lan,
-                gateway.tap_name, gateway.bridge_name,
-                gateway.lan_mac_address)
+                gateway.tap_name, gateway.bridge_name, gateway.tap_mac)
 
     for terminal in terminals:
         wait += _opensand_network_implementation(terminal.bridge_to_lan)(
                 scenario, terminal.entity, terminal.bridge_to_lan,
-                terminal.tap_name, terminal.bridge_name,
-                terminal.lan_mac_address)
+                terminal.tap_name, terminal.bridge_name, terminal.tap_mac)
 
     if configuration_files:
         configuration_per_entity = {
@@ -171,6 +169,8 @@ def access_opensand(satellite, gateways, terminals, configuration_files=None, sc
         opensand.opensand_network_clear(
                 scenario, terminal.entity, terminal.tap_name,
                 terminal.bridge_name, wait_finished=[opensand_run])
+
+    return scenario
 
 
 def build(satellite, gateways, terminals, duration=0, configuration_files=None, scenario_name=SCENARIO_NAME):

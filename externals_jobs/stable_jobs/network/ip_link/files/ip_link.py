@@ -52,6 +52,11 @@ def run_command(cmd):
     return p.returncode, p.stdout.decode()
 
 
+def extend_arguments(cmd, name, argument):
+    if argument is not None:
+        cmd.extend([name, str(argument)])
+
+
 def register_collector():
     success = collect_agent.register_collect(
         '/opt/openbach/agent/jobs/ip_link/'
@@ -63,57 +68,41 @@ def register_collector():
     collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ip_link')
 
 
-def ip_link_add(name, link, txqueuelen, address, broadcast, mtu, type):
-    cmd = ['ip', 'link', 'add', 'name', name,]
-    if link is not None:
-        cmd.extend(['link', link])
-    if txqueuelen is not None:
-        cmd.extend(['txqueuelen', str(txqueuelen)])
-    if address is not None:
-        cmd.extend(['address', address])
-    if broadcast is not None:
-        cmd.extend(['broadcast', broadcast])
-    if mtu is not None:
-        cmd.extend(['mtu', str(mtu)])
+def ip_link_add(name, link, txqueuelen, address, broadcast, mtu, type, **type_args):
+    cmd = ['ip', 'link', 'add', 'name', name]
+    extend_arguments(cmd, 'link', link)
+    extend_arguments(cmd, 'txqueuelen', txqueuelen)
+    extend_arguments(cmd, 'address', address)
+    extend_arguments(cmd, 'broadcast', broadcast)
+    extend_arguments(cmd, 'mtu', mtu)
     cmd.extend(['type', type])
+    for name, value in type_args.items():
+        cmd.extend([name, str(value)])
     run_command(cmd)
 
 
 def ip_link_del(dev, group):
     cmd = ['ip', 'link', 'delete']
-    if dev is not None:
-        cmd.extend(['dev', dev])
-    if group is not None:
-        cmd.extend(['group', group])
+    extend_arguments(cmd, 'dev', dev)
+    extend_arguments(cmd, 'group', group)
     run_command(cmd)
 
 
 def ip_link_set(dev, group, state, arp, dynamic, multicast, txqueuelen, address, broadcast, mtu, netns, master, nomaster):
     cmd = ['ip', 'link', 'set']
-    if dev is not None:
-        cmd.extend(['dev', dev])
-    if group is not None:
-        cmd.extend(['group', group])
+    extend_arguments(cmd, 'dev', dev)
+    extend_arguments(cmd, 'group', group)
     if state is not None:
         cmd.extend([state])
-    if arp is not None:
-        cmd.extend(['arp', arp])
-    if dynamic is not None:
-        cmd.extend(['dynamic', dynamic])
-    if multicast is not None:
-        cmd.extend(['multicast', multicast])
-    if txqueuelen is not None:
-        cmd.extend(['txqueuelen', str(txqueuelen)])
-    if address is not None:
-        cmd.extend(['address', address])
-    if broadcast is not None:
-        cmd.extend(['broadcast', broadcast])
-    if mtu is not None:
-        cmd.extend(['mtu', str(mtu)])
-    if netns is not None:
-        cmd.extend(['netns', netns])
-    if master is not None:
-        cmd.extend(['master', master])
+    extend_arguments(cmd, 'arp', arp)
+    extend_arguments(cmd, 'dynamic', dynamic)
+    extend_arguments(cmd, 'multicast', multicast)
+    extend_arguments(cmd, 'txqueuelen', txqueuelen)
+    extend_arguments(cmd, 'address', address)
+    extend_arguments(cmd, 'broadcast', broadcast)
+    extend_arguments(cmd, 'mtu', mtu)
+    extend_arguments(cmd, 'netns', netns)
+    extend_arguments(cmd, 'master', master)
     if nomaster:
         cmd.extend(['nomaster'])
     run_command(cmd)

@@ -47,13 +47,14 @@ from scenario_builder.scenarios.access_opensand import SAT, GW, SPLIT_GW, ST  # 
 
 
 class Entity:
-    def __init__(self, entity, emulation_ip, bridge_to_lan, opensand_id, tap_name='opensand_tap', bridge_name='opensand_br'):
+    def __init__(self, entity, emulation_ip, bridge_to_lan, opensand_id, tap_name='opensand_tap', bridge_name='opensand_br', tap_mac_address=None):
         self.entity = entity
         self.opensand_id = int(opensand_id)
         self.emulation_ip = validate_ip(emulation_ip)
         self.bridge_to_lan = bridge_to_lan
         self.tap_name = tap_name
         self.bridge_name = bridge_name
+        self.tap_mac_address = tap_mac_address
 
 
 class GatewayPhy:
@@ -139,7 +140,7 @@ def create_gateways(gateways, gateways_phy):
             if gateway.entity == gateway_phy.net_access_entity:
                 yield SPLIT_GW(
                         gateway.entity, gateway_phy.entity,
-                        gateway.opensand_id,
+                        gateway.opensand_id, gateway.tap_mac_address,
                         gateway.tap_name, gateway.bridge_name,
                         gateway.bridge_to_lan, gateway.emulation_ip,
                         gateway_phy.interconnect_net_access,
@@ -148,8 +149,9 @@ def create_gateways(gateways, gateways_phy):
         else:
             yield GW(
                     gateway.entity, gateway.opensand_id,
-                    gateway.tap_name, gateway.bridge_name,
-                    gateway.bridge_to_lan, gateway.emulation_ip)
+                    gateway.tap_mac_address, gateway.tap_name,
+                    gateway.bridge_name, gateway.bridge_to_lan,
+                    gateway.emulation_ip)
 
 
 def main(argv=None):
@@ -160,7 +162,7 @@ def main(argv=None):
             help='The satellite of the platform. Must be supplied only once.')
     observer.add_scenario_argument(
             '--gateway', '-gw', required=True, action=ValidateGateway, nargs='*',
-            metavar='ENTITY EMULATION_IP (BRIDGE_IP | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME]]',
+            metavar='ENTITY EMULATION_IP (BRIDGE_IP | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
             help='A gateway in the platform. Must be supplied at least once.')
     observer.add_scenario_argument(
             '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy,
@@ -170,7 +172,7 @@ def main(argv=None):
             'Optional, can be supplied only once per gateway.')
     observer.add_scenario_argument(
             '--satellite-terminal', '-st', required=True, action=ValidateSatelliteTerminal, nargs='*',
-            metavar='ENTITY EMULATION_IP (BRIDGE_IP | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME]]',
+            metavar='ENTITY EMULATION_IP (BRIDGE_IP | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
             help='A satellite terminal in the platform. Must be supplied at least once.')
     observer.add_scenario_argument(
             '--duration', '-d', required=False, default=0, type=int,
@@ -186,7 +188,11 @@ def main(argv=None):
 
     gateways = list(create_gateways(args.gateway, args.gateway_phy or []))
     terminals = [
-            ST(st.entity, st.opensand_id, st.tap_name, st.bridge_name, st.bridge_to_lan, st.emulation_ip)
+            ST(
+                st.entity, st.opensand_id,
+                st.tap_mac_address,
+                st.tap_name, st.bridge_name,
+                st.bridge_to_lan, st.emulation_ip)
             for st in args.satellite_terminal
     ]
     satellite = SAT(args.sat.entity, args.sat.ip)

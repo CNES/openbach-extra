@@ -46,6 +46,7 @@ import argparse
 import ipaddress
 import threading
 import subprocess
+import os.path as path
 
 import collect_agent
 
@@ -320,32 +321,28 @@ if __name__ == '__main__':
         '/opt/openbach/agent/jobs/opensand/opensand_rstats_filter.conf',
     )
 
-    command = None
+    command = [path.join(args.bin_dir, 'opensand-{}'.format(args.entity))]
     if args.entity == 'sat':
-        command = [
-            '{}/{}'.format(args.bin_dir, args.entity),
+        command += [
             '-a', args.emu_addr,
             '-c', args.conf_dir,
         ]
     elif args.entity in [ 'st', 'gw' ]:
-        command = [
-            '{}/{}'.format(args.bin_dir, args.entity),
+        command += [
             '-i', str(args.id),
             '-a', args.emu_addr,
             '-t', args.tap_name,
             '-c', args.conf_dir,
         ]
     elif args.entity == 'gw-net-acc':
-        command = [
-            '{}/{}'.format(args.bin_dir, args.entity),
+        command += [
             '-i', str(args.id),
             '-t', args.tap_name,
             '-w', args.interco_addr,
             '-c', args.conf_dir,
         ]
     elif args.entity == 'gw-phy':
-        command = [
-            '{}/{}'.format(args.bin_dir, args.entity),
+        command += [
             '-i', str(args.id),
             '-a', args.emu_addr,
             '-w', args.interco_addr,
