@@ -26,6 +26,7 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
+import itertools
 import ipaddress
 from collections import namedtuple
 
@@ -119,6 +120,7 @@ def access_opensand(satellite, gateways, terminals, configuration_files=None, sc
                 'gw': [],
                 None: [],
         }
+        scenario_files = Scenario(scenario_name + '_files', SCENARIO_DESCRIPTION)
 
         for config_file in configuration_files:
             entity = config_file.parts[0]
@@ -137,19 +139,23 @@ def access_opensand(satellite, gateways, terminals, configuration_files=None, sc
             groups = ['root'] * len(local_files)
             return remote_files, local_files, users, groups
 
-        wait += push_file(scenario, satellite.entity, *_build_remote_and_users('sat'))
+        push_file(scenario_files, satellite.entity, *_build_remote_and_users('sat'))
 
         files = _build_remote_and_users('gw')
         for gateway in gateways:
             if isinstance(gateway, GW):
-                wait += push_file(scenario, gateway.entity, *files)
+                push_file(scenario_files, gateway.entity, *files)
             elif isinstance(gateway, SPLIT_GW):
-                wait += push_file(scenario, gateway.entity_net_acc, *files)
-                wait += push_file(scenario, gateway.entity_phy, *files)
+                push_file(scenario_files, gateway.entity_net_acc, *files)
+                push_file(scenario_files, gateway.entity_phy, *files)
 
         files = _build_remote_and_users('st')
         for terminal in terminals:
-            wait += push_file(scenario, terminal.entity, *files)
+            push_file(scenario_files, terminal.entity, *files)
+
+        push_files = scenario.add_function('start_scenario_instance', wait_finished=wait)
+        push_files.configure(scenario_files)
+        wait = [push_files]
 
     opensand_run = scenario.add_function('start_scenario_instance', wait_finished=wait)
     opensand_run.configure(run(satellite, gateways, terminals, scenario_name + '_run'))

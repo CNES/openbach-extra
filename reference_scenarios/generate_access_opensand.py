@@ -32,6 +32,7 @@ from /openbach-extra/apis/scenario_builder/scenarios/
 """
 
 
+import time
 import argparse 
 import tempfile
 import warnings
@@ -214,6 +215,7 @@ def main(argv=None):
                 pusher.args.local_file = local_file
                 pusher.args.remote_path = config_file.as_posix()
                 pusher.execute(False)
+            time.sleep(0.1)
 
     scenario = access_opensand.build(
             satellite, gateways, terminals,
