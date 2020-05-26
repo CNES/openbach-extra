@@ -69,3 +69,13 @@ def dash_client(
             dst_ip=server_ip, protocol=protocol, duration=duration)
 
     return [client]
+
+
+def dash_server(scenario, server_entity, wait_finished=None, wait_launched=None, wait_delay=0):
+    server = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    server.configure('dash player&server', server_entity, offset=0)
+    return [server]

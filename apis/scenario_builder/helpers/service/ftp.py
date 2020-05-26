@@ -127,3 +127,42 @@ def ftp_multiple(
     stopper.configure(server)
 
     return [server]
+
+
+def ftp_server(
+        scenario, server_entity, server_ip, port,
+        ftp_user=None, ftp_password=None,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    server = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    server.configure(
+            'ftp_srv', server_entity,
+            server_ip=server_ip,
+            port=port, user=ftp_user,
+            password=ftp_password)
+    return [server]
+
+
+def ftp_client(
+        scenario, client_entity, server_ip, port, mode,
+        file_path, ftp_user=None, ftp_password=None, blocksize=None,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    client = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    client.configure(
+            'ftp_clt', client_entity,
+            server_ip=server_ip,
+            port=port, user=ftp_user,
+            password=ftp_password,
+            blocksize=blocksize,
+            mode=mode,
+            own={
+                'file_path': file_path,
+            })
+    return [client]
