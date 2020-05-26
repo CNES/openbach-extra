@@ -183,7 +183,7 @@ def build(satellite, gateways, terminals, duration=0, configuration_files=None, 
     scenario = access_opensand(satellite, gateways, terminals, configuration_files, scenario_name)
 
     if duration:
-        scenario_run, = (s for s in scenario.openbach_functions if isinstance(s, StartScenarioInstance))
+        *_, scenario_run = (s for s in scenario.openbach_functions if isinstance(s, StartScenarioInstance))
         jobs = [f for f in scenario_run.openbach_functions if isinstance(f, StartJobInstance)]
         scenario_run.add_function('stop_job_instance', wait_launched=jobs, wait_delay=duration).configure(*jobs)
 
