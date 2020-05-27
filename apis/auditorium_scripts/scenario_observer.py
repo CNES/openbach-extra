@@ -61,7 +61,11 @@ MAX_RETRIES_STATUS = 5
 class ScenarioObserver(FrontendBase):
     def __init__(self, **default_run_arguments):
         super().__init__('OpenBACH — Run a scenario and post-process stats')
-        self._last_instance = {'scenario_instance_id': -1}
+        self._last_instance = {
+                'scenario_instance_id': -1,
+                'scenario_name': None,
+                'openbach_functions': [],
+        }
         self._default_arguments = default_run_arguments
         self.build_parser()
 
@@ -304,6 +308,17 @@ class DataProcessor:
                 observer.args.influxdb_port,
                 observer.args.database_name,
                 observer.args.time)
+
+    @property
+    def instance(self):
+        return self._instance
+
+    @instance.setter
+    def instance(self, _instance):
+        for attribute in ('scenario_name', 'scenario_instance_id', 'openbach_functions'):
+            if attribute not in _instance:
+                raise TypeError('instance is expected to be an OpenBach scenario instance')
+        self._instance = _instance
 
     def add_callback(self, label, callback, openbach_functions):
         ids = tuple(
