@@ -116,10 +116,10 @@ def main(argv=None):
             '--bandwidth-client-to-server', '-b', required=True,
             help='Bandwidth allocated for the client to ask the server')
     observer.add_scenario_argument(
-            '--delay-server-to-client', '-D', required=True,
+            '--delay-server-to-client', '-D', required=True, type=int,
             help='Delay for a packet to go from the server to the client')
     observer.add_scenario_argument(
-            '--delay-client-to-server', '-d', required=True,
+            '--delay-client-to-server', '-d', required=True, type=int,
             help='Delay for a packet to go from the client to the server')
     observer.add_scenario_argument(
             '--server-ip', '-I', required=True,
