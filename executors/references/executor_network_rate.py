@@ -39,18 +39,18 @@ def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
-            help='name of the entity for the server iperf3/nuttcp/d-itg_send')
+            help='name of the entity for the server iperf3/nuttcp')
     observer.add_scenario_argument(
             '--client-entity', required=True,
-            help='name of the entity for the client iperf3/nuttcp/d-itg_recv')
+            help='name of the entity for the client iperf3/nuttcp')
     observer.add_scenario_argument(
             '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--server-port', default=7001,  help='The iperf3/nuttcp/d-itg server port for data')
+            '--server-port', default=7001,  help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
-            '--command-port', default=7000, help='The port of nuttcp/d-itg server for signalling')
+            '--command-port', default=7000, help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
-            '--duration', default=30, help='duration of iperf3/nuttcp/d-itg tests')
+            '--duration', default=30, help='duration of iperf3/nuttcp tests')
     observer.add_scenario_argument(
             '--rate-limit', help='Set a higher rate (in kb/s) than what you estimate between server and client '
             'for the UDP test (add M/G to set M/G b/s)', required=True)
