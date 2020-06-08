@@ -296,7 +296,14 @@ class ScenarioObserver(FrontendBase):
 
 
 class DataProcessor:
+    """Helper class that retrieves data from scenario instances
+    and ease information extraction.
+    """
     def __init__(self, observer, scenario_instance=None):
+        """Associate this instance to a ScenarioObserver in order
+        to access a collector. Optionally associate a scenario instance
+        or get the last instance of the collector if not.
+        """
         if scenario_instance is None:
             scenario_instance = observer._last_instance
 
@@ -321,6 +328,17 @@ class DataProcessor:
         self._instance = _instance
 
     def add_callback(self, label, callback, openbach_functions):
+        """Register a callback to be run on the data gathered from the collector.
+
+        The data returned from the callback will be accessible under the provided
+        label as a key in the returned dictionnary from the `post_processing` method.
+
+        The `openbach_functions` to provide are a list of openbach function IDs
+        going through the start_scenario_instance openbach functions down to the
+        target start_job_instance openbach_function that the callback should
+        operate on. This is meant to accept an entry from a call to the scenario
+        builder's `Scenario.extract_function_id` call.
+        """
         ids = tuple(
                 str(function.scenario_name) if hasattr('scenario_name', function) else function
                 for function in openbach_functions)
@@ -336,6 +354,7 @@ class DataProcessor:
                 yield function['job']['id'], callback
 
     def post_processing(self):
+        """Actually fetches the raw data from the collector and run callbacks on them"""
         callbacks = dict(self._extract_callback(self._instance))
 
         try:
