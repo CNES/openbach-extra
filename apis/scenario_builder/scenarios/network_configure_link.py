@@ -27,8 +27,8 @@
 #   this program. If not, see http://www.gnu.org/licenses/.
 
 from scenario_builder import Scenario
-from scenario_builder.helpers.network.configure_link import configure_link_apply
-from scenario_builder.helpers.network.configure_link import configure_link_clear
+from scenario_builder.helpers.network.tc_configure_link import tc_configure_link_apply
+from scenario_builder.helpers.network.tc_configure_link import tc_configure_link_clear
 from inspect import signature
 
 SCENARIO_NAME = 'network_configure_link'
@@ -39,27 +39,27 @@ Many link characteristiscs can be emulated including: bandwidth, delay, jitter a
 
 
 
-def configure_link_scenario_apply(
+def tc_configure_link_scenario_apply(
         entity, ifaces, mode, bandwidth, delay_distribution,
         delay, jitter, loss_model, loss_model_params,
         buffer_size, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format('Apply'))
-    configure_link_apply(
+    tc_configure_link_apply(
             scenario, entity, ifaces, mode, bandwidth, delay_distribution,
             delay, jitter, loss_model, loss_model_params, buffer_size)
     return scenario
 
 
-def configure_link_scenario_clear(entity, ifaces, mode, scenario_name=SCENARIO_NAME):
+def tc_configure_link_scenario_clear(entity, ifaces, mode, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format('Clear'))
-    configure_link_clear(scenario, entity, ifaces, mode)
+    tc_configure_link_clear(scenario, entity, ifaces, mode)
     return scenario
 
 
 def build(entity, ifaces, mode, operation, bandwidth=None, delay=0, jitter=0,
           delay_distribution='normal', loss_model='random', loss_model_params=[0.0],
           buffer_size=10000, scenario_name=SCENARIO_NAME):
-    scenario = configure_link_scenario_clear(entity, ifaces, mode) if operation != 'apply' else configure_link_scenario_apply (
+    scenario = tc_configure_link_scenario_clear(entity, ifaces, mode) if operation != 'apply' else tc_configure_link_scenario_apply (
             entity, ifaces, mode, bandwidth, delay_distribution,
             delay, jitter, loss_model, loss_model_params, buffer_size)
 

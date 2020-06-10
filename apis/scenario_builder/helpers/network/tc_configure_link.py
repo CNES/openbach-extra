@@ -26,12 +26,12 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of configure_link job """
+""" Helpers of tc_configure_link job """
 
 from ..utils import filter_none
 
 
-def configure_link_apply_delay(
+def tc_configure_link_apply_delay(
         scenario, entity, interface, mode, delay_distribution,
         delay, jitter=None, buffer_size=10000,
         wait_finished=None, wait_launched=None, wait_delay=0):
@@ -46,14 +46,14 @@ def configure_link_apply_delay(
             delay_distribution=delay_distribution,
             buffer_size=buffer_size, jitter=jitter)
     function.configure(
-            'configure_link', entity,
+            'tc_configure_link', entity,
             interface_name=interface, 
             apply=apply_params)
 
     return [function]
 
 
-def configure_link_apply_loss(
+def tc_configure_link_apply_loss(
         scenario, entity, interface, mode, loss_model, loss_model_params,
         wait_finished=None, wait_launched=None, wait_delay=0):
     function = scenario.add_function(
@@ -68,14 +68,14 @@ def configure_link_apply_loss(
             'loss_model_params': loss_model_params,
     }
     function.configure(
-            'configure_link', entity,
+            'tc_configure_link', entity,
             interface_name=interface, 
             apply=apply_params)
  
     return [function]
 
 
-def configure_link_apply(
+def tc_configure_link_apply(
         scenario, entity, interface, mode, bandwidth=None,
         delay_distribution='normal', delay=0, jitter=0,
         loss_model='random', loss_model_params=[0.0], buffer_size=10000,
@@ -97,14 +97,14 @@ def configure_link_apply(
             'bandwidth': bandwidth,
     })
     function.configure(
-            'configure_link', entity,
+            'tc_configure_link', entity,
             interface_name=interface,
             apply=apply_params)
  
     return [function]
 
 
-def configure_link_clear(
+def tc_configure_link_clear(
         scenario, entity, interface, mode,
         wait_finished=None, wait_launched=None, wait_delay=0):
     function = scenario.add_function(
@@ -113,7 +113,7 @@ def configure_link_clear(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     function.configure(
-            'configure_link', entity,
+            'tc_configure_link', entity,
             interface_name=interface, 
             clear={'mode': mode})
 
