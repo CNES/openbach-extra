@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,44 +27,43 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario builds and launches the *network_qos* scenario
+"""This executor builds or launches the *network_one_way_delay* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
+It uses the owamp test of perfsonar project to get a network one way delay
 """
 
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios import network_qos
+from scenario_builder.scenarios import network_one_way_delay
 
 
-def main(scenario_name='network_qos', argv=None):
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--entity', '--entity', required=True,
-            help='Name of the entity to place the scheduler')
+            '--server-entity', required=True,
+            help='name of the entity for the server of the owamp RTT test')
     observer.add_scenario_argument(
-            '--interface', '--network_interface', required=True,
-            help='The interface on the entity to place the scheduler')
+            '--client-entity', required=True,
+            help='name of the entity for the client of the RTT tests')
     observer.add_scenario_argument(
-            '--action', choices=['add', 'remove'], required=True,
-            help='Add a new scheduler or remove the existing one')
+            '--server-ip', required=True, help='server ip address and target of owamp and d-itg test')
     observer.add_scenario_argument(
-            '--path',
-            help='The path to the scheduler configuartion file, on the entity, mandatory if action is add')
-    
-    args = observer.parse(argv, scenario_name)
+            '--client-ip', required=True, help='client ip address of d-itg test')
+    observer.add_scenario_argument(
+            '--post-processing-entity', help='The entity where the post-processing will be '
+            'performed (histogram/time-series jobs must be installed) if defined')
 
-    if args.action == "add":
-        if not args.path:
-            raise AttributeError("Path must be specified if the action is add")
+    args = observer.parse(argv, network_one_way_delay.SCENARIO_NAME)
 
-    scenario = network_qos.build(
-                args.entity,
-                args.interface,
-                args.action,
-                args.path,
-    )
+    scenario = network_one_way_delay.build(
+                      args.server_entity,
+                      args.client_entity,
+                      args.server_ip,
+                      args.client_ip,
+                      args.post_processing_entity,
+                      scenario_name=args.scenario_name)
+
     observer.launch_and_wait(scenario)
-
 
 if __name__ == '__main__':
     main()

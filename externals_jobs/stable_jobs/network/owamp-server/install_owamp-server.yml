@@ -38,23 +38,22 @@
     dest: /etc/apt/sources.list.d/perfsonar-jessie-release.list
     mode: 0440
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Download and add apt repository key
   apt_key:
     url: http://downloads.perfsonar.net/debian/perfsonar-debian-official.gpg.key
     state: present
   become: yes
+  environment: "{{ openbach_proxies }}"
 
-- name: Update apt packages
-  apt:
-    update_cache: yes
-  become: yes
-  
 - name: Install owamp-server
   apt: 
-    name=owamp-server
-    state=present
+    name: owamp-server
+    state: present
+    update_cache: yes
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - service:
     name: owamp-server

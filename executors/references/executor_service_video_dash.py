@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,52 +27,50 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+"""This executor builds or launches the *service_video_dash* scenario
+from from /openbach-extra/apis/scenario_builder/scenarios/
+It launches one DASH flow with the specified parameters
+"""
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_video_dash
 
-"""This scenario launches one DASH flow with the specified parameters"""
 
-def main():
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--src_entity', required=True,
-            help='name of the source entity for the DASH traffic')
+            '--server-entity', required=True,
+            help='name of the source entity which sends the DASH traffic')
     observer.add_scenario_argument(
-            '--dst_entity', required=True,
-            help='name of the destination entity for the DASH traffic')
+            '--client-entity', required=True,
+            help='name of the entity which receives the DASH traffic')
     observer.add_scenario_argument(
-            '--src_ip', required=True,
+            '--server-ip', required=True,
             help='source ip address for the DASH traffic')
     observer.add_scenario_argument(
-            '--protocol', required=True,
+            '--duration', required=True,
+            help='duration of DASH traffic transmission')
+    observer.add_scenario_argument(
+            '--protocol', default='http/2',
             help='protocol used by DASH. Possible values are http/1.1 and http/2')
     observer.add_scenario_argument(
-            '--duration', required=True,
-            help='duration of VoIP transmission')
+            '--launch-server', default=True,
+            help='Launch video dash server or not. Optional. Default : True')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be performed '
+            '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse()
-
-    extra_args = []
-    extra_args.append("dash")
-    extra_args.append("dash")
-    extra_args.append(args.src_entity)
-    extra_args.append(args.dst_entity)
-    extra_args.append(args.duration)
-    extra_args.append("None")
-    extra_args.append("None")
-    extra_args.append("0")
-    extra_args.append(args.src_ip)
-    extra_args.append(".")
-    extra_args.append(args.protocol)
+    args = observer.parse(argv, service_video_dash.SCENARIO_NAME)
 
     scenario = service_video_dash.build(
-            args.entity_pp,
-            extra_args,
-            True,
-            scenario_name="service")
+            args.server_entity,
+            args.client_entity,
+            args.server_ip,
+            args.duration,
+            args.protocol,
+            args.launch_server,
+            args.post_processing_entity,
+            scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
 

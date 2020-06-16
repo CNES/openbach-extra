@@ -39,6 +39,7 @@
   with_items:
     - ethtool
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install the ethtool Job
   copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}

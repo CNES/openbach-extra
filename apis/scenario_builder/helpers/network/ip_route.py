@@ -28,30 +28,27 @@
 
 """ Helpers of ip_route job """
 
-def ip_route(
-       scenario, entity, operation, destination_ip, gateway_ip=None, 
-       device=None, initcwnd=None, initrwnd=None, wait_finished=None, 
-       wait_launched=None, wait_delay=0):
-    route_config = scenario.add_function(
-                'start_job_instance',
-                wait_finished=wait_finished,
-                wait_launched=wait_launched,
-                wait_delay=wait_delay
-    )
-    
-    parameters={
-                'operation': operation,
-                'offset': 0,
-                'initcwnd': initcwnd,
-                'initrwnd': initrwnd
-    }
+from ..utils import filter_none
 
-    parameters = {k:v for k,v in parameters.items() if v is not None}
-    
-    if gateway_ip:
-       parameters['gateway_ip']=gateway_ip
-    if device:
-       parameters['device']=device
+
+def ip_route(
+        scenario, entity, operation, destination_ip,
+        gateway_ip=None, device=None, initcwnd=None, initrwnd=None,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    route_config = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+
+    parameters = filter_none(
+            operation=operation,
+            offset=0,
+            initcwnd=initcwnd,
+            initrwnd=initrwnd,
+            gateway_ip=gateway_ip,
+            device=device)
+
     if destination_ip == 'default':
        parameters['default']={}
     else:

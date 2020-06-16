@@ -39,6 +39,7 @@
     - twinkle
     - alsa-utils
   become: yes
+  environment: "{{ openbach_proxies }}"
     
 - name: Create twinkle_voip repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755

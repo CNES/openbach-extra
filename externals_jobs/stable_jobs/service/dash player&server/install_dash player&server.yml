@@ -41,10 +41,12 @@
 - name: Install tornado
   pip: name=tornado executable=pip3
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install curl
   apt: name=curl state=present
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install Dash
   copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/dash_player_server/ mode={{ item.mode }}
@@ -76,18 +78,22 @@
     - software-properties-common
     - python-software-properties
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Add specified repository into sources list
   apt_repository: repo="ppa:ondrej/apache2" state=present update_cache=yes
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install apache2
   apt: name=apache2 state=latest
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install pyOpenSSL
   pip: name=pyopenssl executable=pip2 state=present
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
   openssl_privatekey:
@@ -169,15 +175,12 @@
     - "BigBuckBunny 2sec bunny_1546902bps"
     - "BigBuckBunny 2sec bunny_4219897bps"
   become: yes
+  environment: "{{ openbach_proxies }}"
 
-- name: Stop apache2 
-  service:
+- name: Stop apache2 and Prevent it from Automatically Starting at Boot
+  systemd:
     name: apache2
     state: stopped
-  become: yes
-  ignore_errors: yes
-
-- name: Prevent apache2 to automatically starting at boot
-  command: systemctl disable apache2
+    enabled: no
   become: yes
 

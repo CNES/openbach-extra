@@ -42,12 +42,14 @@
     deb: https://dl.google.com/linux/direct/google-chrome-stable_current_{{ 'amd64' if cpu_arch.stdout == "x86_64" else 'i386' }}.deb
     force: yes
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install unzip
   apt:
     name: unzip
     state: present
   become: yes
+  environment: "{{ openbach_proxies }}"
     
 - name: Install Chrome Driver
   unarchive: 
@@ -56,10 +58,12 @@
     creates: /usr/local/bin/chromedriver
     remote_src: yes
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install Selenium for python3
   pip: name=selenium executable=pip3 state=present
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Create facebook repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
@@ -87,5 +91,3 @@
     - { file: 'facebook.py', mode: '0755' }
     - { file: 'facebook_rstats_filter.conf', mode: '0644' }
     - { file: 'config.yaml', mode: '0644' }
-
-  

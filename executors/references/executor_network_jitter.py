@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,55 +27,69 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This script launches the *network_jitter* scenario
+"""This executor builds or launches the *network_jitter* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
+It launches two tools to get jitter from the network.
 """
-
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_jitter
 
 
-def main(scenario_name='generate_network_jitter', argv=None):
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--clt_entity', '--clt', required=True,
-            help='name of the entity for the client of the RTT tests')
-    observer.add_scenario_argument(
-            '--srv_entity', '--srv', required=True,
+            '--server-entity', required=True,
             help='name of the entity for the server of the owamp RTT test')
     observer.add_scenario_argument(
-            '--srv_ip', required=True, help='server ip address and target of the pings')
+            '--client-entity', required=True,
+            help='name of the entity for the client of the RTT tests')
     observer.add_scenario_argument(
-            '--srv_port', default=7000, help='the iperf3 server port for data')
+            '--server-ip', required=True,
+            help='server ip address and target of the pings')
+    observer.add_scenario_argument(
+            '--server-port', default=7000,
+            help='the iperf3 server port for data')
     observer.add_scenario_argument(
             '--duration', default=10,
             help='the duration of iperf3 test')
     observer.add_scenario_argument(
-            '--num_flows', default=1,
+            '--num-flows', default=1,
             help='the number of flows to launch with iperf3')
-    observer.add_scenario_argument(
-            '--tos', default=0,
-            help='the ToS of iperf3 test')
     observer.add_scenario_argument(
             '--bandwidth', default='1M',
             help='the bandwidth (bits/s) of iperf3 test ')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be '
+            '--tos', default=0,
+            help='the ToS of iperf3 test')
+    observer.add_scenario_argument(
+            '--count', default=100,
+            help='The number of owamp packets to send')
+    observer.add_scenario_argument(
+            '--interval', default='0.1e',
+            help='The mean average time between owamp packets (specify seconds and distribution type)'
+            'If e: random exponential distribution. If f: constant distribution')
+    observer.add_scenario_argument(
+            '--post-processing-entity',
+            help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse(argv, scenario_name)
+    args = observer.parse(argv, network_jitter.SCENARIO_NAME)
 
     scenario = network_jitter.build(
-                      args.clt_entity,
-                      args.srv_entity,
-                      args.srv_ip,
-                      args.srv_port,
+                      args.server_entity,
+                      args.client_entity,
+                      args.server_ip,
+                      args.server_port,
                       args.duration,
                       args.num_flows,
-                      args.tos,
                       args.bandwidth,
-                      args.entity_pp)
+                      args.tos,
+                      args.count,
+                      args.interval,
+                      args.post_processing_entity,
+                      scenario_name=args.scenario_name)
+
     observer.launch_and_wait(scenario)
 
 

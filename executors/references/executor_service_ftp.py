@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,57 +27,60 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario launches the *service_ftp* scenario
+"""This executor builds or launches the *service_ftp_rate* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
+Real Ftp server and client with download or upload of a file.
 """
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_ftp
 
-def main(scenario_name='generate_service_ftp', argv=None):
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--client', '--client-entity', '-c', required=True,
-            help='name of the entity for the FTP client')
-    observer.add_scenario_argument(
-            '--server', '--server-entity', '-s', required=True,
+            '--server-entity', required=True,
             help='name of the entity for the FTP server')
     observer.add_scenario_argument(
-            '--ip_srv', '-i', required=True, help='The server IP address')
-    observer.add_scenario_argument('--mode', required = True,
-            choices=['upload', 'download'], help = 'upload or download')
+            '--client-entity', required=True,
+            help='name of the entity for the FTP client')
     observer.add_scenario_argument(
-            '--port', default = 2121,  help = 'Listened port (default = 2121)')
+            '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--user', default = 'openbach',  help = 'Authorized FTP user')
+            '--server-port', default=2121, help='Listened port (default = 2121)')
     observer.add_scenario_argument(
-            '--psswrd', default = 'openbach',  help = "Authorized FTP user's password")
+            '--mode', required=True,
+            choices=['upload', 'download'], help='upload or download')
     observer.add_scenario_argument(
-            '--multiple', type = int, default = 1, help = 'Number of transfer of the file')
+            '--file-path', default='100M_file.txt', help='File path to transfer')
     observer.add_scenario_argument(
-            '--file_path', required = True, help = 'File path to transfer')
+            '--multiple', type=int, default=1, help='Number of transfer of the file')
     observer.add_scenario_argument(
-            '--blocksize', default = 8192, help = 'Set maximum chunk size  (default = 8192)')
+            '--ftp-user', default='openbach', help='Authorized FTP user')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be '
+            '--ftp-password', default='openbach', help="Authorized FTP user's password")
+    observer.add_scenario_argument(
+            '--blocksize', default=8192, help='Set maximum chunk size  (default = 8192)')
+    observer.add_scenario_argument(
+            '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse(argv, scenario_name)
+    args = observer.parse(argv, service_ftp.SCENARIO_NAME)
 
     scenario = service_ftp.build(
-            args.client,
-            args.server,
-            args.ip_srv,
-            args.port,
+            args.server_entity,
+            args.client_entity,
+            args.server_ip,
+            args.server_port,
             args.mode,
             args.file_path,
             args.multiple,
-            args.user,
-            args.psswrd,
+            args.ftp_user,
+            args.ftp_password,
             args.blocksize,
-            args.entity_pp)
+            args.post_processing_entity,
+            scenario_name=args.scenario_name)
+
     observer.launch_and_wait(scenario)
 
 if __name__ == '__main__':
     main()
-

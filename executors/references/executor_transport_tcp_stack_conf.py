@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,13 +27,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario builds and launches the *transport_tcp_stack_conf* scenario
+"""This executor builds and launches the *transport_tcp_stack_conf* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
 
 If reset option is set, the sysctl and CUBIC parameters are reset to the value
 they had at the installation of the job of tcp_conf_linux. Then the parameters
 are updated only if a new value is set in the arguments. More information on
-the wiki page of the job tcp_conf_linux.
+the wiki page of the job tcp_conf_linux :
+https://wiki.net4sat.org/doku.php?id=openbach:exploitation:jobs:tcpconflinux_2.0
 
 The job ip_route needs the following arguments to run:
 - dest_ip
@@ -48,7 +49,7 @@ from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import transport_tcp_stack_conf
 
 
-def main(scenario_name=None, argv=None):
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--entity', required=True,
@@ -104,7 +105,7 @@ def main(scenario_name=None, argv=None):
             help='The core_rmem_max field')
 
     observer.add_scenario_argument(
-            '--congestion_control', required=True, type=str,
+            '--congestion-control', required=True, type=str,
             help='Congestion control name')
 
     observer.add_scenario_argument(
@@ -133,16 +134,16 @@ def main(scenario_name=None, argv=None):
             help='The initial_ssthresh field of CUBIC (only used when congestion_control is CUBIC')
 
     observer.add_scenario_argument(
-            '--iface', '--network_interface',
+            '--iface', '--network-interface',
             help='Interface to configure segementation offload on')
     observer.add_scenario_argument(
-            '--dest_ip', '--destination_ip',
+            '--dest-ip', '--destination-ip',
             help='Ip address of the destination network')
     observer.add_scenario_argument(
             '--operation', choices=["add", "change", "delete"],
             help='Select the operation to apply')
     observer.add_scenario_argument(
-            '--gw_ip', '--gateway_ip',
+            '--gw-ip', '--gateway-ip',
             help='Ip address of the gateway')
     observer.add_scenario_argument(
             '--dev', '--device',
@@ -153,8 +154,8 @@ def main(scenario_name=None, argv=None):
     observer.add_scenario_argument(
             '--irwnd', '--initrwnd', type=str,
             help='Initial receive window size for connections to specified destination')
-    
-    args = observer.parse(argv, scenario_name)
+
+    args = observer.parse(argv, transport_tcp_stack_conf.SCENARIO_NAME)
 
     tcp_params = {'reset':args.reset,
              'tcp_slow_start_after_idle':args.tcp_slow_start_after_idle,
@@ -215,10 +216,10 @@ def main(scenario_name=None, argv=None):
                 tcp_params,
                 tcp_subparams,
                 args.iface,
-                route
-    )
-    observer.launch_and_wait(scenario)
+                route,
+                scenario_name=args.scenario_name)
 
+    observer.launch_and_wait(scenario)
 
 if __name__ == '__main__':
     main()

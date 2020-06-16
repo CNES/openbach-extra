@@ -28,102 +28,80 @@
 
 """ Helpers of rate_monitoring job """
 
+from ..utils import filter_none
+
+
 def rate_monitoring(
-        scenario, entity, interval, chain_name, source_ip=None, destination_ip=None, 
-        in_iface=None, out_iface=None, wait_finished=None, wait_launched=None, wait_delay=0):
+        scenario, entity, interval, chain_name, source_ip=None,
+        destination_ip=None, in_iface=None, out_iface=None,
+        wait_finished=None, wait_launched=None, wait_delay=0):
     function = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    params = {'interval':interval, 
-              'chain_name':chain_name,
-              'source_ip':source_ip,
-              'destination_ip':destination_ip,
-              'in-interface':in_iface,
-              'out-interface':out_iface}
-    params = {key:value for key, value in params.items() if value is not None}
-    function.configure(
-            'rate_monitoring', entity,
-            **params) 
+    parameters = filter_none(
+            {'in-interface': in_iface, 'out-interface': out_iface},
+            interval=interval, chain_name=chain_name,
+            source_ip=source_ip, destination_ip=destination_ip)
+    function.configure('rate_monitoring', entity, **parameters) 
 
     return [function]
+
 
 def tcp_rate_monitoring(
-        scenario, entity, interval, chain_name, source_ip=None, destination_ip=None, 
-        in_iface=None, out_iface=None, dport=None, sport=None, 
+        scenario, entity, interval, chain_name, source_ip=None,
+        destination_ip=None, in_iface=None, out_iface=None,
+        destination_port=None, source_port=None, 
         wait_finished=None, wait_launched=None, wait_delay=0):
     function = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    params = {'interval':interval, 
-              'chain_name':chain_name,
-              'source_ip':source_ip,
-              'destination_ip':destination_ip,
-              'in-interface':in_iface,
-              'out-interface':out_iface}
-    params = {key:value for key, value in params.items() if value is not None}
-    tcp_params = {'dport':dport, 
-                  'sport':sport}
-    tcp_params = {key:value for key, value in tcp_params.items() if value is not None}
-       
-    function.configure(
-            'rate_monitoring', entity,
-            **params,
-            tcp=tcp_params) 
+    parameters = filter_none(
+            {'in-interface': in_iface, 'out-interface': out_iface},
+            interval=interval, chain_name=chain_name,
+            source_ip=source_ip, destination_ip=destination_ip)
+    tcp_parameters = filter_none(dport=destination_port, sport=source_port)
+    function.configure('rate_monitoring', entity, **parameters, tcp=tcp_params) 
 
     return [function]
+
  
 def udp_rate_monitoring(
-       scenario, entity, interval, chain_name, source_ip=None, destination_ip=None, 
-        in_iface=None, out_iface=None, dport=None, sport=None, 
+        scenario, entity, interval, chain_name, source_ip=None,
+        destination_ip=None, in_iface=None, out_iface=None,
+        destination_port=None, source_port=None, 
         wait_finished=None, wait_launched=None, wait_delay=0):
     function = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    params = {'interval':interval, 
-              'chain_name':chain_name,
-              'source_ip':source_ip,
-              'destination_ip':destination_ip,
-              'in-interface':in_iface,
-              'out-interface':out_iface}
-    params = {key:value for key, value in params.items() if value is not None}
-    udp_params = {'dport':dport, 
-                  'sport':sport}
-    udp_params = {key:value for key, value in tcp_params.items() if value is not None}
-       
-    function.configure(
-            'rate_monitoring', entity,
-            **params,
-            udp=udp_params) 
+    parameters = filter_none(
+            {'in-interface': in_iface, 'out-interface': out_iface},
+            interval=interval, chain_name=chain_name,
+            source_ip=source_ip, destination_ip=destination_ip)
+    udp_parameters = filter_none(dport=destination_port, sport=source_port)
+    function.configure('rate_monitoring', entity, **parameters, udp=udp_params) 
 
     return [function]
 
 
 def icmp_rate_monitoring(
-       scenario, entity, interval, chain_name, source_ip=None, destination_ip=None, 
-        in_iface=None, out_iface=None, dport=None, sport=None, 
+        scenario, entity, interval, chain_name, source_ip=None,
+        destination_ip=None, in_iface=None, out_iface=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     function = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    params = {'interval':interval, 
-              'chain_name':chain_name,
-              'source_ip':source_ip,
-              'destination_ip':destination_ip,
-              'in-interface':in_iface,
-              'out-interface':out_iface}
-    params = {key:value for key, value in params.items() if value is not None}
-       
-    function.configure(
-            'rate_monitoring', entity,
-            **params,
-            icmp={}) 
+    parameters = filter_none(
+            {'in-interface': in_iface, 'out-interface': out_iface},
+            interval=interval, chain_name=chain_name,
+            source_ip=source_ip, destination_ip=destination_ip)
+    function.configure('rate_monitoring', entity, **parameters, icmp={}) 
 
     return [function]

@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -28,54 +28,62 @@
 
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
+from scenario_builder.helpers.service.dash import dash_client, dash_player_and_server
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
-SCENARIO_DESCRIPTION="""This scenario launches one DASH transfer"""
-SCENARIO_NAME="""service_video_dash"""
+SCENARIO_NAME = 'service_video_dash'
+SCENARIO_DESCRIPTION = """This scenario launches one DASH transfer.
+It can then, optionally, plot the bit rate using time-series and CDF.
+NB : the entities logic is the following :
+    - server sends  DASH content
+    - client requests for and receives DASH content
+"""
 
-def extract_jobs_to_postprocess(scenario):
-    for function_id, function in enumerate(scenario.openbach_functions):
-        if isinstance(function, StartJobInstance):
-            if function.job_name == 'dash player&server':
-                yield function_id
 
-def build(post_processing_entity, args, launch_server=False, scenario_name=SCENARIO_NAME):
-    print("Loading:",scenario_name)
+def video_dash_and_server(server_entity, client_entity, server_ip, duration, protocol, scenario_name=SCENARIO_NAME):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    dash_player_and_server(scenario, server_entity, client_entity, server_ip, duration, protocol)
+    return scenario
 
-    # Create top network_global scenario
-    scenario = Scenario(scenario_name + "_" + args[0], SCENARIO_DESCRIPTION)
 
+def video_dash(client_entity, server_ip, duration, protocol, scenario_name=SCENARIO_NAME):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    dash_client(scenario, client_entity, server_ip, duration, protocol)
+    return scenario
+
+
+def build(server_entity, client_entity, server_ip, duration, protocol, launch_server=False, post_processing_entity=None, scenario_name=SCENARIO_NAME):
     if launch_server:
-        # launching server
-        start_server = scenario.add_function('start_job_instance')
-        start_server.configure('dash player&server', args[2], offset=0)
-
-        # launching traffic
-        start_scenario = scenario.add_function('start_job_instance', wait_launched=[start_server], wait_delay=5)
-        start_scenario.configure(
-                'dash client', args[3], offset=0,
-                 dst_ip=args[8], protocol=args[10], duration=int(args[4]))
-
-        # stopping server
-        stopper = scenario.add_function('stop_job_instance',
-                wait_finished=[start_scenario], wait_delay=5)
-        stopper.configure(start_server)
-
-        if post_processing_entity:
-            post_processed = []
-            legends = []
-            for function_id in extract_jobs_to_postprocess(scenario):
-                post_processed.append([function_id])
-                legends.append(["dash from " + args[2] + " to " + args[3]])
-            if post_processed:
-                time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['bitrate']], [['Rate (b/s)']], [['Rate time series']], legends, [start_scenario], None, 2)
-                cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['bitrate']], [['Rate (b/s)']], [['Rate CDF']], legends, [start_scenario], None, 2)
-
+        scenario = video_dash_and_server(server_entity, client_entity, server_ip, duration, protocol, scenario_name)
     else:
-        start_scenario = scenario.add_function('start_job_instance')
-        start_scenario.configure(
-                'dash client', args[3], offset=0,
-                 dst_ip=args[8], protocol=args[10], duration=int(args[4]))
+        scenario = video_dash(client_entity, server_ip, duration, protocol, scenario_name)
+
+    if launch_server and post_processing_entity is not None:
+        post_processed = list(scenario.extract_function_id('dash player&server'))
+        legends = ['dash from {} to {}'.format(server_entity, client_entity)]
+        jobs = [function for function in scenario.openbach_functions if isinstance(function, StartJobInstance)]
+
+        time_series_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                [['bitrate']],
+                [['Rate (b/s)']],
+                [['Rate time series']],
+                [legends],
+                False,
+                jobs, None, 5)
+        cdf_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                100,
+                [['bitrate']],
+                [['Rate (b/s)']],
+                [['Rate CDF']],
+                [legends],
+                False,
+                jobs, None, 5)
 
     return scenario

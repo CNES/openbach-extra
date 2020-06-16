@@ -39,10 +39,12 @@
     - python-pip
     - xdotool
   become: yes
+  environment: "{{ openbach_proxies }}"
     
 - name: Install Pynput
   pip: name=pynput state=present
   become: yes
+  environment: "{{ openbach_proxies }}"
     
 - name: Create receive_skype repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755

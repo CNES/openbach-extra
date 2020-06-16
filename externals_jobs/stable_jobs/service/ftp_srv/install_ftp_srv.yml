@@ -28,6 +28,7 @@
 - name: Install pyftpdlib
   pip: name=pyftpdlib executable=pip3 
   become: true
+  environment: "{{ openbach_proxies }}"
 
 - name: Create the ftp Job Repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755

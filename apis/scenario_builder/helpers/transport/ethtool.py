@@ -27,7 +27,8 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of ethtool job """
+"""Helpers of ethtool job"""
+
 
 def ethtool_disable_segmentation_offload(
         scenario, entity, interface,
@@ -42,5 +43,6 @@ def ethtool_disable_segmentation_offload(
             interface=interface,
             enable_GSO=False,
             enable_TSO=False)
-    return function
+
+    return [function]
 

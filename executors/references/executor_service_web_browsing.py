@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,65 +27,62 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+"""This executor builds or launches *web_browsing* scenario
+from /openbach-extra/apis/scenario_builder/scenarios/
+ It launches one web_browsing flow with the specified parameters
+ """
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_web_browsing
 
-"""This scenario launches one web_browsing flow with the specified parameters"""
 
-def main():
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--src_entity', required=True,
-            help='name of the source entity for the web_browsing traffic')
+            '--server-entity', required=True,
+            help='name of the server entity which sends the web_browsing traffic')
     observer.add_scenario_argument(
-            '--dst_entity', required=True,
-            help='name of the destination entity for the web_browsing traffic')
+            '--client-entity', required=True,
+            help='name of the client entity which receives the web_browsing traffic')
     observer.add_scenario_argument(
-            '--nb_runs', required=True,
+            '--duration', required=False, type=int,
+            help='duration of Web browsing transmission')
+    observer.add_scenario_argument(
+            '--nb-runs', default=1,
             help='the number of fetches to perform for each website')
     observer.add_scenario_argument(
-            '--nb_parallel_runs', required=True,
+            '--nb-parallel-runs', default=1,
             help='the maximum number of fetches that can work simultaneously')
     observer.add_scenario_argument(
-            '--duration', required=True,
-            help='duration of VoIP transmission')
-    observer.add_scenario_argument(
-            '--no_compression', action = 'store_true', 
+            '--no-compression', action = 'store_true', required = False,
             help = 'Prevent compression for transmission')
     observer.add_scenario_argument(
-            '--proxy_address', type = str, required = False,
+            '--proxy-address', type = str, required = False,
             help = 'Set the proxy address (also needs a proxy port)')
     observer.add_scenario_argument(
-            '--proxy_port', type = int, required = False,
+            '--proxy-port', type = int, required = False,
             help = 'Set the proxy port (also needs a proxy address)')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be performed '
+            '--launch-server', default=True,
+            help='Launch server or not. Optional. Default : True')
+    observer.add_scenario_argument(
+            '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse()
-
-    extra_args = []
-    extra_args.append("web_browsing")
-    extra_args.append("web_browsing")
-    extra_args.append(args.src_entity)
-    extra_args.append(args.dst_entity)
-    extra_args.append(args.duration)
-    extra_args.append("None")
-    extra_args.append("None")
-    extra_args.append("0")
-    extra_args.append(".")
-    extra_args.append(".")
-    extra_args.append(args.nb_runs)
-    extra_args.append(args.nb_parallel_runs)
-    extra_args.append(args.no_compression)
-    extra_args.append(args.proxy_address)
-    extra_args.append(args.proxy_port)
+    args = observer.parse(argv, service_web_browsing.SCENARIO_NAME)
 
     scenario = service_web_browsing.build(
-            args.entity_pp,
-            extra_args,
-            True,
-            scenario_name="service")
+            args.server_entity,
+            args.client_entity,
+            args.duration,
+            args.nb_runs,
+            args.nb_parallel_runs,
+            not args.no_compression,
+            args.proxy_address,
+            args.proxy_port,
+            args.launch_server,
+            args.post_processing_entity,
+            scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
 

@@ -36,10 +36,12 @@
 - name: Install python-pip
   apt: pkg=python-pip state=present
   become: yes
+  environment: "{{ openbach_proxies }}"
     
 - name: Install pynput
   pip: name=pynput state=present
   become: yes
+  environment: "{{ openbach_proxies }}"
     
 - name: Create skype_call repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755

@@ -141,7 +141,7 @@ if __name__ == '__main__':
             'job_name', help='The job name that has generated the stat')
     parser.add_argument(
             'stat_name',
-            help='The name of the stat that shall be postprocessed')
+            help='The name of the stat that shall be post-processed')
     parser.add_argument(
             'job_instance_ids', nargs='+', type=int,
             help='The IDs of the job instances that have '

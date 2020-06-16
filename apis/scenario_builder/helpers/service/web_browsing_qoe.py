@@ -28,31 +28,37 @@
 
 """ Helpers of web_browsing_qoe job """
 
+
 def web_browsing_qoe(
-       scenario, entity, nb_runs, nb_parallel_runs, duration,
-       no_compression=False, proxy_address=None, proxy_port=None,
-       wait_finished=None, wait_launched=None, wait_delay=0):
+        scenario, entity, duration, nb_runs, nb_parallel_runs,
+        no_compression=False, proxy_address=None, proxy_port=None,
+        wait_finished=None, wait_launched=None, wait_delay=0):
     launch_browsing = scenario.add_function(
-                         'start_job_instance',
-                         wait_finished=wait_finished,
-                         wait_launched=wait_launched,
-                         wait_delay=wait_delay)
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+
     if proxy_port and proxy_address:
         launch_browsing.configure(
-                           'web_browsing_qoe', entity, offset=0,
-                           nb_runs=nb_runs, nb_parallel_runs=nb_parallel_runs, 
-                           no_compression = no_compression, proxy_address=proxy_address,
-                           proxy_port=proxy_port)
+                'web_browsing_qoe', entity, offset=0,
+                nb_runs=nb_runs,
+                nb_parallel_runs=nb_parallel_runs,
+                no_compression=no_compression,
+                proxy_address=proxy_address,
+                proxy_port=proxy_port)
     else:
         launch_browsing.configure(
-                           'web_browsing_qoe', entity, offset=0,
-                           nb_runs=nb_runs, nb_parallel_runs=nb_parallel_runs,
-                           no_compression = no_compression)
+                'web_browsing_qoe', entity, offset=0,
+                nb_runs=nb_runs,
+                nb_parallel_runs=nb_parallel_runs,
+                no_compression=no_compression)
 
-    stop_launch_browsing = scenario.add_function(
-                              'stop_job_instance',
-                              wait_launched=[launch_browsing],
-                              wait_delay=duration)
-    stop_launch_browsing.configure(launch_browsing)
+    if duration:
+        stop_launch_browsing = scenario.add_function(
+                'stop_job_instance',
+                wait_launched=[launch_browsing],
+                wait_delay=duration)
+        stop_launch_browsing.configure(launch_browsing)
 
     return [launch_browsing]

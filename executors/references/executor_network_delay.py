@@ -27,39 +27,47 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This script launches the *network_one_way_delay* scenario
+"""This executor builds or launches the *network_delay* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
+It launches network delay test comparison with fping and d-itg.
 """
 
-
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios import network_one_way_delay
+from scenario_builder.scenarios import network_delay
 
 
-def main(scenario_name='generate_network_one_way_delay', argv=None):
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--client', '--client-entity', required=True,
+            '--server-entity', required=True,
+            help='name of the entity for the srv of the RTT tests')
+    observer.add_scenario_argument(
+            '--client-entity', required=True,
             help='name of the entity for the client of the RTT tests')
     observer.add_scenario_argument(
-            '--server', '--server-entity', required=True,
-            help='name of the entity for the server of the owamp RTT test')
+            '--server-ip', required=True, help='destination ip address and target of the pings')
     observer.add_scenario_argument(
-            '--ip_dst', required=True, help='server ip address and target of owamp and d-itg test')
+            '--client-ip', required=True, help='IP address of source of pings and packets')
     observer.add_scenario_argument(
-            '--ip_clt', required=True, help='client ip address of d-itg test')
+            '--duration', default=10, help='duration of delay scenario (s)')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be '
+            '--simultaneous', action='store_true',
+            help='option whether or not the test is simultaneous. Default sequential')
+    observer.add_scenario_argument(
+            '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse(argv, scenario_name)
+    args = observer.parse(argv, network_delay.SCENARIO_NAME)
 
-    scenario = network_one_way_delay.build(
-                      args.client,
-                      args.server,
-                      args.ip_clt,
-                      args.ip_dst,
-                      args.entity_pp)
+    scenario = network_delay.build(
+                      args.server_entity,
+                      args.client_entity,
+                      args.server_ip,
+                      args.client_ip,
+                      args.duration,
+                      args.simultaneous,
+                      args.post_processing_entity,
+                      scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
 

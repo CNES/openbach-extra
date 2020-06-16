@@ -42,12 +42,14 @@
     deb: https://dl.google.com/linux/direct/google-chrome-stable_current_{{ 'amd64' if cpu_arch.stdout == "x86_64" else 'i386' }}.deb
     force: yes
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install unzip
   apt:
     name: unzip
     state: present
   become: yes
+  environment: "{{ openbach_proxies }}"
     
 - name: Install Chrome Driver
   unarchive: 
@@ -56,6 +58,7 @@
     creates: /usr/local/bin/chromedriver
     remote_src: yes
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install Selenium/bs4 for python3
   pip: name={{ item }} executable=pip3 state=present
@@ -63,6 +66,7 @@
   with_items:
     - selenium
     - bs4
+  environment: "{{ openbach_proxies }}"
     
 - name: Install youtube file
   copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}

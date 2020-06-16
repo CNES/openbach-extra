@@ -26,10 +26,11 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of socket_stats_forwarder job """
+"""Helpers of socket_stats_forwarder job"""
+
 
 def socket_stats_forwarder(
-        scenario, agent_entity, stats, ip, port, buffersize, duration=None,
+        scenario, agent_entity, ip, port, stats, buffersize, duration=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     forwarder = scenario.add_function(
             'start_job_instance',
@@ -37,8 +38,11 @@ def socket_stats_forwarder(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     forwarder.configure(
-            'socket_stats_forwarder', agent_entity, stats=stats, ip=ip,
-            port=port, buffersize=buffersize)
+            'socket_stats_forwarder', agent_entity,
+            stats=stats,
+            ip=ip,
+            port=port,
+            buffersize=buffersize)
 
     if duration:
         stopper = scenario.add_function(
@@ -48,4 +52,3 @@ def socket_stats_forwarder(
         stopper.configure(forwarder)
 
     return [forwarder]
-

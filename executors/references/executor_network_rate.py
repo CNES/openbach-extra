@@ -27,63 +27,60 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-"""This scenario launches the *network_rate* scenario
+"""This executor builds or launches the *network_rate* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
+It launches three tools to get different rate metrics to compare.
 """
-
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import network_rate
 
-
-def main(scenario_name='generate_network_rate', argv=None):
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--client', '--client-entity', required=True,
-            help='name of the entity for the client iperf3/nuttcp/d-itg_recv')
+            '--server-entity', required=True,
+            help='name of the entity for the server iperf3/nuttcp')
     observer.add_scenario_argument(
-            '--server', '--server-entity', required=True,
-            help='name of the entity for the server iperf3/nuttcp/d-itg_send')
+            '--client-entity', required=True,
+            help='name of the entity for the client iperf3/nuttcp')
     observer.add_scenario_argument(
-            '--ip_dst', required=True, help='The server IP address')
+            '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--ip_snd', required=True, help='The sender IP address')
+            '--server-port', default=7001,  help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
-            '--port', default=7001,  help='The iperf3/nuttcp/d-itg server port for data')
+            '--command-port', default=7000, help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
-            '--duration', default=30, help='duration of iperf3/nuttcp/d-itg tests')
+            '--duration', default=30, help='duration of iperf3/nuttcp tests')
     observer.add_scenario_argument(
-            '--command_port', default=7000, help='The port of nuttcp/d-itg server for signalling')
-    observer.add_scenario_argument(
-            '--rate', help='Set a higher rate (in kb/s) than what you estimate between server and client '
+            '--rate-limit', help='Set a higher rate (in kb/s) than what you estimate between server and client '
             'for the UDP test (add M/G to set M/G b/s)', required=True)
     observer.add_scenario_argument(
-            '--num_flows', default=10, help='Number of iperf3/nuttcp flows generated')
+            '--num-flows', default=10, help='Number of iperf3/nuttcp flows generated')
     observer.add_scenario_argument(
             '--tos', default=0, help='Type of Service of the trafic (default : 0)')
     observer.add_scenario_argument(
-            '--mtu', default=1000-40, help='MTU size (default : 1000-40)')
+            '--mtu', default=1400, help='MTU size (default : 1400)')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be '
+            '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse(argv, scenario_name)
+    args = observer.parse(argv, network_rate.SCENARIO_NAME)
 
     scenario = network_rate.build(
-            args.client,
-            args.server,
-            args.ip_dst,
-            args.ip_snd,
-            args.port,
+            args.server_entity,
+            args.client_entity,
+            args.server_ip,
+            args.server_port,
             args.command_port,
             args.duration,
-            args.rate,
+            args.rate_limit,
             args.num_flows,
             args.tos,
             args.mtu,
-            args.entity_pp)
-    observer.launch_and_wait(scenario)
+            args.post_processing_entity,
+            scenario_name=args.scenario_name)
 
+    observer.launch_and_wait(scenario)
 
 if __name__ == '__main__':
     main()

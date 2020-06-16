@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -27,58 +27,54 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
+"""This executor builds or launches the *service_voip* scenario
+from /openbach-extra/apis/scenario_builder/scenarios/
+It launches one VoIP flow with the specified parameters.
+"""
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_voip
 
-"""This scenario launches one VoIP flow with the specified parameters"""
 
-def main():
+def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--src_entity', required=True,
-            help='name of the source entity for the VoIP traffic')
-    observer.add_scenario_argument(
-            '--dst_entity', required=True,
+            '--server-entity', required=True,
             help='name of the destination entity for the VoIP traffic')
     observer.add_scenario_argument(
-            '--src_ip', required=True,
-            help='source ip address for the VoIP traffic')
+            '--client-entity', required=True,
+            help='name of the source entity for the VoIP traffic')
     observer.add_scenario_argument(
-            '--dst_ip', required=True,
+            '--server-ip', required=True,
             help='destination ip address for the VoIP traffic')
     observer.add_scenario_argument(
-            '--dst_port', required=True,
+            '--client-ip', required=True,
+            help='source ip address for the VoIP traffic')
+    observer.add_scenario_argument(
+            '--server-port', required=True,
             help='destination port for the VoIP traffic')
     observer.add_scenario_argument(
-            '--codec', required=True,
-            help='codec used by the VoIP traffic. Possible values are: G.711.1, G.711.2, G.723.1, G.729.2, G.729.3.')
+            '--duration', default=10,
+            help='duration of VoIP transmission in seconds')
     observer.add_scenario_argument(
-            '--duration', required=True,
-            help='duration of VoIP transmission')
+            '--codec', default='G.711.1',
+            help='codec used by the VoIP traffic. Possible values are: G.711.1, G.711.2, G.723.1, G.729.2, G.729.3. Default : G.711.1')
     observer.add_scenario_argument(
-            '--entity_pp', help='The entity where the post-processing will be performed '
+            '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
-    args = observer.parse()
-
-    extra_args = []
-    extra_args.append("voip")
-    extra_args.append("voip")
-    extra_args.append(args.src_entity)
-    extra_args.append(args.dst_entity)
-    extra_args.append(args.duration)
-    extra_args.append("None")
-    extra_args.append("None")
-    extra_args.append("0")
-    extra_args.append(args.src_ip)
-    extra_args.append(args.dst_ip)
-    extra_args.append(args.dst_port)
-    extra_args.append(args.codec)
+    args = observer.parse(argv, service_voip.SCENARIO_NAME)
 
     scenario = service_voip.build(
-            args.entity_pp,
-            extra_args,
-            scenario_name="service")
+            args.server_entity,
+            args.client_entity,
+            args.server_ip,
+            args.client_ip,
+            args.server_port,
+            args.duration,
+            args.codec,
+            args.post_processing_entity,
+            scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
 
