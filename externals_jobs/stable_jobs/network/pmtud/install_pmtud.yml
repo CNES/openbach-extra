@@ -35,6 +35,7 @@
 - name: Install package iputils-ping
   apt: name=iputils-ping state=present
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Create the pMTUd Job Repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory

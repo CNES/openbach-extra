@@ -49,18 +49,22 @@
     - software-properties-common
     - python-software-properties
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Add specified repository into sources list
   apt_repository: repo="ppa:ondrej/apache2" state=present update_cache=yes
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install apache2
   apt: name=apache2 state=latest
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install pyOpenSSL
   pip: name=pyopenssl executable=pip2 state=present
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
   openssl_privatekey:

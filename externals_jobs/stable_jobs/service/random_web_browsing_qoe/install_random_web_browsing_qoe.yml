@@ -41,6 +41,7 @@
   apt: 
     deb: https://sourceforge.net/projects/ubuntuzilla/files/mozilla/apt/pool/main/f/firefox-mozilla-build/firefox-mozilla-build_62.0.3-0ubuntu1_{{ 'amd64' if cpu_arch.stdout == "x86_64" else 'i386' }}.deb
   become: yes
+  environment: "{{ openbach_proxies }}"
     
 - name: Install Gecko Driver
   unarchive: 
@@ -49,10 +50,12 @@
     creates: /usr/local/bin/geckodriver
     remote_src: yes
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install Selenium for python3
   pip: name=selenium executable=pip3 state=present
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Create random_web_browsing_qoe repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755

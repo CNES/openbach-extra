@@ -39,10 +39,12 @@
     - numpy
     - scipy
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install module tkinter
   apt: pkg=python3-tk update_cache=false
   become: yes
+  environment: "{{ openbach_proxies }}"
       
 - name: Create the PostProcess_Stats Job Repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755

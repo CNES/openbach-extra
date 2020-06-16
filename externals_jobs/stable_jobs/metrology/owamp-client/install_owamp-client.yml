@@ -38,29 +38,29 @@
     dest: /etc/apt/sources.list.d/perfsonar-jessie-release.list
     mode: 0440
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Download and add apt repository key
   apt_key:
     url: http://downloads.perfsonar.net/debian/perfsonar-debian-official.gpg.key
     state: present
   become: yes
-
-- name: Update apt packages
-  apt:
-    update_cache: yes
-  become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install owamp-client
   apt:
-    name=owamp-client
-    state=present
+    name: owamp-client
+    state: present
+    update_cache: yes
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install Python Dependencies
   pip: name={{ item }} executable=pip3
   with_items:
     - numpy
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Create owamp-client Job Folder
   file: path=/opt/openbach/agent/jobs/owamp-client state=directory mode=0755

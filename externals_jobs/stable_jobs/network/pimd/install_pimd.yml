@@ -35,6 +35,7 @@
 - name: Install package pimd
   apt: name=pimd state=present
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Disable pimd service
   systemd: name=pimd enabled=no state=stopped

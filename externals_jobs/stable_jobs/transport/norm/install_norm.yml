@@ -54,7 +54,7 @@
   with_items:
     - python3 waf configure --debug
     - python3 waf
-  when: is_installed.stat.exists == False
+  when: not is_installed.stat.exists
 
 - name: Compile and install NORM
   command: chdir=/tmp/norm-1.5r6/ {{ item }}
@@ -63,4 +63,4 @@
     - python3 setup.py install
     - ldconfig
   become: yes
-  when: is_installed.stat.exists == False
+  when: not is_installed.stat.exists

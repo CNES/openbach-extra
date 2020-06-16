@@ -39,21 +39,25 @@
     dest: /etc/apt/sources.list.d/perfsonar-jessie-release.list
     mode: 0440
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Download and add apt repository key
   apt_key:
     url: http://downloads.perfsonar.net/debian/perfsonar-debian-official.gpg.key
     state: present
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Update apt packages
   apt:
     update_cache: yes
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install package nuttcp
   apt: name="nuttcp=8.1.3-2" state=present force=yes allow_unauthenticated=yes
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Create the nuttcp Job Repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755

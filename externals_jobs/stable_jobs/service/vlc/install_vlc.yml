@@ -36,12 +36,14 @@
 - name: Install package vlc
   apt: name=vlc state=present
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Create vlc repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
   
 - name: Download sample video
   get_url: url=http://distribution.bbb3d.renderfarming.net/video/mp4/bbb_sunflower_1080p_30fps_normal.mp4 dest=/opt/openbach/agent/jobs/{{ job_name }}/bigbuckbunny.mp4
+  environment: "{{ openbach_proxies }}"
 
 - name: Install vlc
   copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}

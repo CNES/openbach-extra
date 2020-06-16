@@ -49,3 +49,4 @@
     - pyaml
     - psutil
   become: yes
+  environment: "{{ openbach_proxies }}"
