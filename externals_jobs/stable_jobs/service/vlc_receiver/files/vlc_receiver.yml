@@ -9,7 +9,7 @@ general:
   persistent:      False
 
 platform_configuration:
-  - ansible_system: 'Linux'
+  - ansible_system: 'Debian'
     ansible_distribution:  'Ubuntu'
     ansible_distribution_version: '16.04'
     command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/vlc_receiver/vlc_receiver.py'

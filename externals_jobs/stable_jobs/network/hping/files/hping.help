@@ -1,0 +1,20 @@
+=== Job Description ===
+
+This Job executes the hping3 command to send custom TCP (e.g. SYN TCP) packets (like ping does with ICMP) and measures the RTT delay of the stream of packets (with a frequency of mean*interval seconds, or mean packets). 
+
+=== Examples ===
+
+== Example 1 ==
+
+Measure the RTT of SYN TCP from your agent to adress ''8.8.8.8'' and port ''443''. We want to send 30 packets, with 2 seconds interval between packets; and collect the RTT every 4 packets (i.e. every 8 seconds).
+
+In the web interface, set the following parameters:
+  * **destination_ip** = 8.8.8.8
+  * **interval** = 2
+  * **count** = 30
+  * **mean** = 4
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=hping sudo -E python3 /opt/openbach/agent/jobs/hping/hping.py 8.8.8.8 -m 4 -i 2 -c 30 -p 443
+</code>

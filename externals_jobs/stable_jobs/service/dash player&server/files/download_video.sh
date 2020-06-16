@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BASE_URL="http://www-itec.uni-klu.ac.at/ftp/datasets/DASHDataset2014"
+BASE_URL="http://ftp.itec.aau.at/datasets/DASHDataset2014"
 
 usage()
 {
@@ -16,27 +16,27 @@ usage()
 
 list_names()
 {
-	curl -s "$BASE_URL/" | grep -Po '(?<=href=")[a-zA-Z0-9_-]*'
+	curl -s -L "$BASE_URL/" | grep -Po '(?<=href=")[a-zA-Z0-9_-]*'
 }
 
 list_lengths()
 {
-	curl -s "${BASE_URL}/${NAME}/" | grep -Po '(?<=href=")[a-zA-Z0-9_-]*'
+	curl -s -L "${BASE_URL}/${NAME}/" | grep -Po '(?<=href=")[a-zA-Z0-9_-]*'
 }
 
 list_qualities()
 {
-	curl -s "${BASE_URL}/${NAME}/${LENGTH}/" | grep -v "\.mpd" | grep -Po '(?<=href=")[a-zA-Z0-9_-]*'
+	curl -s -L "${BASE_URL}/${NAME}/${LENGTH}/" | grep -v "\.mpd" | grep -Po '(?<=href=")[a-zA-Z0-9_-]*'
 }
 
 list_mpds()
 {
-	curl -s "${BASE_URL}/${NAME}/${LENGTH}/" | grep "\.mpd" | grep -Po '(?<=href=")[a-zA-Z0-9._-]*'
+	curl -s -L "${BASE_URL}/${NAME}/${LENGTH}/" | grep "\.mpd" | grep -Po '(?<=href=")[a-zA-Z0-9._-]*'
 }
 
 list_files()
 {
-	curl -s "${BASE_URL}/${NAME}/${LENGTH}/${QUALITY}/" | grep -v "nonSeg\.mp4" | grep -Po '(?<=href=")[a-zA-Z0-9._-]*'
+	curl -s -L "${BASE_URL}/${NAME}/${LENGTH}/${QUALITY}/" | grep -v "nonSeg\.mp4" | grep -Po '(?<=href=")[a-zA-Z0-9._-]*'
 }
 
 download()

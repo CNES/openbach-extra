@@ -56,7 +56,11 @@ class Scenario:
     def add_argument(self, name, description):
         """Add an argument for this scenario"""
 
-        self.arguments[name] = description
+        self.arguments[name] = str(description)
+
+    def add_arguments(self, **arguments):
+        for name, description in arguments.items():
+            self.add_argument(name, description)
 
     def remove_argument(self, name):
         """Remove the given argument from this scenario"""
@@ -66,18 +70,30 @@ class Scenario:
         except KeyError:
             pass
 
+    def remove_arguments(self, *names):
+        for name in names:
+            self.remove_argument(name)
+
     def add_constant(self, name, value):
         """Associate a value to a constant for this scenario"""
 
-        self.constants[name] = value
+        self.constants[name] = str(value)
 
-    def remove_constants(self, name):
+    def add_constants(self, **constants):
+        for name, value in constants.items():
+            self.add_constant(name, value)
+
+    def remove_constant(self, name):
         """Remove the given constant from this scenario"""
 
         try:
             del self.contants[name]
         except KeyError:
             pass
+
+    def remove_constants(self, *names):
+        for name in names:
+            self.remove_constant(name)
 
     def add_function(self, name, wait_delay=0, wait_launched=None, wait_finished=None, label=None):
         """Add an openbach function to this scenario.
@@ -146,6 +162,29 @@ class Scenario:
                     yield from scenario.subscenarios
                     yield scenario
         yield self
+
+    def extract_function_id(self, *job_names, include_subscenarios=False, **filtered_jobs):
+        def _unfiltered(openbach_function):
+            return True
+        jobs = set(job_names) | set(filtered_jobs)
+        for function_id, openbach_function in enumerate(self.openbach_functions):
+            if isinstance(openbach_function, openbach_functions.StartJobInstance):
+                name = openbach_function.job_name
+                if name in jobs and filtered_jobs.get(name, _unfiltered)(openbach_function):
+                    yield [function_id]
+            elif include_subscenarios and isinstance(openbach_function, openbach_functions.StartScenarioInstance):
+                scenario = openbach_function.scenario_name
+                if isinstance(scenario, Scenario):
+                    for ids in scenario.extract_function_id(*job_names, include_subscenarios=include_subscenarios, **filtered_jobs):
+                        yield [openbach_function] + ids
+
+    def find_openbach_function(self, path):
+        scenario = self
+        for function in path:
+            if isinstance(function, openbach_functions.StartScenarioInstance):
+                scenario = function.scenario_name
+            else:
+                return scenario.openbach_functions[function]
 
 
 def check_and_build_waiting_list(wait_on=None):

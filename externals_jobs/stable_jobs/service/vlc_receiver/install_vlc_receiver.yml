@@ -36,6 +36,7 @@
 - name: Install package vlc
   apt: name=vlc state=present
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Create video repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755

@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -27,30 +27,31 @@
 #   this program. If not, see http://www.gnu.org/licenses/.
 
 from scenario_builder import Scenario
+from scenario_builder.helpers.network.ip_scheduler import add_scheduler, remove_scheduler
 
-
-SCENARIO_DESCRIPTION="""This scenario allows to:
-     - Add/Remove a scheduler on ip layer on the chosen interface.
-     This scheduler works with three levels of scheduling:
-     per trunk, per destination, and per Class of Service.
+SCENARIO_NAME ='network_qos'
+SCENARIO_DESCRIPTION = """This scenario allows to:
+ - Add/Remove a scheduler on ip layer on the chosen interface.
+   This scheduler works with three levels of scheduling: per trunk, per destination, and per Class of Service.
 """
-SCENARIO_NAME="""network_qos"""
 
-
-def build(entity, interface_name, action, path, scenario_name=SCENARIO_NAME):
-
+def qos_add(entity, interface_name, path, scenario_name='add_network_qos'):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    add_scheduler(scenario, entity, interface_name, path)
+    return scenario
 
-    function = scenario.add_function('start_job_instance')
-    if action == "add":
-        function.configure(
-                'ip_scheduler', entity,
-                interface_name=interface_name, 
-                add={"file_path":path})
-    elif action == "remove":
-        function.configure(
-                'ip_scheduler', entity,
-                interface_name=interface_name, 
-                remove={})
+
+def qos_remove(entity, interface_name, scenario_name='remove_network_qos'):
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    remove_scheduler(scenario, entity, interface_name)
+    return scenario
+
+
+def build(entity, interface_name, action, path, scenario_name=None):
+
+    scenario = qos_add(entity, interface_name, path) if action == "add" else qos_remove(entity, interface_name)
+
+    if scenario_name is not None:
+        scenario.name = scenario_name
 
     return scenario

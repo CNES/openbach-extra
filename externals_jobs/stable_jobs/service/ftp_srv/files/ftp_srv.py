@@ -83,16 +83,16 @@ class MyHandler(FTPHandler):
 
 def build_parser():
     parser = argparse.ArgumentParser(description='FTP Parser')
-    parser.add_argument('server_ip', help = 'Server IP', type = str)
-    parser.add_argument('port', help = 'Server port', type = int)
-    parser.add_argument('--user', '-u', type = str, default = 'openbach',
-        help = 'Authorized User (default openbach)')
-    parser.add_argument('--password', '-p', type = str, default = 'openbach',
-        help = "Authorized User's Password (default openbach)")
-    parser.add_argument('--max_cons', type = int, default = 512,
-        help = 'Limit of connexion on the server (default = 512)')
-    parser.add_argument('--max_cons_ip', type = int, default = 0,
-        help = 'Limit of connexion on the server per ip (default = 0 (unlimited))')
+    parser.add_argument('server_ip', help='Server IP', type=str)
+    parser.add_argument('port', help='Server port', type=int)
+    parser.add_argument('--user', '-u', type=str, default='openbach',
+        help='Authorized User (default openbach)')
+    parser.add_argument('--password', '-p', type=str, default='openbach',
+        help="Authorized User's Password (default openbach)")
+    parser.add_argument('--max_cons', type=int, default=512,
+        help='Limit of connexion on the server (default=512)')
+    parser.add_argument('--max_cons_ip', type=int, default=0,
+        help='Limit of connexion on the server per ip (default = 0 (unlimited))')
     return parser
 
 
@@ -106,15 +106,18 @@ def main(server_ip, port, user, password, max_cons, max_cons_ip,):
 
     authorizer = DummyAuthorizer()
     authorizer.add_user(user, password, '/srv/', perm='elradfmwMT')
-
     handler = MyHandler
     handler.authorizer = authorizer
-
     address = (server_ip, port)
-    server = ThreadedFTPServer(address, handler)
+    try:
+        server = ThreadedFTPServer(address, handler)
+    except Exception as ex:
+        message = 'Error starting FTP Server : {}'.format(ex)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+
     server.max_cons = max_cons
     server.max_cons_per_ip = max_cons_ip
-
     server.serve_forever()
 
 

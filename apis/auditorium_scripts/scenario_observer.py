@@ -27,7 +27,7 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Framework for easier Scenario postprocessing"""
+"""Framework for easier Scenario post-processing"""
 
 
 __author__ = 'Viveris Technologies'
@@ -39,6 +39,7 @@ import time
 import json
 import pprint
 import warnings
+from sys import exit
 from pathlib import Path
 from contextlib import suppress
 
@@ -59,8 +60,12 @@ MAX_RETRIES_STATUS = 5
 
 class ScenarioObserver(FrontendBase):
     def __init__(self, **default_run_arguments):
-        super().__init__('OpenBACH — Run a scenario and postprocess stats')
-        self._scenarios = {}
+        super().__init__('OpenBACH — Run a scenario and post-process stats')
+        self._last_instance = {
+                'scenario_instance_id': -1,
+                'scenario_name': None,
+                'openbach_functions': [],
+        }
         self._default_arguments = default_run_arguments
         self.build_parser()
 
@@ -191,19 +196,12 @@ class ScenarioObserver(FrontendBase):
         instance.args = self.args
         return instance
 
-    def _extract_scenario_json(self, scenario):
-        self._scenarios[self.args.scenario_name] = {
-                function['label']: function['id']
-                for function in scenario.json()['openbach_functions']
-                if 'start_job_instance' in function and function['label']
-        }
-
     def _send_scenario_to_controller(self, builder=None):
         scenario_getter = self._share_state(GetScenario)
+
         if builder is None:
             scenario = scenario_getter.execute(False)
             scenario.raise_for_status()
-            self._extract_scenario_json(scenario)
         else:
             scenario_setter = self._share_state(CreateScenario)
             scenario_modifier = self._share_state(ModifyScenario)
@@ -220,7 +218,6 @@ class ScenarioObserver(FrontendBase):
                     if self.args.override:
                         scenario = scenario_modifier.execute(False)
                 scenario.raise_for_status()
-                self._extract_scenario_json(scenario)
 
     def _run_scenario_to_completion(self):
         scenario_starter = self._share_state(StartScenarioInstance)
@@ -269,7 +266,8 @@ class ScenarioObserver(FrontendBase):
             }
 
         self._send_scenario_to_controller(builder)
-        return self._run_scenario_to_completion()
+        self._last_instance = self._run_scenario_to_completion()
+        return self._last_instance
 
     def _write_json(self, builder=None):
         path = Path(self.args.json_path).absolute()
@@ -295,3 +293,77 @@ class ScenarioObserver(FrontendBase):
             self.parser.error(
                     'asked to *not* contact the controller without a provided '
                     'scenario builder: cannot create scenario file')
+
+
+class DataProcessor:
+    """Helper class that retrieves data from scenario instances
+    and ease information extraction.
+    """
+    def __init__(self, observer, scenario_instance=None):
+        """Associate this instance to a ScenarioObserver in order
+        to access a collector. Optionally associate a scenario instance
+        or get the last instance of the collector if not.
+        """
+        if scenario_instance is None:
+            scenario_instance = observer._last_instance
+
+        self._post_processing = {}
+        self._instance = scenario_instance
+        self._collector = CollectorConnection(
+                observer.args.collector,
+                observer.args.elasticsearch_port,
+                observer.args.influxdb_port,
+                observer.args.database_name,
+                observer.args.time)
+
+    @property
+    def instance(self):
+        return self._instance
+
+    @instance.setter
+    def instance(self, _instance):
+        for attribute in ('scenario_name', 'scenario_instance_id', 'openbach_functions'):
+            if attribute not in _instance:
+                raise TypeError('instance is expected to be an OpenBach scenario instance')
+        self._instance = _instance
+
+    def add_callback(self, label, callback, openbach_functions):
+        """Register a callback to be run on the data gathered from the collector.
+
+        The data returned from the callback will be accessible under the provided
+        label as a key in the returned dictionnary from the `post_processing` method.
+
+        The `openbach_functions` to provide are a list of openbach function IDs
+        going through the start_scenario_instance openbach functions down to the
+        target start_job_instance openbach_function that the callback should
+        operate on. This is meant to accept an entry from a call to the scenario
+        builder's `Scenario.extract_function_id` call.
+        """
+        ids = tuple(
+                str(function.scenario_name) if hasattr('scenario_name', function) else function
+                for function in openbach_functions)
+        self._post_processing[ids] = (label, callback)
+
+    def _extract_callback(self, scenario_instance, parent_scenarios=()):
+        name = scenario_instance['scenario_name']
+        for function in scenario_instance['openbach_functions']:
+            with suppress(KeyError):
+                yield from self._extract_callback(function['scenario'], parent_scenarios + (name,))
+            with suppress(KeyError):
+                callback = self._post_processing[parent_scenarios + (function['id'],)]
+                yield function['job']['id'], callback
+
+    def post_processing(self):
+        """Actually fetches the raw data from the collector and run callbacks on them"""
+        callbacks = dict(self._extract_callback(self._instance))
+
+        try:
+            scenario, = self._collector.scenarios(scenario_instance_id=self._instance['scenario_instance_id'])
+        except ValueError:
+            exit('cannot retrieve scenario instance data from database')
+        self._post_processing.clear()
+
+        return {
+                callbacks[job.instance_id][0]: callbacks[job.instance_id][1](job)
+                for job in scenario.jobs if job.instance_id in callbacks
+        }

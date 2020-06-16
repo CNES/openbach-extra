@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -27,170 +27,175 @@
 #   this program. If not, see http://www.gnu.org/licenses/.
 
 
+import shlex
+from collections import namedtuple
+
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
+from scenario_builder.openbach_functions import StartScenarioInstance
 from scenario_builder.helpers.service.apache2 import apache2
+from scenario_builder.helpers.transport.iperf3 import iperf3_find_server
 from scenario_builder.scenarios import service_data_transfer, service_video_dash, service_web_browsing, service_voip
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
-
-SCENARIO_DESCRIPTION="""This scenario launches the traffics as defined in the configuration file, then post processes generated data
+SCENARIO_NAME = 'service_traffic_mix'
+SCENARIO_DESCRIPTION = """This scenario launches various traffic generators
+as subscenarios. Possible generators are:
+ - VoIP
+ - Web browsing
+ - Dash video player
+ - Data transfer
+It can then, optionally,  post-processes the generated data by plotting time-series and CDF.
 """
-SCENARIO_NAME="""service_traffic_mix"""
-
-def load_args(args_list):
-    args_main = []
-    id_explored = []
-    for args_str in args_list:
-        try:
-            if len(args_str) < 10:
-                continue
-            if args_str[0] == '#':
-                continue
-            args = args_str.split()
-            for traffic, nb in [("voip",12), ("web_browsing",12), ("dash",11), ("data_transfer",14)]:
-                if args[1] == traffic and len(args) != nb:
-                    print("\033[91mWARNING:", "Wrong argument format,", nb, "elements needed for", traffic, "traffic:", "\"" + " ".join(args) + "\"", "but got", len(args), "... ignoring", "\033[0m")
-                    break
-            else:
-                ids = list(map(int,args[5].split("-")) if args[5] != "None" else []) + list(map(int,args[6].split("-")) if args[6] != "None" else [])
-                cur_id = int(args[0])
-                if cur_id in id_explored:
-                    print("\033[91mWARNING:", "Duplicated id:", " ".join(args), "... ignoring")
-                    continue
-                int(args[4])
-                int(args[7])
-                for dependency in ids:
-                    if cur_id <= dependency:
-                        print("\033[91mWARNING:", "This traffic depends on future ones:", " ".join(args), "... ignoring", "\033[0m")
-                        break
-                    if dependency not in id_explored:
-                        print("\033[91mWARNING:", "This traffic depends on missing ones:", " ".join(args), "... ignoring", "\033[0m")
-                        break
-                else:
-                    args_main.append(args)
-                    id_explored.append(cur_id)
-        except ValueError:
-            print("\033[91mWARNING:", "Cannot parse this line:", args_str, "\033[0m")
-
-    return args_main
 
 
-def extract_jobs_to_postprocess(scenarios, traffic):
-    for scenario, start_scenario in scenarios:
-        for function_id, function in enumerate(scenario.openbach_functions):
-            if isinstance(function, StartJobInstance):
-                if traffic == "data_transfer" and function.job_name == 'iperf3':
-                    if 'server' in function.start_job_instance['iperf3']:
-                        port = function.start_job_instance['iperf3']['port']
-                        address = function.start_job_instance['iperf3']['server']['bind']
-                        dst = function.start_job_instance['entity_name']
-                        yield (start_scenario, function_id, dst + " " + address + " " + str(port))
-                if traffic == "dash" and function.job_name == 'dash player&server':
-                    yield (None, function_id, "")
-                if traffic == "web_browsing" and function.job_name == 'web_browsing_qoe':
-                    dst = function.start_job_instance['entity_name']
-                    yield (start_scenario, function_id, dst)
-                if traffic == "voip" and function.job_name == 'voip_qoe_src':
-                    port = function.start_job_instance['voip_qoe_src']['starting_port']
-                    address = function.start_job_instance['voip_qoe_src']['dest_addr']
-                    dst = function.start_job_instance['entity_name']
-                    yield (start_scenario, function_id, dst + " " + address + " " + str(port))
+_Arguments = namedtuple('Arguments', ('id', 'traffic', 'source', 'destination', 'duration', 'wait_launched', 'wait_finished', 'wait_delay', 'source_ip', 'destination_ip'))
+VoipArguments = namedtuple('VoipArguments', _Arguments._fields + ('port', 'codec'))
+WebBrowsingArguments = namedtuple('WebBrowsingArguments', _Arguments._fields + ('run_count', 'parallel_runs'))
+DashArguments = namedtuple('DashArguments', _Arguments._fields + ('protocol',))
+DataTransferArguments = namedtuple('DataTransferArguments', _Arguments._fields + ('port', 'size', 'tos', 'mtu'))
 
 
-def build(post_processing_entity, extra_args_traffic, scenario_name=SCENARIO_NAME):
-    # Create top network_traffix_mix scenario
+def _iperf3_legend(openbach_function):
+    iperf3 = openbach_function.start_job_instance['iperf3']
+    port = iperf3['port']
+    address = iperf3['server']['bind']
+    destination = openbach_function.start_job_instance['entity_name']
+    return 'Data Transfer — {} {} {}'.format(destination, address, port)
+
+
+def _dash_legend(openbach_function):
+    return 'Dash'
+
+
+def _web_browsing_legend(openbach_function):
+    destination = openbach_function.start_job_instance['entity_name']
+    return 'Web Browsing — {}'.format(destination)
+
+
+def _voip_legend(openbach_function):
+    voip = openbach_function.start_job_instance['voip_qoe_src']
+    port = voip['starting_port']
+    address = voip['dest_addr']
+    destination = openbach_function.start_job_instance['entity_name']
+    return 'VoIP — {} {} {}'.format(destination, address, port)
+
+
+def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
     scenario_mix = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     list_wait_finished = []
-    list_scenarios = []
     apache_servers = {}
     map_scenarios = {}
-    
-    extra_args = []
-    try:
-        file = open(extra_args_traffic,"r")
-        for line in file:
-            extra_args.append(line.rstrip())
-        file.close()
-    except (OSError, IOError):
-        print("\033[91mERROR:", "Cannot open args file, exiting", "\033[0m")
-        return
-
-    args_list = load_args(extra_args)
-
-    print("Loading traffics")
 
     # Launching Apache2 servers first (via apache2 or dash player&server job)
     start_servers = []
-    for args in args_list:
-        if args[1] == "dash" and args[2] not in apache_servers:
+    for args in arguments:
+        if args.traffic == "dash" and args.source not in apache_servers:
             start_server = scenario_mix.add_function('start_job_instance')
-            start_server.configure('dash player&server', args[2], offset=0)
-            apache_servers[args[2]] = start_server
+            start_server.configure('dash player&server', args.source, offset=0)
+            apache_servers[args.source] = start_server
             start_servers.append(start_server)
-            list_scenarios.append((scenario_mix, None))
-    for args in args_list:
-        if args[1] == "web_browsing" and args[2] not in apache_servers:
-            start_server = apache2(scenario_mix, args[2])[0]
-            apache_servers[args[2]] = start_server
+    for args in arguments:
+        if args.traffic == "web_browsing" and args.source not in apache_servers:
+            start_server = apache2(scenario_mix, args.source)[0]
+            apache_servers[args.source] = start_server
             start_servers.append(start_server)
 
     # Creating and launching traffic scenarios
-    for args in args_list:
-        traffic = args[1]
-        scenario_id = args[0]
+    for args in arguments:
+        wait_launched_list = [map_scenarios[i] for i in args.wait_launched]
+        wait_finished_list = [map_scenarios[i] for i in args.wait_finished]
 
-        wait_launched_list = []
-        wait_finished_list = []
-        if args[5] != "None" or args[6] != "None":
-            if args[5] != "None":
-                wait_launched_list = [map_scenarios[i] for i in args[5].split('-')]
-            if args[6] != "None":
-                wait_finished_list = [map_scenarios[i] for i in args[6].split('-')]
-
+        offset_delay = 0
         if not wait_launched_list and not wait_finished_list:
-            wait_launched_list = start_servers if start_servers else []
-            offset_delay = 5 if start_servers else 0
-        else:
-            offset_delay = 0
+            wait_launched_list = start_servers
+            if start_servers:
+                offset_delay = 5
 
-        start_scenario = scenario_mix.add_function('start_scenario_instance',
-                    wait_finished=wait_finished_list, wait_launched=wait_launched_list, wait_delay=int(args[7]) + offset_delay)
-        if traffic == "data_transfer":
-            scenario = service_data_transfer.build(post_processing_entity, args)
-        if traffic == "dash":
-            scenario = service_video_dash.build(post_processing_entity, args)
-        if traffic == "web_browsing":
-            scenario = service_web_browsing.build(post_processing_entity, args)
-        if traffic == "voip":
-            scenario = service_voip.build(post_processing_entity, args)
+        if args.traffic == "data_transfer":
+            scenario_name = '{}_{}'.format(service_data_transfer.SCENARIO_NAME, args.id)
+            scenario = service_data_transfer.build(
+                    args.destination, args.source, args.destination_ip,
+                    int(args.port), int(args.duration), args.size,
+                    int(args.tos), int(args.mtu),
+                    post_processing_entity, scenario_name)
+        elif args.traffic == "dash":
+            scenario_name = '{}_{}'.format(service_video_dash.SCENARIO_NAME, args.id)
+            scenario = service_video_dash.build(
+                    args.source, args.destination, args.source_ip,
+                    args.protocol, int(args.duration), False,
+                    post_processing_entity, scenario_name)
+        elif args.traffic == "web_browsing":
+            scenario_name = '{}_{}'.format(service_web_browsing.SCENARIO_NAME, args.id)
+            scenario = service_web_browsing.build(
+                    args.source, args.destination, int(args.duration),
+                    int(args.run_count), int(args.parallel_runs),
+                    post_processing_entity=post_processing_entity,
+                    scenario_name=scenario_name)
+        elif args.traffic == "voip":
+            scenario_name = '{}_{}'.format(service_voip.SCENARIO_NAME, args.id)
+            scenario = service_voip.build(
+                    args.destination, args.source, args.destination_ip,
+                    args.source_ip, int(args.port), args.codec,
+                    int(args.duration), post_processing_entity, scenario_name)
 
+        start_scenario = scenario_mix.add_function(
+                'start_scenario_instance',
+                wait_finished=wait_finished_list,
+                wait_launched=wait_launched_list,
+                wait_delay=int(args.wait_delay) + offset_delay)
         start_scenario.configure(scenario)
         list_wait_finished += [start_scenario]
-        map_scenarios[scenario_id] = start_scenario
-        list_scenarios.append((scenario, start_scenario))
-        
+        map_scenarios[int(args.id)] = start_scenario
+
     # Stopping all Apache2 servers
     for server_entity,scenario_server in apache_servers.items():
         stopper = scenario_mix.add_function('stop_job_instance',
                 wait_finished=list_wait_finished, wait_delay=5)
         stopper.configure(scenario_server)
 
-    # Post processing data
-    if post_processing_entity is not None:
-        print("Loading:", "post processing")
-        for traffic, name, y_axis in [("data_transfer", "throughput", "Rate (b/s)"),
-                                        ("dash", "bitrate", "Rate (b/s)"),
-                                        ("web_browsing", "page_load_time", "PLT (ms)"),
-                                        ("voip", "instant_mos", "MOS")]:
-            post_processed = []
-            legends = []
-            for scenario_id, function_id, legend in extract_jobs_to_postprocess(list_scenarios, traffic):
-                post_processed.append([scenario_id, function_id] if scenario_id is not None else [function_id])
-                legends.append([] if traffic in ["dash", "web_browsing"] else [traffic + " - " + legend])
-            if post_processed:
-                time_series_on_same_graph(scenario_mix, post_processing_entity, post_processed, [[name]], [[y_axis]], [[y_axis.split()[0] + ' time series']], legends, list_wait_finished, None, 2)
-                cdf_on_same_graph(scenario_mix, post_processing_entity, post_processed, 100, [[name]], [[y_axis]], [[y_axis.split()[0] + ' CDF']], legends, list_wait_finished, None, 2)
-
     return scenario_mix
+
+
+def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
+    scenario = traffic_mix(arguments, post_processing_entity, scenario_name)
+
+    if post_processing_entity is not None:
+        wait_finished = [function for function in scenario.openbach_functions if isinstance(function, (StartJobInstance, StartScenarioInstance))]
+
+        for jobs, filters, legend, statistic, axis in [
+                ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'Rate (b/s)'),
+                (['dash player&server'], {}, _dash_legend, 'bitrate', 'Rate (b/s)'),
+                (['dash player&server'], {}, _dash_legend, 'buffer_length', 'Buffer length (s)'),
+                (['web_browsing_qoe'], {}, _web_browsing_legend, 'page_load_time', 'PLT (ms)'),
+                (['voip_qoe_src'], {}, _voip_legend, 'instant_mos', 'MOS'),
+        ]:
+            post_processed = list(scenario.extract_function_id(*jobs, include_subscenarios=True, **filters))
+            if post_processed:
+                legends = [legend(scenario.find_openbach_function(f)) for f in post_processed]
+                title = axis.split(maxsplit=1)[0]
+
+                time_series_on_same_graph(
+                        scenario,
+                        post_processing_entity,
+                        post_processed,
+                        [[statistic]],
+                        [[axis]],
+                        [['{} time series'.format(title)]],
+                        [legends],
+                        False,
+                        wait_finished, None, 2)
+                cdf_on_same_graph(
+                        scenario,
+                        post_processing_entity,
+                        post_processed,
+                        100,
+                        [[statistic]],
+                        [[axis]],
+                        [['{} CDF'.format(title)]],
+                        [legends],
+                        False,
+                        wait_finished, None, 2)
+
+    return scenario

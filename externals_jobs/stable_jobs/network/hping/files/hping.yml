@@ -1,0 +1,86 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016−2019 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+---
+
+general:
+  name: hping
+  description: >
+      This Job executes the hping3 command to send custom
+      TCP/IP (e.g. SYN TCP) packets (like ping does with
+      ICMP) and measures the RTT delay (every mean*interval
+      seconds).
+  job_version: '1.1'
+  keywords:
+    - hping
+    - rate
+    - rtt
+    - round
+    - trip
+    - time
+    - syn
+    - ack
+  persistent: yes
+  need_privileges: yes
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/hping/hping.py'
+    command_stop:
+
+arguments:
+  required:
+    - name: destination_ip
+      type: str
+      count: 1
+      description: The destination the hping (IP address, hostname, domain name, etc.)
+  optional:
+    - name: interval
+      type: str
+      count: 1
+      flag: '-i'
+      description: Interval, in seconds, between each packet sent (default=1). The interval can be set in micro seconds by adding u before the interval value (u40 for 40 micro seconds). The interval can be a float, with a minimum granularity of 1 micro second.
+    - name: count
+      type: int
+      count: 1
+      flag: '-c'
+      description: Number of packets to send (default=unlimited).
+    - name: mean
+      type: int
+      count: 1
+      flag: '-m'
+      description: Collect the mean RTT of every N packets (default=1).
+    - name: destport
+      type: int
+      count: 1
+      flag: '-p'
+      description: Destination port for TCP SYN  (default=443, strongly recommended)
+
+statistics:
+    - name: rtt
+      description: The Round trip time of tcp connection (SYN)
+      frequency: 'every -mean- packets, or -mean*interval- seconds'

@@ -78,7 +78,7 @@ class StartJobInstance(OpenBachFunction):
         self.start_job_instance = {}
         self.job_name = None
 
-    def configure(self, job_name, entity_name, offset=0, **job_arguments):
+    def configure(self, job_name, entity_name, offset=None, interval=None, **job_arguments):
         """Define this openbach function with the mandatory values:
          - job_name: name of the job to start;
          - entity_name: name of the entity (hopefully with an agent
@@ -91,9 +91,12 @@ class StartJobInstance(OpenBachFunction):
 
         self.start_job_instance = {
                 'entity_name': entity_name,
-                'offset': offset,
                 job_name: job_arguments,
         }
+        if offset is not None:
+            self.start_job_instance['offset'] = offset
+        if interval is not None:
+            self.start_job_instance['interval'] = interval
         self.job_name = job_name
 
     def build(self, functions, function_id):

@@ -1,0 +1,31 @@
+=== Job Description ===
+
+This Job launches the iperf2.0 tool (client or server mode) to generate UDP/TCP traffic with configured parameters (duration, bandwidth, parallel flows, ToS, MSS, etc.). 
+It measures throughput, sent/lost packets, jitter, etc.
+
+=== Examples ===
+
+== Example 1 ==
+
+Launch an iperf server.
+
+In the web interface, set the following parameters:
+  * **server_mode** = True
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=iperf sudo -E python3 /opt/openbach/agent/jobs/iperf/iperf.py -s
+</code>
+
+== Example 2 ==
+
+Launch an iperf client that will connect with the server in ''172.20.0.83''.
+
+In the web interface, set the following parameters:
+  * **server_mode** = False
+  * **client_mode_server_ip** = 172.20.0.83
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=iperf sudo -E python3 /opt/openbach/agent/jobs/iperf/iperf.py -c 172.20.0.83
+</code>

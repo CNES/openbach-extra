@@ -140,7 +140,7 @@ def pretty_print(response):
     response.raise_for_status()
 
 
-class FromFileParser(argparse.ArgumentParser):
+class FromFileArgumentParser(argparse.ArgumentParser):
     def convert_arg_line_to_args(self, line):
         if line.lstrip().startswith('#'):
             return []
@@ -164,8 +164,9 @@ class FrontendBase:
     def __init__(self, description):
         self.__filename = 'controller'
         controller, login, password, unspecified = read_controller_configuration(self.__filename)
-        self.parser = FromFileParser(
+        self.parser = FromFileArgumentParser(
                 description=description,
+                fromfile_prefix_chars='@',
                 epilog='Backend-specific arguments can be specified by '
                 'providing a file called \'controller\' in the same folder '
                 'than this script. This file can contain a JSON dictionary '

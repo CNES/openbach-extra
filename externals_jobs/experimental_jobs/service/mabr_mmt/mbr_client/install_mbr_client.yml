@@ -39,6 +39,7 @@
     - scapy
     - python-iptables
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Create mbr_client repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755

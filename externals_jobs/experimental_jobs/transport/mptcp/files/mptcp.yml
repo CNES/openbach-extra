@@ -1,0 +1,65 @@
+---
+
+general:
+  name:            mptcp
+  description: >
+      This Job executes the mptcp command to measure the rtt delay of a group of ICMP packets (with a frequency of count*interval).
+      It sends syslog in case of error.
+  job_version:     '1.0'
+  keywords:        [mptcp, tcp, multipath, routing, hybrid]
+  persistent:      true
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: 'python3 /opt/openbach/agent/jobs/mptcp/mptcp.py'
+    command_stop:
+
+arguments:
+  required:
+  optional:
+    - name:        ifaces
+      type:        'str'
+      count:       1
+      flag:        '-i'
+      description: >
+          Interfaces available for MPTCP, separated by comma.
+          By default, all interfaces are enabled.
+    - name:        enable
+      type:        'None'
+      count:       0
+      flag:        '-e'
+      description: >
+          Enable or disable MPTCP.
+
+    - name:        checksum
+      type:        'int'
+      count:       1
+      flag:        '-k'
+      description: >
+          Enable (1) or disable(0) mptcp checksum. If empty, configuration 
+          remains unmodified.
+    - name:        syn_retries
+      type:        'int'
+      count:       1
+      flag:        '-y'
+      description: >
+          How often a SYN is retransmitted with MP_CAPABLE-option. If empty, 
+          configuration remains unmodified.
+    - name:        path_manager
+      type:        'str'
+      count:       1
+      flag:        '-p'
+      description: >
+          Select one of the compiled path managers. Possible values are: default, fullmesh,
+          ndiffports, and binder.
+    - name:        scheduler
+      type:        'str'
+      count:       1
+      flag:        '-s'
+      description: >
+          Select one of the compiled schedulers. Possible values are: default, roundrobin,
+          redundant.
+
+statistics:

@@ -57,6 +57,7 @@
   become: yes
   with_items :
     - python3-netifaces
+  environment: "{{ openbach_proxies }}"
 
 - name: Install OpenSAND Job
   copy:
@@ -73,10 +74,10 @@
     repo: "deb {{ opensand_repository_url }} {{ opensand_repository_distribution }} {{ opensand_repository_component }}"
     state: present
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install OpenSAND
-  environment: 
-    DEBIAN_FRONTEND : noninteractive
+  environment: "{{ openbach_proxies | combine({'DEBIAN_FRONTEND': 'noninteractive'}) }}"
   apt:
     name: '{{ item }}'
     state: installed

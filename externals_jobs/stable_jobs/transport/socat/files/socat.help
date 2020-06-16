@@ -1,0 +1,19 @@
+=== Job Description ===
+
+This Job launches the socat tool (client or server). The client sends a given file (provided or auto generated) and computes the time to transmit the file.
+
+=== Examples ===
+
+== Example 1==
+
+Launch an socat server that listens on port ''5000'' and sends file ''file.ext''.
+
+In the web interface, set the following parameters:
+  * **server** = True
+  * **port** = 5000
+  * **file** = file.ext
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=socat sudo -E python3 /opt/openbach/agent/jobs/socat/socat.py -s -p 5000 -f file.ext
+</code>

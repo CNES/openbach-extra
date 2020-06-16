@@ -38,7 +38,7 @@ general:
   need_privileges: yes
 
 platform_configuration:
-  - ansible_system: 'Linux'
+  - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '16.04'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/ftp_clt/ftp_clt.py'
@@ -97,7 +97,7 @@ arguments:
             - name: file_path
               type: str
               count: 1
-              description: 'Path of the file to download or upload (be sure the file exists)'
+              description: 'Path of the file to download or upload (consider /srv/ as the home directory, be sure the file exists)'
 
 statistics:
     - name: throughput_upload

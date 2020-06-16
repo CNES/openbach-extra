@@ -27,97 +27,45 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of tcp_conf_linux job """
+"""Helpers of tcp_conf_linux job"""
+
+from ..utils import filter_none
+
 
 def tcp_conf_linux(
-        scenario, entity, congestion_control, hystart, tcp_slow_start_after_idle,
-        tcp_no_metrics_save, tcp_sack, tcp_recovery, tcp_fastopen,
+        scenario, entity, congestion_control,
+        hystart=None, tcp_slow_start_after_idle=None,
+        tcp_no_metrics_save=None, tcp_sack=None,
+        tcp_recovery=None, tcp_fastopen=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
-
     function = scenario.add_function(
            'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
+
+    parameters = filter_none(
+            tcp_slow_start_after_idle=tcp_slow_start_after_idle,
+            tcp_no_metrics_save=tcp_no_metrics_save,
+            tcp_sack=tcp_sack,
+            tcp_recovery=tcp_recovery,
+            tcp_fastopen=tcp_fastopen)
     if congestion_control.lower() == 'cubic':
-       function.configure(
-               'tcp_conf_linux', entity,
-               CUBIC={
-                   'hystart': hystart},
-               tcp_slow_start_after_idle=tcp_slow_start_after_idle,
-               tcp_no_metrics_save=tcp_no_metrics_save,
-               tcp_sack=tcp_sack,
-               tcp_recovery=tcp_recovery,
-               tcp_fastopen=tcp_fastopen)
+        parameters['CUBIC'] = {'hystart': hystart or 0}
     else:
-       function.configure(
-               'tcp_conf_linux', entity,
-               other={
-                   'congestion_control_name':congestion_control},
-               tcp_slow_start_after_idle=tcp_slow_start_after_idle,
-               tcp_no_metrics_save=tcp_no_metrics_save,
-               tcp_sack=tcp_sack,
-               tcp_recovery=tcp_recovery,
-               tcp_fastopen=tcp_fastopen)
+        parameters['other'] = {'congestion_control_name': congestion_control}
+    function.configure('tcp_conf_linux', entity, **parameters)
 
     return [function]
 
-def tcp_conf_linux_variable_args_number(
-        scenario, entity, tcp_params, tcp_subparams,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-
-    function = scenario.add_function(
-           'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-
-    congestion_control = tcp_params["congestion_control"]
-    del tcp_params["congestion_control"]
-
-    if congestion_control.upper() == 'CUBIC':
-        function.configure(
-               'tcp_conf_linux', entity,
-               CUBIC=tcp_subparams,
-               **tcp_params)
-    else:
-       function.configure(
-               'tcp_conf_linux', entity,
-               other=tcp_subparams,
-               **tcp_params)
-
-    return [function]
 
 def tcp_conf_linux_repetitive_tests(
-        scenario, entity, congestion_control, hystart=0, tcp_slow_start_after_idle=1,
+        scenario, entity, congestion_control,
+        hystart=None, tcp_slow_start_after_idle=1,
         tcp_no_metrics_save=1, tcp_sack=0, tcp_recovery=1, tcp_fastopen=1,
         wait_finished=None, wait_launched=None, wait_delay=0):
-
-    function = scenario.add_function(
-           'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    if congestion_control.lower() == 'cubic':
-       function.configure(
-               'tcp_conf_linux', entity,
-               CUBIC={
-                   'hystart': hystart},
-               tcp_slow_start_after_idle=tcp_slow_start_after_idle,
-               tcp_no_metrics_save=tcp_no_metrics_save,
-               tcp_sack=tcp_sack,
-               tcp_recovery=tcp_recovery,
-               tcp_fastopen=tcp_fastopen)
-    else:
-       function.configure(
-               'tcp_conf_linux', entity,
-               other={
-                   'congestion_control_name':congestion_control},
-               tcp_slow_start_after_idle=tcp_slow_start_after_idle,
-               tcp_no_metrics_save=tcp_no_metrics_save,
-               tcp_sack=tcp_sack,
-               tcp_recovery=tcp_recovery,
-               tcp_fastopen=tcp_fastopen)
-
-    return [function]
-    
+    return tcp_conf_linux(
+            scenario, entity, congestion_control, hystart,
+            tcp_slow_start_after_idle, tcp_no_metrics_save,
+            tcp_sack, tcp_recovery, tcp_fastopen,
+            wait_finished, wait_launched, wait_delay)

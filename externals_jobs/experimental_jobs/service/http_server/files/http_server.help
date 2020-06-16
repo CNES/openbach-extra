@@ -1,0 +1,15 @@
+=== Job description ===
+
+This Job will start a Python based HTTP server.
+
+=== Example ===
+
+Launch a server listening on port ''80''.
+
+In the web interface, set parameters as follows:
+  * **port** = 80
+
+Or launch the job manually from CLI on the agent as follows:
+<code>
+JOB_NAME=http_server sudo -E python3 /opt/openbach/agent/jobs/http_server/http_server.py 80
+</code>

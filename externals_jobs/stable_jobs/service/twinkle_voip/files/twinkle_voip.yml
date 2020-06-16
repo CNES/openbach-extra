@@ -10,7 +10,7 @@ general:
   persistent:      True
 
 platform_configuration:
-  - ansible_system: 'Linux'
+  - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '16.04'
     command: 'python3 /opt/openbach/agent/jobs/twinkle_voip/twinkle_voip.py'

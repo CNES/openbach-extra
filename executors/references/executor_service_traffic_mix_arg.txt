@@ -1,0 +1,54 @@
+# OpenBACH is a generic testbed able to control/configure multiple
+# network/physical entities (under test) and collect data from them.
+# It is composed of an Auditorium (HMIs), a Controller, a Collector
+# and multiple Agents (one for each network entity that wants to be
+# tested).
+#
+# Copyright © 2020 CNES
+# This file is part of the OpenBACH testbed.
+#
+# OpenBACH is a free software : you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY, without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see http://www.gnu.org/licenses/.
+
+
+# File configuration example for executor_service_traffic_mix scenario.
+# Author : Bastien Tauran, Vivéris Technologies
+#
+# file configuration arguments format (see below for example) :
+### id traffic_type src_entity dst_entity duration wait_launched wait_finished wait_delay src_ip dst_ip extra_args
+### wait_launched and wait_finished can contain several elements -> they must be separated by a '-'. If no element, put None
+#
+# extra_args:
+### data_transfer	-> dst_port file_size tos mtu 	(if file_size is 0, the transfer will last duration seconds. Otherwise, it will transfer the whole specified file_size, regardless of the duration)
+### dash  		-> protocol
+### voip  		-> dst_port codecs				(Warning: it is impossible to launch several voip_src at same time... should be fixed later)
+### web_browsing	-> nb_runs nb_parallel_runs		(do not forget to edit the config file with correct address)
+
+# Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 executor_service_traffic_mix.py my_project --extra-args-traffic executor_service_traffic_mix_arg.txt --post-processing-entity name_entity_post_processing -o run
+
+# Example of trafic mix with data_transfer,dash, web_browsing and voip traffic
+#
+--data-transfer 1 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 5201 10M 0 1500
+--dash 2 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2
+--web-browsing 3 SRC ST1 60 None None 0 10.42.42.11 10.42.14.3 10 2
+--voip 4 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 8011 G.711.1
+
+--data-transfer 5 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 5201 10M 0 1500
+--dash 6 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 http/2
+--web-browsing 7 SRC ST2 60 4 None 5 10.42.42.11 10.42.15.3 10 2
+--voip 8 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 8012 G.711.1
+
+--data-transfer 9 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 5201 0 0 1500
+--dash 10 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 http/2
+--web-browsing 11 SRC ST3 60 8 None 5 10.42.42.11 10.42.16.3 10 2
+--voip 12 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 8013 G.711.1

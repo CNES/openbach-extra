@@ -27,6 +27,8 @@
 #   this program. If not, see http://www.gnu.org/licenses/.
 
 """ Helpers of openvpn job """
+
+
 PROTOCOL = 'udp'
 PORT = 1194
 SERVER_TUN_IP = '10.8.0.1'
@@ -35,35 +37,46 @@ DEVICE = 'tun0'
 
 
 def openvpn(
-       scenario, server_entity, server_ip, client_entity, client_ip,
-       server_port=PORT, client_port=PORT, protocol=PROTOCOL, server_tun_dev=DEVICE,
-       client_tun_dev=DEVICE, server_tun_ip=SERVER_TUN_IP, client_tun_ip=CLIENT_TUN_IP,
-       pass_tos=False, no_security=False, wait_finished=None, wait_launched=None, wait_delay=0):
+        scenario, server_entity, server_ip, client_entity, client_ip,
+        server_port=PORT, client_port=PORT, protocol=PROTOCOL,
+        server_tun_dev=DEVICE, client_tun_dev=DEVICE,
+        server_tun_ip=SERVER_TUN_IP, client_tun_ip=CLIENT_TUN_IP,
+        pass_tos=False, no_security=False,
+        wait_finished=None, wait_launched=None, wait_delay=0):
     launch_server = scenario.add_function(
-                         'start_job_instance',
-                         wait_finished=wait_finished,
-                         wait_launched=wait_launched,
-                         wait_delay=wait_delay
-    )
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
     launch_server.configure(
-             'openvpn', server_entity, offset=0,
-             local_ip=server_ip, protocol=protocol, local_port=server_port, 
-             tun_device=server_tun_dev, local_tun_ip=server_tun_ip,
-             remote_tun_ip=client_tun_ip, pass_tos=pass_tos, no_security=no_security,
-             server={}
-    )
+            'openvpn', server_entity, offset=0,
+            local_ip=server_ip,
+            protocol=protocol,
+            local_port=server_port,
+            tun_device=server_tun_dev,
+            local_tun_ip=server_tun_ip,
+            remote_tun_ip=client_tun_ip,
+            pass_tos=pass_tos,
+            no_security=no_security,
+            server={})
     
     launch_client = scenario.add_function(
-                      'start_job_instance',
-                      wait_launched=[launch_server],
-                      wait_delay=2
-    )
+            'start_job_instance',
+            wait_launched=[launch_server],
+            wait_delay=2)
     launch_client.configure(
-             'openvpn', client_entity, offset=0,
-             local_ip=client_ip, protocol=protocol, local_port=client_port, 
-             tun_device=client_tun_dev, local_tun_ip=client_tun_ip,
-             remote_tun_ip=server_tun_ip, pass_tos=pass_tos, no_security=no_security,
-             client={'server_ip':server_ip, 'server_port':server_port}
-    )
+            'openvpn', client_entity, offset=0,
+            local_ip=client_ip,
+            protocol=protocol,
+            local_port=client_port,
+            tun_device=client_tun_dev,
+            local_tun_ip=client_tun_ip,
+            remote_tun_ip=server_tun_ip,
+            pass_tos=pass_tos,
+            no_security=no_security,
+            client={
+                'server_ip': server_ip,
+                'server_port': server_port,
+            })
               
     return [launch_server, launch_client]

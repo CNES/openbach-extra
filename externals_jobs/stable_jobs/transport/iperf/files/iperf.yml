@@ -1,0 +1,156 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016−2019 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+---
+
+general:
+  name: iperf
+  description: >
+      This Job launches the iperf2.0 tool (client or server mode) to
+      generate UDP/TCP traffic with configured parameters (duration,
+      bandwidth, parallel flows, ToS, MSS, etc.). It measures
+      throughput, sent/lost packets, jitter, etc.
+  job_version: '1.0'
+  keywords:
+    - iperf
+  persistent: yes
+  need_privileges: yes
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/iperf/iperf.py'
+    command_stop:
+
+arguments:
+  required:
+  optional:
+    - name:        server_mode
+      type:        'None'
+      count:       '0'
+      flag:        '-s'
+      description: >
+          Start the iperf in server mode
+    - name:        client_mode_server_ip
+      type:        'str'
+      count:       '1'
+      flag:        '-c'
+      description: >
+          The IP address of server to start the iperf in client mode (only for client mode).
+    - name:        interval
+      type:        'int'
+      count:       1
+      flag:        '-i'
+      description: >
+          Pause interval seconds between periodic bandwidth reports (only for server mode).
+    - name:        window_size
+      type:        'str'
+      count:       1
+      flag:        '-w'
+      description: >
+          Socket buffer sizes in B[M/L]. For TCP, this sets the TCP window size (for server and client mode).
+    - name:        port
+      type:        'int'
+      count:       1
+      flag:        '-p'
+      description: >
+          Set server port to listen on/connect to n (default 5001) (only for client mode).
+    - name:        udp
+      type:        'None'
+      count:       0
+      flag:        '-u'
+      description: >
+          Use UDP rather than TCP (should be enabled on server and client mode)
+    - name:        bandwidth
+      type:        'str'
+      count:       1
+      flag:        '-b'
+      description: >
+          Set target bandwidth to n [M/K]bits/sec (default 1 Mbit/sec). This setting
+          requires UDP (-u) and client mode.
+    - name:        time
+      type:        'float'
+      count:       1
+      flag:        '-t'
+      description: >
+          Time in seconds to transmit for (default 10 secs) (only for client mode).
+    - name:        num_flows
+      type:        'int'
+      count:       1
+      flag:        '-n'
+      description: >
+          The number of parallel flows (default: 1). If specified, it should be given for client & server mode.
+    - name:        cong_control
+      type:        'str'
+      count:       1
+      flag:        '-C'
+      description: >
+          The TCP congestion control algorithm to use (e.g. cubic, reno) (only for client mode).
+    - name:       mss
+      type:        'int'
+      count:       1
+      flag:        '-M'
+      description: >
+          The TCP/SCTP maximum segment size (MTU - 40 bytes) (only for client mode).
+    - name:        tos
+      type:        'str'
+      count:       1
+      flag:        '-S'
+      description: >
+          Set the IP type of service (The usual prefixes for octal and hex can be used, i.e. 52, 064 and 0x34 specify the same value) (only for client mode).
+    - name:        iterations
+      type:        'int'
+      count:       1
+      flag:        '-k'
+      description: >
+          Number of test repetitions on client&server (default: 1).
+    - name:        rate_compute_time
+      type:        'int'
+      count:       1
+      flag:        '-e'
+      description: >
+           The elasped time after which we begin to consider the rate measures for TCP mean calculation (default: 0 second) (only for server mode)
+
+
+statistics:
+    - name: "sent_data_*flow_number*"
+      description: The amount of data sent in this period, in Bytes
+      frequency: 'every *interval* seconds'
+    - name: "throughput_*flow_number*"
+      description: The throughput in this period, in bits/sec
+      frequency: 'every *interval* seconds'
+    - name: "jitter_*flow_number*"
+      description: The jitter between packets in this period, in seconds
+      frequency: 'every *interval* seconds'
+    - name: "sent_pkts_*flow_number*"
+      description: The number of sent packets
+      frequency: 'every *interval* seconds'
+    - name: "lost_pkts_*flow_number*"
+      description: The number of lost packets
+      frequency: 'every *interval* seconds'
+    - name: "plr_*flow_number*"
+      description: The packet loss rate for this period, in %
+      frequency: 'every *interval* seconds'

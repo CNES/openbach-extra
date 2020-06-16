@@ -9,7 +9,7 @@ general:
   persistent:      False
 
 platform_configuration:
-  - ansible_system: 'Linux'
+  - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '16.04'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/postprocess_stats/postprocess_stats.py'
@@ -36,7 +36,7 @@ arguments:
       type:        'str'
       count:       1
       description: >
-          The name of the stat that shall be postprocessed
+          The name of the stat that shall be post-processed
     - name:        job_instance_ids
       type:        'str'
       count:       1 

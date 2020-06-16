@@ -1,0 +1,19 @@
+=== Job description ===
+
+This Job generates HTTP1.1 requests to a destination server and computes the page load time.
+
+=== Example ===
+
+Monitor HTTP web page requests to server ''172.20.0.83'' with port ''80'' during 2 minutes using the inter-arrival mode ''1'' following an exponential law.
+
+In the web interface, set parameters as follows:
+  * **sim_t** = 120
+  * **server_address** = 172.20.0.83
+  * **port** = 80
+  * **mode** = 1 (for exponential law)
+  * **lambd** = 1
+
+Or launch the job manually from CLI on the agent as follows:
+<code>
+JOB_NAME=http_client_plt sudo -E python3 /opt/openbach/agent/jobs/http_client_plt/http_client_plt.py --sim-t 120 172.20.0.83 80 -m 1 -l 1
+</code>

@@ -1,0 +1,102 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016−2019 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+---
+
+- name: Install nghttpd requirements
+  apt: pkg={{ item }} state=present update_cache=false
+  with_items:
+    - g++
+    - make
+    - binutils
+    - autoconf
+    - automake
+    - autotools-dev
+    - libtool
+    - pkg-config
+    - zlib1g-dev
+    - libcunit1-dev
+    - libssl-dev
+    - libxml2-dev
+    - libev-dev
+    - libevent-dev
+    - libjansson-dev
+    - libjemalloc-dev
+    - libsystemd-dev
+    - libc-ares-dev
+    - cython
+    - python3-dev
+    - python-setuptools
+    - checkinstall
+    - git
+  become: yes
+
+- name: Check is nghttp is installed
+  shell: which nghttp
+  register: nghttp_check_deb
+  failed_when: nghttp_check_deb.rc > 1 
+  changed_when: nghttp_check_deb.rc == 1
+  
+- name: Download nghttp2 sources
+  git: repo=https://github.com/nghttp2/nghttp2 dest=/tmp/nghttp2 force=yes version=96ea9cdaf78cefcbc220c6cad03d644061cfce16
+  when: nghttp_check_deb.rc == 1
+  
+- name: Compile nghttp2
+  shell: "{{ item }} chdir=/tmp/nghttp2/"
+  with_items:
+    - "autoreconf -i"
+    - "automake"
+    - "autoconf"
+    - "./configure --enable-app"
+    - "make"
+  when: nghttp_check_deb.rc == 1
+
+- name: Install nghttp2
+  shell: chdir=/tmp/nghttp2/ checkinstall -y
+  become: yes
+  when: nghttp_check_deb.rc == 1
+
+- name: Stop and disable nghttpx service
+  systemd: name=nghttpx state=stopped enabled=no
+  become: yes
+  ignore_errors: yes
+    
+- name: Refresh dynamic linker
+  shell: ldconfig
+  become: yes
+  when: nghttp_check_deb.rc == 1
+
+- name: Create the HTTP2 Server Job Repository
+  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  
+- name: Install HTTP2 Server
+  openbach_synchronize: src=www/ dest=/opt/openbach/agent/jobs/{{ job_name }}/ recursive=yes delete=yes
+
+- name: Download the HTTP2 Server Job sources
+  copy: src={{ item.name }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  with_items:
+    - { name: 'http2_server.help', mode: '0644' }
+    - { name: 'http2_server_rstats_filter.conf', mode: '0644' }
+    - { name: 'http2_server.py', mode: '0755' }

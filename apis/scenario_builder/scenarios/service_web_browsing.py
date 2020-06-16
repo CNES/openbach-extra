@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -34,47 +34,82 @@ from scenario_builder.helpers.postprocessing.time_series import time_series_on_s
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
-SCENARIO_DESCRIPTION="""This scenario launches one web transfert"""
-SCENARIO_NAME="""service_web_browsing"""
+SCENARIO_NAME = 'service_web_browsing'
+SCENARIO_DESCRIPTION = """This scenario launches one web transfer.
+It can then, optionally, plot the page load time using time-series and CDF.
+NB : the entities logic is the following :
+    - server sends web content
+    - client requests for and receives web content
+"""
 
-def extract_jobs_to_postprocess(scenario):
-    for function_id, function in enumerate(scenario.openbach_functions):
-        if isinstance(function, StartJobInstance):
-            if function.job_name == 'web_browsing_qoe':
-                yield function_id
+
+def web_browsing_and_server(
+        server_entity, client_entity, duration,
+        nb_runs, nb_parallel_runs,
+        compression=True, proxy_address=None,
+        proxy_port=None, scenario_name=SCENARIO_NAME):
+
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+
+    server = apache2(scenario, server_entity)
+    traffic = web_browsing_qoe(
+            scenario, client_entity, nb_runs, nb_parallel_runs, duration,
+            not compression, proxy_address, proxy_port, wait_launched=server, wait_delay=5)
+
+    stopper = scenario.add_function('stop_job_instance', wait_finished=traffic, wait_delay=5)
+    stopper.configure(server[0])
+
+    return scenario
 
 
-def build(post_processing_entity, args, launch_server=False, scenario_name=SCENARIO_NAME):
-    print("Loading:",scenario_name)
+def web_browsing(
+        client_entity, duration, nb_runs, nb_parallel_runs,
+        compression=True, proxy_address=None, proxy_port=None,
+        scenario_name=SCENARIO_NAME):
 
-    # Create top network_global scenario
-    scenario = Scenario(scenario_name + "_" + args[0], SCENARIO_DESCRIPTION)
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
+    web_browsing_qoe(
+            scenario, client_entity, nb_runs, nb_parallel_runs, duration,
+            not compression, proxy_address, proxy_port)
+
+    return scenario
+
+
+def build(
+        server_entity, client_entity, duration, nb_runs, nb_parallel_runs,
+        compression=True, proxy_address=None, proxy_port=None, launch_server=False,
+        post_processing_entity=None, scenario_name=SCENARIO_NAME):
     if launch_server:
-        # launching server
-        start_server = apache2(scenario, args[2])
-
-        # launching traffic
-        start_scenario = web_browsing_qoe(scenario, args[3], args[10], args[11], int(args[4]), wait_launched=start_server, wait_delay=5)
-
-        # stopping server
-        stopper = scenario.add_function('stop_job_instance',
-                wait_finished=start_scenario, wait_delay=5)
-        stopper.configure(start_server[0])
-
+        scenario = web_browsing_and_server(server_entity, client_entity, duration, nb_runs, nb_parallel_runs, compression, proxy_address, proxy_port, scenario_name)
     else:
-        # launching traffic
-        start_scenario = web_browsing_qoe(scenario, args[3], args[10], args[11], int(args[4]))
+        scenario = web_browsing(client_entity, duration, nb_runs, nb_parallel_runs, compression, proxy_address, proxy_port, scenario_name)
 
-    # Post processing data
-    if post_processing_entity:
-        post_processed = []
+    if post_processing_entity is not None:
+        post_processed = list(scenario.extract_function_id('web_browsing_qoe'))
         legends = []
-        for function_id in extract_jobs_to_postprocess(scenario):
-            post_processed.append([function_id])
-            legends.append([])
-        if post_processed:
-            time_series_on_same_graph(scenario, post_processing_entity, post_processed, [['page_load_time']], [['PLT (ms)']], [['PLT time series']], legends, start_scenario, None, 2)
-            cdf_on_same_graph(scenario, post_processing_entity, post_processed, 100, [['page_load_time']], [['PLT (ms)']], [['PLT CDF']], legends, start_scenario, None, 2)
+        jobs = [function for function in scenario.openbach_functions if isinstance(function, StartJobInstance)]
+
+        time_series_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                [['page_load_time']],
+                [['PLT (ms)']],
+                [['PLT time series']],
+                [legends],
+                False,
+                jobs, None, 5)
+        cdf_on_same_graph(
+                scenario,
+                post_processing_entity,
+                post_processed,
+                100,
+                [['page_load_time']],
+                [['PLT (ms)']],
+                [['PLT CDF']],
+                [legends],
+                False,
+                jobs, None, 5)
 
     return scenario

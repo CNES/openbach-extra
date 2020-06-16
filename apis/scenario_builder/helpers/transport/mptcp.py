@@ -26,10 +26,12 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of mptcp job """
+"""Helpers of mptcp job"""
 
-def mtcp_multipath(
-        scenario, server_entity, server_ifaces, client_entity, client_ifaces,
+
+def mptcp_multipath(
+        scenario, server_entity, client_entity,
+        server_interfaces, client_interfaces,
         wait_finished=None, wait_launched=None, wait_delay=0):
 
     server = scenario.add_function(
@@ -38,9 +40,11 @@ def mtcp_multipath(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     server.configure(
-            'mptcp', server_entity, offset=0,
-            enable=True, path_manager='fullmesh',
-            ifaces=','.join(server_ifaces))
+            'mptcp', server_entity,
+            offset=0,
+            enable=True,
+            path_manager='fullmesh',
+            ifaces=','.join(server_interfaces))
 
     client = scenario.add_function(
             'start_job_instance',
@@ -48,8 +52,10 @@ def mtcp_multipath(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     client.configure(
-            'mptcp', client_entity, offset=0,
-            enable=True, path_manager='fullmesh',
-            ifaces=','.join(client_ifaces))
+            'mptcp', client_entity,
+            offset=0,
+            enable=True,
+            path_manager='fullmesh',
+            ifaces=','.join(client_interfaces))
 
     return [client, server]
