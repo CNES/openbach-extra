@@ -47,6 +47,7 @@ least one argument is set but not all for the above list, this script stops.
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import transport_tcp_stack_conf
+from scenario_builder.helpers.utils import filter_none
 
 
 def main(argv=None):
@@ -134,7 +135,7 @@ def main(argv=None):
             help='The initial_ssthresh field of CUBIC (only used when congestion_control is CUBIC')
 
     observer.add_scenario_argument(
-            '--iface', '--network-interface',
+            '--interface', '--network-interface',
             help='Interface to configure segementation offload on')
     observer.add_scenario_argument(
             '--dest-ip', '--destination-ip',
@@ -157,69 +158,33 @@ def main(argv=None):
 
     args = observer.parse(argv, transport_tcp_stack_conf.SCENARIO_NAME)
 
-    tcp_params = {'reset':args.reset,
-             'tcp_slow_start_after_idle':args.tcp_slow_start_after_idle,
-             'tcp_no_metrics_save':args.tcp_no_metrics_save,
-             'tcp_sack':args.tcp_sack,
-             'tcp_recovery':args.tcp_recovery,
-             'tcp_wmem_min':args.tcp_wmem_min,
-             'tcp_wmem_default':args.tcp_wmem_default,
-             'tcp_wmem_max':args.tcp_wmem_max,
-             'tcp_rmem_min':args.tcp_rmem_min,
-             'tcp_rmem_default':args.tcp_rmem_default,
-             'tcp_rmem_max':args.tcp_rmem_max,
-             'tcp_fastopen':args.tcp_fastopen,
-             'core_wmem_default':args.core_wmem_default,
-             'core_wmem_max':args.core_wmem_max,
-             'core_rmem_default':args.core_rmem_default,
-             'core_rmem_max':args.core_rmem_max
-             }
-    tcp_params = {k:v for k,v in tcp_params.items() if v is not None}
+    route = filter_none(
+            destination_ip=args.dest_ip,
+            gateway_ip=args.gw_ip,
+            operation=args.operation,
+            device=args.dev,
+            initcwnd=args.icwnd,
+            initrwnd=args.irwnd)
 
-    if args.congestion_control.upper() == "CUBIC":
-        tcp_subparams = {'beta':args.beta,
-                 'fast_convergence':args.fast_convergence,
-                 'hystart_ack_delta':args.hystart_ack_delta,
-                 'hystart_low_window':args.hystart_low_window,
-                 'tcp_friendliness':args.tcp_friendliness,
-                 'hystart':args.hystart,
-                 'hystart_detect':args.hystart_detect,
-                 'initial_ssthresh':args.initial_ssthresh
-                 }
-        tcp_subparams = {k:v for k,v in tcp_subparams.items() if v is not None}
-        tcp_params["congestion_control"] = "CUBIC"
-    else:
-        tcp_subparams = {'congestion_control_name':args.congestion_control}
-        tcp_params["congestion_control"] = "other"
-
-    route = {'destination_ip':args.dest_ip,
-             'gateway_ip':args.gw_ip,
-             'operation':args.operation,
-             'device':args.dev,
-             'initcwnd':args.icwnd,
-             'initrwnd':args.irwnd,
-             }
-
-    route = {k:v for k,v in route.items() if v is not None}
-
-    if route:
-        if args.dest_ip is None or args.operation is None or (args.gw_ip is None and args.dev is None):
-            print("\nWARNING: The following arguments are mandatory when setting the iproute rules or setting icwnd and rcwnd:")
-            print("- dest_ip")
-            print("- operation")
-            print("- gw_ip or dev")
-            print("EXITING")
-            exit()
+    if route and (args.dest_ip is None or args.operation is None or (args.gw_ip is None and args.dev is None)):
+            observer.parser.error("""
+WARNING: The following arguments are mandatory when setting the iproute rules or setting icwnd and rcwnd:
+ - dest_ip
+ - operation
+ - gw_ip or dev""")
 
     scenario = transport_tcp_stack_conf.build(
-                args.entity,
-                tcp_params,
-                tcp_subparams,
-                args.iface,
-                route,
-                scenario_name=args.scenario_name)
+            args.entity, args.congestion_control, args.reset, args.tcp_slow_start_after_idle,
+            args.tcp_no_metrics_save, args.tcp_sack, args.tcp_recovery, args.tcp_wmem_min,
+            args.tcp_wmem_default, args.tcp_wmem_max, args.tcp_rmem_min, args.tcp_rmem_default,
+            args.tcp_rmem_max, args.tcp_fastopen, args.core_wmem_default, args.core_wmem_max,
+            args.core_rmem_default, args.core_rmem_max, args.beta, args.fast_convergence,
+            args.hystart_ack_delta, args.hystart_low_window, args.tcp_friendliness,
+            args.hystart, args.hystart_detect, args.initial_ssthresh,
+            interface=args.interface, route=route, scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
 
 if __name__ == '__main__':
     main()
+
