@@ -80,7 +80,7 @@ def main(argv=None):
             '--count', default=100,
             help='The number of owamp packets to send')
     observer.add_scenario_argument(
-            '--interval', default='0.1e',
+            '--packets-interval', default='0.1e',
             help='The mean average time between owamp packets (specify seconds and distribution type)'
             'If e: random exponential distribution. If f: constant distribution')
     observer.add_scenario_argument(
@@ -104,7 +104,7 @@ def main(argv=None):
                       args.tos,
                       args.mtu,
                       args.count,
-                      args.interval,
+                      args.packets_interval,
                       args.post_processing_entity,
                       scenario_name=args.scenario_name)
 
