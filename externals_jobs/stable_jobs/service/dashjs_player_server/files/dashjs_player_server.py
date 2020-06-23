@@ -26,7 +26,7 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Sources of the Job dash"""
+"""Sources of the Job dashjs_player_server"""
 
 
 __author__ = 'Viveris Technologies'
@@ -71,8 +71,8 @@ DESCRIPTION = ("This job launchs apache2 web server to stream on-demand a DASH "
 
 def connect_to_collect_agent():
     success = collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/dash_player_server/'
-            'dash player&server_rstats_filter.conf')
+            '/opt/openbach/agent/jobs/dashjs_player_server/'
+            'dashjs_player_server_rstats_filter.conf')
     if not success:
         message = 'Error connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
@@ -164,7 +164,7 @@ def stop_apache2(signalNumber, frame):
 def main():
     # Connect to collect_agent
     connect_to_collect_agent()
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job dash')
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job dashjs_player_server')
     try:
        # Start tornado
        th_tornado = threading.Thread(target=run_tornado, args=())

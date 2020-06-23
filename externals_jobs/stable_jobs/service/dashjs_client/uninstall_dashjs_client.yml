@@ -26,7 +26,7 @@
 #   
 #   
 #   
-#   @file     uninstall_dash client.yml
+#   @file     uninstall_dashjs_client.yml
 #   @brief    Playbook that uninstall the Job dash client
 #   @author   Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 

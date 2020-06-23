@@ -88,12 +88,12 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
     apache_servers = {}
     map_scenarios = {}
 
-    # Launching Apache2 servers first (via apache2 or dash player&server job)
+    # Launching Apache2 servers first (via apache2 or dashjs_player_server job)
     start_servers = []
     for args in arguments:
         if args.traffic == "dash" and args.source not in apache_servers:
             start_server = scenario_mix.add_function('start_job_instance')
-            start_server.configure('dash player&server', args.source, offset=0)
+            start_server.configure('dashjs_player_server', args.source, offset=0)
             apache_servers[args.source] = start_server
             start_servers.append(start_server)
     for args in arguments:
@@ -166,8 +166,8 @@ def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
 
         for jobs, filters, legend, statistic, axis in [
                 ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'Rate (b/s)'),
-                (['dash player&server'], {}, _dash_legend, 'bitrate', 'Rate (b/s)'),
-                (['dash player&server'], {}, _dash_legend, 'buffer_length', 'Buffer length (s)'),
+                (['dashjs_player_server'], {}, _dash_legend, 'bitrate', 'Rate (b/s)'),
+                (['dashjs_player_server'], {}, _dash_legend, 'buffer_length', 'Buffer length (s)'),
                 (['web_browsing_qoe'], {}, _web_browsing_legend, 'page_load_time', 'PLT (ms)'),
                 (['voip_qoe_src'], {}, _voip_legend, 'instant_mos', 'MOS'),
         ]:

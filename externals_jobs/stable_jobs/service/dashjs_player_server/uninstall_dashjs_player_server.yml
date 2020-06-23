@@ -26,8 +26,8 @@
 #   
 #   
 #   
-#   @file     uninstall_dash.yml
-#   @brief    Playbook that uninstall the Job dash
+#   @file     uninstall_dashjs_player_server.yml
+#   @brief    Playbook that uninstall the Job dashjs_player_server
 #   @author   Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 #   @author   Francklin SIMO <francklin.simo@viveris.fr>
 
@@ -43,7 +43,7 @@
     cacheable: yes 
  
 - name: Remove the Dash Job Repository
-  file: path=/opt/openbach/agent/jobs/dash_player_server state=absent
+  file: path=/opt/openbach/agent/jobs/dashjs_player_server state=absent
 
 - name: Remove virtual hosts http and http2
   file: path=/etc/apache2/sites-available/ {{ ServerName_http }}.conf state=absent
