@@ -1,7 +1,7 @@
 ---
 
 general:
-  name:            'dash player&server'
+  name:            'dashjs_player_server'
   description: >
       Deploys an Apache2 server (listen on all IPs, i.e. 0.0.0.0 on ports 8083 or 8084) with a 
       DASH video in 4 different qualities and a web integrated DASH JS player.
@@ -17,7 +17,7 @@ platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '16.04'
-    command: '/usr/bin/env python3 "/opt/openbach/agent/jobs/dash_player_server/dash.py"'
+    command: '/usr/bin/env python3 "/opt/openbach/agent/jobs/dashjs_player_server/dashjs_player_server.py"'
     command_stop:
 
 arguments:

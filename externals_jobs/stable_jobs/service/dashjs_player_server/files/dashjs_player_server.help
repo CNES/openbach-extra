@@ -8,16 +8,16 @@ The job also collects metrics from the player (video quality, bandwidth, rtt, bu
 
 == Example 1 ==
 
-Launch dash server on entity called 'server'.
+Launch dashjs_player_server on entity called 'server'.
 
 In the web interface of the openbach controller:
   - create a new scenario
-  - add a start_job_instance to run the job dash on a agent on which it is installed,
+  - add a start_job_instance to run the job dashjs_player_server on a agent on which it is installed,
   - then run the scenario using 'Launch' button
 
 Or launch the job manually from CLI of the Agent as follows:
 <code>
-JOB_NAME=dash sudo -E python3 /opt/openbach/agent/jobs/apache2/apache2.py
+JOB_NAME=dashjs_player_server sudo -E python3 /opt/openbach/agent/jobs/dashjs_player_server/dashjs_player_server.py
 </code>
 
 <note>

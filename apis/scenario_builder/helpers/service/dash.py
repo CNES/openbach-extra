@@ -26,10 +26,10 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of DASH job """
+""" Helpers of DASH jobs """
 
 
-def dash_player_and_server(
+def dash_client_and_server(
         scenario, server_entity, client_entity, server_ip, duration, protocol,
         wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
@@ -37,14 +37,14 @@ def dash_player_and_server(
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    server.configure('dash player&server', server_entity, offset=0)
+    server.configure('dashjs_player_server', server_entity, offset=0)
 
     client = scenario.add_function(
             'start_job_instance',
             wait_launched=[server],
             wait_delay=2)
     client.configure(
-            'dash client', client_entity, offset=0,
+            'dashjs_client', client_entity, offset=0,
             dst_ip=server_ip, protocol=protocol, duration=duration)
 
     stopper = scenario.add_function(
@@ -65,7 +65,7 @@ def dash_client(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     client.configure(
-            'dash client', client_entity, offset=0,
+            'dashjs_client', client_entity, offset=0,
             dst_ip=server_ip, protocol=protocol, duration=duration)
 
     return [client]
@@ -77,5 +77,5 @@ def dash_server(scenario, server_entity, wait_finished=None, wait_launched=None,
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    server.configure('dash player&server', server_entity, offset=0)
+    server.configure('dashjs_player_server', server_entity, offset=0)
     return [server]
