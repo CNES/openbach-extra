@@ -27,7 +27,7 @@
 #   this program. If not, see http://www.gnu.org/licenses/.
 
 from scenario_builder import Scenario
-from scenario_builder.helpers.transport.tcp_conf_linux import tcp_conf_linux_variable_args_number
+from scenario_builder.helpers.transport.tcp_conf_linux import tcp_conf_linux
 from scenario_builder.helpers.transport.ethtool import ethtool_disable_segmentation_offload
 from scenario_builder.helpers.network.ip_route import ip_route
 from inspect import signature
@@ -44,10 +44,17 @@ are updated only if a new value is set in the arguments. More information on
 the wiki page of the job tcp_conf_linux.
 """
 
-def tcp_stack_conf (entity, tcp_params, tcp_subparams, interface=None, route=None, scenario_name=SCENARIO_NAME):
-    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+def tcp_stack_conf(entity, congestion_control, reset=None, tcp_slow_start_after_idle=None,
+        tcp_no_metrics_save=None, tcp_sack=None, tcp_recovery=None, tcp_wmem_min=None,
+        tcp_wmem_default=None, tcp_wmem_max=None, tcp_rmem_min=None, tcp_rmem_default=None,
+        tcp_rmem_max=None, tcp_fastopen=None, core_wmem_default=None, core_wmem_max=None,
+        core_rmem_default=None, core_rmem_max=None, beta=None, fast_convergence=None,
+        hystart_ack_delta=None, hystart_low_window=None, tcp_friendliness=None,
+        hystart=None, hystart_detect=None, initial_ssthresh=None,
+        interface=None, route=None, scenario_name=SCENARIO_NAME):
 
-    args = {'entity': entity, 'cc': tcp_params['congestion_control'], 'interface': interface}
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    args = {'entity': entity, 'cc': congestion_control, 'interface': interface}
     if route:
         args.update(route)
 
@@ -55,7 +62,13 @@ def tcp_stack_conf (entity, tcp_params, tcp_subparams, interface=None, route=Non
         if str(value).startswith('$'):
             scenario.add_constant(arg, value[1:])
 
-    tcp_conf_linux_variable_args_number(scenario, entity, tcp_params, tcp_subparams)
+    tcp_conf_linux(scenario, entity, congestion_control, reset, tcp_slow_start_after_idle,
+            tcp_no_metrics_save, tcp_sack, tcp_recovery, tcp_wmem_min,
+            tcp_wmem_default, tcp_wmem_max, tcp_rmem_min, tcp_rmem_default,
+            tcp_rmem_max, tcp_fastopen, core_wmem_default, core_wmem_max,
+            core_rmem_default, core_rmem_max, beta, fast_convergence,
+            hystart_ack_delta, hystart_low_window, tcp_friendliness,
+            hystart, hystart_detect, initial_ssthresh)
 
     if interface:
         ethtool_disable_segmentation_offload(scenario, entity, interface)
@@ -67,5 +80,21 @@ def tcp_stack_conf (entity, tcp_params, tcp_subparams, interface=None, route=Non
     return scenario
 
 
-def build(entity, tcp_params, tcp_subparams, interface=None, route=None, scenario_name=SCENARIO_NAME):
-    return tcp_stack_conf(entity, tcp_params, tcp_subparams, interface, route, scenario_name)
+def build(entity, congestion_control, reset=None, tcp_slow_start_after_idle=None,
+        tcp_no_metrics_save=None, tcp_sack=None, tcp_recovery=None, tcp_wmem_min=None,
+        tcp_wmem_default=None, tcp_wmem_max=None, tcp_rmem_min=None, tcp_rmem_default=None,
+        tcp_rmem_max=None, tcp_fastopen=None, core_wmem_default=None, core_wmem_max=None,
+        core_rmem_default=None, core_rmem_max=None, beta=None, fast_convergence=None,
+        hystart_ack_delta=None, hystart_low_window=None, tcp_friendliness=None,
+        hystart=None, hystart_detect=None, initial_ssthresh=None,
+        interface=None, route=None, scenario_name=SCENARIO_NAME):
+
+    return tcp_stack_conf(entity, congestion_control, reset, tcp_slow_start_after_idle,
+            tcp_no_metrics_save, tcp_sack, tcp_recovery, tcp_wmem_min,
+            tcp_wmem_default, tcp_wmem_max, tcp_rmem_min, tcp_rmem_default,
+            tcp_rmem_max, tcp_fastopen, core_wmem_default, core_wmem_max,
+            core_rmem_default, core_rmem_max, beta, fast_convergence,
+            hystart_ack_delta, hystart_low_window, tcp_friendliness,
+            hystart, hystart_detect, initial_ssthresh,
+            interface, route, scenario_name)
+

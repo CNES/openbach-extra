@@ -46,7 +46,7 @@ def build_parser():
     parser.add_argument('-c', type=int, dest='count', default=100, help='number of test packets to send '
                                                                         'Default = 100 packets')
 
-    parser.add_argument('-i', type=str, dest='interval',
+    parser.add_argument('-i', type=str, dest='packets_interval',
                         help='mean average time between packets (seconds)'
                              'e=exponential distribution of the packets'
                              'f=constant distribution of the packets'
@@ -61,7 +61,7 @@ def timestamp(data):
     return int((float(data) * 1000))
 
 
-def client(destination_address, count, interval):
+def client(destination_address, count, packets_interval):
 
     # the length of the sample used to compute jitter mean
     granularity = 5
@@ -74,8 +74,8 @@ def client(destination_address, count, interval):
     if count:
         cmd += ['-c', str(count)]
 
-    if interval:
-        cmd += ['-i', interval]
+    if packets_interval:
+        cmd += ['-i', packets_interval]
 
     success = collect_agent.register_collect(conffile)
     if not success:
@@ -245,7 +245,7 @@ def client(destination_address, count, interval):
 
 if __name__ == '__main__':
     args = build_parser().parse_args()
-    client(args.destination_address, args.count, args.interval)
+    client(args.destination_address, args.count, args.packets_interval)
 
 
 

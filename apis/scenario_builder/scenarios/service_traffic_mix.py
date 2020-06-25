@@ -124,7 +124,7 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
             scenario_name = '{}_{}'.format(service_video_dash.SCENARIO_NAME, args.id)
             scenario = service_video_dash.build(
                     args.source, args.destination, args.source_ip,
-                    args.protocol, int(args.duration), False,
+                    int(args.duration), args.protocol, False,
                     post_processing_entity, scenario_name)
         elif args.traffic == "web_browsing":
             scenario_name = '{}_{}'.format(service_web_browsing.SCENARIO_NAME, args.id)
@@ -137,8 +137,8 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
             scenario_name = '{}_{}'.format(service_voip.SCENARIO_NAME, args.id)
             scenario = service_voip.build(
                     args.destination, args.source, args.destination_ip,
-                    args.source_ip, int(args.port), args.codec,
-                    int(args.duration), post_processing_entity, scenario_name)
+                    args.source_ip, int(args.port),int(args.duration),
+                    args.codec, post_processing_entity, scenario_name)
 
         start_scenario = scenario_mix.add_function(
                 'start_scenario_instance',

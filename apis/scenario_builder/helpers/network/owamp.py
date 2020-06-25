@@ -31,7 +31,7 @@
 
 def owamp_measure_owd(
         scenario, client_entity, server_entity, server_ip,
-        count=100, interval='0.1e',
+        count=100, packets_interval='0.1e',
         wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
             'start_job_instance',
@@ -47,7 +47,7 @@ def owamp_measure_owd(
     client.configure('owamp-client', client_entity, offset=0,
             destination_address=server_ip,
             count=count,
-            interval=interval)
+            packets_interval=packets_interval)
 
     stopper = scenario.add_function('stop_job_instance', wait_finished=[client])
     stopper.configure(server)
