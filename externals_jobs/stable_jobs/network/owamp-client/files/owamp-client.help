@@ -32,7 +32,7 @@ To send 100 test packets to the server (IP: ''192.168.1.1'') every 10ms (constan
 In the web interface, set the following parameters:
   * **destination_address** = 192.168.1.1
   * **count** = 100
-  * **interval** = 0.01f
+  * **packets_interval** = 0.01f
 
 Or launch the job manually from the Agent as follows:
 

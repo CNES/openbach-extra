@@ -26,7 +26,7 @@
 #   
 #   
 #   
-#   @file     install_dash client.yml
+#   @file     install_dashjs_client.yml
 #   @brief    Playbook that install the Job dash client
 #   @author   Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 
@@ -68,6 +68,6 @@
 - name: Install dash client
   copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
   with_items:
-    - { file: 'dash client.help', mode: '0644' }
-    - { file: 'dash client.py', mode: '0755' }
-    - { file: 'dash client_rstats_filter.conf', mode: '0644' }
+    - { file: 'dashjs_client.help', mode: '0644' }
+    - { file: 'dashjs_client.py', mode: '0755' }
+    - { file: 'dashjs_client_rstats_filter.conf', mode: '0644' }

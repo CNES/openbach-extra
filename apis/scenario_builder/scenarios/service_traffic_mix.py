@@ -88,12 +88,12 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
     apache_servers = {}
     map_scenarios = {}
 
-    # Launching Apache2 servers first (via apache2 or dash player&server job)
+    # Launching Apache2 servers first (via apache2 or dashjs_player_server job)
     start_servers = []
     for args in arguments:
         if args.traffic == "dash" and args.source not in apache_servers:
             start_server = scenario_mix.add_function('start_job_instance')
-            start_server.configure('dash player&server', args.source, offset=0)
+            start_server.configure('dashjs_player_server', args.source, offset=0)
             apache_servers[args.source] = start_server
             start_servers.append(start_server)
     for args in arguments:
@@ -124,7 +124,7 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
             scenario_name = '{}_{}'.format(service_video_dash.SCENARIO_NAME, args.id)
             scenario = service_video_dash.build(
                     args.source, args.destination, args.source_ip,
-                    args.protocol, int(args.duration), False,
+                    int(args.duration), args.protocol, False,
                     post_processing_entity, scenario_name)
         elif args.traffic == "web_browsing":
             scenario_name = '{}_{}'.format(service_web_browsing.SCENARIO_NAME, args.id)
@@ -137,8 +137,8 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
             scenario_name = '{}_{}'.format(service_voip.SCENARIO_NAME, args.id)
             scenario = service_voip.build(
                     args.destination, args.source, args.destination_ip,
-                    args.source_ip, int(args.port), args.codec,
-                    int(args.duration), post_processing_entity, scenario_name)
+                    args.source_ip, int(args.port),int(args.duration),
+                    args.codec, post_processing_entity, scenario_name)
 
         start_scenario = scenario_mix.add_function(
                 'start_scenario_instance',
@@ -166,8 +166,8 @@ def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
 
         for jobs, filters, legend, statistic, axis in [
                 ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'Rate (b/s)'),
-                (['dash player&server'], {}, _dash_legend, 'bitrate', 'Rate (b/s)'),
-                (['dash player&server'], {}, _dash_legend, 'buffer_length', 'Buffer length (s)'),
+                (['dashjs_player_server'], {}, _dash_legend, 'bitrate', 'Rate (b/s)'),
+                (['dashjs_player_server'], {}, _dash_legend, 'buffer_length', 'Buffer length (s)'),
                 (['web_browsing_qoe'], {}, _web_browsing_legend, 'page_load_time', 'PLT (ms)'),
                 (['voip_qoe_src'], {}, _voip_legend, 'instant_mos', 'MOS'),
         ]:

@@ -44,7 +44,7 @@ It is a general network QoS metrics scenario.
 
 def build(
         server_entity, client_entity, server_ip, client_ip, server_port, command_port,
-        duration, rate_limit, num_flows, bandwidth, tos, mtu, count, interval,
+        duration, rate_limit, num_flows, bandwidth, tos, mtu, count, packets_interval,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
     #Create top network_global scenario
@@ -68,7 +68,7 @@ def build(
     # Add Jitter metrology scenario
     scenario_network_jitter = network_jitter.build(
             server_entity, client_entity, server_ip, server_port,
-            duration, num_flows, bandwidth, tos, count, interval, post_processing_entity)
+            duration, num_flows, bandwidth, tos, count, packets_interval, post_processing_entity)
     start_network_jitter = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_network_one_way_delay],

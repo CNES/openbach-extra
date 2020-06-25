@@ -33,11 +33,15 @@ from ..utils import filter_none
 
 
 def tcp_conf_linux(
-        scenario, entity, congestion_control,
-        hystart=None, tcp_slow_start_after_idle=None,
-        tcp_no_metrics_save=None, tcp_sack=None,
-        tcp_recovery=None, tcp_fastopen=None,
+        scenario, entity, congestion_control, reset=None, tcp_slow_start_after_idle=None,
+        tcp_no_metrics_save=None, tcp_sack=None, tcp_recovery=None, tcp_wmem_min=None,
+        tcp_wmem_default=None, tcp_wmem_max=None, tcp_rmem_min=None, tcp_rmem_default=None,
+        tcp_rmem_max=None, tcp_fastopen=None, core_wmem_default=None, core_wmem_max=None,
+        core_rmem_default=None, core_rmem_max=None, beta=None, fast_convergence=None,
+        hystart_ack_delta=None, hystart_low_window=None, tcp_friendliness=None, hystart=None,
+        hystart_detect=None, initial_ssthresh=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
+
     function = scenario.add_function(
            'start_job_instance',
             wait_finished=wait_finished,
@@ -45,15 +49,36 @@ def tcp_conf_linux(
             wait_delay=wait_delay)
 
     parameters = filter_none(
+            reset=reset,
             tcp_slow_start_after_idle=tcp_slow_start_after_idle,
             tcp_no_metrics_save=tcp_no_metrics_save,
             tcp_sack=tcp_sack,
             tcp_recovery=tcp_recovery,
-            tcp_fastopen=tcp_fastopen)
-    if congestion_control.lower() == 'cubic':
-        parameters['CUBIC'] = {'hystart': hystart or 0}
+            tcp_wmem_min=tcp_wmem_min,
+            tcp_wmem_default=tcp_wmem_default,
+            tcp_wmem_max=tcp_wmem_max,
+            tcp_rmem_min=tcp_rmem_min,
+            tcp_rmem_default=tcp_rmem_default,
+            tcp_rmem_max=tcp_rmem_max,
+            tcp_fastopen=tcp_fastopen,
+            core_wmem_default=core_wmem_default,
+            core_wmem_max=core_wmem_max,
+            core_rmem_default=core_rmem_default,
+            core_rmem_max=core_rmem_max)
+
+    if congestion_control.upper() == 'CUBIC':
+        parameters['CUBIC'] = filter_none(
+                beta=beta,
+                fast_convergence=fast_convergence,
+                hystart_ack_delta=hystart_ack_delta,
+                hystart_low_window=hystart_low_window,
+                tcp_friendliness=tcp_friendliness,
+                hystart=hystart,
+                hystart_detect=hystart_detect,
+                initial_ssthresh=initial_ssthresh)
     else:
-        parameters['other'] = {'congestion_control_name': congestion_control}
+        parameters['other'] = {'congestion_control_name':congestion_control}
+
     function.configure('tcp_conf_linux', entity, **parameters)
 
     return [function]
@@ -64,8 +89,10 @@ def tcp_conf_linux_repetitive_tests(
         hystart=None, tcp_slow_start_after_idle=1,
         tcp_no_metrics_save=1, tcp_sack=0, tcp_recovery=1, tcp_fastopen=1,
         wait_finished=None, wait_launched=None, wait_delay=0):
+
     return tcp_conf_linux(
             scenario, entity, congestion_control, hystart,
             tcp_slow_start_after_idle, tcp_no_metrics_save,
             tcp_sack, tcp_recovery, tcp_fastopen,
             wait_finished, wait_launched, wait_delay)
+

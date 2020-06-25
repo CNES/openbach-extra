@@ -41,7 +41,7 @@ It can then, optionally, plot the jitter measurements using time-series and CDF.
 
 def jitter(
         server_entity, client_entity, server_ip, server_port, duration,
-        num_flows, bandwidth, tos, count, interval, scenario_name=SCENARIO_NAME):
+        num_flows, bandwidth, tos, count, packets_interval, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('server_port', server_port)
@@ -50,7 +50,7 @@ def jitter(
     scenario.add_constant('bandwidth', bandwidth)
     scenario.add_constant('tos', tos)
     scenario.add_constant('count', count)
-    scenario.add_constant('interval', interval)
+    scenario.add_constant('packets_interval', packets_interval)
 
     # Remove iperf3 jitter test ? Seems 0 when testing
     # Add d-itg if good jitter measure ?
@@ -60,18 +60,18 @@ def jitter(
             '$duration', '$tos', '$bandwidth')
     owamp_measure_owd(
             scenario, client_entity, server_entity,
-            '$server_ip', '$count', '$interval', iperf)
+            '$server_ip', '$count', '$packets_interval', iperf)
 
     return scenario
 
 
 def build(
         server_entity, client_entity, server_ip, server_port, duration,
-        num_flows, bandwidth, tos, count, interval,
+        num_flows, bandwidth, tos, count, packets_interval,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = jitter(
             server_entity, client_entity, server_ip, server_port, duration,
-            num_flows, bandwidth, tos, count, interval, scenario_name)
+            num_flows, bandwidth, tos, count, packets_interval, scenario_name)
 
     if post_processing_entity is not None:
         waiting_jobs = []

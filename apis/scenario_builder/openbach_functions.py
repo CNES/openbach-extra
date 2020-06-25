@@ -115,10 +115,13 @@ class StartJobInstance(OpenBachFunction):
         function = self.start_job_instance
         context['start_job_instance'] = {
             'entity_name': function['entity_name'],
-            'offset': function['offset'],
             job: self._prepare_arguments(function[job], functions),
         }
-
+        if function.get('offset') is not None:
+            context['start_job_instance']['offset'] = function['offset']
+        if function.get('interval') is not None:
+            context['start_job_instance']['interval'] = function['interval']
+ 
         return context
 
     @staticmethod

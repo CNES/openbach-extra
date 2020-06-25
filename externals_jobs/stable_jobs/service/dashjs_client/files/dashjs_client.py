@@ -26,7 +26,7 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Sources of the Job dash client """
+""" Sources of the Job dashjs_client """
 
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
@@ -56,8 +56,8 @@ HTTP1 = 'http/1.1'
 HTTP2 = 'http/2'
 
 # The following variables *_PORT must have the same values as in installation file of the job 
-# 'dash payer&server'. So don't change, unless you also change them in un/installation files 
-# requiring to reinstall both jobs: 'dash client' and 'dash player&server'  on agents.
+# 'dashjs_player_server'. So don't change, unless you also change them in un/installation files 
+# requiring to reinstall both jobs: 'dashjs_client' and 'dashjs_player_server'  on agents.
 
 HTTP1_PORT = 8083
 HTTP2_PORT = 8084
@@ -68,7 +68,7 @@ def close_firefox(driver, signum, frame):
 
 def main(dst_ip, proto, path, time):
     # Connect to collect agent
-    conffile = '/opt/openbach/agent/jobs/dash client/dash client.conf'
+    conffile = '/opt/openbach/agent/jobs/dashjs_client/dashjs_client.conf'
     collect_agent.register_collect(conffile)
  
     collect_agent.send_log(syslog.LOG_DEBUG, "About to launch Dash client")
