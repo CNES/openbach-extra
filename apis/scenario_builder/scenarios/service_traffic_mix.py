@@ -173,7 +173,7 @@ def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
         ]:
             post_processed = list(scenario.extract_function_id(*jobs, include_subscenarios=True, **filters))
             if post_processed:
-                legends = [legend(scenario.find_openbach_function(f)) for f in post_processed]
+                legends = [[legend(scenario.find_openbach_function(f))] for f in post_processed]
                 title = axis.split(maxsplit=1)[0]
 
                 time_series_on_same_graph(
@@ -183,7 +183,7 @@ def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
                         [[statistic]],
                         [[axis]],
                         [['{} time series'.format(title)]],
-                        [legends],
+                        legends,
                         False,
                         wait_finished, None, 2)
                 cdf_on_same_graph(
@@ -194,7 +194,7 @@ def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
                         [[statistic]],
                         [[axis]],
                         [['{} CDF'.format(title)]],
-                        [legends],
+                        legends,
                         False,
                         wait_finished, None, 2)
 
