@@ -39,7 +39,7 @@ through objects references rather than manual edition and indexing.
 
 
 __author__ = 'Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>'
-__version__ = 'v0.6.0'
+__version__ = 'v0.6.1'
 __all__ = [
     'Scenario', 'Condition', 'Operand',
     'ImproperlyConfiguredFunction',
