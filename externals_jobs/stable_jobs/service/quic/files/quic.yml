@@ -1,0 +1,80 @@
+---
+
+general:
+  name:            quic
+  description: >
+      This job runs a client or a server QUIC. Supported QUIC implementations are ngtcp2, picoquic, quicly
+  job_version:     '1.0'
+  keywords:        [quic, web, ngtcp2, picoquic, quicly]
+  persistent:      True
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/quic/quic.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        implemention
+      type:        str
+      count:        1
+      description: >
+          Choose a QUIC implemenation
+      choice:
+        - ngtcp2
+        - picoquic
+        - quicly
+  optional:
+    - name:        server_port
+      type:        int
+      count:       1
+      flag:        '-p'
+      description: >
+        The server port to connect to/ listen on (default 4433)
+    - name:        log_dir
+      type:        str
+      count:       1
+      flag:        '-l'
+      description: >
+        The path to the directory to save log files
+   
+  subcommand:
+  - group_name:  mode
+    optional:    False
+    choices:
+      - name:    server
+        required:
+        optional:
+      - name:    client
+        required:
+          - name:        server_ip
+            type:        ip
+            count:       1
+            flag:        '-s' 
+            description: >
+              The IP address of server
+          - name:        resources
+            type:        str
+            count:       1
+            flag:        '-r'
+            description: >
+              Comma-separed list of resources to fetch in parallel over concurrent streams. These resources must be located to the root of the directory /var/www/quic.openbach.com
+        optional:
+          - name:        download_dir
+            type:        'str'
+            count:        1
+            flag:         '-d'
+            description: >
+              The part to the directory to save downloaded resources (default /tmp)
+          - name:        nb_runs
+            type:        int
+            count:       1
+            flag:        'n'
+            description: >
+              The number of times resources will be fetched
+statistics:
+  - name: "download_time"
+    description: The time needed to transfer resources from server to client
+    frequency: 'once each tranfert is completed'

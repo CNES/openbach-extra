@@ -1,0 +1,216 @@
+# 
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2020 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under the
+#   terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+#   
+#   
+#   
+#   @file     install_quic.yml
+#   @brief    Playbook that install the Job quic
+#   @author   Francklin SIMO <armelfrancklin.simotegueu@viveris.fr>
+
+
+
+---
+
+- name: Init global variables  
+  set_fact:
+    domain: quic.openbach.com
+    cacheable: yes 
+
+- name: Install software properties common
+  apt: 
+    pkg: ['software-properties-common', 'python-software-properties'] 
+    state: present 
+    update_cache: false
+
+- name: Add repositories into sources list
+  apt_repository: repo={{ item }} state=present update_cache=true
+  with_items:
+      - ppa:ubuntu-toolchain-r/test
+
+# Install ngtcp2
+- name: Install ngtcp2 requirements
+  apt: 
+    pkg: ['g++-8', 'gcc-8', 'pkg-config', 'make', 'autoconf', 'automake', 'autotools-dev', 'libtool', 'libcunit1-dev',
+          'zlib1g-dev', 'libssl-dev', 'libxml2-dev', 'libev-dev', 'libevent-dev', 'libjansson-dev', 'libjemalloc-dev', 
+          'libsystemd-dev', 'libc-ares-dev', 'cython', 'python3-dev', 'python-setuptools', 'checkinstall', 'git'] 
+   state: present 
+   update_cache: false
+
+- name: Clone OpenSSL for QUIC from github
+  git: repo=https://github.com/tatsuhiro-t/openssl depth=1 version=OpenSSL_1_1_1g-quic-draft-29 dest=/tmp/OpenSSL_1_1_1g-quic-draft-29 force=yes 
+
+- name: Compile and install lib OpenSSL for QUIC 
+  shell: "{{ item }} chdir=/tmp/OpenSSL_1_1_1g-quic-draft-29"
+  with_items:
+    - "./config enable-tls1_3 CC=gcc-8 CXX=g++-8"
+    - "make -j$(nproc)"
+    - "make install_sw"
+
+- name: Clone ghttp3 from github
+  git: repo=https://github.com/ngtcp2/nghttp3 dest=/tmp/nghttp3 force=yes version=HEAD
+
+- name: Compile and install lib nghttp3
+  shell: "{{ item }} chdir=/tmp/nghttp3/"
+  with_items:
+    - "autoreconf -i"
+    - "./configure --enable-lib-only CC=gcc-8 CXX=g++-8"
+    - "make -j$(nproc) check"
+    - "make install"
+
+- name: Clone ngtcp2 from github
+  git: repo=https://github.com/ngtcp2/ngtcp2 dest=/tmp/ngtcp2 force=yes version=HEAD
+
+- name: Compile and install ngtcp2
+  shell: "{{ item }} chdir=/tmp/ngtcp2/"
+  with_items:
+    - "autoreconf -i"
+    - "./configure PKG_CONFIG_PATH=/tmp/OpenSSL_1_1_1g-quic-draft-29/build/lib/pkgconfig:/tmp/nghttp3/build/lib/pkgconfig LDFLAGS=\"-Wl,-rpath,/tmp/OpenSSL_1_1_1g-quic-draft-29/build/lib\" CC=gcc-8 CXX=g++-8"
+    - "make -j$(nproc) check"
+
+- name: Install ngtcp2 binaries
+  copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
+  with_items:
+    - { file: '/tmp/ngtcp2/examples/client', mode: '0755', name: 'ngtcp2_client' }
+    - { file: '/tmp/ngtcp2/examples/server', mode: '0755', name: 'ngtcp2_server' }
+
+# Install picoquic
+- name: Install picoquic requirements
+  apt: 
+    pkg: ['cmake', 'build-essential','pkg-config', 'libssl-dev', 'libbrotli-dev', 'libscope-guard-perl', 'libtest-tcp-perl', 'git'] 
+    state: present 
+    update_cache: false
+
+- name: Clone Picotls for QUIC from github
+  git: repo=https://github.com/h2o/picotls version=HEAD dest=/tmp/picotls force=yes 
+
+- name: Initialize submodules
+  shell: "git submodule {{ item }} chdir=/tmp/picotls"
+  with_items:
+        - "init"
+        - "update"
+ 
+- name: Set environment variables and Build picotls
+  environment: 
+    CC: gcc-8
+    CXX: g++-8
+    shell: "{{ item }} chdir=/tmp/picotls"
+    with_items:
+      - "cmake ."
+      - "make"
+      - "make check" 
+
+- name: Clone Picoquic from github
+  git: repo=https://github.com/private-octopus/picoquic version=HEAD dest=/tmp/picoquic force=yes 
+    
+- name: Build picoquic
+    environment:
+      CC: gcc-8
+      CXX: g++-8 
+    shell: "{{ item }} chdir=/tmp/picoquic"
+    with_items:
+      - "cmake ."
+      - "make"
+
+- name: Install picoquic binaries
+    copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
+    with_items:
+      - { file: '/tmp/picoquic/picoquicdemo', mode: '0755', name: 'picoquic' }
+
+# Install quicly
+- name: Install quicly requirements
+    apt: 
+      pkg: ['cmake', 'build-essential','pkg-config', 'libssl-dev', 'git'] 
+      state: present 
+      update_cache: false
+ 
+- name: Clone quicly github
+    git: repo=https://github.com/h2o/quicly version=HEAD dest=/tmp/quicly force=yes 
+
+- name: Initialize submodules
+    shell: "git submodule update --init --recursive chdir=/tmp/quicly"
+ 
+- name: Set environment variables and Build quicly
+    environment: 
+      CC: gcc-8
+      CXX: g++-8
+    shell: "{{ item }} chdir=/tmp/quicly"
+    with_items:
+      - "cmake ."
+      - "make"
+- name: Install quicly binaries
+    copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
+    with_items:
+      - { file: '/tmp/quicly/cli', mode: '0755', name: 'quicly' }
+
+# Create job repository and deploy files
+- name: Create the quic job repository
+    file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+
+- name: Copy files into job repository
+    copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+    with_items:
+      - { file: 'quic.help', mode: '0644' }
+      - { file: 'quic_rstats_filter.conf', mode: '0644' }
+      - { file: 'quic.py', mode: '0755' }
+
+- name: Install web files
+    synchronize: src=www/ dest=/var/www/{{ domain }}/ recursive=yes delete=yes
+    become: yes
+
+- name: Create size specific files
+    shell: base64 /dev/urandom | head -c {{ item.size }} > /var/www/{{ domain }}/{{ item.size }}_file.txt
+    with_items:
+      - { size: '500K' }
+      - { size: '1M' }
+      - { size: '10M' }
+      - { size: '100M' }
+
+# Install keys
+- name: Install pyOpenSSL
+    pip: name=pyopenssl executable=pip2 state=latest
+    become: yes
+
+- name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
+    openssl_privatekey:
+      path: /etc/ssl/private/{{ domain }}.pem 
+
+- name: Generate an OpenSSL Certificate Signing Request
+    openssl_csr:
+      path: /etc/ssl/certs/{{ domain }}.csr
+      privatekey_path: /etc/ssl/private/{{ domain }}.pem
+      common_name: "{{ domain }}"
+
+- name: Generate a Self Signed OpenSSL certificate
+    openssl_certificate:
+      path: /etc/ssl/certs/{{ domain }}.crt
+      privatekey_path: /etc/ssl/private/{{ domain }}.pem
+      csr_path: /etc/ssl/certs/{{ domain }}.csr
+      provider: selfsigned
+
+- name: Refresh dynamic linker
+    shell: ldconfig
+    become: yes
+
