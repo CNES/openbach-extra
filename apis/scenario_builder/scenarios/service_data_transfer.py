@@ -26,6 +26,8 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
+from contextlib import suppress
+
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.transport.iperf3 import iperf3_send_file_tcp, iperf3_rate_tcp, iperf3_find_server
@@ -42,7 +44,10 @@ with iperf3 logic (server = receiver and client = sender)
 
 def data_transfer(server_entity, client_entity, server_ip, server_port, duration, file_size, tos, mtu, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    if not file_size:
+    use_iperf3_rate_tcp = not file_size
+    with suppress(ValueError):
+        use_iperf3_rate_tcp = use_iperf3_rate_tcp or not int(file_size)
+    if use_iperf3_rate_tcp:
         iperf3_rate_tcp(scenario, client_entity, server_entity, server_ip, server_port, duration, 1, tos, mtu)
     else:
         iperf3_send_file_tcp(scenario, client_entity, server_entity, server_ip, server_port, file_size, tos, mtu)
