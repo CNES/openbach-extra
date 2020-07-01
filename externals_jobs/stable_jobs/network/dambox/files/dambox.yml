@@ -20,6 +20,21 @@ arguments:
       type: 'int'
       count: 1
       description: The duration of the dam slot in microseconde
+    - name: output interface
+      type: 'str'
+      count: 1
+      description: The output interface of the DamBOX (ex eht0, ens192....)
+  optional:
+    - name: duration
+      type: 'int'
+      count: 1
+      flag: '-d'
+      description: The duration of the DamBOX in seconde, if empty the binary  will runs continuously until a system interruption
+    - name: simultaneous_verdict
+      type: 'int'
+      count: 1
+      flag: '-s'
+      description: Determination of the maximum number of packets that can be sent out the BH box simultaneously (default 1)
   subcommand:
     - group_name: mode
       optional: no
@@ -28,47 +43,13 @@ arguments:
           flag: '-t'
           required:
             - name: custom_timeline
-              type: 'int'
-              count: 1
-              flag: '-t'
-              description: The custom timeline(BHP), ex 001110101001
-            - name: output interface
               type: 'str'
               count: 1
-              flag: '-i'
-              description: The output interface of the DamBOX (ex eht0, ens192....)
-          optional:
-            - name: duration
-              type: 'int'
-              count: 1
-              flag: '-d'
-              description: The duration of the DamBOX in seconde, if empty the binary  will runs continuously until a system interruption
-            - name: simultaneous_verdict
-              type: 'int'
-              count: 1
-              flag: '-s'
-              description: Determination of the maximum number of packets that can be sent out the BH box simultaneously (default 1)
+              description: The custom timeline(BHP), ex 001110101001
         - name: frequency
           flag: '-f'
           required:
             - name: frequency_value
               type: 'int'
               count: 1
-              flag: '-f'
               description: Frequency of the illuminated beam, If freq = 4, the beam is activated 1 time-slot out of 4
-            - name: output interface
-              type: 'str'
-              count: 1
-              flag: '-i'
-              description: The output interface of the DamBOX (ex eth0, ens192....)
-          optional:
-            - name: duration
-              type: 'int'
-              count: 1
-              flag: '-d'
-              description: The duration of the BH_box in seconde, if empty the binary  will runs continuously until a system interruption
-            - name: simultaneous_verdict
-              type: 'int'
-              count: 1
-              flag: '-s'
-              description: Determination of the maximum number of packets that can be sent out the BH box simultaneously (default 1)

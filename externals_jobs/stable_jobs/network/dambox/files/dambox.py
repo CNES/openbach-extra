@@ -34,17 +34,20 @@ __credits__ = '''Contributors:
  * Corentin Ormiere  <cormiere@silicom.fr>
 '''
 
+import sys
+import shlex
+import syslog
+import pathlib
 import argparse
 import subprocess
-import syslog
-import collect_agent
-from statistics import mean
-import time
-import sys
+
 import iptc
 
-#Path for timeline file and debbug file
-path_conf="/home/openbach/"
+import collect_agent
+
+
+PATH_CONF = pathlib.Path.home()
+
 
 def command_line_flag_for_argument(argument, flag):
     if argument is not None:
@@ -52,119 +55,88 @@ def command_line_flag_for_argument(argument, flag):
         yield str(argument)
 
 
-def createFileTimeline(timeline):
-    f = open(path_conf + "timeline.txt", "w+")
-    f.write(timeline + '\n')
-    f.close()
+def flush_iptables(rule='-F'):
+    cmd = ['iptables'] + shlex.split(rule)
+    try:
+        p = subprocess.run(cmd, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as ex:
+        collect_agent.send_log(syslog.LOG_ERR, 'Error when executing command {}: {}'.format(cmd, ex))
+    if p.returncode:
+        message = 'WARNING: {} exited with non-zero return value ({}): {}'.format(cmd, p.returncode, p.stderr.decode())
+        collect_agent.send_log(syslog.LOG_WARNING, message)
+        sys.exit(message)
 
-def createFilecmd(cmd):
-    f = open(path_conf + "cmd.txt", "w+")
-    f.write(cmd + '\n')
-    f.close()
 
-
-def main(beamslot, mode, value_mode,iface, duration, simultaneous_verdict):
-
+def main(beamslot, mode, value_mode, iface, duration, simultaneous_verdict):
     success = collect_agent.register_collect(
             '/opt/openbach/agent/jobs/dambox/dambox_rstats_filter.conf')
     if not success:
         message = "ERROR connecting to collect-agent"
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
-
-
     collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job dambox')
 
-    #Flush Iptables
-    rule = " -F"
-    list_rule = rule.split()
-    cmd = ["iptables"] + list_rule
-    print(cmd)
-    try:
-        p = subprocess.run(cmd, stderr=subprocess.PIPE)
-    except subprocess.CalledProcessError as ex:
-        collect_agent.send_log(syslog.LOG_ERR, "Error when executing command {}: {}".format(cmd, ex))
-    if p.returncode:
-        message = 'WARNING: {} exited with non-zero return value ({}): {}'.format(cmd, p.returncode, p.stderr.decode())
-        collect_agent.send_log(syslog.LOG_WARNING, message)
-        sys.exit(0)
-
-    #equiavlent of "iptables -I FORWARD -o ensXXX -j NFQUEUE"
+    flush_iptables()
+    # equiavlent of "iptables -I FORWARD -o ensXXX -j NFQUEUE"
     rule = iptc.Rule()
     rule.target = iptc.Target(rule, "NFQUEUE")
     rule.in_interface = str(iface)
     chain = iptc.Chain(iptc.Table(iptc.Table.FILTER), "FORWARD")
-    #chain.insert_rule(rule)
     try:
-            chain.insert_rule(rule)
-
+        chain.insert_rule(rule)
     except iptc.ip4tc.IPTCError as ex:
         message = "WARNING \'{}\'".format(ex)
         collect_agent.send_log(syslog.LOG_WARNING, message)
 
-
-
-
     cmd = ["dambox"]
     cmd.extend(command_line_flag_for_argument(damslot*1000, "-bs")) 
-    #Check between frequency or timeline mode
-    if mode=="timeline":
+    # Check between frequency or timeline mode
+    if mode == "timeline":
         # Create and put the timeline (ex 1000101) in a file for the BH binary
-        createFileTimeline(value_mode)
-        cmd.extend(command_line_flag_for_argument(path_conf+ "timeline.txt", "-t"))
-    elif mode=="frequency":
+        timeline_file = PATH_CONF.joinpath('timeline.txt')
+        timeline_file.write_text(value_mode)
+        cmd.extend(command_line_flag_for_argument(str(timeline_file), "-t"))
+    elif mode == "frequency":
         cmd.extend(command_line_flag_for_argument(value_mode, "-f"))
     cmd.extend(command_line_flag_for_argument(simultaneous_verdict, "-s"))
     cmd.extend(command_line_flag_for_argument(duration, "-d"))
-    createFilecmd(str(cmd))
+    PATH_CONF.joinpath('cmd.txt').write_text(str(cmd))
 
-#Launch of the bh box
-    fileName = path_conf + "logfile.txt"
-    with open(fileName, "w+") as f:
-        rc = subprocess.call(command, shell=True, universal_newlines=True, stdout=f)
-    if rc:
-        message = "WARNING \'{}\' exited with non-zero code".format(
-                ' '.join(cmd))
+    # Launch of the bh box
+    with PATH_CONF.joinpath('logfile.txt').open('w+') as f:
+        process = subprocess.run(command, universal_newlines=True, stdout=f)
+    if process.returncode:
+        message = "WARNING \'{}\' exited with non-zero code".format(' '.join(cmd))
         collect_agent.send_log(syslog.LOG_WARNING, message)
 
-#Flush Iptables
-    rule = " -F"
-    list_rule = rule.split()
-    cmd = ["iptables"] + list_rule
-    print(cmd)
-    try:
-        p = subprocess.run(cmd, stderr=subprocess.PIPE)
-    except subprocess.CalledProcessError as ex:
-        collect_agent.send_log(syslog.LOG_ERR, "Error when executing command {}: {}".format(cmd, ex))
-    if p.returncode:
-        message = 'WARNING: {} exited with non-zero return value ({}): {}'.format(cmd, p.returncode, p.stderr.decode())
-        collect_agent.send_log(syslog.LOG_WARNING, message)
-        sys.exit(0)
+    flush_iptables()
+
 
 if __name__ == '__main__':
-    # define Usage
+    # Define Usage
     parser = argparse.ArgumentParser(
         description='', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('damslot',help='', type=int)
-    # The chosen mode, the variable contain either "frequency" or "timeline"
-    parser.add_argument('mode', help='')
-    # The data related to the chosen mode, 010101 for timeline, a int for freqeuncy
-    parser.add_argument('value_mode', help='')
+    parser.add_argument('damslot', type=int, help='')
     parser.add_argument('iface', help='')
-    
+
     # Optionnal argument
     parser.add_argument('-d', '--duration', type=int)
     parser.add_argument('-s', '--simultaneous_verdict', type=int)
-    
 
+    # Mode selection
+    sub_parser = parser.add_subparsers(dest='mode')
+    sub_parser.required = True
+    frequency = sub_parser.add_parser('frequency')
+    frequency.add_argument('value_mode', type=int, help='')
+    timeline = sub_parser.add_parser('timeline')
+    timeline.add_argument('value_mode', help='')
+    
     args = parser.parse_args()
     damslot = args.damslot
     mode = args.mode
     value_mode = args.value_mode
     duration = args.duration
     simultaneous_verdict = args.simultaneous_verdict
-    iface=args.iface
+    iface = args.iface
 
-
-main(damslot, mode, value_mode, iface,  duration, simultaneous_verdict)
-
+    main(damslot, mode, value_mode, iface,  duration, simultaneous_verdict)
