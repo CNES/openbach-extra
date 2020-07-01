@@ -102,7 +102,7 @@ def main(argv=None):
 
     # Create the project if the specified project does not exist 
     list_projects = ListProjects()
-    list_projects.__init__()
+    list_projects.parse()
     list_projects.execute()
 
     # Add the entities to the project
