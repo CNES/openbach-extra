@@ -47,15 +47,24 @@ The available entities are :
 
 This script exploits the following auditorium scripts: 
 
-    list_project : to list the project and see if the requested project is already created
-    delete_project : to delete the project if previously already created
-    create_project : to create the project
-    add_entity : to add the entities to the project
-    install_jobs : to install the required jobs to the entities
-        uninstall_jobs : to uninstall the jobs before the installation
-        delete_job : to remove the job from the controller
-        add_job : to add the job to the controller
-        install_jobs : to install the jobs
+    list_project : 
+        to list the project and see if the requested project is already created
+    delete_project : 
+        to delete the project if previously already created
+    create_project : 
+        to create the project
+    add_entity : 
+        to add the entities to the project
+    install_jobs : 
+        to install the required jobs to the entities
+        uninstall_jobs : 
+            to uninstall the jobs before the installation
+        delete_job : 
+            to remove the job from the controller
+        add_job : 
+            to add the job to the controller
+        install_jobs : 
+            to install the jobs
 """
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
@@ -109,12 +118,6 @@ def main(argv=None):
     create_project = observer._share_state(CreateProject)
     create_project.parse([args.project_name])
     create_project.execute()
-
-    add_project = observer._share_state(AddProject)
-    add_project.args.public = True 
-    with open(args.project_name) as project_file:
-        add_project.args.project_file = args.project_name 
-        add_project.execute()
 
     # Add the entities to the project
 
