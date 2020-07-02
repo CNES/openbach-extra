@@ -111,7 +111,10 @@ def main(argv=None):
 
     args = observer.parse(argv)
 
-    # Create and add the project if the specified project does not exist 
+
+    print('======================================')
+    print('Create project                        ') 
+    print('======================================')
     list_projects = observer._share_state(ListProjects)
     list_projects.execute()
 
@@ -119,9 +122,15 @@ def main(argv=None):
     create_project.parse([args.project_name])
     create_project.execute()
 
-    # Add the entities to the project
+    print('======================================')
+    print('Add entities to the project           ')
+    print('======================================')
 
-    # Install the specified jobs on the entities
+
+    print('======================================')
+    print('Install the specified jobs to entities')
+    print('======================================')
+
 
 if __name__ == '__main__':
     main()
