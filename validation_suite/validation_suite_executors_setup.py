@@ -48,30 +48,24 @@ The available entities are :
 This script exploits the following auditorium scripts: 
 
     list_project : 
-        to list the project and see if the requested project is already created
+        to list the project 
     delete_project : 
-        to delete the project if previously already created
+        to delete the project 
+    list_project : 
+        to list the project and check that the delete was ok
     create_project : 
         to create the project
     add_entity : 
         to add the entities to the project
     install_jobs : 
         to install the required jobs to the entities
-        uninstall_jobs : 
-            to uninstall the jobs before the installation
-        delete_job : 
-            to remove the job from the controller
-        add_job : 
-            to add the job to the controller
-        install_jobs : 
-            to install the jobs
 """
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from auditorium_scripts.list_projects import ListProjects
-from auditorium_scripts.add_project import AddProject
 from auditorium_scripts.delete_project import DeleteProject
 from auditorium_scripts.create_project import CreateProject
+from auditorium_scripts.add_entity import AddEntity
 
 def main(argv=None):
     observer = ScenarioObserver()
@@ -115,22 +109,62 @@ def main(argv=None):
     print('======================================')
     print('Create project                        ') 
     print('======================================')
+    # List the projects
     list_projects = observer._share_state(ListProjects)
     list_projects.execute()
-
+    # Delete the project
+    delete_project = observer._share_state(DeleteProject)
+    delete_project.args.name = args.project_name
+    delete_project.execute()
+    # List the projects
+    list_projects = observer._share_state(ListProjects)
+    list_projects.execute()
+    # Create the project
     create_project = observer._share_state(CreateProject)
-    create_project.parse([args.project_name])
+    create_project.args.project = {
+            'name': args.project_name,
+            'description': ' ',
+            'owner': 'openbach',
+    }
     create_project.execute()
+    print('Project '+args.project_name+' created')
 
     print('======================================')
     print('Add entities to the project           ')
     print('======================================')
-
+    # Add WSS entity to the project
+    add_entity = observer._share_state(AddEntity)
+    add_entity.args.entity_name = args.wss_entity
+    add_entity.args.project_name = args.project_name
+    add_entity.args.agent = args.wss_admin_ip
+    add_entity.args.description = ' '
+    add_entity.execute()
+    # Add WSC entity to the project
+    add_entity.args.entity_name = args.wsc_entity
+    add_entity.args.project_name = args.project_name
+    add_entity.args.agent = args.wsc_admin_ip
+    add_entity.args.description = ' '
+    add_entity.execute()
+    # Add MIDBOX entity to the project
+    add_entity.args.entity_name = args.midbox_entity
+    add_entity.args.project_name = args.project_name
+    add_entity.args.agent = args.midbox_admin_ip
+    add_entity.args.description = ' '
+    add_entity.execute()
+    print(args.wss_entity+', '+args.wsc_entity+' and '+args.midbox_entity+' are added to '+args.project_name)
 
     print('======================================')
     print('Install the specified jobs to entities')
     print('======================================')
-
+    print('You may need to run')
+    print('validation_suite_executors_setup_jobs_on_controller.sh')
+    print('to add the required job on the controller')
+    # Install the jobs on WSS
+    # TODO
+    # Install the jobs on WSC
+    # TODO
+    # Install the jobs on MIDBOX
+    # TODO
 
 if __name__ == '__main__':
     main()
