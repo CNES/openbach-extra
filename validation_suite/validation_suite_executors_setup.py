@@ -60,7 +60,9 @@ This script exploits the following auditorium scripts:
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from auditorium_scripts.list_projects import ListProjects
-
+from auditorium_scripts.add_project import AddProject
+from auditorium_scripts.delete_project import DeleteProject
+from auditorium_scripts.create_project import CreateProject
 
 def main(argv=None):
     observer = ScenarioObserver()
@@ -100,25 +102,23 @@ def main(argv=None):
 
     args = observer.parse(argv)
 
-    # Create the project if the specified project does not exist 
-    list_projects = ListProjects()
-    list_projects.parse()
+    # Create and add the project if the specified project does not exist 
+    list_projects = observer._share_state(ListProjects)
     list_projects.execute()
+
+    create_project = observer._share_state(CreateProject)
+    create_project.parse([args.project_name])
+    create_project.execute()
+
+    add_project = observer._share_state(AddProject)
+    add_project.args.public = True 
+    with open(args.project_name) as project_file:
+        add_project.args.project_file = args.project_name 
+        add_project.execute()
 
     # Add the entities to the project
 
     # Install the specified jobs on the entities
-
-
-    #print(args.wss_entity)
-    #print(args.wsc_entity)
-    #print(args.midbox_entity)
-    #print(args.wss_jobs)
-    #print(args.wsc_jobs)
-    #print(args.midbox_jobs)
-    #print(args.wss_admin_ip)
-    #print(args.wsc_admin_ip)
-    #print(args.midbox_admin_ip)
 
 if __name__ == '__main__':
     main()
