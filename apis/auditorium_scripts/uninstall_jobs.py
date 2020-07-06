@@ -45,7 +45,7 @@ from auditorium_scripts.frontend import FrontendBase
 from auditorium_scripts.state_job import StateJob
 
 
-class UninstallJob(FrontendBase):
+class UninstallJobs(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Uninstall Jobs')
         self.parser.add_argument(
