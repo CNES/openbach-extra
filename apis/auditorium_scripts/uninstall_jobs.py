@@ -108,4 +108,4 @@ def check_uninstall_state(session, base_url, job_name, agent_address, show=True)
 
 
 if __name__ == '__main__':
-    UninstallJob.autorun()
+    UninstallJobs.autorun()
