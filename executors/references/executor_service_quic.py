@@ -55,7 +55,7 @@ def main(argv=None):
             help='The QUIC implementation to run by the client. Possible values are: ngtcp2, picoquic, quicly')
     observer.add_scenario_argument(
             '--resources', required=True,
-            help='Comma-separed list of resources to fetch in parallel over concurrent streams')
+            help='Comma-separed list of resources to download in parallel over concurrent streams')
    
     observer.add_scenario_argument(
             '--download-dir',
@@ -64,8 +64,14 @@ def main(argv=None):
             '--server-log-dir',
             help='The path to the directory to save server\'s logs')
     observer.add_scenario_argument(
+            '--server-extra-args',
+            help='Specify additionnal CLI arguments that are supported by the chosen server implementation')
+    observer.add_scenario_argument(
             '--client-log-dir',
             help='The path to the directory to save client\'s logs')
+    observer.add_scenario_argument(
+            '--client-extra-args',
+            help='Specify additionnal CLI arguments that are supported by the chosen client implementation')
     observer.add_scenario_argument(
             '--nb-runs', default=1,
             help='The number of times resources will be downloaded')
@@ -88,7 +94,9 @@ def main(argv=None):
             args.nb_runs,
             args.download_dir,
             args.server_log_dir,
+            args.server_extra_args,
             args.client_log_dir,
+            args.client_extra_args,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
 
