@@ -33,17 +33,18 @@ from ..utils import filter_none
 def quic(
        scenario, server_entity, server_ip, server_port, server_implementation, 
        client_entity, client_implementation, resources, nb_runs, download_dir=None,
-       server_log_dir=None, client_log_dir=None, wait_finished=None, 
-       wait_launched=None, wait_delay=0):
+       server_log_dir=None, server_extra_args=None, client_log_dir=None, client_extra_args=None, 
+       wait_finished=None, wait_launched=None, wait_delay=0):
     f_start_server = scenario.add_function(
                 'start_job_instance',
                 wait_finished=wait_finished,
                 wait_launched=wait_launched,
                 wait_delay=wait_delay)
-    paramaters = filter_none(
-                implementation=client_implementation, 
+    parameters = filter_none(
+                implementation=server_implementation, 
                 server_port=server_port,
-                log_dir=server_log_dir)
+                log_dir=server_log_dir,
+                extra_agrs=server_extra_args)
     parameters['server'] = {}
     f_start_server.configure(
                 'quic', server_entity, offset=0,
@@ -56,9 +57,10 @@ def quic(
                 wait_delay=5
     )
     parameters = filter_none(
-                implementation=server_implementation,
+                implementation=client_implementation,
                 server_port=server_port,
-                log_dir=server_log_dir)
+                log_dir=server_log_dir,
+                extra_args=client_extra_args)
     parameters['client'] = filter_none(
                 server_ip=server_ip,
                 resources=resources,
@@ -73,5 +75,62 @@ def quic(
     f_stop_server = scenario.add_function('stop_job_instance', wait_finished=[f_start_client])
     f_stop_server.configure(f_start_server)    
      
-    return [f_start_server]    
+    return [f_start_server]   
 
+
+def quic_server(
+        scenario, server_entity, server_implementation, server_port, log_dir=None, 
+        extra_args=None, wait_finished=None, wait_launched=None, wait_delay=0):
+    f_start_server = scenario.add_function(
+                'start_job_instance',
+                wait_launched=wait_launched,
+                wait_fininshed=wait_finished,
+                wait_delay=wait_delay
+    )
+    parameters = filter_none(
+                implementation=server_implementation,
+                server_port=server_port,
+                log_dir=log_dir,
+                extra_args=extra_args)
+    parameters['server'] = {}
+                
+    f_start_server.configure(
+                'quic', server_entity, offset=0,
+                **parameters
+    )               
+    
+    return [f_start_server] 
+
+
+
+def quic_client(
+        scenario, server_ip, server_port, client_entity, client_implementation, resources, 
+        nb_runs, download_dir=None, log_dir=None, extra_args=None, 
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    f_start_client = scenario.add_function(
+                'start_job_instance',
+                wait_launched=wait_launched,
+                wait_fininshed=wait_finished,
+                wait_delay=wait_delay
+    )
+    parameters = filter_none(
+                implementation=client_implementation,
+                server_port=server_port,
+                log_dir=log_dir,
+                extra_args=extra_args)
+    parameters['client'] = filter_none(
+                server_ip=server_ip,
+                resources=resources,
+                download_dir=download_dir,
+                nb_runs=nb_runs)
+                
+    f_start_client.configure(
+                'quic', client_entity, offset=0,
+                **parameters
+    )               
+    
+    return [f_start_client]
+
+ 
+def quic_find_client(openbach_function):
+    return 'client' in openbach_function.start_job_instance['quic']
