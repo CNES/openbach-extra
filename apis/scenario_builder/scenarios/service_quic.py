@@ -41,13 +41,14 @@ client quic to download resources and post-processes collected data"""
 
 def build(server_entity, server_ip, server_port, server_implementation, 
           client_entity, client_implementation, resources, nb_runs, 
-          download_dir=None, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+          download_dir=None, server_log_dir=None, server_extra_args=None, client_log_dir=None, 
+          client_extra_args=None, post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     quic(scenario, 
          server_entity, server_ip, server_port, server_implementation, 
          client_entity, client_implementation, resources, nb_runs, 
-         download_dir, server_log_dir, client_log_dir)
+         download_dir, server_log_dir, server_extra_args, client_log_dir, client_extra_args)
 
     if post_processing_entity:
        post_processed = list(scenario.extract_function_id('quic'))
@@ -61,7 +62,7 @@ def build(server_entity, server_ip, server_port, server_implementation,
                [['download_time']], 
                [['DLT (ms)']], 
                [['DLT time series']], 
-               legends, 
+               [legends], 
                False,
                wait_finished, None, 5)
        cdf_on_same_graph(
@@ -72,8 +73,8 @@ def build(server_entity, server_ip, server_port, server_implementation,
                [['download_time']], 
                [['DLT (ms)']], 
                [['DLT CDF']], 
-               wait_finished,
+               [legends],
                False, 
-               jobs, None, 2)
+               wait_finished, None, 2)
 
     return scenario
