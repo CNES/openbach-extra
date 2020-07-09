@@ -46,8 +46,15 @@ from ipaddress import ip_address
 from pathlib import Path
 import tempfile
 
-DESCRIPTION = ("This job runs a client or a server QUIC. Supported QUIC implementations are :"
-                "ngtcp2, picoquic, quicly"
+DESCRIPTION = ("This job runs a client or a server QUIC. Supported QUIC implementations are: "
+               "ngtcp2, picoquic, quicly. \n"
+               "By default, each implementation is cloned from its standard repository. "
+               "The installed version is the HEAD of the master branch. \n "
+               "If you wish to install another version, you need to modify global variables "
+               "related to the implementation to change. \n "
+               "These variables are located at the begining of the install file of the job. "
+               "So you have to change the address of the git repository as well as "
+               "the version to install"
               )
 
 SERVER_PORT = 4433
@@ -95,7 +102,7 @@ def _command_build_helper(flag, value):
         yield str(value)
 
 
-def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resources=None, download_dir=None):
+def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resources=None, download_dir=None, extra_args=None):
     cmd = []
     _, server_port = _command_build_helper(None, server_port)
     if implementation == Implementations.NGTCP2.value:
@@ -106,11 +113,13 @@ def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resou
           cmd.extend(_command_build_helper('--download', download_dir))
           cmd.extend(['--exit-on-all-streams-close'])
           cmd.extend(_command_build_helper('--qlog-file', log_file))
+          if extra_args: cmd.extend([extra_args])
        if mode == 'server':
           cmd.extend(['ngtcp2_server', '0.0.0.0', server_port])
           cmd.extend([KEY, CERT])
           cmd.extend(_command_build_helper('-d', HTDOCS))
           cmd.extend(_command_build_helper('--qlog-dir', os.path.split(log_file)[0]))
+          if extra_args: cmd.extend([extra_args])
     if implementation == Implementations.PICOQUIC.value:
        cmd.extend(['picoquic'])
        if mode == 'client':
@@ -118,6 +127,7 @@ def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resou
           cmd.extend(_command_build_helper('-o', download_dir))
           cmd.extend(_command_build_helper('-l', log_file))
           cmd.extend([server_ip, server_port])
+          if extra_args: cmd.extend([extra_args])
           cmd.extend([';'.join(['/{}'.format(res) for res in resources])])
        if mode == 'server':
           cmd.extend(_command_build_helper('-c', CERT))
@@ -125,6 +135,7 @@ def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resou
           cmd.extend(_command_build_helper('-w', HTDOCS))
           cmd.extend(_command_build_helper('-l', log_file))
           cmd.extend(_command_build_helper('-p', server_port))
+          if extra_args: cmd.extend([extra_args])
     if implementation == Implementations.QUICLY.value:
        cmd.extend(['quicly'])
        if mode == 'client':
@@ -132,28 +143,34 @@ def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resou
           _, server_port = _command_build_helper(None, server_port)
           cmd.extend(_command_build_helper('-e', log_file))
           cmd.extend(['-P /{}'.format(res) for res in resources])
+          if extra_args: cmd.extend([extra_args])
           cmd.extend([server_ip, server_port])
        if mode == 'server':
           cmd.extend(_command_build_helper('-c', CERT))
           cmd.extend(_command_build_helper('-k', KEY))
           cmd.extend(_command_build_helper('-e', log_file))
+          if extra_args: cmd.extend([extra_args])
           cmd.extend(['0.0.0.0', server_port])
     return cmd          
 
 
-def client(implementation, server_port, log_dir, server_ip, resources, download_dir, nb_runs):
+def client(implementation, server_port, log_dir, extra_args, server_ip, resources, download_dir, nb_runs):
+    connect_to_collect_agent()
     for run_number in range(nb_runs):
         with open(os.path.join(log_dir, 'log_client_{}.txt'.format(str(run_number+1))), 'w+') as log_file:
-             cmd = build_cmd(implementation, 'client', server_port, log_file.name, server_ip, [r for r in resources.split(',')], download_dir)
+             cmd = build_cmd(implementation, 'client', server_port, log_file.name, server_ip, [r for r in resources.split(',')], 
+                             download_dir, extra_args=extra_args)
              start_time = now()
              p = run_command(cmd, cwd=download_dir)
              end_time = now()
              elapsed_time = end_time - start_time
-             collect_agent.send_stat(now(), **{'download_time':elapsed_time})
+             collect_agent.send_stat(now(), download_time=elapsed_time)
+
        
-def server(implementation, server_port, log_dir):
+def server(implementation, server_port, log_dir, extra_args):
+    connect_to_collect_agent()
     with open(os.path.join(log_dir, 'log_server.txt'), 'w+') as log_file:
-         cmd = build_cmd(implementation, 'server', server_port, log_file.name)
+         cmd = build_cmd(implementation, 'server', server_port, log_file.name, extra_args=extra_args)
          p = run_command(cmd, cwd=HTDOCS)
 
 
@@ -190,7 +207,9 @@ if __name__ == "__main__":
     parser.add_argument(
                'implementation', 
                choices=[implem.value for implem in Implementations], 
-               help='Choose a QUIC implementation'
+               help='Choose a QUIC implementation. Know that, for each implementation ' 
+                    'you can modify global variables to specify the address of the git repository '
+                    'as well as the version to checkout',
     )
     
     parser.add_argument(
@@ -200,6 +219,13 @@ if __name__ == "__main__":
     parser.add_argument(
                '-l', '--log-dir', type=writable_dir, default=LOG_DIR,
                help='The Path to the directory to save log files'
+    ) 
+    parser.add_argument(
+               '-e', '--extra-args', type=str, default=None,
+               help=('Allow to specify additional CLI arguments that are supported by chosen implementation. ' 
+                     'From terminal, you need to run the name of the implementation follows by ' 
+                      '\'-h\' to see specific supported arguments' 
+                    )
     ) 
     # Sub-commands to split server and client mode
     subparsers = parser.add_subparsers(
@@ -214,16 +240,16 @@ if __name__ == "__main__":
                help='Run in client mode'
     )
     parser_client.add_argument(
-               '-s', '--server-ip', type=ip_address, 
+               'server_ip', type=ip_address, 
                help='The IP address of the server'
     )
     parser_client.add_argument(
-               '-r', '--resources', type=str, 
+               'resources', type=str, 
                help=('Comma-seprated list of resources to fetch in parallel over concurrent streams. '
                      'These resources must be located to the root of the directory \'{}\''.format(HTDOCS))
     )
     parser_client.add_argument(
-               '-d', '--download_dir', type=writable_dir, default=DOWNLOAD_DIR, 
+               '-d', '--download-dir', type=writable_dir, default=DOWNLOAD_DIR, 
                help='The path to the directory  to save downloaded resources'
     )
     parser_client.add_argument(

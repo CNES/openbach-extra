@@ -31,6 +31,10 @@ JOB_NAME=quic sudo -E python3 /opt/openbach/agent/jobs/quic/quic.py ngtcp2 -p 44
 
 From client agent:
 <code>
-JOB_NAME=quic sudo -E python3 /opt/openbach/agent/jobs/quic/quic.py picoquuic -p 4433 client -s 192.168.1.1 -r logo.jpg;index.html -n 10
+JOB_NAME=quic sudo -E python3 /opt/openbach/agent/jobs/quic/quic.py picoquuic -p 4433 client  192.168.1.1  logo.jpg;index.html -n 10
 </code>
+
+=== Additional Information ===
+
+Know that, if you wish to install a specific version for any implementation, you can modify related global variables that are defined at the begining of the install file of the job, by specifying the address of the git repository as well as the version to install
 
