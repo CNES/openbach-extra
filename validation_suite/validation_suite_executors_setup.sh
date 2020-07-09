@@ -98,18 +98,20 @@ python3 ../apis/auditorium_scripts/add_entity.py -a $midbox_admin_ip $midbox_ent
 
 echo "$wss_entity , $wsc_entity and $midbox_entity are added to $project_name"
 
-echo "======================================"
+echo "======================================================"
 echo "Install the specified jobs to entities"
-echo "======================================"
+echo "------------------------------------------------------"
 echo "You may need to run"
 echo "validation_suite_executors_setup_jobs_on_controller.sh"
 echo "to add the required job on the controller"
+echo "======================================================"
 # Install the jobs on WSS
 if [[ $wss_jobs != None ]]
 then
 	IFS=','
 	read -ra JOB <<< "$wss_jobs"
 	for i in "${JOB[@]}"; do
+	        echo " "	
 	        echo "Installing $i on $wss_entity"	
     		python3 ../apis/auditorium_scripts/uninstall_jobs.py -j $i -a $wss_admin_ip
     		python3 ../apis/auditorium_scripts/install_jobs.py -j $i -a $wss_admin_ip
@@ -121,6 +123,7 @@ then
 	IFS=','
 	read -ra JOB <<< "$wsc_jobs"
 	for i in "${JOB[@]}"; do 
+	        echo " "	
 	        echo "Installing $i on $wsc_entity"	
     		python3 ../apis/auditorium_scripts/uninstall_jobs.py -j $i -a $wsc_admin_ip
     		python3 ../apis/auditorium_scripts/install_jobs.py -j $i -a $wsc_admin_ip
@@ -132,6 +135,7 @@ then
 	IFS=','
 	read -ra JOB <<< "$midbox_jobs"
 	for i in "${JOB[@]}"; do 
+	        echo " "	
 	        echo "Installing $i on $midbox_entity"	
     		python3 ../apis/auditorium_scripts/uninstall_jobs.py -j $i -a $midbox_admin_ip
     		python3 ../apis/auditorium_scripts/install_jobs.py -j $i -a $midbox_admin_ip

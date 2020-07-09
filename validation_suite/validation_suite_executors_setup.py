@@ -65,6 +65,8 @@ from auditorium_scripts.scenario_observer import ScenarioObserver
 from auditorium_scripts.list_projects import ListProjects
 from auditorium_scripts.delete_project import DeleteProject
 from auditorium_scripts.create_project import CreateProject
+from auditorium_scripts.install_jobs import InstallJobs
+from auditorium_scripts.uninstall_jobs import UninstallJobs
 from auditorium_scripts.add_entity import AddEntity
 
 def main(argv=None):
@@ -111,14 +113,17 @@ def main(argv=None):
     print('======================================')
     # List the projects
     list_projects = observer._share_state(ListProjects)
-    list_projects.execute()
-    # Delete the project
-    delete_project = observer._share_state(DeleteProject)
-    delete_project.args.name = args.project_name
-    delete_project.execute()
-    # List the projects
-    list_projects = observer._share_state(ListProjects)
-    list_projects.execute()
+    l_projects = list_projects.execute()
+    # Check if the project exists and delete it if this is the case
+    if (any (args.project_name) in s for s in l_projects ):
+        # Delete the project
+        delete_project = observer._share_state(DeleteProject)
+        delete_project.args.name = args.project_name
+        delete_project.execute()
+        # List the projects
+        list_projects = observer._share_state(ListProjects)
+        list_projects.execute()
+
     # Create the project
     create_project = observer._share_state(CreateProject)
     create_project.args.project = {
@@ -153,18 +158,46 @@ def main(argv=None):
     add_entity.execute()
     print(args.wss_entity+', '+args.wsc_entity+' and '+args.midbox_entity+' are added to '+args.project_name)
 
-    print('======================================')
+    print('======================================================')
     print('Install the specified jobs to entities')
-    print('======================================')
+    print('------------------------------------------------------')
     print('You may need to run')
     print('validation_suite_executors_setup_jobs_on_controller.sh')
     print('to add the required job on the controller')
+    print('======================================================')
     # Install the jobs on WSS
-    # TODO
+    job_list = args.wss_jobs.split(',')
+    for j in job_list:
+        print(' ')
+        print('Installing '+str(j)+' on '+args.wss_entity)
+        uninstall_jobs = UninstallJobs()
+        uninstall_jobs.parse(str('-j '+j+' -a '+args.wss_admin_ip).split())
+        uninstall_jobs.execute()
+        install_jobs = InstallJobs()
+        install_jobs.parse(str('-j '+j+' -a '+args.wss_admin_ip).split())
+        install_jobs.execute()
     # Install the jobs on WSC
-    # TODO
+    job_list = args.wsc_jobs.split(',')
+    for j in job_list:
+        print(' ')
+        print('Installing '+str(j)+' on '+args.wsc_entity)
+        uninstall_jobs = UninstallJobs()
+        uninstall_jobs.parse(str('-j '+j+' -a '+args.wsc_admin_ip).split())
+        uninstall_jobs.execute()
+        install_jobs = InstallJobs()
+        install_jobs.parse(str('-j '+j+' -a '+args.wsc_admin_ip).split())
+        install_jobs.execute()
     # Install the jobs on MIDBOX
-    # TODO
+    job_list = args.midbox_jobs.split(',')
+    for j in job_list:
+        print(' ')
+        print('Installing '+str(j)+' on '+args.midbox_entity)
+        uninstall_jobs = UninstallJobs()
+        uninstall_jobs.parse(str('-j '+j+' -a '+args.midbox_admin_ip).split())
+        uninstall_jobs.execute()
+        install_jobs = InstallJobs()
+        install_jobs.parse(str('-j '+j+' -a '+args.midbox_admin_ip).split())
+        install_jobs.execute()
 
 if __name__ == '__main__':
     main()

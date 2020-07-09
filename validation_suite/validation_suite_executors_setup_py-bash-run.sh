@@ -48,12 +48,14 @@ project=validsuite
 wss=wss
 wsc=wsc
 midbox=midbox
-wssIP=192.168.3.70
-wscIP=192.168.3.68
-midboxIP=192.168.3.69
-wssJ=nuttcp,netcat
-wscJ=tcp_conf_linux
-midboxJ=None
+wssIP=192.168.3.71
+wscIP=192.168.3.69
+midboxIP=192.168.3.70
+# list the job installed by default to re-install them all
+default_jobs=ip_route,fping,iperf3,rate_monitoring,rstats_job,rsyslog_job,send_logs,send_stats,synchronization
+wssJ=$default_jobs,nuttcp,tcp_conf_linux
+wscJ=$default_jobs,tcp_conf_linux
+midboxJ=$default_jobs
 
 if [[ $CHOICE = "python" ]] || [[ $CHOICE = "both" ]]
 then
@@ -61,7 +63,7 @@ then
 	echo "Test PYTHON validation_suite_executors_setup.py"
 	echo "##################################################################"
 	echo " "
-python3 validation_suite_executors_setup.py -o $project --wss-entity $wss --wsc-entity $wsc --midbox-entity $midbox --wss-admin-ip $wssIP --wsc-admin-ip $wscIP --midbox-admin-ip $midboxIP --wss-jobs $wssJ --wsc-jobs $wscJ --midbox-jobs $midboxJ run
+	python3 validation_suite_executors_setup.py -o $project --wss-entity $wss --wsc-entity $wsc --midbox-entity $midbox --wss-admin-ip $wssIP --wsc-admin-ip $wscIP --midbox-admin-ip $midboxIP --wss-jobs $wssJ --wsc-jobs $wscJ --midbox-jobs $midboxJ run
 fi 
 
 if [[ $CHOICE = "bash" ]] || [[ $CHOICE = "both" ]]

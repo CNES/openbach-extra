@@ -49,6 +49,12 @@ fi
 path_openbach=$1 
 path_openbach_extra=$2 
 
+############################################################
+############################################################
+# openbach
+############################################################
+############################################################
+
 # time_series
 python3 ../apis/auditorium_scripts/delete_job.py time_series
 python3 ../apis/auditorium_scripts/add_job.py -f $path_openbach/src/jobs/core_jobs/post_processing/time_series time_series
@@ -60,6 +66,16 @@ python3 ../apis/auditorium_scripts/add_job.py -f $path_openbach/src/jobs/core_jo
 # tc_configure_link
 python3 ../apis/auditorium_scripts/delete_job.py tc_configure_link
 python3 ../apis/auditorium_scripts/add_job.py -f $path_openbach/src/jobs/core_jobs/network/tc_configure_link tc_configure_link
+
+# ip_route
+python3 ../apis/auditorium_scripts/delete_job.py ip_route
+python3 ../apis/auditorium_scripts/add_job.py -f $path_openbach/src/jobs/core_jobs/network/ip_route ip_route
+
+############################################################
+############################################################
+# openbach-extra
+############################################################
+############################################################
 
 # owamp
 python3 ../apis/auditorium_scripts/delete_job.py owamp-server
@@ -77,9 +93,14 @@ python3 ../apis/auditorium_scripts/add_job.py -f $path_openbach_extra/externals_
 python3 ../apis/auditorium_scripts/delete_job.py nuttcp
 python3 ../apis/auditorium_scripts/add_job.py -f $path_openbach_extra/externals_jobs/stable_jobs/transport/nuttcp nuttcp
 
+# tcp_conf_linux
+python3 ../apis/auditorium_scripts/delete_job.py tcp_conf_linux
+python3 ../apis/auditorium_scripts/add_job.py -f $path_openbach_extra/externals_jobs/stable_jobs/transport/tcp_conf_linux tcp_conf_linux
+
 #d-itg
 python3 ../apis/auditorium_scripts/delete_job.py d-itg_recv
 python3 ../apis/auditorium_scripts/delete_job.py d-itg_send
 python3 ../apis/auditorium_scripts/add_job.py -f $path_openbach_extra/externals_jobs/stable_jobs/network/d-itg_recv d-itg_recv
 python3 ../apis/auditorium_scripts/add_job.py -f $path_openbach_extra/externals_jobs/stable_jobs/network/d-itg_send d-itg_send
+
 
