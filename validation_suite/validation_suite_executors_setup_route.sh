@@ -38,9 +38,7 @@
 #| wss        |    | midbox        |    |  wsc       |    |             |
 #+------------+    +---------------+    +------------+    +-------------+
 #|      wss_ip|    |midbox_ip_wss  |    |            |    |             |
-#|      wss_if|    |midbox_if_wss  |    |            |    |             |
 #|            |    |  midbox_ip_wsc|    |wsc_ip      |    |             |
-#|            |    |  midbow_if_wsc|    |wsc_if      |    |             |
 #+------------+    +---------------+    +------------+    +-------------+
 #
 #The different entity can be interconnected through the administration network
@@ -57,13 +55,11 @@ wss_admin_ip=$2
 wsc_admin_ip=$3
 midbox_admin_ip=$4
 wss_ip=$5
-wss_if=$6   
-midbox_ip_wss=$7   
-midbox_if_wss=$8   
-midbox_ip_wsc=$9   
-midbox_if_wsc=${10}
-wsc_ip=${11}
-wsc_if=${12}
+midbox_ip_wss=$6   
+midbox_ip_wsc=$7   
+wsc_ip=$8
+net_wss=$9
+net_wsc=${10}
 
 if [[ $CHOICE != "add" ]] && [[ $CHOICE != "delete" ]] 
 then
@@ -77,44 +73,28 @@ fi
 # wss -> midbox 
 echo "--------------------------------------------------"
 echo "Setting up wss -> midbox route"
-echo "$wss_ip and $wss_if of $wss_admin_ip"
-echo "routed to"
-echo "$midbox_ip_wss and $midbox_if_wss of $midbox_admin_ip"
-
-ssh -t $wss_admin_ip "JOB_NAME=ip_route sudo -E python3 /opt/openbach/agent/jobs/ip_route/ip_route.py $CHOICE -gw $wss_ip destination_ip $midbox_ip_wss"
+ssh -t $wss_admin_ip "JOB_NAME=ip_route sudo -E python3 /opt/openbach/agent/jobs/ip_route/ip_route.py $CHOICE -gw $midbox_ip_wss destination_ip $net_wsc"
 echo "--------------------------------------------------"
 echo " "
 
 # midbox -> wsc 
-echo "--------------------------------------------------"
-echo "Setting up midbox -> wsc route"
-echo "$midbox_ip_wsc and $midbox_if_wsc of $midbox_admin_ip"
-echo "routed to"
-echo "$wsc_ip and $wsc_if of $wsc_admin_ip"
-
-ssh -t $midbox_admin_ip "JOB_NAME=ip_route sudo -E python3 /opt/openbach/agent/jobs/ip_route/ip_route.py $CHOICE -gw $midbox_ip_wsc destination_ip $wsc_ip"
-echo "--------------------------------------------------"
-echo " "
+#echo "--------------------------------------------------"
+#echo "Setting up midbox -> wsc route"
+#ssh -t $midbox_admin_ip "JOB_NAME=ip_route sudo -E python3 /opt/openbach/agent/jobs/ip_route/ip_route.py $midbox_choice -gw $midbox_ip_wsc destination_ip $net_wsc"
+#echo "--------------------------------------------------"
+#echo " "
 
 # midbox -> wss 
-echo "--------------------------------------------------"
-echo "Setting up midbox -> wss route"
-echo "$midbox_ip_wss and $midbox_if_wss of $midbox_admin_ip"
-echo "routed to"
-echo "$wss_ip and $wss_if of $wss_admin_ip"
-
-ssh -t $midbox_admin_ip "JOB_NAME=ip_route sudo -E python3 /opt/openbach/agent/jobs/ip_route/ip_route.py $CHOICE -gw $midbox_ip_wss destination_ip $wss_ip"
-echo "--------------------------------------------------"
-echo " "
+#echo "--------------------------------------------------"
+#echo "Setting up midbox -> wss route"
+#ssh -t $midbox_admin_ip "JOB_NAME=ip_route sudo -E python3 /opt/openbach/agent/jobs/ip_route/ip_route.py $midbox_choice -gw $midbox_ip_wss destination_ip $net_wss"
+#echo "--------------------------------------------------"
+#echo " "
 
 # wsc -> midbox 
 echo "--------------------------------------------------"
 echo "Setting up wsc -> midbox route"
-echo "$wsc_ip and $wsc_if of $wsc_admin_ip"
-echo "routed to"
-echo "$midbox_ip_wsc and $midbox_if_wsc of $midbox_admin_ip"
-
-ssh -t $wsc_admin_ip "JOB_NAME=ip_route sudo -E python3 /opt/openbach/agent/jobs/ip_route/ip_route.py $CHOICE -gw $wsc_ip destination_ip $midbox_ip_wsc"
+ssh -t $wsc_admin_ip "JOB_NAME=ip_route sudo -E python3 /opt/openbach/agent/jobs/ip_route/ip_route.py $CHOICE -gw $midbox_ip_wsc destination_ip $net_wss"
 echo "--------------------------------------------------"
 echo " "
 
