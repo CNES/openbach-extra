@@ -115,14 +115,15 @@ def main(argv=None):
     list_projects = observer._share_state(ListProjects)
     l_projects = list_projects.execute()
     # Check if the project exists and delete it if this is the case
-    if (any (args.project_name) in s for s in l_projects ):
-        # Delete the project
-        delete_project = observer._share_state(DeleteProject)
-        delete_project.args.name = args.project_name
-        delete_project.execute()
-        # List the projects
-        list_projects = observer._share_state(ListProjects)
-        list_projects.execute()
+    for s in l_projects:
+        if any (args.project_name) in s: 
+            # Delete the project
+            delete_project = observer._share_state(DeleteProject)
+            delete_project.args.name = args.project_name
+            delete_project.execute()
+            # List the projects
+            list_projects = observer._share_state(ListProjects)
+            list_projects.execute()
 
     # Create the project
     create_project = observer._share_state(CreateProject)

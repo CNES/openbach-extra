@@ -55,7 +55,7 @@ midboxIP=192.168.3.70
 default_jobs=ip_route,fping,iperf3,rate_monitoring,rstats_job,rsyslog_job,send_logs,send_stats,synchronization
 wssJ=$default_jobs,nuttcp,tcp_conf_linux
 wscJ=$default_jobs,tcp_conf_linux
-midboxJ=$default_jobs
+midboxJ=$default_jobs,tc_configure_link
 
 if [[ $CHOICE = "python" ]] || [[ $CHOICE = "both" ]]
 then
