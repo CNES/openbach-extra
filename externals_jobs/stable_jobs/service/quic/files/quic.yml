@@ -27,7 +27,7 @@ arguments:
       type:        str
       count:        1
       description: >
-          Choose a QUIC implementation. Know that, you can specify 
+          Choose a QUIC implementation. Know that, you can install a specific version for any implementation
       choice:
         - ngtcp2
         - picoquic
