@@ -186,8 +186,8 @@ def set_main_args(reset,
         conf_file.write("net.ipv4.tcp_rmem="+str(tcp_rmem_min)+" "+
             str(tcp_rmem_default)+" "+str(tcp_rmem_max)+"\n")
     else:
-        src = open("/proc/sys/net/ipv4/tcp_wmem","r")
-        conf_file.write("net.ipv4.tcp_wmem="+src.readline())
+        src = open("/proc/sys/net/ipv4/tcp_rmem","r")
+        conf_file.write("net.ipv4.tcp_rmem="+src.readline())
         src.close()
 
     if tcp_fastopen is not None:
