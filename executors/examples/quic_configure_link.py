@@ -94,16 +94,13 @@ legends = tuple()
 
 def extract_quic_statistic(job):
     data = job.statistics.dated_data
-    return [
-            (timestamp, stats['download_time'])
-            for timestamp, stats in data.items()
-    ]
-
+    return [(timestamp, stats['download_time']) for timestamp, stats in data.items()]
+    
 
 def extract_tcpdump_statistic(job):
     data = job.statistics_data[('Flow1',)].dated_data
-    timestamps = pd.Series(data.keys(), name=None)
-    timestamps -= timestamps.min
+    timestamps = pd.Series(list(data), name=None)
+    timestamps -= timestamps.min()
     return pd.DataFrame({'bit_rate': [stats['bit_rate'] for stats in data.values()],
                          'bytes_count': [stats['bytes_count'] for stats in data.values()]}, 
                          index=timestamps)
@@ -315,7 +312,7 @@ def main(argv=None):
             '--client-extra-args', '-x',
             help='Specify additional CLI arguments that are supported by the chosen client implementation')
     observer.add_scenario_argument(
-            '--nb-runs', '-N', default=1,
+            '--nb-runs', '-N', type=int, default=1,
             help='The number of times resources will be downloaded')
     observer.add_scenario_argument(
             '--pcaps-dir', '-W', default=DEFAULT_PCAPS_DIR,
@@ -331,11 +328,11 @@ def main(argv=None):
     args = observer.parse(argv)
 
     name = args.scenario_name
-    scenario = Scenario(name, 'Download resources using QUIC and capture exchanged packets for debugging/analyzing')
     
-    download_times = list()
+    download_times, timestamps = list(), list()
     for run_number in range(args.nb_runs):
         # Built main scenario
+        scenario = Scenario(name, 'Download resources using QUIC and capture exchanged packets for debugging/analyzing')
         build(scenario, args, capture=run_number==0)
         observer.launch_and_wait(scenario)
         results = DataProcessor(observer)
@@ -344,27 +341,37 @@ def main(argv=None):
         if run_number == 0:
            tcpdump_analyzes = scenario.extract_function_id(tcpdump=tcpdump_find_analyze, include_subscenarios=True)
            for legend, tcpdump_analyze in zip(legends, tcpdump_analyzes):
-               print('{}:{}'.format(legend, tcpdump_analyze))
                results.add_callback(legend, extract_tcpdump_statistic, tcpdump_analyze)
 
            plots = results.post_processing()
-           print(plots)
+
            for legend, df in plots.items():
-               print(df)
-               figure, axis = plt.subplots()
-               df.columns = [legend]
-               df.plot(ax=axis)
-               filename = '{}_{}_{}.png'.format(args.server_implementation, args.client_implementation, legend)
-               filepath = os.path.join(args.report_dir, filename)
-               plt.show()
-               plt.savefig(filepath)
+               if legend in legends:
+                  for stat_name, ts_xlabel, ts_ylabel, ts_title, cdf_xlabel, cdf_ylabel, cdf_title in (
+                      ('bit_rate', 'Time (ms)', 'Bit Rate (Kbps)', 'Bit Rate Time Series', 'Bit Rate (Kbps)', 'CDF', 'Bit Rate CDF'), 
+                      ('bytes_count', 'Time (ms)', 'Bytes Count (B)', 'Bytes Count Time Series', 'Bytes Count (B)', 'CDF', 'Bytes Count CDF')): 
+                      figure, axis = plt.subplots()
+                      plt.xlabel(ts_xlabel)
+                      plt.ylabel(ts_ylabel)
+                      plt.title(ts_title)
+                      df.plot(y=stat_name, ax=axis, title=ts_title)
+                      filename = '{}_{}_{}_{}.png'.format(args.server_implementation, args.client_implementation, legend, stat_name)
+                      filepath = os.path.join(args.report_dir, filename)
+                      plt.savefig(filepath)
 
         else: 
            plots = results.post_processing()
-        #download_times.append(plots['download_time'])
-    #print(download_times)
-    #timestamps -= timestamps.min
-    #pd.DataFrame({'download_time': [stats['download_time'] for stats in data.values()]}, index=timestamps)
+        data = plots['download_time']
+        timestamps.append(data[0][0])
+        download_times.append(data[0][1])
+    timestamps = [timestamp - min(timestamps) for timestamp in timestamps]
+    df = pd.DataFrame({'download_time': download_times}, index=timestamps)
+    figure, axis = plt.subplots()
+    df.plot(y='download_time', ax=axis)
+    filename = '{}_{}_{}.png'.format(args.server_implementation, args.client_implementation, 'download_time')
+    filepath = os.path.join(args.report_dir, filename)
+    plt.savefig(filepath)
+
 
 
 
