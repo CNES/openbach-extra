@@ -33,26 +33,26 @@ The test reports
  - The evolution of the received bit_rate
  - The evolution of the sent bit_rate
  - The evolution of the sent data
- - The time needed to receive the file
+ - The evolution of the received data
+ - The time needed to download the resources
 
 +-----------+     +-----------------------+     +-----------+
 | data      |<--->| delay/bandwidth       |<--->| data      |
 | server    |     | limitation            |     | client    |
 +-----------+     +-----------------------+     +-----------+
-|  server_ip|     |                       |     |client_ip  |
-|           |     |              midbox_if|     |           |
+|  server_ip|     |                       |     |           |
+|           |     | midbox_if             |     |           |
 +-----------+     +-----------------------+     +-----------+
 | entity:   |     | entity:               |     | entity:   |
 |  server   |     |  midbox (middle-box)  |     |  client   |
 +-----------+     +-----------------------+     +-----------+
 
 OpenBACH parameters:
- - entity_pp : entity where the post-processing will be performed
+ - post-processing-entity : entity where the post-processing will be performed
  - project_name : the name of the project
  - path : the path where the post processing data will be stored
 
 Specific scenario parameters:
- - file_size : the size of the file to transmit
  - bandwidth_server_to_client : the bandwidth limitation in the
      server to client direction
  - bandwidth_client_to_server : the bandwidth limitation in the
@@ -61,10 +61,10 @@ Specific scenario parameters:
      server to client direction
  - delay_client_to_server : the delay limitation in the
      client to server direction
+ - resources : resources to download in parallel over concurrent streams
 
 Other parameters:
  - server_ip : ip address of the server
- - client_ip : ip address of the client
  - midbox_if: Interface name on which the delay and/or bandwidth
      limitation is introduced
 
@@ -72,8 +72,9 @@ Step-by-step description of the scenario:
  - clean-midbox-if : clean the middle box interface
  - add-limit-if : add delay and/or bandwidth limitations in both
      directions on midbox-if                                      
- - qos-eval : run QoS evaluation in both direction
- - download : start the download of file_size
+ - captures : capture network traffic to analyze
+ - download : start the download of resources
+ - analyzes:  analyze captured traffic
  - clean-midbox-if : clean the middle box interface
 """
 import os
@@ -89,7 +90,7 @@ import matplotlib.pyplot as plt
 
 
 DEFAULT_PCAPS_DIR = '/tmp/openbach_executors_examples/quic_configure_link'
-legends = tuple()
+TITLES = tuple()
 
 
 def extract_quic_statistic(job):
@@ -235,8 +236,8 @@ def build(scenario, args, capture=False):
                                             (args.client, 'sent', {'dst_ip':args.server_ip, 'dst_port':args.server_port}))
        ]
     
-       global legends 
-       legends = legends + ('traffic_received_server', 'traffic_sent_server', 'traffic_received_client', 'traffic_sent_client')
+       global TITLES
+       TITLES += ('{} received by server', '{} sent by server', '{} received by client', '{} sent by client')
     # Add scenarios to clear interfaces
     teardowns = [
        teardown(
@@ -316,10 +317,10 @@ def main(argv=None):
             help='The number of times resources will be downloaded')
     observer.add_scenario_argument(
             '--pcaps-dir', '-W', default=DEFAULT_PCAPS_DIR,
-            help='Path to directory to save packets capture files on client and server')
+            help='Path to the directory to save packets capture files on client and server')
     observer.add_scenario_argument(
             '--report-dir', '-R', default='/tmp',
-            help='Path to directory to save generated figures')
+            help='Path to the directory to save generated figures')
 
     observer.add_scenario_argument(
             '--post-processing-entity', 
@@ -332,7 +333,8 @@ def main(argv=None):
     download_times, timestamps = list(), list()
     for run_number in range(args.nb_runs):
         # Built main scenario
-        scenario = Scenario(name, 'Download resources using QUIC and capture exchanged packets for debugging/analyzing')
+        scenario = Scenario(name, 'Download resources using QUIC under a given network condition.'
+                                  ' Exchanged packets are captured and analyzed')
         build(scenario, args, capture=run_number==0)
         observer.launch_and_wait(scenario)
         results = DataProcessor(observer)
@@ -340,38 +342,50 @@ def main(argv=None):
         results.add_callback('download_time', extract_quic_statistic, quic_client)
         if run_number == 0:
            tcpdump_analyzes = scenario.extract_function_id(tcpdump=tcpdump_find_analyze, include_subscenarios=True)
-           for legend, tcpdump_analyze in zip(legends, tcpdump_analyzes):
-               results.add_callback(legend, extract_tcpdump_statistic, tcpdump_analyze)
+           for title, tcpdump_analyze in zip(TITLES, tcpdump_analyzes):
+               results.add_callback(title, extract_tcpdump_statistic, tcpdump_analyze)
 
            plots = results.post_processing()
 
-           for legend, df in plots.items():
-               if legend in legends:
-                  for stat_name, ts_xlabel, ts_ylabel, ts_title, cdf_xlabel, cdf_ylabel, cdf_title in (
-                      ('bit_rate', 'Time (ms)', 'Bit Rate (Kbps)', 'Bit Rate Time Series', 'Bit Rate (Kbps)', 'CDF', 'Bit Rate CDF'), 
-                      ('bytes_count', 'Time (ms)', 'Bytes Count (B)', 'Bytes Count Time Series', 'Bytes Count (B)', 'CDF', 'Bytes Count CDF')): 
+           for title, df in plots.items():
+               if title in TITLES:
+                  for stat_name, ts_xlabel, ts_ylabel, ts_title in (
+                      ('bit_rate', 'time (ms)', 'bit rate (Kbps)', title.format('bitRate')), 
+                      ('bytes_count', 'time (ms)', 'bytes count (B)', title.format('bytesCount'))): 
                       figure, axis = plt.subplots()
                       plt.xlabel(ts_xlabel)
                       plt.ylabel(ts_ylabel)
-                      plt.title(ts_title)
-                      df.plot(y=stat_name, ax=axis, title=ts_title)
-                      filename = '{}_{}_{}_{}.png'.format(args.server_implementation, args.client_implementation, legend, stat_name)
-                      filepath = os.path.join(args.report_dir, filename)
-                      plt.savefig(filepath)
+                      df.plot(y=stat_name, ax=axis, title=ts_title, grid=True, legend=False)
+                      figure_name = '{}_{}_{}.png'.format(args.server_implementation, args.client_implementation, ts_title.replace(' ','-'))
+                      figure_path = os.path.join(args.report_dir, figure_name)
+                      plt.savefig(figure_path)
 
         else: 
            plots = results.post_processing()
         data = plots['download_time']
         timestamps.append(data[0][0])
         download_times.append(data[0][1])
+        
     timestamps = [timestamp - min(timestamps) for timestamp in timestamps]
     df = pd.DataFrame({'download_time': download_times}, index=timestamps)
-    figure, axis = plt.subplots()
-    df.plot(y='download_time', ax=axis)
-    filename = '{}_{}_{}.png'.format(args.server_implementation, args.client_implementation, 'download_time')
-    filepath = os.path.join(args.report_dir, filename)
-    plt.savefig(filepath)
-
+    for stat_name, ts_xlabel, ts_ylabel, ts_title, cdf_xlabel, cdf_ylabel, cdf_title in (
+        ('download_time', 'time (ms)', 'download time (ms)', 'Download Time TS', 'download time (ms)', 'CDF', 'Download Time CDF'),):
+        figure, axis = plt.subplots()
+        plt.xlabel(ts_xlabel)
+        plt.ylabel(ts_ylabel)
+        df.plot(y=stat_name, ax=axis, title=ts_title, grid=True, legend=False)
+        figure_name = '{}_{}_{}_ts.png'.format(args.server_implementation, args.client_implementation, 'download_time')
+        figure_path = os.path.join(args.report_dir, figure_name)
+        plt.savefig(figure_path)
+        if args.nb_runs > 1:
+           figure, axis = plt.subplots()
+           plt.xlabel(cdf_xlabel)
+           plt.ylabel(cdf_ylabel)
+           df.plot(kind='hist', y=stat_name, ax=axis, title=cdf_title, grid=True, legend=False, histtype='step', bins=100, cumulative=1, normed=True)
+           figure_name = '{}_{}_{}_cdf.png'.format(args.server_implementation, args.client_implementation, 'download_time')
+           figure_path = os.path.join(args.report_dir, figure_name)
+           plt.savefig(figure_path)
+           
 
 
 
