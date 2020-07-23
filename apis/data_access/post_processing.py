@@ -33,6 +33,7 @@
 __author__ = 'Mathias ETTINGER <mettinger@toulouse.viveris.com>'
 __all__ = ['save', 'Statistics']
 
+import math
 import pickle
 import itertools
 from functools import partial
@@ -41,6 +42,7 @@ from contextlib import suppress
 import yaml
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from .influxdb_tools import (
         tags_to_condition, select_query,
@@ -80,7 +82,15 @@ def compute_histogram(bins):
     return _compute_histogram
 
 
-def save(figure, filename, use_pickle=False):
+def compute_annotated_histogram(bins):
+    _hist = compute_histogram(bins)
+    _bins = bins[1:]
+    def _compute_annotated_histogram(series):
+        return pd.DataFrame(dict(zip(_bins, _hist(series))), index=[series.name])
+    return _compute_annotated_histogram
+
+
+def save(figure, filename, use_pickle=False, set_legend=True):
     if use_pickle:
         with open(filename, 'wb') as storage:
             pickle.dump(figure, storage)
@@ -88,7 +98,7 @@ def save(figure, filename, use_pickle=False):
         artists = [
                 axis.legend(loc='center left', bbox_to_anchor=(1., .5))
                 for axis in figure.axes
-                if axis.get_legend()
+                if axis.get_legend() and set_legend
         ]
         figure.savefig(filename, additional_artists=[artists], bbox_inches='tight')
 
@@ -187,6 +197,19 @@ class _Plot:
         self.dataframe = dataframe
         self.df = dataframe[dataframe.index >= 0]
 
+    def _find_statistic(self, statistic_name=None, index=None):
+        if statistic_name is not None:
+            index = self.df.columns.get_level_values(4) == statistic_name
+
+        if index is None:
+            return self.df
+        else:
+            df = self.df.iloc[:, index]
+            if isinstance(df, pd.DataFrame):
+                return df
+            else:
+                return df.to_frame()
+
     def time_series(self):
         df = self.dataframe.interpolate()
         return df[df.index >= 0]
@@ -211,6 +234,44 @@ class _Plot:
         df.columns = ['Ε', 'δ']
         return df
 
+    def temporal_binning_statistics(
+            self, statistic_name=None, index=None,
+            time_aggregation='hour', percentiles=[.05, .25, .75, .95]):
+        df = self._find_statistic(statistic_name, index)
+        df.index = pd.to_datetime(df.index, unit='ms')
+
+        for _, column in df.iteritems():
+            groups = column.groupby(getattr(column.index, time_aggregation))
+            stats = groups.describe(percentiles=percentiles)
+            stats.index.name = 'Time ({}s)'.format(time_aggregation)
+            yield stats
+
+    def temporal_binning_histogram(
+            self, statistic_name=None, index=None,
+            bin_size=100, offset=0, maximum=None,
+            time_aggregation='hour', add_total=True):
+        df = self._find_statistic(statistic_name, index)
+        df.index = pd.to_datetime(df.index, unit='ms')
+
+        if maximum is None:
+            nb_segments = math.ceil((df.max().max() - offset) / bin_size)
+            maximum = nb_segments * bin_size + offset
+
+        nb_segments = math.ceil((maximum - offset) / bin_size)
+        bins = np.linspace(offset, maximum, nb_segments + 1, dtype='int')
+
+        for _, column in df.iteritems():
+            groups = column.groupby(getattr(column.index, time_aggregation))
+            stats = groups.apply(compute_annotated_histogram(bins))
+            stats.index = ['{}-{}'.format(i, i+1) for i in stats.index.droplevel()]
+            stats.index.name = 'Time ({}s)'.format(time_aggregation)
+            if add_total:
+                total = column.to_frame().apply(compute_histogram(bins))
+                total.index = bins[1:]
+                total.columns = ['total']
+                stats = stats.append(total.transpose())
+            yield stats * 100
+        
     def plot_time_series(self, axis=None, secondary_title=None, legend=True):
         axis = self.time_series().plot(ax=axis, legend=legend)
         if secondary_title is not None:
@@ -240,4 +301,85 @@ class _Plot:
         axis = df.Ε.plot.bar(ax=axis, yerr=df.δ, rot=30, legend=legend)
         if secondary_title is not None:
             axis.set_ylabel(secondary_title)
+        return axis
+
+    def plot_temporal_binning_statistics(
+            self, axis=None, secondary_title=None,
+            statistic_name=None, index=None,
+            percentiles=[[5, 95], [25, 75]], time_aggregation='hour',
+            median=True, average=True, deviation=True,
+            boundaries=True, min_max=True, legend=True):
+        if not percentiles:
+            percentiles = []
+        else:
+            percentiles.sort(key=lambda x: abs(x[0] - x[1]), reverse=True)
+
+        format_percentiles = [p / 100 for pair in percentiles for p in pair]
+        temporal_binning = self.temporal_binning_statistics(
+                statistic_name, index,
+                time_aggregation, format_percentiles)
+
+        if axis is None:
+            _, axis = plt.subplots()
+        colors = ['#ffad60', '#ffdae0']
+
+        for stats in temporal_binning:
+            if average:
+                axis.plot(stats.index, stats['mean'], color='#005b96', label='average')
+            if median:
+                axis.plot(stats.index, stats['50%'], color='#be68be', label='median')
+            if boundaries:
+                axis.plot(stats.index, stats['min'], color='g', linewidth=1)
+                axis.plot(stats.index, stats['max'], color='#e50000', linewidth=1)
+            if min_max:
+                axis.fill_between(stats.index, stats['min'], stats['max'], color='#39c9bb', label='min-max')
+            for color, pair in zip(colors, percentiles):
+                low, high = sorted(pair)
+                axis.fill_between(
+                        stats.index, stats['{}%'.format(low)],
+                        stats['{}%'.format(high)], color=color,
+                        label='{}%-{}%'.format(low, high))
+            if deviation:        
+                axis.errorbar(
+                        stats.index, stats['mean'], stats['std'], uplims=True,
+                        lolims=True, color='#005b96', elinewidth=1, label="deviation")
+            if legend:
+                axis.legend()
+
+            axis.set_xlabel(stats.index.name)
+            if secondary_title is not None:
+                axis.set_ylabel(secondary_title)
+
+        return axis
+
+    def plot_temporal_binning_histogram(
+            self, axis=None, secondary_title=None,
+            statistic_name=None, index=None,
+            bin_size=100, offset=0, maximum=None,
+            time_aggregation='hour', add_total=True,
+            legend=True, legend_title=None):
+        temporal_binning = self.temporal_binning_histogram(
+                statistic_name, index,
+                bin_size, offset, maximum,
+                time_aggregation, add_total)
+
+        if axis is None:
+            _, axis = plt.subplots()
+
+        for stats in temporal_binning:
+            colors = plt.cm.jet(np.linspace(0, 1, len(stats.columns)))
+            xticks_size, xtick_weight = (5, 'bold') if len(stats.index) > 50 else (None, None)
+            for index, segments in stats.iterrows():
+                starts = segments.cumsum() - segments
+                bars = axis.bar(index, segments, bottom=starts, width=0.5,
+                        label=index, color=colors, edgecolor='k', linewidth='0.1')
+                axis.set_xticklabels(stats.index, rotation=90, fontsize=xticks_size, weight=xtick_weight)
+            if legend:
+                axis.legend(
+                        handles=reversed(bars.patches), labels=reversed(list(stats.columns)), labelspacing=0.3,
+                        title=legend_title, loc='center left', bbox_to_anchor=(1., .5), fontsize='small')
+            axis.set_xlabel(stats.index.name)
+            if secondary_title is not None:
+                axis.set_ylabel(secondary_title)
+
         return axis
