@@ -47,13 +47,10 @@ from pathlib import Path
 import tempfile
 
 DESCRIPTION = ("This job runs a client or a server QUIC. Supported QUIC implementations are: "
-               "ngtcp2, picoquic, quicly. \n"
-               "By default, each implementation is cloned from its standard repository. "
-               "The installed version is the HEAD of the master branch. \n "
-               "If you wish to install another version, you need to modify global variables "
-               "related to the implementation to change. \n "
-               "These variables are located at the begining of the install file of the job. "
-               "So you have to change the address of the git repository as well as "
+               "ngtcp2, picoquic, quicly \n"
+               "By default, for any implemenation, the installed version is the HEAD of the master branch. "
+               "If you wish to install another version, you need to modify global variables related to the implementation "
+               "at the begining of the install file of the job by speficying the address of the git repository as well as "
                "the version to install"
               )
 
@@ -77,6 +74,7 @@ def connect_to_collect_agent():
             'quic_rstats_filter.conf')
     if not success:
         message = 'Error connecting to collect-agent'
+        print(message)
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
 
@@ -92,7 +90,8 @@ def run_command(cmd, cwd=None):
     except Exception as ex:
         message = "Error running command '{}': '{}'".format(' '.join(cmd), ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
+        print(message)
+        sys.exit(message)
     return p
 
 
@@ -100,6 +99,33 @@ def _command_build_helper(flag, value):
     if value is not None:
         yield flag
         yield str(value)
+
+
+def remove_resources(resources, download_dir):
+    "Delete resources if already presents in *download_dir*"
+    for r in resources.split(','):
+        r_path = os.path.join(download_dir, r)
+        if os.path.exists(r_path):
+           os.remove(r_path)
+
+
+def check_resources(resources, donwload_dir, p, exit_ok=True):
+    "Check if resources have been successfully downloaded"
+    status = True
+    for r in resources.split(','):
+        r_path = os.path.join(donwload_dir, r)
+        if os.path.exists(r_path) and os.path.getsize(r_path) > 0:
+           pass
+        else:
+           message = ("Error downloading resources. Resource '{}' may be does'nt exist on server or server unreachable. \n {} \n {}"
+                      .format(r, p.stdout.decode(), p.stderr.decode()))
+           collect_agent.send_log(syslog.LOG_ERR, message)
+           print(message)
+           if exit_ok:
+              sys.exit(message)
+           status = False
+    return status 
+  
 
 
 def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resources=None, download_dir=None, extra_args=None):
@@ -160,11 +186,13 @@ def client(implementation, server_port, log_dir, extra_args, server_ip, resource
         with open(os.path.join(log_dir, 'log_client_{}.txt'.format(str(run_number+1))), 'w+') as log_file:
              cmd = build_cmd(implementation, 'client', server_port, log_file.name, server_ip, [r for r in resources.split(',')], 
                              download_dir, extra_args=extra_args)
+             remove_resources(resources, download_dir) 
              start_time = now()
              p = run_command(cmd, cwd=download_dir)
              end_time = now()
              elapsed_time = end_time - start_time
-             collect_agent.send_stat(now(), download_time=elapsed_time)
+             status = check_resources(resources, download_dir, p, exit_ok=True)
+             if status: collect_agent.send_stat(now(), **{'download_time':elapsed_time})
 
        
 def server(implementation, server_port, log_dir, extra_args):
@@ -266,5 +294,6 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
     main = args.pop('function')
     main(**args)
+
 
 

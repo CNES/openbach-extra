@@ -87,5 +87,5 @@ arguments:
               The number of times resources will be fetched
 statistics:
   - name: "download_time"
-    description: The time needed to transfer resources from server to client
+    description: The time (in ms) needed to transfer resources from server to client
     frequency: 'once each tranfert is completed'
