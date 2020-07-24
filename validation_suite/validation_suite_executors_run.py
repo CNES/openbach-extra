@@ -123,7 +123,7 @@ def main(argv=None):
        
     # executor_network_configure_link
     l_tested_executors.append('executor_network_configure_link')
-    print('executor_network_configure_link')
+    print('executor_network_configure_link: clear interface wss -> wsc')
     scenario = network_configure_link.build(
             args.midbox_entity,
             args.middlebox_interface_wsc,
@@ -134,7 +134,8 @@ def main(argv=None):
             0,
             'random',
             args.loss_wss_to_wsc)
-    #observer.launch_and_wait(scenario)
+    observer.launch_and_wait(scenario)
+    print('executor_network_configure_link: clear interface wsc -> wss')
     scenario = network_configure_link.build(
             args.midbox_entity,
             args.middlebox_interface_wss,
@@ -144,8 +145,9 @@ def main(argv=None):
             args.delay_wsc_to_wss,
             0,
             'random',
-            args.loss_wss_to_wsc)
-    #observer.launch_and_wait(scenario)
+            args.loss_wsc_to_wss)
+    observer.launch_and_wait(scenario)
+    print('executor_network_configure_link: set interface wss -> wsc')
     scenario = network_configure_link.build(
             args.midbox_entity,
             args.middlebox_interface_wsc,
@@ -153,10 +155,12 @@ def main(argv=None):
             'apply',
             args.bandwidth_wss_to_wsc,
             args.delay_wss_to_wsc,
-            0,
+            int(0),
+            'uniform',
             'random',
-            args.loss_wss_to_wsc)
-    #observer.launch_and_wait(scenario)
+            int(args.loss_wss_to_wsc))
+    observer.launch_and_wait(scenario)
+    print('executor_network_configure_link: set interface wsc -> wss')
     scenario = network_configure_link.build(
             args.midbox_entity,
             args.middlebox_interface_wss,
@@ -164,10 +168,11 @@ def main(argv=None):
             'apply',
             args.bandwidth_wsc_to_wss,
             args.delay_wsc_to_wss,
-            0,
+            int(0),
+            'uniform',
             'random',
-            args.loss_wss_to_wsc)
-    #observer.launch_and_wait(scenario)
+            int(args.loss_wsc_to_wss))
+    observer.launch_and_wait(scenario)
 
     # access 
     if args.tested_executor in ['access','all']:
@@ -179,7 +184,13 @@ def main(argv=None):
     
         # executor_network_delay
         l_tested_executors.append('executor_network_delay')
-        print('executor_network_delay')
+        scenario = network_delay.build(
+                args.wss,
+                args.wsc,
+                args.wss_ip,
+                args.wsc_ip,
+                10)
+        #observer.launch_and_wait(scenario)
         
         # executor_network_global
         l_tested_executors.append('executor_network_global')
