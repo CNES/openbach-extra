@@ -28,7 +28,7 @@ arguments:
       count:        1
       description: >
           Choose a QUIC implementation. Know that, you can install a specific version for any implementation
-      choice:
+      choices:
         - ngtcp2
         - picoquic
         - quicly
