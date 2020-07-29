@@ -45,6 +45,7 @@ from enum import Enum
 from ipaddress import ip_address
 from pathlib import Path
 import tempfile
+import shlex
 
 DESCRIPTION = ("This job runs a client or a server QUIC. Supported QUIC implementations are: "
                "ngtcp2, picoquic, quicly \n"
@@ -86,7 +87,7 @@ def now():
 def run_command(cmd, cwd=None):
     "Run cmd and wait for command to complete then return a CompletedProcessess instance"
     try:
-      p = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, cwd=cwd, check=True)
+      p = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, cwd=cwd, check=False)
     except Exception as ex:
         message = "Error running command '{}': '{}'".format(' '.join(cmd), ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
@@ -115,7 +116,7 @@ def check_resources(resources, donwload_dir, p, exit_ok=True):
     for r in resources.split(','):
         r_path = os.path.join(donwload_dir, r)
         if os.path.exists(r_path) and os.path.getsize(r_path) > 0:
-           pass
+           continue
         else:
            message = ("Error downloading resources. Resource '{}' may be does'nt exist on server or server unreachable. \n {} \n {}"
                       .format(r, p.stdout.decode(), p.stderr.decode()))
@@ -139,13 +140,13 @@ def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resou
           cmd.extend(_command_build_helper('--download', download_dir))
           cmd.extend(['--exit-on-all-streams-close'])
           cmd.extend(_command_build_helper('--qlog-file', log_file))
-          if extra_args: cmd.extend([extra_args])
+          if extra_args: cmd.extend(shlex.split(extra_args))
        if mode == 'server':
           cmd.extend(['ngtcp2_server', '0.0.0.0', server_port])
           cmd.extend([KEY, CERT])
           cmd.extend(_command_build_helper('-d', HTDOCS))
           cmd.extend(_command_build_helper('--qlog-dir', os.path.split(log_file)[0]))
-          if extra_args: cmd.extend([extra_args])
+          if extra_args: cmd.extend(shlex.split(extra_args))
     if implementation == Implementations.PICOQUIC.value:
        cmd.extend(['picoquic'])
        if mode == 'client':
@@ -153,7 +154,7 @@ def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resou
           cmd.extend(_command_build_helper('-o', download_dir))
           cmd.extend(_command_build_helper('-l', log_file))
           cmd.extend([server_ip, server_port])
-          if extra_args: cmd.extend([extra_args])
+          if extra_args: cmd.extend(shlex.split(extra_args))
           cmd.extend([';'.join(['/{}'.format(res) for res in resources])])
        if mode == 'server':
           cmd.extend(_command_build_helper('-c', CERT))
@@ -161,21 +162,21 @@ def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resou
           cmd.extend(_command_build_helper('-w', HTDOCS))
           cmd.extend(_command_build_helper('-l', log_file))
           cmd.extend(_command_build_helper('-p', server_port))
-          if extra_args: cmd.extend([extra_args])
+          if extra_args: cmd.extend(shlex.split(extra_args))
     if implementation == Implementations.QUICLY.value:
        cmd.extend(['quicly'])
        if mode == 'client':
           _, server_ip = _command_build_helper(None, server_ip)
           _, server_port = _command_build_helper(None, server_port)
           cmd.extend(_command_build_helper('-e', log_file))
-          cmd.extend(['-P /{}'.format(res) for res in resources])
-          if extra_args: cmd.extend([extra_args])
+          cmd.extend(['-p /{}'.format(res) for res in resources])
+          if extra_args: cmd.extend(shlex.split(extra_args))
           cmd.extend([server_ip, server_port])
        if mode == 'server':
           cmd.extend(_command_build_helper('-c', CERT))
           cmd.extend(_command_build_helper('-k', KEY))
           cmd.extend(_command_build_helper('-e', log_file))
-          if extra_args: cmd.extend([extra_args])
+          if extra_args: cmd.extend(shlex.split(extra_args))
           cmd.extend(['0.0.0.0', server_port])
     return cmd          
 
@@ -236,7 +237,7 @@ if __name__ == "__main__":
                'implementation', 
                choices=[implem.value for implem in Implementations], 
                help='Choose a QUIC implementation. Know that, for each implementation ' 
-                    'you can modify global variables to specify the address of the git repository '
+                    'you can modify global variables in install file to specify the address of the git repository '
                     'as well as the version to checkout',
     )
     
