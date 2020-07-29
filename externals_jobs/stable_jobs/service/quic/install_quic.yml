@@ -95,15 +95,17 @@
   become: yes
 
 - name: Clone ngtcp2 from github
-  #git: repo=https://github.com/ngtcp2/ngtcp2 dest=/tmp/ngtcp2 force=yes version=HEAD
   git: "repo={{ ngtcp2.git_repo }}  dest=/tmp/ngtcp2 force=yes version={{ ngtcp2.version }}"
 
 - name: Compile and install ngtcp2
   shell: "{{ item }} chdir=/tmp/ngtcp2/"
   with_items:
     - "autoreconf -i"
-    - "./configure PKG_CONFIG_PATH=/tmp/OpenSSL_1_1_1g-quic-draft-29/build/lib/pkgconfig:/tmp/nghttp3/build/lib/pkgconfig LDFLAGS=\"-Wl,-rpath,/tmp/OpenSSL_1_1_1g-quic-draft-29/build/lib\" CC=gcc-8 CXX=g++-8"
+    #- "./configure PKG_CONFIG_PATH=/tmp/OpenSSL_1_1_1g-quic-draft-29/build/lib/pkgconfig:/tmp/nghttp3/build/lib/pkgconfig LDFLAGS=\"-Wl,-rpath,/tmp/OpenSSL_1_1_1g-quic-draft-29/build/lib\" CC=gcc-8 CXX=g++-8"
+    - "./configure CC=gcc-8 CXX=g++-8"
+    - "ldconfig"
     - "make -j$(nproc) check"
+    - "make install"
   become: yes
 
 - name: Install ngtcp2 binaries
@@ -142,7 +144,6 @@
     - "make check" 
 
 - name: Clone Picoquic from github
-  #git: repo=https://github.com/private-octopus/picoquic version=HEAD dest=/tmp/picoquic force=yes 
   git: "repo={{ picoquic.git_repo }}  dest=/tmp/picoquic force=yes version={{ picoquic.version }}"
     
 - name: Build picoquic
@@ -169,7 +170,6 @@
   become: yes
  
 - name: Clone quicly github
-  #git: repo=https://github.com/h2o/quicly version=HEAD dest=/tmp/quicly force=yes 
   git: "repo={{ quicly.git_repo }}  dest=/tmp/quicly force=yes version={{ quicly.version }}"
 
 - name: Initialize submodules
