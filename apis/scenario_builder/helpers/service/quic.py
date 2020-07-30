@@ -44,7 +44,7 @@ def quic(
                 implementation=server_implementation, 
                 server_port=server_port,
                 log_dir=server_log_dir,
-                extra_agrs=server_extra_args)
+                extra_args=server_extra_args)
     parameters['server'] = {}
     f_start_server.configure(
                 'quic', server_entity, offset=0,
