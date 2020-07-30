@@ -35,6 +35,7 @@ __all__ = ['save', 'Statistics']
 
 import math
 import pickle
+import warnings
 import itertools
 from functools import partial
 from contextlib import suppress
@@ -69,10 +70,25 @@ def _prepare_columns(df, columns):
 
 
 def influx_to_pandas(response):
-    for result in response.get('results', []):
-        for serie in result.get('series', []):
-            with suppress(KeyError):
+    try:
+        results = response['results']
+    except KeyError:
+        warnings.warn('A query returned no result, ignoring')
+        return
+
+    for result in results:
+        try:
+            series = result['series']
+        except KeyError:
+            warnings.warn('A query result contained no time series, ignoring')
+            continue
+
+        for serie in series:
+            try:
                 yield pd.DataFrame(serie['values'], columns=serie['columns'])
+            except KeyError:
+                warnings.warn('A query returned time series with no data, ignoring')
+                pass
 
 
 def compute_histogram(bins):
