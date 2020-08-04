@@ -26,7 +26,7 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Sources of the Job tc_statistics"""
+"""Sources of the Job tc_qdisc_stats"""
 
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
