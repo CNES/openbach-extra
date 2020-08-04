@@ -31,8 +31,6 @@ from collections import namedtuple
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.access import opensand
-from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
-from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 
 
 SCENARIO_NAME = 'opensand_run'
@@ -81,34 +79,11 @@ def run(satellite, gateways, terminals, scenario_name=SCENARIO_NAME):
     return scenario
 
 
-def build(satellite, gateways, terminals, duration=0, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+def build(satellite, gateways, terminals, duration=0, scenario_name=SCENARIO_NAME):
     scenario = run(satellite, gateways, terminals, scenario_name)
 
-    jobs = [f for f in scenario.openbach_functions if isinstance(f, StartJobInstance)]
     if duration:
+        jobs = [f for f in scenario.openbach_functions if isinstance(f, StartJobInstance)]
         scenario.add_function('stop_job_instance', wait_launched=jobs, wait_delay=duration).configure(*jobs)
-
-    if post_processing_entity:
-        post_processed = list(scenario.extract_function_id(opensand=opensand.opensand_find_sat))
-        if post_processed:
-            time_series_on_same_graph(
-                    scenario,
-                    post_processing_entity,
-                    post_processed,
-                    [['some.good.statistic.name']],
-                    [['Stat name (unit)']],
-                    [['Stat name time series']],
-                    [['Legend for stat in satellite']],
-                    False, jobs, None, 2)
-            cdf_on_same_graph(
-                    scenario,
-                    post_processing_entity,
-                    post_processed,
-                    100,
-                    [['some.good.statistic.name']],
-                    [['Stat name (unit)']],
-                    [['Stat name time series']],
-                    [['Legend for stat in satellite']],
-                    False, jobs, None, 2)
 
     return scenario

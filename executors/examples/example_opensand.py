@@ -35,6 +35,9 @@ from auditorium_scripts.push_file import PushFile
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder import Scenario
 from scenario_builder.helpers.utils import Validate, ValidateOptional, patch_print_help
+from scenario_builder.helpers.access.opensand import opensand_find_st
+from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
+from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 from scenario_builder.scenarios import opensand_run, opensand_net_conf, opensand_satcom_conf
 
 
@@ -131,10 +134,33 @@ def opensand(satellite, gateways, gateways_phy, terminals, duration=0, configura
                     gateway.emulation_ip))
 
     run = scenario.add_function('start_scenario_instance', wait_finished=wait)
-    run.configure(opensand_run.build(satellite, run_gateways, terminals, duration, post_processing_entity))
+    run.configure(opensand_run.build(satellite, run_gateways, terminals, duration))
 
     network_delete = scenario.add_function('start_scenario_instance', wait_finished=[run])
     network_delete.configure(opensand_net_conf.build(network_entities, 'delete', opensand_net_conf.SCENARIO_NAME + '_delete'))
+
+    if post_processing_entity:
+        post_processed = list(scenario.extract_function_id(opensand=opensand_find_st, include_subscenarios=True))
+        if post_processed:
+            time_series_on_same_graph(
+                    scenario,
+                    post_processing_entity,
+                    post_processed,
+                    [['up_return_modcod.sent_modcod']],
+                    [['Sent ModCod (id)']],
+                    [['UP/Return ModCod']],
+                    [['Terminal {} - ModCod'.format(terminal.opensand_id) for terminal in terminals]],
+                    False, [network_delete], None, 2)
+            cdf_on_same_graph(
+                    scenario,
+                    post_processing_entity,
+                    post_processed,
+                    100,
+                    [['up_return_modcod.sent_modcod']],
+                    [['Sent ModCod (id)']],
+                    [['UP/Return ModCod']],
+                    [['Terminal {} - ModCod'.format(terminal.opensand_id) for terminal in terminals]],
+                    False, [network_delete], None, 2)
 
     return scenario
 

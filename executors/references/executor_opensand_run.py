@@ -100,9 +100,6 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--duration', '-d', required=False, default=0, type=int,
             help='Duration of the opensand run test, leave blank for endless emulation.')
-    observer.add_scenario_argument(
-            '--post-processing-entity', help='The entity where the post-processing will be performed '
-            '(histogram/time-series jobs must be installed) if defined')
 
     args = observer.parse(argv, opensand_net_conf.SCENARIO_NAME)
 
@@ -111,7 +108,6 @@ def main(argv=None):
             gateways,
             args.satellite_terminal,
             args.duration,
-            args.post_processing_entity,
             args.scenario_name)
     observer.launch_and_wait(scenario)
 
