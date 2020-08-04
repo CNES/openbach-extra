@@ -28,96 +28,6 @@
 
 """ Helpers of opensand job """
 
-import itertools
-import ipaddress
-
-from ..network.ip_route import ip_route
-from ..network.ip_tuntap import ip_tuntap
-from ..network.ip_address import ip_address
-from ..transport.sysctl import sysctl_configure_ip_forwarding
-from ..network.ip_link import ip_link_add, ip_link_set, ip_link_del
-
-
-def opensand_network_ip(
-        scenario, entity, address_mask, tap_name='opensand_tap',
-        bridge_name='opensand_br', tap_mac_address=None,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    tap_add = ip_tuntap(
-            scenario, entity, tap_name, 'add',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    bridge_add = ip_link_add(
-            scenario, entity, bridge_name, type='bridge',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-
-    if tap_mac_address is not None:
-        tap_add = ip_link_set(scenario, entity, tap_name, address=tap_mac_address, wait_finished=tap_add)
-
-    bridge_add = ip_address(scenario, entity, bridge_name, 'add', address_mask, wait_finished=bridge_add)
-    tap_in_bridge = ip_link_set(scenario, entity, tap_name, master=bridge_name, wait_finished=tap_add + bridge_add)
-
-    tap_up = ip_link_set(scenario, entity, tap_name, state='up', wait_finished=tap_in_bridge)
-    bridge_up = ip_link_set(scenario, entity, bridge_name, state='up', wait_finished=tap_in_bridge)
-
-    try:
-        interface = ipaddress.ip_interface(address_mask)
-    except ValueError:
-        # Do not bother much as `ip_address` will likely fail anyway
-        return tap_up + bridge_up
-    else:
-        return sysctl_configure_ip_forwarding(
-                scenario, entity, bridge_name,
-                version=interface.version,
-                wait_finished=tap_up + bridge_up)
-
-
-def opensand_network_ethernet(
-        scenario, entity, interface, tap_name='opensand_tap',
-        bridge_name='opensand_br', tap_mac_address=None,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    tap_add = ip_tuntap(
-            scenario, entity, tap_name, 'add',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    bridge_add = ip_link_add(
-            scenario, entity, bridge_name, type='bridge',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-
-    if tap_mac_address is not None:
-        tap_add = ip_link_set(scenario, entity, tap_name, address=tap_mac_address, wait_finished=tap_add)
-
-    tap_in_bridge = ip_link_set(scenario, entity, tap_name, master=bridge_name, wait_finished=tap_add + bridge_add)
-    interface_in_bridge = ip_link_set(scenario, entity, interface, master=bridge_name, wait_finished=bridge_add)
-
-    wait = tap_in_bridge + interface_in_bridge
-    tap_up = ip_link_set(scenario, entity, tap_name, state='up', wait_finished=wait)
-    bridge_up = ip_link_set(scenario, entity, bridge_name, state='up', wait_finished=wait)
-
-    return tap_up + bridge_up
-
-
-def opensand_network_clear(
-        scenario, entity, tap_name, bridge_name,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    tap_del = ip_link_del(
-            scenario, entity, tap_name,
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    bridge_del = ip_link_del(
-            scenario, entity, bridge_name,
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-
-    return tap_del + bridge_del
-
 
 def opensand_run(
         scenario, agent_entity, entity, configuration=None,
@@ -157,3 +67,23 @@ def opensand_run(
     opensand.configure('opensand', agent_entity, **run)
 
     return [opensand]
+
+
+def opensand_find_sat(openbach_function):
+    return 'sat' in openbach_function.start_job_instance['opensand']
+
+
+def opensand_find_st(openbach_function):
+    return 'st' in openbach_function.start_job_instance['opensand']
+
+
+def opensand_find_gw(openbach_function):
+    return 'gw' in openbach_function.start_job_instance['opensand']
+
+
+def opensand_find_gw_net_acc(openbach_function):
+    return 'gw-net-acc' in openbach_function.start_job_instance['opensand']
+
+
+def opensand_find_gw_phy(openbach_function):
+    return 'gw-phy' in openbach_function.start_job_instance['opensand']

@@ -1,50 +1,44 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#
+#
+#   Copyright © 2016−2019 CNES
+#
+#
+#   This file is part of the OpenBACH testbed.
+#
+#
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
 
-# OpenBACH is a generic testbed able to control/configure multiple
-# network/physical entities (under test) and collect data from them.
-# It is composed of an Auditorium (HMIs), a Controller, a Collector
-# and multiple Agents (one for each network entity that wants to be
-# tested).
-#
-#
-# Copyright © 2016-2020 CNES
-#
-#
-# This file is part of the OpenBACH testbed.
-#
-#
-# OpenBACH is a free software : you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY, without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see http://www.gnu.org/licenses/.
-
-"""This scenario builds and launches the OpenSAND scenario
-from /openbach-extra/apis/scenario_builder/scenarios/
-"""
-
-
-import time
 import argparse 
-import tempfile
-import warnings
-import functools
 import ipaddress
 from pathlib import Path
-from collections import defaultdict
+from itertools import chain
 
 from auditorium_scripts.push_file import PushFile
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.scenarios import access_opensand
-from scenario_builder.scenarios.access_opensand import SAT, GW, SPLIT_GW, ST  # shortcuts
+from scenario_builder import Scenario
+from scenario_builder.helpers.utils import Validate, ValidateOptional, patch_print_help
+from scenario_builder.scenarios import opensand_run, opensand_net_conf, opensand_satcom_conf
+
+
+SCENARIO_NAME = 'Opensand'
 
 
 class Entity:
@@ -78,36 +72,15 @@ class ValidateSatellite(argparse.Action):
         setattr(args, self.dest, satellite)
 
 
-class _Validate(argparse.Action):
-    ENTITY_TYPE = None
-
-    def __call__(self, parser, args, values, option_string=None): 
-        if getattr(args, self.dest) == None:
-            self.items = []
-
-        try:
-            entity = self.ENTITY_TYPE(*values)
-        except TypeError as e:
-            raise argparse.ArgumentError(self, str(e).split('__init__() ', 1)[-1])
-        except ValueError as e:
-            raise argparse.ArgumentError(self, e)
-        self.items.append(entity)
-        setattr(args, self.dest, self.items)
-
-
-class _ValidateOptional:
-    pass
-
-
-class ValidateGateway(_ValidateOptional, _Validate):
+class ValidateGateway(ValidateOptional, Validate):
     ENTITY_TYPE = Entity
 
 
-class ValidateGatewayPhy(_Validate):
+class ValidateGatewayPhy(Validate):
     ENTITY_TYPE = GatewayPhy
 
 
-class ValidateSatelliteTerminal(_ValidateOptional, _Validate):
+class ValidateSatelliteTerminal(ValidateOptional, Validate):
     ENTITY_TYPE = Entity
 
 
@@ -115,44 +88,55 @@ def validate_ip(ip):
     return ipaddress.ip_address(ip).compressed
 
 
-def patch_print_help(parser):
-    def decorate(printer):
-        @functools.wraps(printer)
-        def wrapper(file=None):
-            nargs = [action.nargs for action in parser._actions]
+def opensand(satellite, gateways, gateways_phy, terminals, duration=0, configuration_files=None, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    scenario = Scenario(scenario_name, '')
 
-            for action in parser._actions:
-                if isinstance(action, _ValidateOptional):
-                    action.nargs = None
-            printer(file)
+    network_entities = [
+            opensand_net_conf.OPENSAND_ENTITY(
+                terrestrial.entity
+                terrestrial.tap_mac,
+                terrestrial.tap_name,
+                terrestrial.bridge_name,
+                terrestrial.bridge_to_lan,
+            )
+            for terrestrial in chain(gateways, terminals)
+    ]
+    network_configure = scenario.add_function('start_scenario_instance')
+    network_configure.configure(opensand_net_conf.build(network_entities, 'configure'))
 
-            for action, narg in zip(parser._actions, nargs):
-                action.nargs = narg
+    wait = [network_configure]
+    if configuration_files:
+        terminal_entities = [terminal.entity for terminal in terminals]
+        gateway_entities = [gateway.entity for gateway in chain(gateways, gateways_phy)]
+        push_files = scenario.add_function('start_scenario_instance', wait_finished=[network_configure])
+        push_file.configure(opensand_satcom_conf.build(satellite.entity, gateway_entities, terminal_entities, configuration_files))
+        wait.append(push_file)
 
-        return wrapper
-
-    parser.print_help = decorate(parser.print_help)
-    parser.print_usage = decorate(parser.print_usage)
-
-
-def create_gateways(gateways, gateways_phy):
+    run_gateways = []
     for gateway in gateways:
         for gateway_phy in gateways_phy:
             if gateway.entity == gateway_phy.net_access_entity:
-                yield SPLIT_GW(
-                        gateway.entity, gateway_phy.entity,
-                        gateway.opensand_id, gateway.tap_mac_address,
-                        gateway.tap_name, gateway.bridge_name,
-                        gateway.bridge_to_lan, gateway.emulation_ip,
+                run_gateways.append(opensand_run.SPLIT_GW(
+                        gateway.entity,
+                        gateway_phy.entity,
+                        gateway.opensand_id,
+                        gateway.emulation_ip,
                         gateway_phy.interconnect_net_access,
-                        gateway_phy.interconnect_phy)
+                        gateway_phy.interconnect_phy))
                 break
         else:
-            yield GW(
-                    gateway.entity, gateway.opensand_id,
-                    gateway.tap_mac_address, gateway.tap_name,
-                    gateway.bridge_name, gateway.bridge_to_lan,
-                    gateway.emulation_ip)
+            run_gateways.append(opensand_run.GW(
+                    gateway.entity,
+                    gateway.opensand_id,
+                    gateway.emulation_ip))
+
+    run = scenario.add_function('start_scenario_instance', wait_finished=wait)
+    run.configure(opensand_run.build(satellite, run_gateways, terminals, duration, post_processing_entity))
+
+    network_delete = scenario.add_function('start_scenario_instance', wait_finished=[run])
+    network_delete.configure(opensand_net_conf.build(network_entities, 'delete', opensand_net_conf.SCENARIO_NAME + '_delete'))
+
+    return scenario
 
 
 def main(argv=None):
@@ -183,21 +167,13 @@ def main(argv=None):
             required=False, type=Path, metavar='PATH',
             help='Path to a configuration folder that should be '
             'dispatched on agents before the simulation.')
+    observer.add_scenario_argument(
+            '--post-processing-entity', help='The entity where the post-processing will be performed '
+            '(histogram/time-series jobs must be installed) if defined')
 
     patch_print_help(observer.parser)
-    args = observer.parse(argv, access_opensand.SCENARIO_NAME)
+    args = observer.parse(argv, SCENARIO_NAME)
 
-    gateways = list(create_gateways(args.gateway, args.gateway_phy or []))
-    terminals = [
-            ST(
-                st.entity, st.opensand_id,
-                st.tap_mac_address,
-                st.tap_name, st.bridge_name,
-                st.bridge_to_lan, st.emulation_ip)
-            for st in args.satellite_terminal
-    ]
-    satellite = SAT(args.sat.entity, args.sat.ip)
-  
     config_files = None
     configuration_folder = args.configuration_folder
     if configuration_folder:
@@ -215,11 +191,17 @@ def main(argv=None):
                 pusher.args.local_file = local_file
                 pusher.args.remote_path = config_file.as_posix()
                 pusher.execute(False)
+            # If we don't use this, the controller has a tendency to close the
+            # connection after some files, so slowing things down the dirty way.
             time.sleep(0.1)
 
-    scenario = access_opensand.build(
-            satellite, gateways, terminals,
+    scenario = opensand(
+            args.sat,
+            args.gateway,
+            args.gateway_phy or [],
+            args.satellite_terminal,
             args.duration, config_files,
+            args.post_processing_entity,
             scenario_name=args.scenario_name)
     observer.launch_and_wait(scenario)
 
