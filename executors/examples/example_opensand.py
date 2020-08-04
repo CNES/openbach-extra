@@ -35,7 +35,7 @@ from auditorium_scripts.push_file import PushFile
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder import Scenario
 from scenario_builder.helpers.utils import Validate, ValidateOptional, patch_print_help
-from scenario_builder.helpers.access.opensand import opensand_find_st
+from scenario_builder.helpers.access import opensand
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 from scenario_builder.scenarios import opensand_run, opensand_net_conf, opensand_satcom_conf
@@ -91,7 +91,7 @@ def validate_ip(ip):
     return ipaddress.ip_address(ip).compressed
 
 
-def opensand(satellite, gateways, gateways_phy, terminals, duration=0, configuration_files=None, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+def example_opensand(satellite, gateways, gateways_phy, terminals, duration=0, configuration_files=None, post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, '')
 
     network_entities = [
@@ -140,7 +140,7 @@ def opensand(satellite, gateways, gateways_phy, terminals, duration=0, configura
     network_delete.configure(opensand_net_conf.build(network_entities, 'delete', opensand_net_conf.SCENARIO_NAME + '_delete'))
 
     if post_processing_entity:
-        post_processed = list(scenario.extract_function_id(opensand=opensand_find_st, include_subscenarios=True))
+        post_processed = list(scenario.extract_function_id(opensand=opensand.opensand_find_st, include_subscenarios=True))
         if post_processed:
             time_series_on_same_graph(
                     scenario,
@@ -151,15 +151,36 @@ def opensand(satellite, gateways, gateways_phy, terminals, duration=0, configura
                     [['UP/Return ModCod']],
                     [['Terminal {} - ModCod'.format(terminal.opensand_id) for terminal in terminals]],
                     False, [network_delete], None, 2)
-            cdf_on_same_graph(
+
+        post_processed = post_processed.copy()
+        post_processed.extend(scenario.extract_function_id(opensand=opensand.opensand_find_gw, include_subscenarios=True))
+        post_processed.extend(scenario.extract_function_id(opensand=opensand.opensand_find_gw_phy, include_subscenarios=True))
+        post_processed.extend(scenario.extract_function_id(opensand=opensand.opensand_find_gw_net_acc, include_subscenarios=True))
+        if post_processed:
+            legends = [
+                    ['Terminal {} - Throughput from satellite'.format(st.opensand_id) for st in terminals]
+                    + ['Gateway {} - Throughput from satellite'.format(gw.opensand_id) for gw in run_gateways if isinstance(gw, opensand_run.GW)]
+                    + ['Gateway Phy {} - Throughput from satellite'.format(gw.opensand_id) for gw in run_gateways is isinstance(gw, opensand_run.SPLIT_GW)]
+                    + ['Gateway Net Access {} - Throughput from satellite'.format(gw.opensand_id) for gw in run_gateways is isinstance(gw, opensand_run.SPLIT_GW)]
+            ]
+            time_series_on_same_graph(
                     scenario,
                     post_processing_entity,
                     post_processed,
+                    [['throughputs.l2_from_sat.total']],
+                    [['Throughput from satellite (kbps)']],
+                    [['Thoughput']],
+                    legends,
+                    False, [network_delete], None, 2)
+            cdf_on_same_graph(
+                    scenario,
+                    post_processing_entity,
+                    post_processed_st + post_processed_gw,
                     100,
-                    [['up_return_modcod.sent_modcod']],
-                    [['Sent ModCod (id)']],
-                    [['UP/Return ModCod']],
-                    [['Terminal {} - ModCod'.format(terminal.opensand_id) for terminal in terminals]],
+                    [['throughputs.l2_from_sat.total']],
+                    [['Throughput from satellite (kbps)']],
+                    [['Thoughput']],
+                    legends,
                     False, [network_delete], None, 2)
 
     return scenario
@@ -221,7 +242,7 @@ def main(argv=None):
             # connection after some files, so slowing things down the dirty way.
             time.sleep(0.1)
 
-    scenario = opensand(
+    scenario = example_opensand(
             args.sat,
             args.gateway,
             args.gateway_phy or [],
