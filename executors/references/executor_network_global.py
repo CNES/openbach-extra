@@ -54,6 +54,9 @@ def main(argv=None):
             '--server-port', default=7001,
             help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
+            '--client-port', default=7001,
+            help='The iperf3/nuttcp server port for data')
+    observer.add_scenario_argument(
             '--command-port', default=7000,
             help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
@@ -96,6 +99,7 @@ def main(argv=None):
                       args.server_ip,
                       args.client_ip,
                       args.server_port,
+                      args.client_port,
                       args.command_port,
                       args.duration,
                       args.rate_limit,
