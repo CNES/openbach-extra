@@ -38,6 +38,7 @@ import time
 import syslog
 import signal
 import argparse
+import subprocess
 from functools import partial
 
 import collect_agent
@@ -50,21 +51,24 @@ from selenium.webdriver.support import expected_conditions as expected
 from selenium.webdriver.support.wait import WebDriverWait
 
 
-DEFAULT_URL='{}://{}:{}/vod-dash/'
-DEFAULT_PATH='/vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd'
 HTTP1 = 'http/1.1'
 HTTP2 = 'http/2'
+TORNADO_PORT = '5301'
+DEFAULT_URL='{}://{}:{}/vod-dash/tornado_port=' + TORNADO_PORT
+DEFAULT_PATH='/vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd'
 
 # The following variables *_PORT must have the same values as in installation file of the job 
 # 'dashjs_player_server'. So don't change, unless you also change them in un/installation files 
 # requiring to reinstall both jobs: 'dashjs_client' and 'dashjs_player_server'  on agents.
 
-HTTP1_PORT = 8083
-HTTP2_PORT = 8084
+HTTP1_PORT = 8081
+HTTP2_PORT = 8082
 
-def close_firefox(driver, signum, frame):
+def close_firefox(driver, p_tornado, signum, frame):
     """ Closes the browser if open """
     driver.quit()
+    p_tornado.terminate()
+    p_tornado.wait()
 
 def main(dst_ip, proto, path, time):
     # Connect to collect agent
@@ -98,8 +102,11 @@ def main(dst_ip, proto, path, time):
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
 
+    # Launch Tornado TODO add except ?
+    p_tornado = subprocess.Popen([sys.executable, 'tornado.py', '--port', TORNADO_PORT])
+
     # Set signal handler
-    close_firefox_partial = partial(close_firefox, driver)
+    close_firefox_partial = partial(close_firefox, driver, p_tornado)
     signal.signal(signal.SIGTERM, close_firefox_partial)
     signal.signal(signal.SIGALRM, close_firefox_partial)
     signal.alarm(time)
