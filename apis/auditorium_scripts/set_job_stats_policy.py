@@ -59,8 +59,10 @@ class SetJobStatsPolicy(FrontendBase):
                 '-r', '--delete', '--remove', action='store_true',
                 help='revert to the default policy')
         self.parser.add_argument(
-                '-d', '--date', metavar=('DATE', 'TIME'),
-                nargs=2, help='date of the execution')
+                '-f', '--filename',
+                help='name of or path to the configuration file on the '
+                'agent; defaults to /opt/openbach/agent/jobs/<job_name>/'
+                '<job_name>_rstats.conf if not specified')
 
     def execute(self, show_response_content=True):
         agent = self.args.agent
@@ -71,15 +73,15 @@ class SetJobStatsPolicy(FrontendBase):
         if self.args.delete:
             storage = None
             broadcast = None
-        date = self.date_to_timestamp()
+        filename = self.args.filename
 
         action = self.request
         if storage is not None:
             action = partial(action, storage=storage)
         if broadcast is not None:
             action = partial(action, broadcast=broadcast)
-        if date is not None:
-            action = partial(action, date=date)
+        if filename is not None:
+            action = partial(action, filename=filename)
 
         return action(
                 'POST', 'job/{}'.format(job), action='stat_policy',
