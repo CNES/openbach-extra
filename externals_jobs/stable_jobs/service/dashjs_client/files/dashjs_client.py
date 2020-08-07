@@ -54,7 +54,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 HTTP1 = 'http/1.1'
 HTTP2 = 'http/2'
 TORNADO_PORT = '5301'
-DEFAULT_URL='{}://{}:{}/vod-dash/tornado_port=' + TORNADO_PORT
+DEFAULT_URL='{}://{}:{}/vod-dash/?tornado_port={}'
 DEFAULT_PATH='/vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd'
 
 # The following variables *_PORT must have the same values as in installation file of the job 
@@ -64,7 +64,7 @@ DEFAULT_PATH='/vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd'
 HTTP1_PORT = 8081
 HTTP2_PORT = 8082
 
-def close_firefox(driver, p_tornado, signum, frame):
+def close_all(driver, p_tornado, signum, frame):
     """ Closes the browser if open """
     driver.quit()
     p_tornado.terminate()
@@ -77,6 +77,9 @@ def main(dst_ip, proto, path, time):
  
     collect_agent.send_log(syslog.LOG_DEBUG, "About to launch Dash client")
 
+    # Launch Tornado TODO add except ?
+    p_tornado = subprocess.Popen([sys.executable, '/opt/openbach/agent/jobs/dashjs_client/tornado_server.py', '--port', TORNADO_PORT])
+
     # Launch Firefox
     options = Options()
     options.add_argument('-headless')
@@ -86,7 +89,7 @@ def main(dst_ip, proto, path, time):
     # Get page
     try:
         url_proto, port = ('http', HTTP1_PORT) if (proto == HTTP1) else ('https', HTTP2_PORT)
-        driver.get(DEFAULT_URL.format(url_proto, dst_ip, port))
+        driver.get(DEFAULT_URL.format(url_proto, dst_ip, port, TORNADO_PORT))
 
         # Update path
         wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR,
@@ -98,17 +101,16 @@ def main(dst_ip, proto, path, time):
         wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR,
             'span.input-group-btn > button:nth-child(2)'))).click()
     except WebDriverException as ex:
+        print(ex)
         message = "Exception with webdriver: {}".format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
+        close_all(driver, p_tornado, 0, 0)
         sys.exit(message)
 
-    # Launch Tornado TODO add except ?
-    p_tornado = subprocess.Popen([sys.executable, 'tornado.py', '--port', TORNADO_PORT])
-
     # Set signal handler
-    close_firefox_partial = partial(close_firefox, driver, p_tornado)
-    signal.signal(signal.SIGTERM, close_firefox_partial)
-    signal.signal(signal.SIGALRM, close_firefox_partial)
+    close_all_partial = partial(close_all, driver, p_tornado)
+    signal.signal(signal.SIGTERM, close_all_partial)
+    signal.signal(signal.SIGALRM, close_all_partial)
     signal.alarm(time)
 
     signal.pause()

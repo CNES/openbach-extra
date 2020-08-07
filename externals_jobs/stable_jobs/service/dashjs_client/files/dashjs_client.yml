@@ -4,7 +4,7 @@ general:
   name:            'dashjs_client'
   description: >
       Launches a DASH client on the machine, and plays video.
-  job_version:     '1.0'
+  job_version:     '1.1'
   keywords:        [dash, client, video, streaming]
   persistent:      False
 
