@@ -34,11 +34,11 @@ __credits__ = '''Contributors:
 '''
 
 import sys
-import time
 import syslog
 import signal
 import argparse
 import subprocess
+import socket
 from functools import partial
 
 import collect_agent
@@ -53,7 +53,6 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 HTTP1 = 'http/1.1'
 HTTP2 = 'http/2'
-TORNADO_PORT = '5301'
 DEFAULT_URL='{}://{}:{}/vod-dash/?tornado_port={}'
 DEFAULT_PATH='/vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd'
 
@@ -64,32 +63,43 @@ DEFAULT_PATH='/vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd'
 HTTP1_PORT = 8081
 HTTP2_PORT = 8082
 
+def isPortUsed(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        used = (s.connect_ex(('localhost', port)) == 0)
+    return used
+
 def close_all(driver, p_tornado, signum, frame):
     """ Closes the browser if open """
     driver.quit()
     p_tornado.terminate()
     p_tornado.wait()
 
-def main(dst_ip, proto, path, time):
+def main(dst_ip, proto, tornado_port, path, time):
     # Connect to collect agent
     conffile = '/opt/openbach/agent/jobs/dashjs_client/dashjs_client.conf'
     collect_agent.register_collect(conffile)
  
     collect_agent.send_log(syslog.LOG_DEBUG, "About to launch Dash client")
 
+    if isPortUsed(tornado_port):
+        message = "Port {} already used, aborting".format(tornado_port)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        return
+
     # Launch Tornado TODO add except ?
-    p_tornado = subprocess.Popen([sys.executable, '/opt/openbach/agent/jobs/dashjs_client/tornado_server.py', '--port', TORNADO_PORT])
+    p_tornado = subprocess.Popen([sys.executable, '/opt/openbach/agent/jobs/dashjs_client/tornado_server.py', '--port', str(tornado_port)])
 
     # Launch Firefox
     options = Options()
     options.add_argument('-headless')
+    options.set_preference("network.websocket.allowInsecureFromHTTPS", True)
     driver = Firefox(executable_path='geckodriver', firefox_options=options)
     wait = WebDriverWait(driver, timeout=10)
     
     # Get page
     try:
         url_proto, port = ('http', HTTP1_PORT) if (proto == HTTP1) else ('https', HTTP2_PORT)
-        driver.get(DEFAULT_URL.format(url_proto, dst_ip, port, TORNADO_PORT))
+        driver.get(DEFAULT_URL.format(url_proto, dst_ip, port, tornado_port))
 
         # Update path
         wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR,
@@ -101,7 +111,6 @@ def main(dst_ip, proto, path, time):
         wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR,
             'span.input-group-btn > button:nth-child(2)'))).click()
     except WebDriverException as ex:
-        print(ex)
         message = "Exception with webdriver: {}".format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
         close_all(driver, p_tornado, 0, 0)
@@ -129,6 +138,9 @@ if __name__ == "__main__":
             "protocol",  choices=[HTTP1, HTTP2],
              help='The protocol to use by server to stream video')
     parser.add_argument(
+            '-p', '--tornado_port', type=int, default=5301,
+            help='Port used by the Tornado Server to get statistics from the DASH client (Default: 5301)')
+    parser.add_argument(
             '-d', '--dir', type=str, default=DEFAULT_PATH,
             help='The path of the dir containing the video to stream')
     parser.add_argument(
@@ -139,7 +151,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     dst_ip = args.dst_ip
     proto = args.protocol
+    tornado_port = args.tornado_port
     path = args.dir
     time = args.time
     
-    main(dst_ip, proto, path, time)
+    main(dst_ip, proto, tornado_port, path, time)

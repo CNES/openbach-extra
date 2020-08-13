@@ -36,7 +36,7 @@
 - name: Init global variables  
   set_fact:
     domain: dash.openbach.com
-    cacheable: yes  
+    cacheable: yes
 
 - name: Get client architecture
   shell: uname -p
@@ -67,35 +67,18 @@
   become: yes
   environment: "{{ openbach_proxies }}"
 
+- name: Install mod_http2's  dependencies
+  apt: name={{ item }} state=present
+  with_items:
+    - software-properties-common
+    - python-software-properties
+  become: yes
+  environment: "{{ openbach_proxies }}"
+
 - name: Install Selenium for python3
   pip: name=selenium executable=pip3 state=present
   become: yes
   environment: "{{ openbach_proxies }}"
-
-- name: Install pyOpenSSL
-  pip: name=pyopenssl executable=pip2 state=present
-  become: yes
-  environment: "{{ openbach_proxies }}"
-
-- name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
-  openssl_privatekey:
-    path: /etc/ssl/private/{{ domain }}.pem 
-  become: yes  
-
-- name: Generate an OpenSSL Certificate Signing Request
-  openssl_csr:
-    path: /etc/ssl/certs/{{ domain }}.csr
-    privatekey_path: /etc/ssl/private/{{ domain }}.pem
-    common_name: "{{ domain }}"
-  become: yes
-
-- name: Generate a Self Signed OpenSSL certificate
-  openssl_certificate:
-    path: /etc/ssl/certs/{{ domain }}.crt
-    privatekey_path: /etc/ssl/private/{{ domain }}.pem
-    csr_path: /etc/ssl/certs/{{ domain }}.csr
-    provider: selfsigned
-  become: yes
 
 - name: Create dash client repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
@@ -106,4 +89,3 @@
     - { file: 'dashjs_client.help', mode: '0644' }
     - { file: 'dashjs_client.py', mode: '0755' }
     - { file: 'dashjs_client_rstats_filter.conf', mode: '0644' }
-    - { file: 'tornado_server.py', mode: '0755' }

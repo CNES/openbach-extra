@@ -36,39 +36,23 @@ __credits__ = '''Contributors:
 
 
 import sys
-import os
 import json
-import time
 import syslog
 import argparse
-import subprocess
-import time
-import threading
 import asyncio
 from contextlib import suppress
-import signal
-from functools import partial
-import psutil
 
 import collect_agent
-from tornado import ioloop, web, websocket
+from tornado import ioloop, web
 from tornado.options import define, options
 
-# Values of following variables *_PORT must be identical to those 
-# specified in un/installation files of the job, so don't change
-
-HTTP_PORT = 8083
-HTT2_PORT = 8084
-
-DESCRIPTION = ("This script launches a tornado server to collect statistics").format(HTTP_PORT, HTT2_PORT)
+DESCRIPTION = "This script launches a tornado server to collect statistics from dashjs_client"
 
 
 def connect_to_collect_agent():
-    print("Connect to collect agent")
     success = collect_agent.register_collect(
             '/opt/openbach/agent/jobs/dashjs_client/'
             'dashjs_client_rstats_filter.conf')
-    print(success)
     if not success:
         message = 'Error connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
@@ -80,12 +64,9 @@ class CustomWebSocket(websocket.WebSocketHandler):
         
     def open(self):
         self.set_nodelay(True)
-        print("open")
         collect_agent.send_log(syslog.LOG_DEBUG, 'Opened websocket with IP {}'.format(self.request.remote_ip))
-        print('Opened websocket with IP {}'.format(self.request.remote_ip))
 
     def on_message(self, message):
-        print(message)
         data = json.loads(message)
 
         for stat in ('latency_max', 'download_max', 'ratio_max'):
@@ -93,7 +74,6 @@ class CustomWebSocket(websocket.WebSocketHandler):
                 if data[stat] == 'Infinity':
                     del data[stat]
         collect_agent.send_stat(**data)
-        print(data)
         collect_agent.send_log(syslog.LOG_DEBUG, 'Message received')
 
 def run_tornado():
@@ -106,10 +86,8 @@ def run_tornado():
     application = web.Application([
         (r'/websocket/', CustomWebSocket)
     ])
-    print("application")
 
     listen_message = 'Starting tornado on {}:{}'.format('0.0.0.0', options.port)
-    print('Starting tornado on {}:{}'.format('0.0.0.0', options.port))
     collect_agent.send_log(syslog.LOG_DEBUG, listen_message)
     try:
         # Add a event loop
@@ -118,8 +96,8 @@ def run_tornado():
         ioloop.IOLoop.current().start()
     except Exception as ex:
         message = 'Error when starting tornado: {}'.format(ex)
-        print(message)
         collect_agent.send_log(syslog.LOG_ERR, message)
+        ioloop.IOLoop.current().stop()
         sys.exit(message)
 
 
@@ -131,5 +109,14 @@ def main():
     run_tornado() 
 
 if __name__ == '__main__':
-    define("port", default=5301, help="port to listen on")
+    # Define usage
+    parser = argparse.ArgumentParser(
+            description='',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument(
+            '-p', '--port', type=int, default=5301,
+            help='Port used by the Tornado Server to get statistics from the DASH client (Default: 5301)')
+
+    define("port", default=parser.parse_args().port, help="port to listen on")
     main()

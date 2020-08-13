@@ -31,6 +31,12 @@ arguments:
       description: >
           The protocol to use by server to stream video
   optional:
+    - name:        tornado_port
+      type:        'int'
+      count:       1
+      flag:        '-p'
+      description: >
+          Port used by the Tornado Server to get statistics from the DASH client (Default: 5301)
     - name:        duration
       type:        'int'
       count:       1
