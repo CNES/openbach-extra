@@ -88,4 +88,5 @@
   with_items:
     - { file: 'dashjs_client.help', mode: '0644' }
     - { file: 'dashjs_client.py', mode: '0755' }
+    - { file: 'tornado_server.py', mode: '0755' }
     - { file: 'dashjs_client_rstats_filter.conf', mode: '0644' }
