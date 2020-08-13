@@ -1,20 +1,21 @@
 === Job description ===
 
-This job launches a DASH client on the agent and plays video from a DASH server. 
+This job launches a DASH client on the agent and plays video from an Apache2 server. It also launches a Tornado server to forward the statistics from DASH client to OpenBACH. If several instances of this jobs are used on a same agent, the Tornado ports have to be all different.
 
 === Examples ===
 
 == Example 1 ==
 
-Connect to a DASH server on ''192.168.1.1'' with the protocol http/2 during 2s.
+Connect to a DASH server on ''192.168.1.1'' with the protocol http/2 during 2s. Tornado server is launched on port 5000.
 
 In the web interface, set the following parameters:
   * **dst_ip** = 192.168.1.1
   * **protocol** = http/2
+  * **tornado_port** = 5000
   * **duration** = 2
   * **path** = /vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd
 
 Or launch the job manually from the Agent as follows:
 <code>
-JOB_NAME='dashjs_client' sudo -E python3 /opt/openbach/agent/jobs/dashjs_client/dashjs_client.py 192.168.1.1 http/2 -t 2 -d /vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd
+JOB_NAME='dashjs_client' sudo -E python3 /opt/openbach/agent/jobs/dashjs_client/dashjs_client.py 192.168.1.1 http/2 -p 5000 -t 2 -d /vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd
 </code>

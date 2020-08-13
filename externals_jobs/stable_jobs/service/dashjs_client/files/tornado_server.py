@@ -43,7 +43,7 @@ import asyncio
 from contextlib import suppress
 
 import collect_agent
-from tornado import ioloop, web
+from tornado import ioloop, web, websocket
 from tornado.options import define, options
 
 DESCRIPTION = "This script launches a tornado server to collect statistics from dashjs_client"

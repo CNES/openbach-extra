@@ -82,9 +82,9 @@ def main(dst_ip, proto, tornado_port, path, time):
     collect_agent.send_log(syslog.LOG_DEBUG, "About to launch Dash client")
 
     if isPortUsed(tornado_port):
-        message = "Port {} already used, aborting".format(tornado_port)
+        message = "Port {} already used, cannot launch Tornado server. Aborting...".format(tornado_port)
         collect_agent.send_log(syslog.LOG_ERR, message)
-        return
+        sys.exit(message)
 
     # Launch Tornado TODO add except ?
     p_tornado = subprocess.Popen([sys.executable, '/opt/openbach/agent/jobs/dashjs_client/tornado_server.py', '--port', str(tornado_port)])
