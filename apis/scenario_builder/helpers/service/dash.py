@@ -30,14 +30,15 @@
 
 
 def dash_client_and_server(
-        scenario, server_entity, client_entity, server_ip, duration, protocol,
+        scenario, server_entity, client_entity, server_ip, duration,
+        protocol, tornado_port,
         wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    server.configure('dashjs_player_server', server_entity, offset=0)
+    server.configure('apache2', server_entity, offset=0)
 
     client = scenario.add_function(
             'start_job_instance',
@@ -45,7 +46,8 @@ def dash_client_and_server(
             wait_delay=2)
     client.configure(
             'dashjs_client', client_entity, offset=0,
-            dst_ip=server_ip, protocol=protocol, duration=duration)
+            dst_ip=server_ip, protocol=protocol,
+            tornado_port=tornado_port, duration=duration)
 
     stopper = scenario.add_function(
             'stop_job_instance',
@@ -57,7 +59,8 @@ def dash_client_and_server(
 
 
 def dash_client(
-        scenario, client_entity, server_ip, duration, protocol,
+        scenario, client_entity, server_ip, duration,
+        protocol, tornado_port,
         wait_finished=None, wait_launched=None, wait_delay=0):
     client = scenario.add_function(
             'start_job_instance',
@@ -66,16 +69,7 @@ def dash_client(
             wait_delay=wait_delay)
     client.configure(
             'dashjs_client', client_entity, offset=0,
-            dst_ip=server_ip, protocol=protocol, duration=duration)
+            dst_ip=server_ip, protocol=protocol,
+            tornado_port=tornado_port, duration=duration)
 
     return [client]
-
-
-def dash_server(scenario, server_entity, wait_finished=None, wait_launched=None, wait_delay=0):
-    server = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    server.configure('dashjs_player_server', server_entity, offset=0)
-    return [server]

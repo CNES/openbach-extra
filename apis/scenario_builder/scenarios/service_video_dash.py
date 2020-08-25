@@ -41,26 +41,26 @@ NB : the entities logic is the following :
 """
 
 
-def video_dash_client_and_server(server_entity, client_entity, server_ip, duration, protocol, scenario_name=SCENARIO_NAME):
+def video_dash_client_and_server(server_entity, client_entity, server_ip, duration, protocol, tornado_port, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    dash_client_and_server(scenario, server_entity, client_entity, server_ip, duration, protocol)
+    dash_client_and_server(scenario, server_entity, client_entity, server_ip, duration, protocol, tornado_port)
     return scenario
 
 
-def video_dash_client(client_entity, server_ip, duration, protocol, scenario_name=SCENARIO_NAME):
+def video_dash_client(client_entity, server_ip, duration, protocol, tornado_port, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    dash_client(scenario, client_entity, server_ip, duration, protocol)
+    dash_client(scenario, client_entity, server_ip, duration, protocol, tornado_port)
     return scenario
 
 
-def build(server_entity, client_entity, server_ip, duration, protocol, launch_server=False, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+def build(server_entity, client_entity, server_ip, duration, protocol, tornado_port, launch_server=False, post_processing_entity=None, scenario_name=SCENARIO_NAME):
     if launch_server:
-        scenario = video_dash_client_and_server(server_entity, client_entity, server_ip, duration, protocol, scenario_name)
+        scenario = video_dash_client_and_server(server_entity, client_entity, server_ip, duration, protocol, tornado_port, scenario_name)
     else:
-        scenario = video_dash_client(client_entity, server_ip, duration, protocol, scenario_name)
+        scenario = video_dash_client(client_entity, server_ip, duration, protocol, tornado_port, scenario_name)
 
-    if launch_server and post_processing_entity is not None:
-        post_processed = list(scenario.extract_function_id('dashjs_player_server'))
+    if post_processing_entity is not None:
+        post_processed = list(scenario.extract_function_id('dashjs_client'))
         legends = ['dash from {} to {}'.format(server_entity, client_entity)]
         jobs = [function for function in scenario.openbach_functions if isinstance(function, StartJobInstance)]
 

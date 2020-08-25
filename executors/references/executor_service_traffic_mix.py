@@ -35,6 +35,8 @@ and service_data_transfer in a flexible manner.
 """
 
 import argparse
+import sys
+import shlex
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_traffic_mix
@@ -105,7 +107,7 @@ class ValidateWebBrowsing(_Validate):
 
 
 class ValidateDash(_Validate):
-    VALIDATOR = _Validate.VALIDATOR + (None,)
+    VALIDATOR = _Validate.VALIDATOR + (None, int)
     TRAFFIC_NAME = 'dash'
     TRAFFIC_TYPE = service_traffic_mix.DashArguments
 
@@ -134,6 +136,7 @@ def main(argv=None):
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
+    argv = [x for l in sys.argv[1:] for x in shlex.split(l, comments=True)]
     args = observer.parse(argv, service_traffic_mix.SCENARIO_NAME)
 
     scenario = service_traffic_mix.build(
