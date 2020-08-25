@@ -1,0 +1,55 @@
+general:
+  name:  dambox
+  description: >
+      This Job launch the binary dam_box on the agent 
+  job_version:     '1.0'
+  keywords:        [Beam Hopping, dam_box, Dam Slot, Beam Period, Timeline, FIFO]
+  persistent:      true
+  need_privileges: yes
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/dambox/dambox.py'
+    command_stop:
+
+arguments:
+  required:
+    - name: damslot
+      type: 'int'
+      count: 1
+      description: The duration of the dam slot in microseconde
+    - name: output interface
+      type: 'str'
+      count: 1
+      description: The output interface of the DamBOX (ex eht0, ens192....)
+  optional:
+    - name: duration
+      type: 'int'
+      count: 1
+      flag: '-d'
+      description: The duration of the DamBOX in seconde, if empty the binary  will runs continuously until a system interruption
+    - name: simultaneous_verdict
+      type: 'int'
+      count: 1
+      flag: '-s'
+      description: Determination of the maximum number of packets that can be sent out the BH box simultaneously (default 1)
+  subcommand:
+    - group_name: mode
+      optional: no
+      choices:
+        - name: timeline
+          flag: '-t'
+          required:
+            - name: custom_timeline
+              type: 'str'
+              count: 1
+              description: The custom timeline(BHP), ex 001110101001
+        - name: frequency
+          flag: '-f'
+          required:
+            - name: frequency_value
+              type: 'int'
+              count: 1
+              description: Frequency of the illuminated beam, If freq = 4, the beam is activated 1 time-slot out of 4

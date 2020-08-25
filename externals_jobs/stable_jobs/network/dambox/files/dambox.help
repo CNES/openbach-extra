@@ -1,0 +1,67 @@
+=== Job description ===
+The job 'dambox' launches the software DamBOX, and sets up the iptables
+configurations necessary to perform temporal intermittence.
+see https://wiki.net4sat.org/doku.php?id=dambox:index for more info on the DamBOX
+
+The job will erase all iptables rules already in place and create a specefic one for the DamBOX software.
+Be aware of this
+
+
+In order to understand hox to use the job DamBOX, the following vocabulary is important :
+
+DS (Dam Slot) : the smallest unit of time during which the data can be either blocked or released.
+
+TimeLine : the management of blocking and releasing states. It is composed of 1 and 0. State 0 is a state where data is blocked.
+State 1 corresponds to a state where data is released. The TimeLine will be repeated indefinitely until the end of the program execution.
+Each rule matches TCP segments according to the source or destination IP,
+or input interface, and redirects them to a transparent proxy on 0.0.0.0,
+on the port specified by 'port' (default: 5000), and using the mark specified by 'mark' (default: 1).
+
+The job offer 2 mode of operation, the frequency and the custom timeline.
+
+The frequency is the simplest one, the user enter a number wich determinate the number of DS in the timeline
+(Ex: freq 6 will create a timeline of 6 DS like the following 100000)
+Only the first DS is at state 1 in this mode.
+
+The custom timeline allow you to create a timeline with more than one DS at state 1
+(Ex timeline 010010 will create a custom timeline of 6 DS like the following 010010) 
+
+
+=== Examples ===
+== Example 1: ==
+Launch DamBOX on a host, intermittently releases all the packet routed to the output interface ens3 with a DS of 15ms and a Timeline of 6
+
+In the web interface, set the following parameters:
+  * 'damslot'         : '15'
+  * 'mode'            : 'frequency'
+  * 'frequency_value' : '6'
+  * 'output interface': 'ens3'
+
+Or launch the job manually from the Agent as follows (the statistics will be 
+available on the collector with a job_instance_id, scenario_instance_id and 
+owner_scenario_instance_id):
+
+JOB_NAME=dambox sudo -E python3 /opt/openbach/agent/jobs/dambox/dambox.py 15 frequency 6 ens3 
+
+== Example 2: == 
+Launch DamBOX on a host, intermittently releases all the packet routed to the output interface ens3 with a DS of 15ms and a custom timeline of 8
+during 60s
+
+In the web interface, set the following parameters:
+  * 'damslot'         : '15'
+  * 'mode'            : 'timeline'
+  * 'frequency_value' : '01110101'
+  * 'output interface': 'ens3'
+  * 'duration'        : '60'
+
+Or launch the job manually from the Agent as follows (the statistics will be
+available on the collector with a job_instance_id, scenario_instance_id and
+owner_scenario_instance_id):
+
+JOB_NAME=dambox sudo -E python3 /opt/openbach/agent/jobs/dambox/dambox.py 15 timeline 01110101  ens3 -d 60
+
+
+=== Additional information ===
+<note important>WARNING: The effect of DamBOX will only work if the chosen interface is the output of IP flow.
+However, every input interface will work.
+We recommand you to create a specific machin for DamBox in your architecture.
