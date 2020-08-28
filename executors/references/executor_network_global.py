@@ -71,9 +71,6 @@ def main(argv=None):
             '--num-flows', default=1,
             help='Number of iperf3 flows generated (default : 1)')
     observer.add_scenario_argument(
-            '--bandwidth', default='1M',
-            help='the bandwidth (bits/s) of iperf3 test')
-    observer.add_scenario_argument(
             '--tos', default=0,
             help='Type of Service of the trafic (default : 0)')
     observer.add_scenario_argument(
@@ -104,7 +101,6 @@ def main(argv=None):
                       args.duration,
                       args.rate_limit,
                       args.num_flows,
-                      args.bandwidth,
                       args.tos,
                       args.mtu,
                       args.count,
