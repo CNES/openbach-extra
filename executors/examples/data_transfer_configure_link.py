@@ -188,6 +188,7 @@ def main(argv=None):
             args.server,
             args.client,
             args.server_ip,
+            args.port,
             args.duration,
             args.file_size,
             0x04,
