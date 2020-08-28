@@ -187,9 +187,8 @@ def main(argv=None):
     scenario = service_data_transfer.build(
             args.server,
             args.client,
+            args.server_ip,
             args.duration,
-            args.client_ip,
-            args.port,
             args.file_size,
             0x04,
             1400,
