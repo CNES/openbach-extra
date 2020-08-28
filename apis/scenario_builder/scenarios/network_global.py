@@ -44,7 +44,7 @@ It is a general network QoS metrics scenario.
 
 def build(
         server_entity, client_entity, server_ip, client_ip, server_port, client_port, command_port,
-        duration, rate_limit, num_flows, bandwidth, tos, mtu, count, packets_interval,
+        duration, rate_limit, num_flows, tos, mtu, count, packets_interval,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
     #Create top network_global scenario
