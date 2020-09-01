@@ -92,7 +92,7 @@ def extract_iperf_statistic(job):
     data = job.statistics_data[('Flow1',)].dated_data
     return [
             (timestamp, stats['throughput'])
-            for timestamp, stats in data.items()
+            for timestamp, stats in data.items() if stats.__contains__('throughput')
     ]
 
 
