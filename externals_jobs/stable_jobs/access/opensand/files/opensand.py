@@ -321,7 +321,7 @@ if __name__ == '__main__':
         '/opt/openbach/agent/jobs/opensand/opensand_rstats_filter.conf',
     )
 
-    command = [path.join(args.bin_dir, 'opensand-{}'.format(args.entity))]
+    command = [path.join(args.bin_dir, 'opensand'), args.entity]
     if args.entity == 'sat':
         command += [
             '-a', args.emu_addr,

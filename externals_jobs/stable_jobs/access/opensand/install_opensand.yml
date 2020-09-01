@@ -85,7 +85,6 @@
     update_cache: yes
   with_items:
     - opensand-core
-    - opensand-network
     - libopensand-gse-encap-plugin
     - libopensand-rle-encap-plugin
   register: install

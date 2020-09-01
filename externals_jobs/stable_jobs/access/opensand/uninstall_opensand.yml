@@ -57,7 +57,6 @@
     - libopensand-gse-encap-plugin
     - libopensand-rle-encap-plugin
     - opensand-core
-    - opensand-network
     - libopensand-plugin
     - libopensand-rt
     - libopensand-conf
