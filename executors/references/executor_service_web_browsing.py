@@ -46,7 +46,7 @@ def main(argv=None):
             help='name of the client entity which receives the web_browsing traffic')
     observer.add_scenario_argument(
             '--duration', required=False, type=int,
-            help='duration of Web browsing transmission')
+            help='time after which the web browsing transmission is stoped (in seconds)')
     observer.add_scenario_argument(
             '--nb-runs', default=1,
             help='the number of fetches to perform for each website')
