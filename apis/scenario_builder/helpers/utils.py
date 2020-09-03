@@ -29,6 +29,7 @@
 """Generic tools to build helpers"""
 
 import argparse
+import functools
 from collections import ChainMap
 
 

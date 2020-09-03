@@ -166,7 +166,6 @@ class FrontendBase:
         controller, login, password, unspecified = read_controller_configuration(self.__filename)
         self.parser = FromFileArgumentParser(
                 description=description,
-                fromfile_prefix_chars='@',
                 epilog='Backend-specific arguments can be specified by '
                 'providing a file called \'controller\' in the same folder '
                 'than this script. This file can contain a JSON dictionary '

@@ -96,7 +96,7 @@ def example_opensand(satellite, gateways, gateways_phy, terminals, duration=0, c
 
     network_entities = [
             opensand_net_conf.OPENSAND_ENTITY(
-                terrestrial.entity
+                terrestrial.entity,
                 terrestrial.tap_mac,
                 terrestrial.tap_name,
                 terrestrial.bridge_name,
