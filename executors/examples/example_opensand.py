@@ -28,6 +28,7 @@
 
 import argparse 
 import ipaddress
+import time
 from pathlib import Path
 from itertools import chain
 
@@ -66,7 +67,7 @@ class GatewayPhy:
 class Satellite:
     def __init__(self, entity, ip):
         self.entity = entity
-        self.ip = validate_ip(ip)
+        self.emulation_ip = validate_ip(ip)
 
 
 class ValidateSatellite(argparse.Action):
@@ -97,7 +98,7 @@ def example_opensand(satellite, gateways, gateways_phy, terminals, duration=0, c
     network_entities = [
             opensand_net_conf.OPENSAND_ENTITY(
                 terrestrial.entity,
-                terrestrial.tap_mac,
+                terrestrial.tap_mac_address,
                 terrestrial.tap_name,
                 terrestrial.bridge_name,
                 terrestrial.bridge_to_lan,
@@ -112,8 +113,8 @@ def example_opensand(satellite, gateways, gateways_phy, terminals, duration=0, c
         terminal_entities = [terminal.entity for terminal in terminals]
         gateway_entities = [gateway.entity for gateway in chain(gateways, gateways_phy)]
         push_files = scenario.add_function('start_scenario_instance', wait_finished=[network_configure])
-        push_file.configure(opensand_satcom_conf.build(satellite.entity, gateway_entities, terminal_entities, configuration_files))
-        wait.append(push_file)
+        push_files.configure(opensand_satcom_conf.build(satellite.entity, gateway_entities, terminal_entities, configuration_files))
+        wait.append(push_files)
 
     run_gateways = []
     for gateway in gateways:

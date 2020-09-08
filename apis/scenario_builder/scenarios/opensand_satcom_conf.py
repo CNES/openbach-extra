@@ -26,6 +26,9 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
+
+from itertools import chain
+
 from scenario_builder import Scenario
 from scenario_builder.helpers.admin.push_file import push_file
 
@@ -40,7 +43,7 @@ SCENARIO_DESCRIPTION = """This opensand scenario allows to:
 def _build_remote_and_users(conf, entity_name, prefix='/etc/opensand/'):
     common_files = conf[None]
     entity_files = conf[entity_name]
-    local_files = [f.as_posix() for f in itertools.chain(common_files, entity_files)]
+    local_files = [f.as_posix() for f in chain(common_files, entity_files)]
     remote_files = [(prefix / f).as_posix() for f in common_files]
     remote_files.extend((prefix / f.relative_to(entity_name)).as_posix() for f in entity_files)
     users = ['opensand'] * len(local_files)
