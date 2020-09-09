@@ -54,16 +54,16 @@ def main(argv=None):
     args = observer.parse(argv, opensand_satcom_conf.SCENARIO_NAME)
 
     config_files = [
-            p.relative_to(configuration_folder)
+            p.relative_to(args.configuration_folder)
             for extension in ('conf', 'txt', 'csv', 'input')
-            for p in configuration_folder.rglob('*.' + extension)
+            for p in args.configuration_folder.rglob('*.' + extension)
     ]
 
     #Store files on the controller
     pusher = observer._share_state(PushFile)
     pusher.args.keep = True
     for config_file in config_files:
-        with configuration_folder.joinpath(config_file).open() as local_file:
+        with args.configuration_folder.joinpath(config_file).open() as local_file:
             pusher.args.local_file = local_file
             pusher.args.remote_path = config_file.as_posix()
             pusher.execute(False)

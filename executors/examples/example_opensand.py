@@ -125,14 +125,16 @@ def example_opensand(satellite, gateways, gateways_phy, terminals, duration=0, c
                         gateway_phy.entity,
                         gateway.opensand_id,
                         gateway.emulation_ip,
+                        gateway_phy.interconnect_phy,
                         gateway_phy.interconnect_net_access,
-                        gateway_phy.interconnect_phy))
+                        gateway.tap_name))
                 break
         else:
             run_gateways.append(opensand_run.GW(
                     gateway.entity,
                     gateway.opensand_id,
-                    gateway.emulation_ip))
+                    gateway.emulation_ip,
+                    gateway.tap_name))
 
     run = scenario.add_function('start_scenario_instance', wait_finished=wait)
     run.configure(opensand_run.build(satellite, run_gateways, terminals, duration))
@@ -191,21 +193,21 @@ def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--sat', '-s', required=True, action=ValidateSatellite,
-            nargs=2, metavar=('ENTITY', 'EMULATION_IP'),
+            nargs=2, metavar=('ENTITY', 'EMULATION_ADDRESS'),
             help='The satellite of the platform. Must be supplied only once.')
     observer.add_scenario_argument(
             '--gateway', '-gw', required=True, action=ValidateGateway, nargs='*',
-            metavar='ENTITY EMULATION_IP (BRIDGE_ADDRESS_MASK | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
+            metavar='ENTITY EMULATION_ADDRESS (BRIDGE_ADDRESS_MASK | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
             help='A gateway in the platform. Must be supplied at least once.')
     observer.add_scenario_argument(
             '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy,
-            nargs=4, metavar=('ENTITY_PHY', 'ENTITY_NET_ACC', 'INTERCONNECT_PHY', 'INTERCONNECT_NET_ACC'),
+            nargs=4, metavar=('ENTITY_PHY', 'ENTITY_NET_ACC', 'INTERCONNECT_PHY_ADDRESS', 'INTERCONNECT_NET_ACC_ADDRESS'),
             help='The physical part of a split gateway. Must reference the '
             'net access part previously provided using the --gateway option. '
             'Optional, can be supplied only once per gateway.')
     observer.add_scenario_argument(
             '--satellite-terminal', '-st', required=True, action=ValidateSatelliteTerminal, nargs='*',
-            metavar='ENTITY EMULATION_IP (BRIDGE_ADDRESS_MASK | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
+            metavar='ENTITY EMULATION_ADDRESS (BRIDGE_ADDRESS_MASK | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
             help='A satellite terminal in the platform. Must be supplied at least once.')
     observer.add_scenario_argument(
             '--duration', '-d', required=False, default=0, type=int,

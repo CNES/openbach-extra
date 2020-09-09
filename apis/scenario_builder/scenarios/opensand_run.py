@@ -40,11 +40,12 @@ SCENARIO_DESCRIPTION = """This opensand scenario allows to:
 
 
 SAT = namedtuple('SAT', ('entity', 'emulation_ip'))
-ST = namedtuple('ST', ('entity', 'opensand_id', 'emulation_ip'))
-GW = namedtuple('GW', ('entity', 'opensand_id', 'emulation_ip'))
+ST = namedtuple('ST', ('entity', 'opensand_id', 'emulation_ip', 'tap_name'))
+GW = namedtuple('GW', ('entity', 'opensand_id', 'emulation_ip', 'tap_name'))
 SPLIT_GW = namedtuple('SPLIT_GW', (
     'entity_net_acc', 'entity_phy', 'opensand_id',
-    'emulation_ip', 'interconnect_ip_net_acc', 'interconnect_ip_phy'))
+    'emulation_ip', 'interconnect_ip_phy', 'interconnect_ip_net_acc',
+    'tap_name'))
 
 
 def run(satellite, gateways, terminals, scenario_name=SCENARIO_NAME):
@@ -56,12 +57,14 @@ def run(satellite, gateways, terminals, scenario_name=SCENARIO_NAME):
             opensand.opensand_run(
                     scenario, gateway.entity, 'gw',
                     entity_id=gateway.opensand_id,
-                    emulation_address=gateway.emulation_ip)
+                    emulation_address=gateway.emulation_ip,
+                    tap_name=gateway.tap_name)
         elif isinstance(gateway, SPLIT_GW):
             opensand.opensand_run(
                     scenario, gateway.entity_net_acc, 'gw-net-acc',
                     entity_id=gateway.opensand_id,
-                    interconnection_address=gateway.interconnect_ip_net_acc)
+                    interconnection_address=gateway.interconnect_ip_net_acc,
+                    tap_name=gateway.tap_name)
             opensand.opensand_run(
                     scenario, gateway.entity_phy, 'gw-phy',
                     entity_id=gateway.opensand_id,
@@ -74,7 +77,8 @@ def run(satellite, gateways, terminals, scenario_name=SCENARIO_NAME):
         opensand.opensand_run(
                 scenario, terminal.entity, 'st',
                 entity_id=terminal.opensand_id,
-                emulation_address=terminal.emulation_ip)
+                emulation_address=terminal.emulation_ip,
+                tap_name=terminal.tap_name)
 
     return scenario
 
