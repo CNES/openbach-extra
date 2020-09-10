@@ -195,7 +195,7 @@ def main(argv=None):
             help='The satellite of the platform. Must be supplied only once.')
     observer.add_scenario_argument(
             '--gateway', '-gw', required=True, action=ValidateGateway, nargs='*',
-            metavar='ENTITY EMULATION_IP (BRIDGE_IP | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
+            metavar='ENTITY EMULATION_IP (BRIDGE_ADDRESS_MASK | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
             help='A gateway in the platform. Must be supplied at least once.')
     observer.add_scenario_argument(
             '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy,
@@ -205,7 +205,7 @@ def main(argv=None):
             'Optional, can be supplied only once per gateway.')
     observer.add_scenario_argument(
             '--satellite-terminal', '-st', required=True, action=ValidateSatelliteTerminal, nargs='*',
-            metavar='ENTITY EMULATION_IP (BRIDGE_IP | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
+            metavar='ENTITY EMULATION_IP (BRIDGE_ADDRESS_MASK | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
             help='A satellite terminal in the platform. Must be supplied at least once.')
     observer.add_scenario_argument(
             '--duration', '-d', required=False, default=0, type=int,

@@ -54,7 +54,7 @@ def main(argv=None):
             help='Clear the network configuration on the provided entities instead of applying it.')
     observer.add_scenario_argument(
             '--entity', '-e', action=ValidateEntity, nargs='*',
-            metavar='ENTITY (BRIDGE_IP | BRIDGE_INTERFACE) [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
+            metavar='ENTITY (BRIDGE_ADDRESS_MASK | BRIDGE_INTERFACE) [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
             help='A simulated entity in the network. Can be specified several times.')
 
     patch_print_help(observer.parser)

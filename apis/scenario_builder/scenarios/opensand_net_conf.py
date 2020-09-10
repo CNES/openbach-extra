@@ -26,6 +26,7 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
+import warnings
 import ipaddress
 from collections import namedtuple
 
@@ -134,13 +135,17 @@ def opensand_net_conf_apply(entities, scenario_name=SCENARIO_NAME):
 
     for entity in entities:
         try:
-            ipaddress.ip_interface(entity.bridge_to_lan)
+            address_mask = ipaddress.ip_interface(entity.bridge_to_lan)
         except ValueError:
             network_configure = opensand_network_ethernet
+            bridge = entity.bridge_to_lan
         else:
             network_configure = opensand_network_ip
+            if address_mask.network.prefixlen == address_mask.max_prefixlen:
+                warnings.warn('Bridge IP specified without a netmask or referencing a single address; this may not be what you want.')
+            bridge = address_mask.with_prefixlen
         network_configure(
-                scenario, entity.name, entity.bridge_to_lan,
+                scenario, entity.name, bridge,
                 entity.tap_name, entity.bridge_name, entity.tap_mac)
 
     return scenario
