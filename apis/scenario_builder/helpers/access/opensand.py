@@ -32,7 +32,7 @@
 def opensand_run(
         scenario, agent_entity, entity, configuration=None,
         output_address=None, logs_port=None, stats_port=None,
-        binaries_directory=None, entity_id=None,
+        binaries_directory=None, entity_id=None, tap_name=None,
         emulation_address=None, interconnection_address=None, 
         wait_finished=None, wait_launched=None, wait_delay=0):
 
@@ -64,6 +64,8 @@ def opensand_run(
     elif entity == 'gw-net-acc':
         del run[entity]['emulation_address']
         run[entity]['interconnection address'] = interconnection_address
+    if entity in ['gw', 'gw-net-acc', 'st']:
+        run[entity]['tap_name'] = tap_name
     opensand.configure('opensand', agent_entity, **run)
 
     return [opensand]
