@@ -92,6 +92,7 @@ def build(
                 waiting_jobs.append(function)
 
         post_processed = list(scenario.extract_function_id('fping', 'd-itg_send'))
+        legend = [['d-itg_send ({})'.format(client_entity)], ['fping ({})'.format(client_entity)]]
         time_series_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -99,8 +100,9 @@ def build(
                 [['rtt', 'rtt_sender']],
                 [['RTT delay (ms)']],
                 [['RTTs time series']],
-                [['d-itg_send'], ['fping']],
+                legend,
                 False,
+                'time_series_rtt_{}_{}'.format(client_entity, server_entity),
                 waiting_jobs, None, 2)
         cdf_on_same_graph(
                 scenario,
@@ -110,8 +112,9 @@ def build(
                 [['rtt', 'rtt_sender']],
                 [['RTT delay (ms)']],
                 [['RTT CDF']],
-                [['d-itg_send'], ['fping']],
+                legend,
                 False,
+                'histogram_rtt_{}_{}'.format(client_entity, server_entity),
                 waiting_jobs, None, 2)
 
     return scenario
