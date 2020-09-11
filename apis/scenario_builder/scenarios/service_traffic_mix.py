@@ -53,7 +53,7 @@ It can then, optionally,  post-processes the generated data by plotting time-ser
 _Arguments = namedtuple('Arguments', ('id', 'traffic', 'source', 'destination', 'duration', 'wait_launched', 'wait_finished', 'wait_delay', 'source_ip', 'destination_ip'))
 VoipArguments = namedtuple('VoipArguments', _Arguments._fields + ('port', 'codec'))
 WebBrowsingArguments = namedtuple('WebBrowsingArguments', _Arguments._fields + ('run_count', 'parallel_runs'))
-DashArguments = namedtuple('DashArguments', _Arguments._fields + ('protocol',))
+DashArguments = namedtuple('DashArguments', _Arguments._fields + ('protocol', 'tornado_port'))
 DataTransferArguments = namedtuple('DataTransferArguments', _Arguments._fields + ('port', 'size', 'tos', 'mtu'))
 
 
@@ -62,16 +62,19 @@ def _iperf3_legend(openbach_function):
     port = iperf3['port']
     address = iperf3['server']['bind']
     destination = openbach_function.start_job_instance['entity_name']
-    return 'Data Transfer — {} {} {}'.format(destination, address, port)
+    return 'Data Transfer - {} {} {}'.format(destination, address, port)
 
 
 def _dash_legend(openbach_function):
-    return 'Dash'
+    dash = openbach_function.start_job_instance['dashjs_client']
+    destination = openbach_function.start_job_instance['entity_name']
+    port = dash['tornado_port']
+    return 'Dash - {} {}'.format(destination, port)
 
 
 def _web_browsing_legend(openbach_function):
     destination = openbach_function.start_job_instance['entity_name']
-    return 'Web Browsing — {}'.format(destination)
+    return 'Web Browsing - {}'.format(destination)
 
 
 def _voip_legend(openbach_function):
@@ -79,7 +82,7 @@ def _voip_legend(openbach_function):
     port = voip['starting_port']
     address = voip['dest_addr']
     destination = openbach_function.start_job_instance['entity_name']
-    return 'VoIP — {} {} {}'.format(destination, address, port)
+    return 'VoIP - {} {} {}'.format(destination, address, port)
 
 
 def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
@@ -88,16 +91,10 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
     apache_servers = {}
     map_scenarios = {}
 
-    # Launching Apache2 servers first (via apache2 or dash player&server job)
+    # Launching Apache2 servers first (via apache2 or dashjs_player_server job)
     start_servers = []
     for args in arguments:
-        if args.traffic == "dash" and args.source not in apache_servers:
-            start_server = scenario_mix.add_function('start_job_instance')
-            start_server.configure('dash player&server', args.source, offset=0)
-            apache_servers[args.source] = start_server
-            start_servers.append(start_server)
-    for args in arguments:
-        if args.traffic == "web_browsing" and args.source not in apache_servers:
+        if args.traffic in ["dash", "web_browsing"] and args.source not in apache_servers:
             start_server = apache2(scenario_mix, args.source)[0]
             apache_servers[args.source] = start_server
             start_servers.append(start_server)
@@ -124,7 +121,7 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
             scenario_name = '{}_{}'.format(service_video_dash.SCENARIO_NAME, args.id)
             scenario = service_video_dash.build(
                     args.source, args.destination, args.source_ip,
-                    args.protocol, int(args.duration), False,
+                    int(args.duration), args.protocol, int(args.tornado_port), False,
                     post_processing_entity, scenario_name)
         elif args.traffic == "web_browsing":
             scenario_name = '{}_{}'.format(service_web_browsing.SCENARIO_NAME, args.id)
@@ -137,8 +134,8 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
             scenario_name = '{}_{}'.format(service_voip.SCENARIO_NAME, args.id)
             scenario = service_voip.build(
                     args.destination, args.source, args.destination_ip,
-                    args.source_ip, int(args.port), args.codec,
-                    int(args.duration), post_processing_entity, scenario_name)
+                    args.source_ip, int(args.port),int(args.duration),
+                    args.codec, post_processing_entity, scenario_name)
 
         start_scenario = scenario_mix.add_function(
                 'start_scenario_instance',
@@ -166,14 +163,14 @@ def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
 
         for jobs, filters, legend, statistic, axis in [
                 ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'Rate (b/s)'),
-                (['dash player&server'], {}, _dash_legend, 'bitrate', 'Rate (b/s)'),
-                (['dash player&server'], {}, _dash_legend, 'buffer_length', 'Buffer length (s)'),
+                (['dashjs_client'], {}, _dash_legend, 'bitrate', 'Rate (b/s)'),
+                (['dashjs_client'], {}, _dash_legend, 'buffer_length', 'Buffer length (s)'),
                 (['web_browsing_qoe'], {}, _web_browsing_legend, 'page_load_time', 'PLT (ms)'),
                 (['voip_qoe_src'], {}, _voip_legend, 'instant_mos', 'MOS'),
         ]:
             post_processed = list(scenario.extract_function_id(*jobs, include_subscenarios=True, **filters))
             if post_processed:
-                legends = [legend(scenario.find_openbach_function(f)) for f in post_processed]
+                legends = [[legend(scenario.find_openbach_function(f))] for f in post_processed]
                 title = axis.split(maxsplit=1)[0]
 
                 time_series_on_same_graph(
@@ -183,7 +180,7 @@ def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
                         [[statistic]],
                         [[axis]],
                         [['{} time series'.format(title)]],
-                        [legends],
+                        legends,
                         False,
                         wait_finished, None, 2)
                 cdf_on_same_graph(
@@ -194,7 +191,7 @@ def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
                         [[statistic]],
                         [[axis]],
                         [['{} CDF'.format(title)]],
-                        [legends],
+                        legends,
                         False,
                         wait_finished, None, 2)
 

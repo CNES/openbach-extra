@@ -186,8 +186,8 @@ def set_main_args(reset,
         conf_file.write("net.ipv4.tcp_rmem="+str(tcp_rmem_min)+" "+
             str(tcp_rmem_default)+" "+str(tcp_rmem_max)+"\n")
     else:
-        src = open("/proc/sys/net/ipv4/tcp_wmem","r")
-        conf_file.write("net.ipv4.tcp_wmem="+src.readline())
+        src = open("/proc/sys/net/ipv4/tcp_rmem","r")
+        conf_file.write("net.ipv4.tcp_rmem="+src.readline())
         src.close()
 
     if tcp_fastopen is not None:
@@ -238,26 +238,26 @@ def set_main_args(reset,
     for param in ["tcp_congestion_control", "tcp_slow_start_after_idle",
             "tcp_no_metrics_save", "tcp_sack", "tcp_recovery", "tcp_fastopen"]:
         file = open("/proc/sys/net/ipv4/"+param)
-        statistics[param] = file.readline()
+        statistics[param] = file.readline().strip()
         file.close()
     for param in ["wmem_default", "wmem_max",
             "rmem_default", "rmem_max"]:
         file = open("/proc/sys/net/core/"+param)
-        statistics["core_" + param] = file.readline()
+        statistics["core_" + param] = file.readline().strip()
         file.close()
 
     file = open("/proc/sys/net/ipv4/tcp_wmem")
     new_wmem = file.readline().split()
-    statistics["tcp_wmem_min"] = new_wmem[0]
-    statistics["tcp_wmem_default"] = new_wmem[1]
-    statistics["tcp_wmem_max"] = new_wmem[2]
+    statistics["tcp_wmem_min"] = new_wmem[0].strip()
+    statistics["tcp_wmem_default"] = new_wmem[1].strip()
+    statistics["tcp_wmem_max"] = new_wmem[2].strip()
     file.close()
 
     file = open("/proc/sys/net/ipv4/tcp_rmem")
     new_rmem = file.readline().split()
-    statistics["tcp_rmem_min"] = new_rmem[0]
-    statistics["tcp_rmem_default"] = new_rmem[1]
-    statistics["tcp_rmem_max"] = new_rmem[2]
+    statistics["tcp_rmem_min"] = new_rmem[0].strip()
+    statistics["tcp_rmem_default"] = new_rmem[1].strip()
+    statistics["tcp_rmem_max"] = new_rmem[2].strip()
     file.close()
 
     collect_agent.send_stat(int(time.time() * 1000), **statistics)
@@ -381,7 +381,7 @@ def cubic(reset,
     "hystart_low_window", "tcp_friendliness", "hystart", "hystart_detect",
     "initial_ssthresh"]:
         file = open("/sys/module/tcp_cubic/parameters/"+param)
-        statistics[param] = file.readline()
+        statistics[param] = file.readline().strip()
         file.close()
 
     collect_agent.send_stat(int(time.time() * 1000), **statistics)

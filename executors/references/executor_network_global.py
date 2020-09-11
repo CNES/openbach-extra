@@ -54,6 +54,9 @@ def main(argv=None):
             '--server-port', default=7001,
             help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
+            '--client-port', default=7001,
+            help='The iperf3/nuttcp server port for data')
+    observer.add_scenario_argument(
             '--command-port', default=7000,
             help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
@@ -68,9 +71,6 @@ def main(argv=None):
             '--num-flows', default=1,
             help='Number of iperf3 flows generated (default : 1)')
     observer.add_scenario_argument(
-            '--bandwidth', default='1M',
-            help='the bandwidth (bits/s) of iperf3 test')
-    observer.add_scenario_argument(
             '--tos', default=0,
             help='Type of Service of the trafic (default : 0)')
     observer.add_scenario_argument(
@@ -80,7 +80,7 @@ def main(argv=None):
             '--count', default=100,
             help='The number of owamp packets to send')
     observer.add_scenario_argument(
-            '--interval', default='0.1e',
+            '--packets-interval', default='0.1e',
             help='The mean average time between owamp packets (specify seconds and distribution type)'
             'If e: random exponential distribution. If f: constant distribution')
     observer.add_scenario_argument(
@@ -96,15 +96,15 @@ def main(argv=None):
                       args.server_ip,
                       args.client_ip,
                       args.server_port,
+                      args.client_port,
                       args.command_port,
                       args.duration,
                       args.rate_limit,
                       args.num_flows,
-                      args.bandwidth,
                       args.tos,
                       args.mtu,
                       args.count,
-                      args.interval,
+                      args.packets_interval,
                       args.post_processing_entity,
                       scenario_name=args.scenario_name)
 

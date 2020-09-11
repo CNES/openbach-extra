@@ -223,7 +223,7 @@ def main(config, args):
             print('file opened')
             while True:
                 data = s.recv(1024)
-                if data == "TRANSFERT_FINISHED".encode():
+                if "TRANSFERT_FINISHED".encode() in data:
                     break
                 f.write(data)
         sleep(2)

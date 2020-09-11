@@ -43,7 +43,7 @@ def iperf3_rate_tcp(
             offset=0,
             num_flows=num_flows,
             port=port,
-            interval=1.0,
+            metrics_interval=1.0,
             server={
                 'exit': True,
                 'bind': server_ip,
@@ -82,7 +82,7 @@ def iperf3_rate_udp(
             offset=0,
             num_flows=num_flows,
             port=port,
-            interval=1.0,
+            metrics_interval=1.0,
             server={
                 'exit': True,
                 'bind': server_ip,

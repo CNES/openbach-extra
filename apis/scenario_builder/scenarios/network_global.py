@@ -43,8 +43,8 @@ It is a general network QoS metrics scenario.
 
 
 def build(
-        server_entity, client_entity, server_ip, client_ip, server_port, command_port,
-        duration, rate_limit, num_flows, bandwidth, tos, mtu, count, interval,
+        server_entity, client_entity, server_ip, client_ip, server_port, client_port, command_port,
+        duration, rate_limit, num_flows, tos, mtu, count, packets_interval,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
     #Create top network_global scenario
@@ -67,22 +67,34 @@ def build(
 
     # Add Jitter metrology scenario
     scenario_network_jitter = network_jitter.build(
-            server_entity, client_entity, server_ip, server_port,
-            duration, num_flows, bandwidth, tos, count, interval, post_processing_entity)
+            server_entity, client_entity, server_ip, 
+            count, packets_interval, post_processing_entity)
     start_network_jitter = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_network_one_way_delay],
             wait_delay=2)
     start_network_jitter.configure(scenario_network_jitter)
 
-    # Add Rate metrology sub scenario
-    scenario_network_rate = network_rate.build(
+    # Add forward Rate metrology sub scenario
+    scenario_network_rate_forward = network_rate.build(
             server_entity, client_entity, server_ip, server_port, command_port,
-            duration, rate_limit, num_flows, tos, mtu, post_processing_entity)
-    start_network_rate = scenario.add_function(
+            duration, rate_limit, num_flows, tos, mtu, post_processing_entity,
+            scenario_name='network_rate_forward')
+    start_network_rate_forward = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_network_jitter],
             wait_delay=2)
-    start_network_rate.configure(scenario_network_rate)
+    start_network_rate_forward.configure(scenario_network_rate_forward)
+
+    # Add return Rate metrology sub scenario
+    scenario_network_rate_return = network_rate.build(
+            client_entity, server_entity, client_ip, client_port, command_port,
+            duration, rate_limit, num_flows, tos, mtu, post_processing_entity,
+            scenario_name='network_rate_return')
+    start_network_rate_return = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_network_rate_forward],
+            wait_delay=2)
+    start_network_rate_return.configure(scenario_network_rate_return)
 
     return scenario

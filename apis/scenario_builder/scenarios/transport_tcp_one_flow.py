@@ -59,7 +59,7 @@ def build(
         server_entity, client_entity, server_ip, server_port,
         transmitted_size, tos, mtu,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = tcp_one_flow(client_entity, server_entity, server_ip, server_port, transmitted_size, tos, mtu, scenario_name)
+    scenario = tcp_one_flow(server_entity, client_entity, server_ip, server_port, transmitted_size, tos, mtu, scenario_name)
 
     if post_processing_entity is not None:
         waiting_jobs = []

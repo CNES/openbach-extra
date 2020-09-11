@@ -1,0 +1,114 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016−2019 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+---
+
+general:
+  name: tc_qdisc_stats
+  description: >
+      This Job get the evolution of tc qdisc parameters, for given nodes
+  job_version: '1.0'
+  keywords:
+    - tc
+    - qdisc
+  persistent: yes
+  need_privileges: yes
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/tc_qdisc_stats/tc_qdisc_stats.py'
+    command_stop:
+
+arguments:
+  required:
+    - name: interface
+      type: str
+      count: 1
+      description: The interface to monitor.
+    - name: qdisc_nodes
+      type: str
+      count: '+'
+      description: The qdisc nodes to monitor.
+  optional:
+    - name: interval_stats
+      type: float
+      count: 1
+      flag: '-i'
+      description: Pause interval seconds between periodic reports. Can be a float (default=1s).
+                              
+statistics:
+    - name: "throughput_*qdisc_node*"
+      description: The sending rate of the node, in bits/s
+      frequency: 'every *interval* seconds'
+    - name: "cumulated_sent_bits_*qdisc_node*"
+      description: The cumulative amount of data sent from the job launch, in bits
+      frequency: 'every *interval* seconds'
+    - name: "cumulated_sent_packets_*qdisc_node*"
+      description: The cumulative amount of data sent from the job launch, in packets
+      frequency: 'every *interval* seconds'
+    - name: "cumulated_dropped_packets_*qdisc_node*"
+      description: The cumulative amount of data dropped from the job launch, in packets
+      frequency: 'every *interval* seconds'
+    - name: "backlog_bits_*qdisc_node*"
+      description: The value of backlog, in bits
+      frequency: 'every *interval* seconds'
+    - name: "backlog_pkts_*qdisc_node*"
+      description: The value of backlog, in packets
+      frequency: 'every *interval* seconds'
+    - name: "codel_count_*qdisc_node*"
+      description: The value of count when CoDel is used
+      frequency: 'every *interval* seconds'
+    - name: "codel_lastcount_*qdisc_node*"
+      description: The value of alstcount when CoDel is used
+      frequency: 'every *interval* seconds'
+    - name: "codel_ldelay_*qdisc_node*"
+      description: The value of ldelay when CoDel is used, in seconds
+      frequency: 'every *interval* seconds'
+    - name: "codel_maxpacket_*qdisc_node*"
+      description: The value of drop_next when CoDel is used, in seconds
+      frequency: 'every *interval* seconds'
+    - name: "codel_maxpacket_*qdisc_node*"
+      description: The value of maxpacket when CoDel is used
+      frequency: 'every *interval* seconds'
+    - name: "pie_prob_*qdisc_node*"
+      description: The value of prob when pie is used
+      frequency: 'every *interval* seconds'
+    - name: "pie_current_delay_*qdisc_node*"
+      description: The value of delay when pie is used, in seconds
+      frequency: 'every *interval* seconds'
+    - name: "pie_avg_dq_rate_*qdisc_node*"
+      description: The value of avg_dq_rate when pie is used
+      frequency: 'every *interval* seconds'
+    - name: "pie_pkts_in_*qdisc_node*"
+      description: The value of pkts_in when pie is used
+      frequency: 'every *interval* seconds'
+    - name: "pie_dropped_*qdisc_node*"
+      description: The value of dropped when pie is used
+      frequency: 'every *interval* seconds'
+    - name: "pie_maxq_*qdisc_node*"
+      description: The value of maxq when pie is used
+      frequency: 'every *interval* seconds'

@@ -48,25 +48,10 @@ def main(argv=None):
             '--server-ip', required=True,
             help='server ip address and target of the pings')
     observer.add_scenario_argument(
-            '--server-port', default=7000,
-            help='the iperf3 server port for data')
-    observer.add_scenario_argument(
-            '--duration', default=10,
-            help='the duration of iperf3 test')
-    observer.add_scenario_argument(
-            '--num-flows', default=1,
-            help='the number of flows to launch with iperf3')
-    observer.add_scenario_argument(
-            '--bandwidth', default='1M',
-            help='the bandwidth (bits/s) of iperf3 test ')
-    observer.add_scenario_argument(
-            '--tos', default=0,
-            help='the ToS of iperf3 test')
-    observer.add_scenario_argument(
             '--count', default=100,
             help='The number of owamp packets to send')
     observer.add_scenario_argument(
-            '--interval', default='0.1e',
+            '--packets-interval', default='0.1e',
             help='The mean average time between owamp packets (specify seconds and distribution type)'
             'If e: random exponential distribution. If f: constant distribution')
     observer.add_scenario_argument(
@@ -80,13 +65,8 @@ def main(argv=None):
                       args.server_entity,
                       args.client_entity,
                       args.server_ip,
-                      args.server_port,
-                      args.duration,
-                      args.num_flows,
-                      args.bandwidth,
-                      args.tos,
                       args.count,
-                      args.interval,
+                      args.packets_interval,
                       args.post_processing_entity,
                       scenario_name=args.scenario_name)
 

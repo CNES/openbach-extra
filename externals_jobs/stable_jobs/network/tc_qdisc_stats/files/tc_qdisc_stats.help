@@ -1,0 +1,60 @@
+=== Job Description ===
+
+This job allows to get the evolution of the parameters of tc qdisc nodes. The parameters get are those printed when entering following command:
+
+<code shell>
+tc -s qdisc show dev interface
+</code>
+
+The nodes to monitor have to be put as a parameter of this job. If the node is a CoDel or PIE AQM, its metrics will be get too. If a node does not exist in the qdisc tree, it is ignored.
+
+=== Example ===
+
+We have the following qdisc tree on the interface //eno1//:
+
+<code>
+root
+ +-1:0 cbq bandwidth 100Mbit avpkt 1000 cell 8
+    +-1:1 cbq rate 18000000bit weight 1800kbit prio 8 allot 1514 cell 8 avpkt 1000 bounded
+       +-1:10 cbq rate 6000000bit weight 600kbit prio 8 allot 1514 cell 8 avpkt 1000 bounded filter: 10.42.14.3/32
+       |  +-11: prio bands 4 priomap 0 0 1 1 2 2 3 3 3 0 0 0 0 0 0 0
+       |     +-11:1 filter: prio 1
+       |     |  +-111: tbf rate 100000bit burst 32kbit limit 6250
+       |     +-11:2 filter: prio 2
+       |     |  +-112: tbf rate 4000000bit burst 32kbit limit 250000
+       |     +-11:3 filter: prio 3
+       |     |  +-113: tbf rate 1000000bit burst 32kbit limit 62500
+       |     +-11:4 filter: prio 4
+       |        +-114: tbf rate 6000000bit burst 32kbit limit 375000
+       |           +-1141: codel target 30ms interval 500ms
+       +-1:20 cbq rate 6000000bit weight 600kbit prio 8 allot 1514 cell 8 avpkt 1000 bounded filter: 10.42.15.3/32
+       |  +-21: prio bands 4 priomap 0 0 1 1 2 2 3 3 3 0 0 0 0 0 0 0
+       |     +-21:1 filter: prio 1
+       |     |  +-211: tbf rate 100000bit burst 32kbit limit 6250
+       |     +-21:2 filter: prio 2
+       |     |  +-212: tbf rate 4000000bit burst 32kbit limit 250000
+       |     +-21:3 filter: prio 3
+       |     |  +-213: tbf rate 1000000bit burst 32kbit limit 62500
+       |     +-21:4 filter: prio 4
+       |        +-214: tbf rate 6000000bit burst 32kbit limit 375000
+       |           +-2141: codel target 30ms interval 500ms
+       +-1:30 cbq rate 6000000bit weight 600kbit prio 8 allot 1514 cell 8 avpkt 1000 bounded filter: 10.42.16.3/32
+          +-31: prio bands 4 priomap 0 0 1 1 2 2 3 3 3 0 0 0 0 0 0 0
+             +-31:1 filter: prio 1
+             |  +-311: tbf rate 100000bit burst 32kbit limit 6250
+             +-31:2 filter: prio 2
+             |  +-312: tbf rate 4000000bit burst 32kbit limit 250000
+             +-31:3 filter: prio 3
+             |  +-313: tbf rate 1000000bit burst 32kbit limit 62500
+             +-31:4 filter: prio 4
+                +-314: tbf rate 6000000bit burst 32kbit limit 375000
+                   +-3141: codel target 30ms interval 500ms
+</code>
+
+Let suppose we launch the job with the following parameters:
+
+<code python>
+JOB_NAME=tc_qdisc_stats sudo -E python3 /opt/openbach/agent/jobs/tc_qdisc_stats/tc_qdisc_stats.py eno1 113: 1141: 213: 313: 320: -i 0.1
+</code>
+
+In this example, we will get the value of the nodes //113:// //1141:// //213:// and //313://. For node //1141://, we will have the CoDel statistics associated to this node. Node //320:// is ignored as it is not in the qdisc tree. The parameters will be get every 100 ms.

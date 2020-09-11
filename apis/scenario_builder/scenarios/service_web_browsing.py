@@ -53,7 +53,7 @@ def web_browsing_and_server(
 
     server = apache2(scenario, server_entity)
     traffic = web_browsing_qoe(
-            scenario, client_entity, nb_runs, nb_parallel_runs, duration,
+            scenario, client_entity, duration, nb_runs, nb_parallel_runs,
             not compression, proxy_address, proxy_port, wait_launched=server, wait_delay=5)
 
     stopper = scenario.add_function('stop_job_instance', wait_finished=traffic, wait_delay=5)
@@ -70,7 +70,7 @@ def web_browsing(
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     web_browsing_qoe(
-            scenario, client_entity, nb_runs, nb_parallel_runs, duration,
+            scenario, client_entity, duration, nb_runs, nb_parallel_runs,
             not compression, proxy_address, proxy_port)
 
     return scenario
