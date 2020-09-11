@@ -51,8 +51,8 @@ def parse(value):
 class StartJobInstance(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Start Job Instance')
-        self.parser.add_argument('agent', help='IP address of the agent')
-        self.parser.add_argument('name', help='name of the job to start')
+        self.parser.add_argument('agent_address', help='IP address or domain of the agent')
+        self.parser.add_argument('job_name', help='name of the job to start')
         self.parser.add_argument(
                 '-a', '--argument', type=parse, nargs='+', default={},
                 metavar='NAME[ VALUE[ VALUE...]]',
@@ -66,8 +66,8 @@ class StartJobInstance(FrontendBase):
                 help='interval of the execution')
 
     def execute(self, show_response_content=True):
-        agent = self.args.agent
-        job_name = self.args.name
+        agent = self.args.agent_address
+        job_name = self.args.job_name
         arguments = dict(self.args.argument)
         date = self.date_to_timestamp()
         interval = self.args.interval
