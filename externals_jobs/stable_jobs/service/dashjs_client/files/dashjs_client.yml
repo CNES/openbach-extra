@@ -4,7 +4,7 @@ general:
   name:            'dashjs_client'
   description: >
       Launches a DASH client on the machine, and plays video.
-  job_version:     '1.1'
+  job_version:     '1.2'
   keywords:        [dash, client, video, streaming]
   persistent:      False
 
@@ -48,6 +48,6 @@ arguments:
       count:       1
       flag:        '-d'
       description: >
-          The path of the video on the server (Default: /vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd).
+          The path of the video on the server (Default: /dash_content/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd).
 
 statistics:

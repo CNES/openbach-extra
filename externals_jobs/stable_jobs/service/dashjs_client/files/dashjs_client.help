@@ -13,9 +13,9 @@ In the web interface, set the following parameters:
   * **protocol** = http/2
   * **tornado_port** = 5000
   * **duration** = 2
-  * **path** = /vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd
+  * **path** = /dash_content/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd
 
 Or launch the job manually from the Agent as follows:
 <code>
-JOB_NAME='dashjs_client' sudo -E python3 /opt/openbach/agent/jobs/dashjs_client/dashjs_client.py 192.168.1.1 http/2 -p 5000 -t 2 -d /vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd
+JOB_NAME='dashjs_client' sudo -E python3 /opt/openbach/agent/jobs/dashjs_client/dashjs_client.py 192.168.1.1 http/2 -p 5000 -t 2 -d /dash_content/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd
 </code>
