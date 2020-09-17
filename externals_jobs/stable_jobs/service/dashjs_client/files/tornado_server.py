@@ -68,11 +68,12 @@ class CustomWebSocket(websocket.WebSocketHandler):
 
     def on_message(self, message):
         data = json.loads(message)
-
-        for stat in ('latency_max', 'download_max', 'ratio_max'):
-            with suppress(KeyError):
-                if data[stat] == 'Infinity':
-                    del data[stat]
+        # filter out unwanted values and convert others to float
+        data = {
+            stat_name: float(stat_value) if isinstance(stat_value, str) else stat_value
+            for stat_name, stat_value in data.items()
+            if stat_name not in ('latency_max', 'download_max', 'ratio_max') or stat_value != 'Infinity'
+        }
         collect_agent.send_stat(**data)
         collect_agent.send_log(syslog.LOG_DEBUG, 'Message received')
 
