@@ -61,6 +61,9 @@ from contextlib import suppress
 import requests
 
 
+DEFAULT_DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+
+
 def get_interfaces():
     """Return the name of the first network interface found"""
     yield from (
@@ -215,7 +218,7 @@ class FrontendBase:
 
         return args
 
-    def date_to_timestamp(self, fmt='%Y-%m-%d %H:%M:%S.%f'):
+    def date_to_timestamp(self, fmt=DEFAULT_DATE_FORMAT):
         date = getattr(self.args, 'date', None)
         if date is not None:
             try:

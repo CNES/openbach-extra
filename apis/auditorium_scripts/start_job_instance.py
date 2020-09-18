@@ -40,7 +40,7 @@ __credits__ = '''Contributors:
 import shlex
 from functools import partial
 
-from auditorium_scripts.frontend import FrontendBase
+from auditorium_scripts.frontend import FrontendBase, DEFAULT_DATE_FORMAT
 
 
 def parse(value):
@@ -59,11 +59,13 @@ class StartJobInstance(FrontendBase):
                 help='')
         group = self.parser.add_mutually_exclusive_group(required=False)
         group.add_argument(
-                '-d', '--date', metavar=('DATE', 'TIME'),
-                nargs=2, help='date of the execution')
+                '-d', '--date', metavar=('DATE', 'TIME'), nargs=2,
+                help='date at which the job execution should start ({})'
+                        .format(DEFAULT_DATE_FORMAT.replace('%', '%%')))
         group.add_argument(
                 '-i', '--interval', type=int,
-                help='interval of the execution')
+                help='schedule repetitions of the job execution every '
+                     '"interval" seconds until the job is stopped')
 
     def execute(self, show_response_content=True):
         agent = self.args.agent_address
