@@ -303,21 +303,24 @@ def parse_statistics(influx_result):
     """Generate `Scenario`s instances from InfluxDB stored data"""
     scenarios = {}  # Cache
     for job_name, statistics in parse_influx(influx_result):
-        with suppress(KeyError, ValueError):
+        try:
             timestamp = statistics.pop('time')
-            agent = statistics.pop('@agent_name')
-            job = int(statistics.pop('@job_instance_id'))
-            scenario = int(statistics.pop('@scenario_instance_id'))
-            owner = int(statistics.pop('@owner_scenario_instance_id'))
+            agent = statistics.pop('@agent_name', 'unknown_agent')
+            job = int(statistics.pop('@job_instance_id', 0))
+            scenario = int(statistics.pop('@scenario_instance_id', 0))
+            owner = int(statistics.pop('@owner_scenario_instance_id', 0))
             suffix = statistics.pop('@suffix', None)
-        scenario = get_or_create_scenario(scenario, scenarios)
-        owner = get_or_create_scenario(owner, scenarios)
-        if owner is not scenario:
-            scenario.owner = owner
-            owner.sub_scenarios[(scenario.instance_id,)] = scenario
-        job = scenario.get_or_create_job(job_name, job, agent)
-        stats = job.get_or_create_statistics(suffix)
-        stats.add_statistic(timestamp, **statistics)
+        except (KeyError, ValueError):
+            pass
+        else:
+            scenario = get_or_create_scenario(scenario, scenarios)
+            owner = get_or_create_scenario(owner, scenarios)
+            if owner is not scenario:
+                scenario.owner = owner
+                owner.sub_scenarios[(scenario.instance_id,)] = scenario
+            job = scenario.get_or_create_job(job_name, job, agent)
+            stats = job.get_or_create_statistics(suffix)
+            stats.add_statistic(timestamp, **statistics)
 
     yield from scenarios.values()
 
@@ -347,16 +350,13 @@ def line_protocol(job_name, scenario_id, owner_id, agent_name, job_id, suffix, s
         '@agent_name': agent_name,
         '@suffix': suffix,
     }
-    for tag, value in tags.items():
-        if isinstance(value, str):
-            tags[tag] = escape_names(value)
 
     measurement = [escape_names(job_name, True)]
     measurement.extend(
             # No need to call escape_names on tag as they
             # already fullfil the rules for proper names.
-            '{}={}'.format(tag, value)
-            for tag, value in tags.items() if value)
+            '{}={}'.format(tag, escape_names(value) is isinstance(value, str) else value)
+            for tag, value in tags.items() if value or value == 0)
     header = ','.join(measurement)
 
     def build_lines_of_data(statistics_chunck):
