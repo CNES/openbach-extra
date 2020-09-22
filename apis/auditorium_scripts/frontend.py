@@ -54,9 +54,9 @@ import getpass
 import datetime
 import argparse
 import warnings
+from copy import copy
 from time import sleep
 from pathlib import Path
-from copy import deepcopy
 from contextlib import suppress
 
 import requests
@@ -223,7 +223,7 @@ class FrontendBase:
         instance = other_cls()
         instance.session = self.session
         instance.base_url = self.base_url
-        instance.args = deepcopy(self.args)
+        instance.args = copy(self.args)
         return instance
 
     def date_to_timestamp(self, fmt=DEFAULT_DATE_FORMAT):
