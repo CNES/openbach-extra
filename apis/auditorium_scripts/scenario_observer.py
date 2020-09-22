@@ -234,9 +234,9 @@ class ScenarioObserver(FrontendBase):
                     self.parser.error('scenario instance status could not be fetched')
                 warnings.warn('Error while fetching scenario status:\n{}\n\n{} retries left'.format(
                     pprint.pformat(response, width=250), retries_left))
-            elif status in ('Finished KO', 'Stopped'):
+            elif status in ('Finished KO',):
                 self.parser.error('scenario instance failed (status is \'{}\')'.format(status))
-            elif status in ('Finished', 'Finished OK'):
+            elif status in ('Finished', 'Finished OK', 'Stopped'):
                 break
             else:
                 retries_left = MAX_RETRIES_STATUS
