@@ -27,47 +27,51 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function list_job_instances"""
+"""Call the openbach-functions list_job_instances then stop_job_instances"""
 
 
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
- * Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
 
-from urllib.parse import urlencode
-
 from auditorium_scripts.frontend import FrontendBase, pretty_print
+from auditorium_scripts.list_job_instances import ListJobInstances
+from auditorium_scripts.stop_job_instance import StopJobInstance
 
 
-class ListJobInstances(FrontendBase):
+class StopAllJobInstances(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — List Job Instances from agents')
+        super().__init__('OpenBACH − List and Stop Job Instances from agents')
         self.parser.add_argument(
                 'agent_address', nargs='+',
                 help='IP addresses of the agents')
         self.parser.add_argument(
-                '-u', '--update', action='store_true',
-                help='contact the agent to get the last '
-                'status of the jobs instances')
+                '-j', '--job-name', '--job', action='append', default=[],
+                help='Name of the job to stop. Can be used several times. Leave empty to stop all jobs.')
+        self.parser.add_argument(
+                '-d', '--date', metavar=('DATE', 'TIME'),
+                nargs=2, help='date of the execution')
 
     def execute(self, show_response_content=True):
-        agents = self.args.agent_address
-        update = self.args.update
+        jobs_lister = self.share_state(ListJobInstances)
+        jobs_lister.args.update = True
+        jobs_list = jobs_lister.execute(False)
+        jobs_list.raise_for_status()
 
-        query_string = [('address', ip) for ip in agents]
-        if update:
-            query_string.append(('update', ''))
-
-        response = self.session.get(
-                self.base_url + 'job_instance',
-                params=urlencode(query_string))
-        if show_response_content:
-            pretty_print(response)
-        return response
+        jobs_to_stop = set(self.args.job_name)
+        instances = [
+                instance['id']
+                for agent in jobs_list.json()['instances']
+                for job in agent['installed_jobs']
+                for instance in job['instances']
+                if not jobs_to_stop or instance['name'] in jobs_to_stop
+        ]
+        jobs_stopper = self.share_state(StopJobInstance)
+        jobs_stopper.args.job_instance_id = instances
+        return jobs_stopper.execute(show_response_content)
 
 
 if __name__ == '__main__':
-    ListJobInstances.autorun()
+    StopAllJobInstances.autorun()

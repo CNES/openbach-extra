@@ -189,22 +189,15 @@ class ScenarioObserver(FrontendBase):
 
         return self.args._action(builder)
 
-    def _share_state(self, script_cls):
-        instance = script_cls()
-        instance.session = self.session
-        instance.base_url = self.base_url
-        instance.args = self.args
-        return instance
-
     def _send_scenario_to_controller(self, builder=None):
-        scenario_getter = self._share_state(GetScenario)
+        scenario_getter = self.share_state(GetScenario)
 
         if builder is None:
             scenario = scenario_getter.execute(False)
             scenario.raise_for_status()
         else:
-            scenario_setter = self._share_state(CreateScenario)
-            scenario_modifier = self._share_state(ModifyScenario)
+            scenario_setter = self.share_state(CreateScenario)
+            scenario_modifier = self.share_state(ModifyScenario)
             for scenario in builder.subscenarios:
                 self.args.scenario_name = str(scenario)
                 self.args.scenario = scenario.build()
@@ -220,7 +213,7 @@ class ScenarioObserver(FrontendBase):
                 scenario.raise_for_status()
 
     def _run_scenario_to_completion(self):
-        scenario_starter = self._share_state(StartScenarioInstance)
+        scenario_starter = self.share_state(StartScenarioInstance)
         response = scenario_starter.execute(False)
         try:
             response.raise_for_status()
@@ -228,7 +221,7 @@ class ScenarioObserver(FrontendBase):
             self.parser.error('{}:\n{}'.format(error, json.dumps(response.json(), indent=4)))
         scenario_id = response.json()['scenario_instance_id']
 
-        scenario_waiter = self._share_state(StatusScenarioInstance)
+        scenario_waiter = self.share_state(StatusScenarioInstance)
         scenario_waiter.args.instance_id = scenario_id
         retries_left = MAX_RETRIES_STATUS
         while True:
@@ -249,7 +242,7 @@ class ScenarioObserver(FrontendBase):
                 retries_left = MAX_RETRIES_STATUS
 
         if self.args.path is not None:
-            data_fetcher = self._share_state(GetScenarioInstanceData)
+            data_fetcher = self.share_state(GetScenarioInstanceData)
             data_fetcher.args.id = scenario_id
             data_fetcher.execute(False)
 
@@ -275,7 +268,7 @@ class ScenarioObserver(FrontendBase):
 
         if self.args.contact_controller:
             self._send_scenario_to_controller(builder)
-            scenario_getter = self._share_state(GetScenario)
+            scenario_getter = self.share_state(GetScenario)
             scenarios = [self.args.scenario_name] if builder is None else builder.subscenarios
             for scenario in scenarios:
                 self.args.scenario_name = str(scenario)

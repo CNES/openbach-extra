@@ -56,6 +56,7 @@ import argparse
 import warnings
 from time import sleep
 from pathlib import Path
+from copy import deepcopy
 from contextlib import suppress
 
 import requests
@@ -217,6 +218,13 @@ class FrontendBase:
             response.raise_for_status()
 
         return args
+
+    def share_state(self, other_cls):
+        instance = other_cls()
+        instance.session = self.session
+        instance.base_url = self.base_url
+        instance.args = deepcopy(self.args)
+        return instance
 
     def date_to_timestamp(self, fmt=DEFAULT_DATE_FORMAT):
         date = getattr(self.args, 'date', None)
