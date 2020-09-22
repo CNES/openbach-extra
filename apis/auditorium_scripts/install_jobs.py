@@ -49,15 +49,16 @@ class InstallJobs(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Install Jobs on agents')
         self.parser.add_argument(
-                '-j', '--job-name', metavar='NAME', action='append', nargs='+',
-                required=True, help='Name of the Jobs to install on the next '
-                'agent. May be specified several times to install different '
-                'sets of jobs on different agents.')
+                '-j', '--job-name', '--job', metavar='NAME', action='append',
+                nargs='+', required=True, help='Name of the Jobs to install '
+                'on the next agent. May be specified several times to '
+                'install different sets of jobs on different agents.')
         self.parser.add_argument(
-                '-a', '--agent', metavar='ADDRESS', action='append', nargs='+',
-                required=True, help='IP address of the agent where the next '
-                'set of jobs should be installed. May be specified several '
-                'times to install different sets of jobs on different agents.')
+                '-a', '--agent-address', '--agent', metavar='ADDRESS',
+                action='append', nargs='+', required=True, help='IP address of '
+                'the agent where the next set of jobs should be installed. May '
+                'be specified several times to install different sets of jobs '
+                'on different agents.')
         self.parser.add_argument(
                 '-l', '--launch', '--launch-only', action='store_true',
                 help='do not wait until installation of the jobs completes '
@@ -73,7 +74,7 @@ class InstallJobs(FrontendBase):
 
     def execute(self, show_response_content=True):
         jobs_names = self.args.job_name
-        agents_ips = self.args.agent
+        agents_ips = self.args.agent_address
         launch_only = self.args.launch
 
         responses = [

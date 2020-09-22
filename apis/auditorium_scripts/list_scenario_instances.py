@@ -45,12 +45,12 @@ class ListScenarioInstances(FrontendBase):
         super().__init__('OpenBACH — List Instances of a Scenario')
         self.parser.add_argument('project_name', help='name of the project')
         self.parser.add_argument(
-                '-s', '--scenario',
+                '-s', '--scenario-name', '--scenario',
                 help='name of the scenario whose instances should be listed'
                 '. Defaults to all scenarios.')
 
     def execute(self, show_response_content=True):
-        scenario = self.args.scenario
+        scenario = self.args.scenario_name
         project = self.args.project_name
 
         if scenario is None:

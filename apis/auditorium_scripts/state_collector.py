@@ -43,10 +43,10 @@ from auditorium_scripts.frontend import FrontendBase
 class StateCollector(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — State of a Collector')
-        self.parser.add_argument('collector', help='IP address of the collector')
+        self.parser.add_argument('collector_address', help='IP address of the collector')
 
     def execute(self, show_response_content=True):
-        address = self.args.collector
+        address = self.args.collector_address
 
         return self.request(
                 'GET', 'collector/{}/state/'.format(address),

@@ -44,11 +44,11 @@ class StatusScenarioInstance(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Status of an Instance of a Scenario')
         self.parser.add_argument(
-                'instance_id',
+                'scenario_instance_id',
                 help='ID of the scenario instance to query')
 
     def execute(self, show_response_content=True):
-        scenario = self.args.instance_id
+        scenario = self.args.scenario_instance_id
 
         return self.request(
                 'GET', 'scenario_instance/{}/'.format(scenario),

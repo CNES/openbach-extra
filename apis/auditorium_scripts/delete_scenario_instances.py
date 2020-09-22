@@ -45,11 +45,11 @@ class DeleteScenarioInstances(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Delete a Scenario Instance')
         self.parser.add_argument(
-                'id', nargs='+', type=int,
+                'scenario_instance_id', nargs='+', type=int,
                 help='scenario instance ID to delete')
 
     def execute(self, show_response_content=True):
-        instance_ids = self.args.id
+        instance_ids = self.args.scenario_instance_id
         show = show_response_content if len(instance_ids) == 1 else False
         responses = [
                 self.request(

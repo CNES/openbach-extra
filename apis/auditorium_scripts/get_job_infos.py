@@ -27,7 +27,7 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function stop_scenario_instance"""
+"""Call the openbach-function get_job_stats"""
 
 
 __author__ = 'Viveris Technologies'
@@ -37,33 +37,20 @@ __credits__ = '''Contributors:
 '''
 
 
-from functools import partial
-
 from auditorium_scripts.frontend import FrontendBase
 
 
-class StopScenarioInstance(FrontendBase):
+class GetJobInfos(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Stop a Scenario Instance')
-        self.parser.add_argument(
-                'scenario_instance_id',
-                help='ID of the scenario instance to stop')
-        self.parser.add_argument(
-                '-d', '--date', nargs=2, metavar=('DATE', 'TIME'),
-                help='date of the execution')
+        super().__init__('OpenBACH — Display Job Statistics')
+        self.parser.add_argument('job_name', help='name of the job to query')
 
     def execute(self, show_response_content=True):
-        scenario = self.args.scenario_instance_id
-        date = self.date_to_timestamp()
-
-        action = self.request
-        if date is not None:
-            action = partial(action, date=date)
-
-        return action(
-                'POST', 'scenario_instance/{}/'.format(scenario),
+        job_name = self.args.job_name
+        return self.request(
+                'GET', 'job/{}/'.format(job_name), type='json',
                 show_response_content=show_response_content)
 
 
 if __name__ == '__main__':
-    StopScenarioInstance.autorun()
+    GetJobInfos.autorun()

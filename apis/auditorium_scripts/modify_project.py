@@ -46,14 +46,14 @@ from auditorium_scripts.frontend import FrontendBase
 class ModifyProject(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Modify a Project')
-        self.parser.add_argument('name', help='name of the project to modify')
+        self.parser.add_argument('project_name', help='name of the project to modify')
         self.parser.add_argument(
-                'project', type=FileType('r'),
+                'project_file', type=FileType('r'),
                 help='path to the definition file of the project')
 
     def parse(self, args=None):
         super().parse(args)
-        project = self.args.project
+        project = self.args.project_file
         with project:
             try:
                 self.args.project = json.load(project)
@@ -61,7 +61,7 @@ class ModifyProject(FrontendBase):
                 self.parser.error('invalid JSON data in {}'.format(project.name))
 
     def execute(self, show_response_content=True):
-        name = self.args.name
+        name = self.args.project_name
         project = self.args.project
 
         return self.request(

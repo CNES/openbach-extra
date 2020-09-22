@@ -43,13 +43,15 @@ from auditorium_scripts.frontend import FrontendBase
 class DeleteScenario(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Delete a Scenario')
-        self.parser.add_argument('name', help='name of the scenario to delete')
+        self.parser.add_argument(
+                'scenario_name',
+                help='name of the scenario to delete')
         self.parser.add_argument(
                 'project_name',
                 help='name of the project the scenario is associated with')
 
     def execute(self, show_response_content=True):
-        scenario = self.args.name
+        scenario = self.args.scenario_name
         project = self.args.project_name
 
         route = 'project/{}/scenario/{}/'.format(project, scenario)

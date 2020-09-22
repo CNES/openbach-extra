@@ -43,10 +43,10 @@ from auditorium_scripts.frontend import FrontendBase
 class DeleteProject(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Delete a Project')
-        self.parser.add_argument('name', help='name of the project to delete')
+        self.parser.add_argument('project_name', help='name of the project to delete')
 
     def execute(self, show_response_content=True):
-        project = self.args.name
+        project = self.args.project_name
 
         return self.request(
                 'DELETE', 'project/{}/'.format(project),

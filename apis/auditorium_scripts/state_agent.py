@@ -43,10 +43,10 @@ from auditorium_scripts.frontend import FrontendBase
 class StateAgent(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — State of an Agent')
-        self.parser.add_argument('agent', help='IP address of the agent')
+        self.parser.add_argument('agent_address', help='IP address of the agent')
 
     def execute(self, show_response_content=True):
-        address = self.args.agent
+        address = self.args.agent_address
 
         return self.request(
                 'GET', 'agent/{}/state/'.format(address),

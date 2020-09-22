@@ -80,7 +80,7 @@ class ScenarioObserver(FrontendBase):
                 'project_name', metavar='PROJECT_NAME',
                 help='name of the project the scenario is associated with')
         self.add_scenario_argument(
-                '-n', '--name', '--scenario-name', dest='scenario_name',
+                '-n', '--scenario-name', '--name',
                 help='name of the scenario to launch')
 
         self.parser.set_defaults(_action=self._launch_and_wait)
@@ -93,7 +93,7 @@ class ScenarioObserver(FrontendBase):
         self.run_group = parser.add_argument_group('scenario arguments')
         group = parser.add_argument_group('collector')
         group.add_argument(
-                '-c', '--collector', metavar='ADDRESS',
+                '-c', '--collector-address', '--collector', metavar='ADDRESS',
                 help='IP address of the collector. If empty, will '
                 'assume the collector is on the controller')
         group.add_argument(
@@ -249,8 +249,8 @@ class ScenarioObserver(FrontendBase):
         return response
 
     def _launch_and_wait(self, builder=None):
-        if self.args.collector is None:
-            self.args.collector = self.args.controller
+        if self.args.collector_address is None:
+            self.args.collector_address = self.args.controller
 
         if not hasattr(self.args, 'argument'):
             self.args.argument = {
@@ -303,7 +303,7 @@ class DataProcessor:
         self._post_processing = {}
         self._instance = scenario_instance
         self._collector = CollectorConnection(
-                observer.args.collector,
+                observer.args.collector_address,
                 observer.args.elasticsearch_port,
                 observer.args.influxdb_port,
                 observer.args.database_name,

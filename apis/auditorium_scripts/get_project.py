@@ -43,11 +43,11 @@ from auditorium_scripts.frontend import FrontendBase
 class GetProject(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Get the Content of a Project')
-        self.parser.add_argument('name', help='name of the project to query')
+        self.parser.add_argument('project_name', help='name of the project to query')
 
     def execute(self, show_response_content=True):
         return self.request(
-                'GET', 'project/{}/'.format(self.args.name),
+                'GET', 'project/{}/'.format(self.args.project_name),
                 show_response_content=show_response_content)
 
 

@@ -43,10 +43,10 @@ from auditorium_scripts.frontend import FrontendBase
 class DeleteJob(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — DeleteJob')
-        self.parser.add_argument('name', help='name of the job')
+        self.parser.add_argument('job_name', help='name of the job to delete')
 
     def execute(self, show_response_content=True):
-        job_name = self.args.name
+        job_name = self.args.job_name
         return self.request(
                 'DELETE', 'job/{}/'.format(job_name),
                 show_response_content=show_response_content)

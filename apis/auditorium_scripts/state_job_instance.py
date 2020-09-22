@@ -44,11 +44,11 @@ class StateJobInstance(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — State of an Instance of a Job')
         self.parser.add_argument(
-                'instance_id', type=int,
+                'job_instance_id', type=int,
                 help='ID of the job instance to query')
 
     def execute(self, show_response_content=True):
-        job = self.args.instance_id
+        job = self.args.job_instance_id
 
         return self.request(
                 'GET', 'job_instance/{}/state/'.format(job),

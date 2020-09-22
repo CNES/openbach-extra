@@ -45,7 +45,7 @@ from auditorium_scripts.frontend import FrontendBase, pretty_print
 class PushFile(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Push File')
-        self.parser.add_argument('agent', help='IP address of the agent')
+        self.parser.add_argument('agent_address', help='IP address of the agent')
         self.parser.add_argument(
                 'remote_path',
                 help='path where the file should be pushed')
@@ -57,7 +57,7 @@ class PushFile(FrontendBase):
                 'computer to be sent to the agent')
 
     def execute(self, show_response_content=True):
-        agent = self.args.agent
+        agent = self.args.agent_address
         remote_path = self.args.remote_path
         local_path = self.args.path
 

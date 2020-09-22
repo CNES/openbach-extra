@@ -46,13 +46,13 @@ class InstallAgent(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Install Agent')
         self.parser.add_argument(
-                'agent',
+                'agent_address',
                 help='IP address of the agent')
         self.parser.add_argument(
-                'collector',
+                'collector_address',
                 help='IP address of the collector')
         self.parser.add_argument(
-                'name',
+                'agent_name',
                 help='name of the agent')
         self.parser.add_argument(
                 '-u', '--user',
@@ -76,9 +76,9 @@ class InstallAgent(FrontendBase):
         self.args.password = password
 
     def execute(self, show_response_content=True):
-        agent = self.args.agent
-        collector = self.args.collector
-        name = self.args.name
+        agent = self.args.agent_address
+        collector = self.args.collector_address
+        name = self.args.agent_name
         username = self.args.user
         password = self.args.password
 

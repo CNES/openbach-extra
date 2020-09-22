@@ -45,15 +45,15 @@ class ChangeCollectorAddress(FrontendBase):
                 'OpenBACH — Change a Collector address '
                 'and update its associated Agents')
         self.parser.add_argument(
-                'collector',
+                'collector_address',
                 help='current IP address of the collector')
         self.parser.add_argument(
-                'new_collector',
+                'new_collector_address',
                 help='new IP address of the collector')
 
     def execute(self, show_response_content=True):
-        collector = self.args.collector
-        new_collector = self.args.new_collector
+        collector = self.args.collector_address
+        new_collector = self.args.new_collector_address
 
         return self.request(
                 'POST', 'collector/{}'.format(collector), address=new_collector,

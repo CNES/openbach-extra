@@ -44,8 +44,8 @@ from auditorium_scripts.frontend import FrontendBase
 class SetJobStatsPolicy(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Update Statistic Policy of a Job')
-        self.parser.add_argument('agent', help='IP address of the agent')
-        self.parser.add_argument('name', help='name of the job to update')
+        self.parser.add_argument('agent_address', help='IP address of the agent')
+        self.parser.add_argument('job_name', help='name of the job to update')
         self.parser.add_argument(
                 '-n', '--stat-name',
                 help='set the policy only for this specify statistic')
@@ -65,8 +65,8 @@ class SetJobStatsPolicy(FrontendBase):
                 '<job_name>_rstats.conf if not specified')
 
     def execute(self, show_response_content=True):
-        agent = self.args.agent
-        job = self.args.name
+        agent = self.args.agent_address
+        job = self.args.job_name
         statistic = self.args.stat_name
         storage = self.args.storage
         broadcast = self.args.broadcast

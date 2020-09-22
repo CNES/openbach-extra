@@ -43,7 +43,7 @@ from auditorium_scripts.frontend import FrontendBase
 class UninstallAgent(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Uninstall Agent')
-        self.parser.add_argument('agent', help='IP address of the agent')
+        self.parser.add_argument('agent_address', help='IP address of the agent')
         self.parser.add_argument(
                 '-d', '--detach', '--render-autonomous',
                 action='store_true',
@@ -51,7 +51,7 @@ class UninstallAgent(FrontendBase):
                 'detach it from the controller to render it autonomous.')
 
     def execute(self, show_response_content=True):
-        route = 'agent/{}/'.format(self.args.agent)
+        route = 'agent/{}/'.format(self.args.agent_address)
         if self.args.detach:
             route += '?detach_only'
 

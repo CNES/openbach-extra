@@ -44,24 +44,24 @@ class ModifyAgent(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Modify Agent')
         self.parser.add_argument(
-                'agent_ip',
+                'agent_address',
                 help='current IP address of the agent')
         self.parser.add_argument(
-                '-a', '--address', '--new-address', dest='agent_new_ip',
+                '-a', '--address', '--new-address', dest='new_agent_address',
                 help='new address to assign as main IP for the agent')
         self.parser.add_argument(
                 '-n', '--name', '--new-name', dest='agent_name',
                 help='new name to refer the agent to')
         self.parser.add_argument(
-                '-c', '--collector', '--new-collector', dest='collector_ip',
+                '-c', '--collector', '--new-collector', dest='collector_address',
                 help='new collector to use for this agent')
 
     def execute(self, show_response_content=True):
         return self.request(
-                'PUT', 'agent/{}/'.format(self.args.agent_ip),
+                'PUT', 'agent/{}/'.format(self.args.agent_address),
                 name=self.args.agent_name,
-                agent_ip=self.args.agent_new_ip,
-                collector_ip=self.args.collector_ip,
+                agent_ip=self.args.new_agent_address,
+                collector_ip=self.args.collector_address,
                 show_response_content=show_response_content)
 
 
