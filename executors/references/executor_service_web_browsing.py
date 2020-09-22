@@ -55,14 +55,17 @@ def main(argv=None):
             '--nb-parallel-runs', default=1,
             help='the maximum number of fetches that can work simultaneously')
     observer.add_scenario_argument(
-            '--no-compression', action = 'store_true', required = False,
-            help = 'Prevent compression for transmission')
+            '--no-compression', action='store_true', required=False,
+            help='Prevent compression for transmission')
     observer.add_scenario_argument(
-            '--proxy-address', type = str, required = False,
-            help = 'Set the proxy address (also needs a proxy port)')
+            '--proxy-address', type=str, required=False,
+            help='Set the proxy address (also needs a proxy port)')
     observer.add_scenario_argument(
-            '--proxy-port', type = int, required = False,
-            help = 'Set the proxy port (also needs a proxy address)')
+            '--proxy-port', type=int, required=False,
+            help='Set the proxy port (also needs a proxy address)')
+    observer.add_scenario_argument(
+            '--urls', type=str, nargs='+',
+            help='URLs to fetch (uses config.yaml if not set)')
     observer.add_scenario_argument(
             '--launch-server', default=True,
             help='Launch server or not. Optional. Default : True')
@@ -81,6 +84,7 @@ def main(argv=None):
             not args.no_compression,
             args.proxy_address,
             args.proxy_port,
+            args.urls,
             args.launch_server,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
