@@ -40,7 +40,7 @@ __credits__ = '''Contributors:
 import shlex
 from functools import partial
 
-from auditorium_scripts.frontend import FrontendBase
+from auditorium_scripts.frontend import FrontendBase, DEFAULT_DATE_FORMAT
 
 
 def parse(value):
@@ -51,23 +51,25 @@ def parse(value):
 class StartJobInstance(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Start Job Instance')
-        self.parser.add_argument('agent', help='IP address of the agent')
-        self.parser.add_argument('name', help='name of the job to start')
+        self.parser.add_argument('agent_address', help='IP address or domain of the agent')
+        self.parser.add_argument('job_name', help='name of the job to start')
         self.parser.add_argument(
                 '-a', '--argument', type=parse, nargs='+', default={},
                 metavar='NAME[ VALUE[ VALUE...]]',
                 help='')
         group = self.parser.add_mutually_exclusive_group(required=False)
         group.add_argument(
-                '-d', '--date', metavar=('DATE', 'TIME'),
-                nargs=2, help='date of the execution')
+                '-d', '--date', metavar=('DATE', 'TIME'), nargs=2,
+                help='date at which the job execution should start ({})'
+                        .format(DEFAULT_DATE_FORMAT.replace('%', '%%')))
         group.add_argument(
                 '-i', '--interval', type=int,
-                help='interval of the execution')
+                help='schedule repetitions of the job execution every '
+                     '"interval" seconds until the job is stopped')
 
     def execute(self, show_response_content=True):
-        agent = self.args.agent
-        job_name = self.args.name
+        agent = self.args.agent_address
+        job_name = self.args.job_name
         arguments = dict(self.args.argument)
         date = self.date_to_timestamp()
         interval = self.args.interval
