@@ -50,20 +50,18 @@ class DeleteScenarioInstances(FrontendBase):
 
     def execute(self, show_response_content=True):
         instance_ids = self.args.scenario_instance_id
-        show = show_response_content if len(instance_ids) == 1 else False
+        check_status = len(instance_ids) == 1
         responses = [
                 self.request(
                     'DELETE', 'scenario_instance/{}/'.format(id),
-                    show_response_content=show)
+                    show_response_content=show_response_content,
+                    check_status=check_status)
                 for id in instance_ids
         ]
 
-        if len(instance_ids) == 1:
-            return responses[0]
-
-        if show_response_content:
+        if show_response_content and not check_status:
             for response in responses:
-                pprint.pprint(response.json(), width=120)
+                response.raise_for_status()
 
         return responses
 

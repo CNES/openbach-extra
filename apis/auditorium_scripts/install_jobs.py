@@ -67,7 +67,7 @@ class InstallJobs(FrontendBase):
     def parse(self, args=None):
         super().parse(args)
         jobs = self.args.job_name
-        agents = self.args.agent
+        agents = self.args.agent_address
 
         if len(jobs) != len(agents):
             self.parser.error('-j and -a arguments should appear by pairs')
@@ -76,36 +76,40 @@ class InstallJobs(FrontendBase):
         jobs_names = self.args.job_name
         agents_ips = self.args.agent_address
         launch_only = self.args.launch
+        check_status = len(jobs_names) == 1
 
         responses = [
                 self.request(
                     'POST', 'job', action='install',
                     names=jobs, addresses=agents,
-                    show_response_content=launch_only and show_response_content)
+                    show_response_content=launch_only and show_response_content,
+                    check_status=check_status)
                 for agents, jobs in zip(agents_ips, jobs_names)
         ]
 
-        if not launch_only:
+        if launch_only:
+            if show_response_content and not check_status:
+                for response in responses:
+                    response.raise_for_status()
+        else:
             threads = list(self._start_monitoring(show_response_content))
             for thread in threads:
                 thread.join()
+
         return responses
 
     def _start_monitoring(self, show_response_content=True):
         for agents, jobs in zip(self.args.agent, self.args.job_name):
             for agent, job in itertools.product(agents, jobs):
-                args = (self.session, self.base_url, job, agent, show_response_content)
-                thread = threading.Thread(target=check_install_state, args=args)
+                state_job = self.share_state(StateJob)
+                state_job.args.job_name = job
+                state_job.args.agent_address = agent
+                thread = threading.Thread(
+                        target=state_job.wait_for_success,
+                        args=('install',),
+                        kwargs={'show_response_content': show_response_content})
                 thread.start()
                 yield thread
-
-
-def check_install_state(session, base_url, job_name, agent_address, show=True):
-    self = StateJob()
-    self.session = session
-    self.base_url = base_url
-    self.args = argparse.Namespace(name=job_name, agent=agent_address)
-    self.wait_for_success('install', show_response_content=show)
 
 
 if __name__ == '__main__':

@@ -44,6 +44,7 @@ __credits__ = '''Contributors:
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
+import sys
 import json
 import fcntl
 import shlex
@@ -129,19 +130,23 @@ def read_controller_configuration(filename='controller'):
     return controller, login, password, should_warn
 
 
-def pretty_print(response):
+def pretty_print(response, content=None, check_status=True):
     """Helper function to nicely format the response
     from the server.
     """
 
-    if response.status_code != 204:
-        try:
-            content = response.json()
-        except ValueError:
-            content = response.text
-        pprint.pprint(content, width=120)
+    if content is None:
+        if response.status_code != 204:
+            try:
+                content = response.json()
+            except ValueError:
+                content = response.text
 
-    response.raise_for_status()
+    if content:
+        pprint.pprint(content, width=20)
+
+    if check_status:
+        response.raise_for_status()
 
 
 class FromFileArgumentParser(argparse.ArgumentParser):
@@ -161,9 +166,14 @@ class FrontendBase:
             self.parse()
             self.execute()
         except requests.RequestException as error:
-            self.parser.error(str(error))
+            error_message = str(error)
         except ActionFailedError as error:
-            self.parser.error(error.message)
+            error_message = error.message
+        else:
+            print('Operation successfull')
+            return
+
+        sys.exit(error_message)
 
     def __init__(self, description):
         self.__filename = 'controller'
@@ -241,7 +251,7 @@ class FrontendBase:
     def execute(self, show_response_content=True):
         pass
 
-    def request(self, verb, route, show_response_content=True, files=None, **kwargs):
+    def request(self, verb, route, show_response_content=True, check_status=True, files=None, **kwargs):
         verb = verb.upper()
         url = self.base_url + route
         if verb == 'GET':
@@ -252,7 +262,7 @@ class FrontendBase:
             else:
                 response = self.session.request(verb, url, data=kwargs, files=files)
         if show_response_content:
-            pretty_print(response)
+            pretty_print(response, check_status=check_status)
         return response
 
     def wait_for_success(self, status=None, valid_statuses=(200, 204), show_response_content=True):
@@ -272,7 +282,7 @@ class FrontendBase:
             returncode = content['returncode']
             if returncode != 202:
                 if show_response_content:
-                    pprint.pprint(content['response'], width=200)
+                    pretty_print(response, content['response'])
                 if returncode not in valid_statuses:
                     raise ActionFailedError(**content)
                 return
