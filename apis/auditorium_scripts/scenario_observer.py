@@ -199,8 +199,10 @@ class ScenarioObserver(FrontendBase):
             scenario_setter = self.share_state(CreateScenario)
             scenario_modifier = self.share_state(ModifyScenario)
             for scenario in builder.subscenarios:
-                self.args.scenario_name = str(scenario)
-                self.args.scenario = scenario.build()
+                scenario_getter.args.scenario_name = str(scenario)
+                scenario_modifier.args.scenario_name = str(scenario)
+                scenario_modifier.args.scenario = scenario.build()
+                scenario_setter.args.scenario = scenario.build()
 
                 try:
                     scenario = scenario_getter.execute(False)
@@ -222,7 +224,7 @@ class ScenarioObserver(FrontendBase):
         scenario_id = response.json()['scenario_instance_id']
 
         scenario_waiter = self.share_state(StatusScenarioInstance)
-        scenario_waiter.args.instance_id = scenario_id
+        scenario_waiter.args.scenario_instance_id = scenario_id
         retries_left = MAX_RETRIES_STATUS
         while True:
             time.sleep(self.WAITING_TIME_BETWEEN_STATES_POLL)
@@ -271,7 +273,7 @@ class ScenarioObserver(FrontendBase):
             scenario_getter = self.share_state(GetScenario)
             scenarios = [self.args.scenario_name] if builder is None else builder.subscenarios
             for scenario in scenarios:
-                self.args.scenario_name = str(scenario)
+                scenario_getter.args.scenario_name = str(scenario)
                 scenario = scenario_getter.execute(False)
                 scenario.raise_for_status()
                 content = scenario.json()
