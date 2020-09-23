@@ -65,12 +65,13 @@ class Argument(argparse.Action):
                 items = items.setdefault(subcommand, {})
                 values = arguments
 
-        try:
-            name, *values = values
-        except ValueError as e:
-            raise argparse.ArgumentError(self, e)
+        if values:
+            try:
+                name, *values = values
+            except ValueError as e:
+                raise argparse.ArgumentError(self, e)
 
-        items[name] = values
+            items[name] = values or [True]
 
 
 class SubCommand(Argument):
