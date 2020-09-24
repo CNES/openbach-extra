@@ -355,7 +355,7 @@ def line_protocol(job_name, scenario_id, owner_id, agent_name, job_id, suffix, s
     measurement.extend(
             # No need to call escape_names on tag as they
             # already fullfil the rules for proper names.
-            '{}={}'.format(tag, escape_names(value) is isinstance(value, str) else value)
+            '{}={}'.format(tag, escape_names(value) if isinstance(value, str) else value)
             for tag, value in tags.items() if value or value == 0)
     header = ','.join(measurement)
 
