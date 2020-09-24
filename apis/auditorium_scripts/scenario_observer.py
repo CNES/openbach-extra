@@ -83,13 +83,16 @@ class ScenarioObserver(FrontendBase):
                 '-n', '--scenario-name', '--name',
                 help='name of the scenario to launch')
 
-        self.parser.set_defaults(_action=self._launch_and_wait)
         parsers = self.parser.add_subparsers(title='actions', metavar='action')
         parsers.required = False
 
         parser = parsers.add_parser(
                 'run', help='run the selected scenario on the controller '
                 'after optionally sending it (default action)')
+        # Ensure we keep a reference to this parser before overriding the variable latter on
+        get_defaults = parser.parse_args
+        self.parser.set_defaults(_action=lambda builder=None: self._default_action(get_defaults([]), builder))
+
         self.run_group = parser.add_argument_group('scenario arguments')
         group = parser.add_argument_group('collector')
         group.add_argument(
@@ -288,6 +291,12 @@ class ScenarioObserver(FrontendBase):
             self.parser.error(
                     'asked to *not* contact the controller without a provided '
                     'scenario builder: cannot create scenario file')
+
+    def _default_action(self, defaults, builder=None):
+        for name, value in vars(defaults).items():
+            setattr(self.args, name, value)
+
+        self.args._action(builder)
 
 
 class DataProcessor:
