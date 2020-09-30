@@ -65,7 +65,8 @@ def main(argv=None):
             help='Set the proxy port (also needs a proxy address)')
     observer.add_scenario_argument(
             '--urls', type=str, nargs='+',
-            help='URLs to fetch (uses config.yaml if not set)')
+            help='URLs to fetch (uses config.yaml if not set)'
+            'e.g. : --urls "https://XXX" "https://YYY" ')
     observer.add_scenario_argument(
             '--launch-server', default=True,
             help='Launch server or not. Optional. Default : True')
