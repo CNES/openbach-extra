@@ -99,7 +99,7 @@ class InstallJobs(FrontendBase):
         return responses
 
     def _start_monitoring(self, show_response_content=True):
-        for agents, jobs in zip(self.args.agent, self.args.job_name):
+        for agents, jobs in zip(self.args.agent_address, self.args.job_name):
             for agent, job in itertools.product(agents, jobs):
                 state_job = self.share_state(StateJob)
                 state_job.args.job_name = job
