@@ -141,7 +141,7 @@ class CollectorConnection:
 
         response = self.influxdb.statistics(
                 job_name, scenario_instance_id, agent_name,
-                job_instance_id, suffix, fields, condition)
+                job_instance_id, suffix, fields, condition, timestamps)
         # For each job found in InfluxDB
         for scenario_with_stats in response:
             for scenario_id, owner_id, job in extract_jobs(scenario_with_stats):

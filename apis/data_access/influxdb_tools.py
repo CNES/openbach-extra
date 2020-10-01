@@ -165,6 +165,17 @@ class ConditionTimestamp(ComparatorCondition):
     def is_timestamp(self):
         return True
 
+    @classmethod
+    def from_timestamps(cls, timestamps):
+        try:
+            timestamp_lower, timestamp_upper = timestamps
+        except (TypeError, ValueError):
+            return cls(Operator.Equal, timestamps)
+        else:
+            return ConditionAnd(
+                cls(Operator.GreaterOrEqual, timestamp_lower),
+                cls(Operator.LessOrEqual, timestamp_upper))
+
 
 ############################################
 # Helper functions for formatting purposes #
@@ -477,10 +488,13 @@ class InfluxDBConnection(InfluxDBCommunicator):
 
     def statistics(
             self, job=None, scenario=None, agent=None, job_instance=None,
-            suffix=None, fields=None, condition=None):
+            suffix=None, fields=None, condition=None, timestamps=None):
         """Fetch data from InfluxDB that correspond to the given constraints
         and generate according `Scenario`s instances.
         """
+        if timestamps is not None:
+            timestamp_condition = ConditionTimestamp.from_timestamps(timestamps)
+            condition = timestamp_condition if condition is None else ConditionAnd(condition, timestamp_condition)
         _condition = tags_to_condition(scenario, agent, job_instance, suffix, condition, subscenarios=True)
         response = self.sql_query(select_query(job, fields, _condition))
 
@@ -500,14 +514,7 @@ class InfluxDBConnection(InfluxDBCommunicator):
         """
         condition = tags_to_condition('', '', '', '', condition)
         if timestamps is not None:
-            try:
-                timestamp_lower, timestamp_upper = timestamps
-            except (TypeError, ValueError):
-                timestamp_condition = ConditionTimestamp(Operator.Equal, timestamps)
-            else:
-                timestamp_condition = ConditionAnd(
-                        ConditionTimestamp(Operator.GreaterOrEqual, timestamp_lower),
-                        ConditionTimestamp(Operator.LessOrEqual, timestamp_upper))
+            timestamp_condition = ConditionTimestamp.from_timestamps(timestamps)
             condition = ConditionAnd(condition, timestamp_condition)
         return parse_orphans(self.sql_query(select_query(None, None, condition)))
 
