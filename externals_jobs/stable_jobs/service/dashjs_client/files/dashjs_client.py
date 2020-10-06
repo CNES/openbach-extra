@@ -53,8 +53,8 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 HTTP1 = 'http/1.1'
 HTTP2 = 'http/2'
-DEFAULT_URL='{}://{}:{}/vod-dash/?tornado_port={}'
-DEFAULT_PATH='/vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd'
+DEFAULT_URL='{}://{}:{}/dash_content/?tornado_port={}'
+DEFAULT_PATH='/dash_content/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd'
 
 # The following variables *_PORT must have the same values as in installation file of the job 
 # 'dashjs_player_server'. So don't change, unless you also change them in un/installation files 
