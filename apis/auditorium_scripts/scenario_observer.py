@@ -199,6 +199,7 @@ class ScenarioObserver(FrontendBase):
             scenario = scenario_getter.execute(False)
             scenario.raise_for_status()
         else:
+            self.args.scenario_name = str(builder)
             scenario_setter = self.share_state(CreateScenario)
             scenario_modifier = self.share_state(ModifyScenario)
             for scenario in builder.subscenarios:
