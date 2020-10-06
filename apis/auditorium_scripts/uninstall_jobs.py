@@ -105,7 +105,7 @@ class UninstallJobs(FrontendBase):
                 state_job.args.job_name = job
                 state_job.args.agent_address = agent
                 thread = threading.Thread(
-                        target=check_uninstall_state,
+                        target=state_job.wait_for_success,
                         args=('uninstall',),
                         kwargs={'show_response_content': show_response_content})
                 thread.start()

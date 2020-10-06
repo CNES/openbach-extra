@@ -248,7 +248,7 @@ class ScenarioObserver(FrontendBase):
 
         if self.args.path is not None:
             data_fetcher = self.share_state(GetScenarioInstanceData)
-            data_fetcher.args.id = scenario_id
+            data_fetcher.args.scenario_instance_id = scenario_id
             data_fetcher.execute(False)
 
         return response
