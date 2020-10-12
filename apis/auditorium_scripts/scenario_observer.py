@@ -70,11 +70,6 @@ class ScenarioObserver(FrontendBase):
         self.build_parser()
 
     def build_parser(self):
-        self.parser.add_argument(
-                '-o', '--override', action='store_true',
-                help='have the provided scenario builder '
-                '(if any) replace the current scenario')
-
         self.scenario_group = self.parser.add_argument_group('scenario arguments')
         self.add_scenario_argument(
                 'project_name', metavar='PROJECT_NAME',
@@ -214,8 +209,7 @@ class ScenarioObserver(FrontendBase):
                 except Exception:
                     scenario = scenario_setter.execute(False)
                 else:
-                    if self.args.override:
-                        scenario = scenario_modifier.execute(False)
+                    scenario = scenario_modifier.execute(False)
                 scenario.raise_for_status()
 
     def _run_scenario_to_completion(self):
