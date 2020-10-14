@@ -101,7 +101,8 @@ def build(
                 legend,
                 no_suffix,
                 'time_series_rate_{}_to_{}'.format(client_entity, server_entity),
-                waiting_jobs, None, 2)
+                wait_finished=waiting_jobs,
+                wait_delay=2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -112,6 +113,7 @@ def build(
                 legend,
                 no_suffix,
                 'histogram_rate_{}_to_{}'.format(client_entity, server_entity),
-                waiting_jobs, None, 2)
+                wait_finished=waiting_jobs,
+                wait_delay=2)
 
     return scenario

@@ -181,8 +181,8 @@ def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
                         [[axis]],
                         [['{} time series'.format(title)]],
                         legends,
-                        False,
-                        wait_finished, None, 2)
+                        wait_finished=wait_finished,
+                        wait_delay=2)
                 cdf_on_same_graph(
                         scenario,
                         post_processing_entity,
@@ -192,7 +192,7 @@ def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
                         [[axis]],
                         [['{} CDF'.format(title)]],
                         legends,
-                        False,
-                        wait_finished, None, 2)
+                        wait_finished=wait_finished,
+                        wait_delay=2)
 
     return scenario

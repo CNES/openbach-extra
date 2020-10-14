@@ -101,9 +101,9 @@ def build(
                 [['RTT delay (ms)']],
                 [['RTTs time series']],
                 legend,
-                False,
-                'time_series_rtt_{}_{}'.format(client_entity, server_entity),
-                waiting_jobs, None, 2)
+                filename='time_series_rtt_{}_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -113,8 +113,8 @@ def build(
                 [['RTT delay (ms)']],
                 [['RTT CDF']],
                 legend,
-                False,
-                'histogram_rtt_{}_{}'.format(client_entity, server_entity),
-                waiting_jobs, None, 2)
+                filename='histogram_rtt_{}_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
 
     return scenario

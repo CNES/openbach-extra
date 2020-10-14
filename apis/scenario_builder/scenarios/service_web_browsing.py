@@ -98,8 +98,8 @@ def build(
                 [['PLT (ms)']],
                 [['PLT time series']],
                 [legends],
-                False,
-                jobs, None, 5)
+                wait_finished=jobs,
+                wait_delay=5)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -109,7 +109,7 @@ def build(
                 [['PLT (ms)']],
                 [['PLT CDF']],
                 [legends],
-                False,
-                jobs, None, 5)
+                wait_finished=jobs,
+                wait_delay=5)
 
     return scenario

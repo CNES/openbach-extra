@@ -77,9 +77,9 @@ def build(server_entity, client_entity, server_ip, client_ip, post_processing_en
                 [['owd_sent','owd_received', 'owd_receiver', 'owd_return']],
                 [['One Way Delay (ms)']], [['Both One Way delays time series']],
                 legend,
-                False,
-                'time_series_owd_{}_{}'.format(client_entity, server_entity),
-                waiting_jobs, None, 2)
+                filename='time_series_owd_{}_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -88,8 +88,8 @@ def build(server_entity, client_entity, server_ip, client_ip, post_processing_en
                 [['owd_sent','owd_received', 'owd_receiver', 'owd_return']],
                 [['One Way Delay (ms)']], [['Both One Way delay CDF']],
                 legend,
-                False,
-                'histogram_owd_{}_{}'.format(client_entity, server_entity),
-                waiting_jobs, None, 2)
+                filename='histogram_owd_{}_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
 
     return scenario

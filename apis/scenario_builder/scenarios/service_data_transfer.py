@@ -74,8 +74,8 @@ def build(
                 [['Rate (b/s)']],
                 [['Rate time series']],
                 [legends],
-                False,
-                jobs, None, 2)
+                wait_finished=jobs,
+                wait_delay=2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -85,7 +85,7 @@ def build(
                 [['Rate (b/s)']],
                 [['Rate CDF']],
                 [legends],
-                False,
-                jobs, None, 2)
+                wait_finished=jobs,
+                wait_delay=2)
 
     return scenario

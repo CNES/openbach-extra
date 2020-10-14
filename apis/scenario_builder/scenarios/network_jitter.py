@@ -80,9 +80,9 @@ def build(
                 [['Jitter (ms)']],
                 [['Jitters time series']],
                 legend,
-                False,
-                'time_series_jitter_{}_{}'.format(client_entity, server_entity),
-                waiting_jobs, None, 2)
+                filename='time_series_jitter_{}_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -92,8 +92,8 @@ def build(
                 [['Jitter (ms)']],
                 [['Jitters CDF']],
                 legend,
-                False,
-                'histogram_jitter_{}_{}'.format(client_entity, server_entity),
-                waiting_jobs, None, 2)
+                filename='histogram_jitter_{}_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
 
     return scenario
