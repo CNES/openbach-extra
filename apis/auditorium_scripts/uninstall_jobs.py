@@ -37,7 +37,6 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
 import itertools
 import threading
 

@@ -27,19 +27,14 @@
 # this program. If not, see http://www.gnu.org/licenses/.
 
 
-"""Call the openbach-function install_jobs"""
+"""Call the openbach-functions uninstall_jobs and install_jobs"""
 
 
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
- * Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
-
-import argparse
-import itertools
-import threading
 
 from auditorium_scripts.frontend import FrontendBase
 from auditorium_scripts.install_jobs import InstallJobs
@@ -48,9 +43,9 @@ from auditorium_scripts.delete_job import DeleteJob
 from auditorium_scripts.add_job import AddJob
 
 
-class CleanInstallJobs(FrontendBase):
+class CleanInstallJob(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Install Jobs on agents')
+        super().__init__('OpenBACH — Install Job on agents after Uninstalling it first')
         self.parser.add_argument(
                 'job_name', metavar='NAME',
                 help='Name of the Job to install on the specified agents.')
@@ -93,4 +88,4 @@ class CleanInstallJobs(FrontendBase):
 
 
 if __name__ == '__main__':
-    CleanInstallJobs.autorun()
+    CleanInstallJob.autorun()
