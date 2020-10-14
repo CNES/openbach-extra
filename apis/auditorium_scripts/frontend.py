@@ -143,7 +143,7 @@ def pretty_print(response, content=None, check_status=True):
                 content = response.text
 
     if content:
-        pprint.pprint(content, width=20)
+        pprint.pprint(content, width=200)
 
     if check_status:
         response.raise_for_status()
