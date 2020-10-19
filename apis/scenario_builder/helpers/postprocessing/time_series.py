@@ -30,8 +30,8 @@
 
 
 def time_series_on_same_graph(
-        scenario, post_processing_entity, job_instances,
-        statistics, label, title, legend, no_suffix=False,
+        scenario, post_processing_entity, job_instances, statistics,
+        label, title, legend, no_suffix=False, filename=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
 
     time_series = scenario.add_function(
@@ -47,6 +47,7 @@ def time_series_on_same_graph(
             no_suffix=no_suffix,
             label=label,
             title=title,
-            legend=legend)
+            legend=legend,
+            filename=filename)
 
     return [time_series]

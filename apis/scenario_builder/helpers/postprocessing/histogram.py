@@ -30,8 +30,8 @@
 
 
 def cdf_on_same_graph(
-        scenario, post_processing_entity, job_instances, bins,
-        statistics, label, title, legend, no_suffix=False,
+        scenario, post_processing_entity, job_instances, bins, statistics,
+        label, title, legend, no_suffix=False, filename=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     histogram = scenario.add_function(
             'start_job_instance',
@@ -48,14 +48,15 @@ def cdf_on_same_graph(
             label=label,
             title=title,
             legend=legend,
-            cumulative=True)
+            cumulative=True,
+            filename=filename)
 
     return [histogram]
 
 
 def pdf_on_same_graph(
-        scenario, post_processing_entity, job_instances, bins,
-        statistics, label, title, legend, no_suffix=False,
+        scenario, post_processing_entity, job_instances, bins, statistics,
+        label, title, legend, no_suffix=False, filename=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     histogram = scenario.add_function(
             'start_job_instance',
@@ -72,6 +73,7 @@ def pdf_on_same_graph(
             label=label,
             title=title,
             legend=legend,
-            cumulative=False)
+            cumulative=False,
+            filename=filename)
 
     return [histogram]

@@ -64,15 +64,22 @@ def build(server_entity, client_entity, server_ip, client_ip, post_processing_en
                 waiting_jobs.append(function)
 
         post_processed = list(scenario.extract_function_id('owamp-client', 'd-itg_send'))
+        legend = [
+                ['Owamp OWD ({} to {})'.format(server_entity, client_entity)],
+                ['Owamp OWD ({} to {})'.format(client_entity, server_entity)],
+                ['D-ITG OWD ({} to {})'.format(client_entity, server_entity)],
+                ['D-ITG OWD ({} to {})'.format(server_entity, client_entity)]
+        ]
         time_series_on_same_graph(
                 scenario,
                 post_processing_entity,
                 post_processed,
                 [['owd_sent','owd_received', 'owd_receiver', 'owd_return']],
                 [['One Way Delay (ms)']], [['Both One Way delays time series']],
-                [['owd_received_owamp'],['owd_sent_owamp'], ['owd_sent_d-itg'], ['owd_received_d-itg']],
-                False,
-                waiting_jobs, None, 2)
+                legend,
+                filename='time_series_owd_{}_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -80,8 +87,9 @@ def build(server_entity, client_entity, server_ip, client_ip, post_processing_en
                 100,
                 [['owd_sent','owd_received', 'owd_receiver', 'owd_return']],
                 [['One Way Delay (ms)']], [['Both One Way delay CDF']],
-                [['owd_received_owamp'],['owd_sent_owamp'], ['owd_sent_d-itg'], ['owd_received_d-itg']],
-                False,
-                waiting_jobs, None, 2)
+                legend,
+                filename='histogram_owd_{}_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
 
     return scenario

@@ -66,7 +66,12 @@ def build(
             if isinstance(function, StartJobInstance):
                 waiting_jobs.append(function)
         post_processed = list(scenario.extract_function_id('owamp-client'))
-
+        legend = [
+                ['OWAMP ipdv ({} to {})'.format(client_entity, server_entity)],
+                ['OWAMP ipdv ({} to {})'.format(server_entity, client_entity)],
+                ['OWAMP pdv ({} to {})'.format(client_entity, server_entity)],
+                ['OWAMP pdv ({} to {})'.format(server_entity, client_entity)]
+        ]
         time_series_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -74,9 +79,10 @@ def build(
                 [['ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']],
                 [['Jitter (ms)']],
                 [['Jitters time series']],
-                [['owamp ipdv_sent'], ['owamp ipdv_received'], ['owamp pdv_sent'], ['owamp pdv_received']],
-                False,
-                waiting_jobs, None, 2)
+                legend,
+                filename='time_series_jitter_{}_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -85,8 +91,9 @@ def build(
                 [['ipdv_sent', 'ipdv_received', 'pdv_sent', 'pdv_received']],
                 [['Jitter (ms)']],
                 [['Jitters CDF']],
-                [['owamp ipdv_sent'], ['owamp ipdv_received'], ['owamp pdv_sent'], ['owamp pdv_received']],
-                False,
-                waiting_jobs, None, 2)
+                legend,
+                filename='histogram_jitter_{}_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
 
     return scenario
