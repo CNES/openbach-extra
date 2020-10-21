@@ -25,19 +25,19 @@
 # Author : Bastien Tauran, Vivéris Technologies
 #
 # file configuration arguments format (see below for example) :
-### id traffic_type src_entity dst_entity duration wait_launched wait_finished wait_delay src_ip dst_ip extra_args
+### id traffic_type src_entity dst_entity duration wait_launched wait_finished wait_delay src_ip dst_ip <extra_args>
 ### wait_launched and wait_finished can contain several elements -> they must be separated by a '-'. If no element, put None
 #
 # extra_args:
-### data_transfer	-> dst_port file_size tos mtu 	(if file_size is 0, the transfer will last duration seconds. Otherwise, it will transfer the whole specified file_size, regardless of the duration)
-### dash  		-> protocol
-### voip  		-> dst_port codecs				(Warning: it is impossible to launch several voip_src at same time... should be fixed later)
-### web_browsing	-> nb_runs nb_parallel_runs		(do not forget to edit the config file with correct address)
+### data-transfer	-> dst_port file_size tos mtu 	(if file_size is 0, the transfer will last duration seconds. Otherwise, it will transfer the whole specified file_size, regardless of the duration)
+### dash  		    -> protocol
+### voip  		    -> dst_port codecs				(Warning: it is impossible to launch several voip_src at same time... should be fixed later)
+### web-browsing	-> nb_runs nb_parallel_runs		(do not forget to edit the config file with correct address)
 
-# Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 executor_service_traffic_mix.py my_project --extra-args-traffic executor_service_traffic_mix_arg.txt --post-processing-entity name_entity_post_processing -o run
+# Example launch command:
+# PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 executor_service_traffic_mix.py @executor_service_traffic_mix_arg.txt --post-processing-entity name_entity_post_processing -o my_project run
 
 # Example of trafic mix with data_transfer,dash, web_browsing and voip traffic
-#
 --data-transfer 1 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 5201 10M 0 1500
 --dash 2 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2
 --web-browsing 3 SRC ST1 60 None None 0 10.42.42.11 10.42.14.3 10 2
