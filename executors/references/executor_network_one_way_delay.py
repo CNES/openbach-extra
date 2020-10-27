@@ -50,6 +50,12 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--client-ip', required=True, help='client ip address of d-itg test')
     observer.add_scenario_argument(
+            '--maximal-synchronization-offset', default=0.0,
+            help='Maximal offset difference where we have to do a resynchronization between agents (float). If 0, no resynchronization')
+    observer.add_scenario_argument(
+            '--synchronization-timeout', default=30,
+            help='Maximal synchronization duration in seconds (float)')
+    observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
@@ -60,6 +66,8 @@ def main(argv=None):
                       args.client_entity,
                       args.server_ip,
                       args.client_ip,
+                      args.maximal_synchronization_offset,
+                      args.synchronization_timeout,
                       args.post_processing_entity,
                       scenario_name=args.scenario_name)
 
