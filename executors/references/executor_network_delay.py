@@ -54,6 +54,12 @@ def main(argv=None):
             '--simultaneous', action='store_true',
             help='option whether or not the test is simultaneous. Default sequential')
     observer.add_scenario_argument(
+            '--maximal-synchronization-offset', default=0.0,
+            help='Maximal offset difference where we have to do a resynchronization between agents (float). If 0, no resynchronization. ')
+    observer.add_scenario_argument(
+            '--synchronization-timeout', default=30,
+            help='Maximal synchronization duration in seconds (float). ')
+    observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
@@ -66,11 +72,12 @@ def main(argv=None):
                       args.client_ip,
                       args.duration,
                       args.simultaneous,
+                      args.maximal_synchronization_offset,
+                      args.synchronization_timeout,
                       args.post_processing_entity,
                       scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)
-
 
 if __name__ == '__main__':
     main()
