@@ -45,6 +45,7 @@ It is a general network QoS metrics scenario.
 def build(
         server_entity, client_entity, server_ip, client_ip, server_port, client_port, command_port,
         duration, rate_limit, num_flows, tos, mtu, count, packets_interval,
+        maximal_synchronization_offset, synchronization_timeout,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
     #Create top network_global scenario
@@ -52,13 +53,13 @@ def build(
 
     # Add Delay metrology scenario in sequential mode.
     simultaneous=False
-    scenario_network_delay = network_delay.build(server_entity, client_entity, server_ip, client_ip, duration, simultaneous, post_processing_entity)
+    scenario_network_delay = network_delay.build(server_entity, client_entity, server_ip, client_ip, duration, simultaneous, maximal_synchronization_offset, synchronization_timeout, post_processing_entity)
     start_network_delay = scenario.add_function('start_scenario_instance')
     start_network_delay.configure(scenario_network_delay)
 
     # Add One Way Delay metrology scenario
     scenario_network_one_way_delay = network_one_way_delay.build(
-            server_entity, client_entity, server_ip, client_ip, post_processing_entity)
+            server_entity, client_entity, server_ip, client_ip, maximal_synchronization_offset, synchronization_timeout, post_processing_entity)
     start_network_one_way_delay = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_network_delay],
