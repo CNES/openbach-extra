@@ -55,10 +55,10 @@ def main(argv=None):
             help='option whether or not the test is simultaneous. Default sequential')
     observer.add_scenario_argument(
             '--maximal-synchronization-offset', default=0.0,
-            help='Maximal offset difference where we have to do a resynchronization between agents (float). If 0, no resynchronization. ')
+            help='Maximal offset difference where we have to do a resynchronization between agents (float). If 0, no resynchronization')
     observer.add_scenario_argument(
             '--synchronization-timeout', default=30,
-            help='Maximal synchronization duration in seconds (float). ')
+            help='Maximal synchronization duration in seconds (float)')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
