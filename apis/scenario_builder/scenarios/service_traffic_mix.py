@@ -51,7 +51,7 @@ It can then, optionally,  post-processes the generated data by plotting time-ser
 
 
 _Arguments = namedtuple('Arguments', ('id', 'traffic', 'source', 'destination', 'duration', 'wait_launched', 'wait_finished', 'wait_delay', 'source_ip', 'destination_ip'))
-VoipArguments = namedtuple('VoipArguments', _Arguments._fields + ('port', 'codec'))
+VoipArguments = namedtuple('VoipArguments', _Arguments._fields + ('port', 'codec', 'synchro_offset', 'synchro_timeout'))
 WebBrowsingArguments = namedtuple('WebBrowsingArguments', _Arguments._fields + ('run_count', 'parallel_runs'))
 DashArguments = namedtuple('DashArguments', _Arguments._fields + ('protocol', 'tornado_port'))
 DataTransferArguments = namedtuple('DataTransferArguments', _Arguments._fields + ('port', 'size', 'tos', 'mtu'))
@@ -85,9 +85,9 @@ def _voip_legend(openbach_function):
     return 'VoIP - {} {} {}'.format(destination, address, port)
 
 
-def traffic_mix(arguments, maximal_synchronization_offset, synchronization_timeout, post_processing_entity, scenario_name=SCENARIO_NAME):
+def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
     scenario_mix = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    list_wait_finished = []
+    wait_finished = []
     apache_servers = {}
     map_scenarios = {}
 
@@ -114,53 +114,59 @@ def traffic_mix(arguments, maximal_synchronization_offset, synchronization_timeo
             scenario_name = '{}_{}'.format(service_data_transfer.SCENARIO_NAME, args.id)
             scenario = service_data_transfer.build(
                     args.destination, args.source, args.destination_ip,
-                    int(args.port), int(args.duration), args.size,
-                    int(args.tos), int(args.mtu),
+                    args.port, args.duration, args.size,
+                    args.tos, args.mtu,
                     post_processing_entity, scenario_name)
         elif args.traffic == "dash":
             scenario_name = '{}_{}'.format(service_video_dash.SCENARIO_NAME, args.id)
             scenario = service_video_dash.build(
                     args.source, args.destination, args.source_ip,
-                    int(args.duration), args.protocol, int(args.tornado_port), False,
+                    args.duration, args.protocol, args.tornado_port, False,
                     post_processing_entity, scenario_name)
         elif args.traffic == "web_browsing":
             scenario_name = '{}_{}'.format(service_web_browsing.SCENARIO_NAME, args.id)
             scenario = service_web_browsing.build(
-                    args.source, args.destination, int(args.duration),
-                    int(args.run_count), int(args.parallel_runs),
+                    args.source, args.destination, args.duration,
+                    args.run_count, args.parallel_runs,
                     post_processing_entity=post_processing_entity,
                     scenario_name=scenario_name)
         elif args.traffic == "voip":
             scenario_name = '{}_{}'.format(service_voip.SCENARIO_NAME, args.id)
             scenario = service_voip.build(
                     args.destination, args.source, args.destination_ip,
-                    args.source_ip, int(args.port),int(args.duration),
-                    args.codec, maximal_synchronization_offset, synchronization_timeout,
+                    args.source_ip, args.port, args.duration,
+                    args.codec, synchro_offset, synchro_timeout,
                     post_processing_entity, scenario_name)
 
         start_scenario = scenario_mix.add_function(
                 'start_scenario_instance',
                 wait_finished=wait_finished_list,
                 wait_launched=wait_launched_list,
-                wait_delay=int(args.wait_delay) + offset_delay)
+                wait_delay=args.wait_delay + offset_delay)
         start_scenario.configure(scenario)
-        list_wait_finished += [start_scenario]
-        map_scenarios[int(args.id)] = start_scenario
+        wait_finished += [start_scenario]
+        map_scenarios[args.id] = start_scenario
 
     # Stopping all Apache2 servers
-    for server_entity,scenario_server in apache_servers.items():
-        stopper = scenario_mix.add_function('stop_job_instance',
-                wait_finished=list_wait_finished, wait_delay=5)
+    for server_entity, scenario_server in apache_servers.items():
+        stopper = scenario_mix.add_function(
+                'stop_job_instance',
+                wait_finished=wait_finished,
+                wait_delay=5)
         stopper.configure(scenario_server)
 
     return scenario_mix
 
 
-def build(arguments, maximal_synchronization_offset, synchronization_timeout, post_processing_entity, scenario_name=SCENARIO_NAME):
-    scenario = traffic_mix(arguments, maximal_synchronization_offset, synchronization_timeout, post_processing_entity, scenario_name)
+def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
+    scenario = traffic_mix(arguments, post_processing_entity, scenario_name)
 
     if post_processing_entity is not None:
-        wait_finished = [function for function in scenario.openbach_functions if isinstance(function, (StartJobInstance, StartScenarioInstance))]
+        wait_finished = [
+                function
+                for function in scenario.openbach_functions
+                if isinstance(function, (StartJobInstance, StartScenarioInstance))
+        ]
 
         for jobs, filters, legend, statistic, axis in [
                 ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'Rate (b/s)'),

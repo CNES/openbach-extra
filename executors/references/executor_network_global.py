@@ -84,11 +84,12 @@ def main(argv=None):
             help='The mean average time between owamp packets (specify seconds and distribution type)'
             'If e: random exponential distribution. If f: constant distribution')
     observer.add_scenario_argument(
-            '--maximal-synchronization-offset', default=0.0,
-            help='Maximal offset difference where we have to do a resynchronization between agents (float). If 0, no resynchronization')
+            '--maximal-synchronization-offset', type=float,
+            help='maximal offset difference where we have to do a NTP '
+            'resynchronization; if omitted, no NTP checks are performed')
     observer.add_scenario_argument(
-            '--synchronization-timeout', default=30,
-            help='Maximal synchronization duration in seconds (float)')
+            '--synchronization-timeout', type=float, default=60,
+            help='maximal synchronization duration in seconds')
     observer.add_scenario_argument(
             '--post-processing-entity',
             help='The entity where the post-processing will be '

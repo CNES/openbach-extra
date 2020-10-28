@@ -43,65 +43,57 @@ It can then, optionally, plot the delay measurements using time-series and CDF.
 """
 
 
-def delay_simultaneous(server_entity, client_entity, server_ip, client_ip, duration, maximal_synchronization_offset, synchronization_timeout, scenario_name=SCENARIO_NAME):
+def delay_simultaneous(
+        server_entity, client_entity, server_ip, client_ip, duration,
+        maximal_synchronization_offset=None, synchronization_timeout=60, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('client_ip', client_ip)
     scenario.add_constant('duration', duration)
 
-    if maximal_synchronization_offset > 0.0:
+    synchro_ntp = None
+    if maximal_synchronization_offset is not None and maximal_synchronization_offset > 0.0:
         synchro_ntp = synchronization(
                 scenario, client_entity, 
                 maximal_synchronization_offset, 
                 synchronization_timeout)
-        srv = ditg_packet_rate(
-                scenario, client_entity, server_entity,
-                '$server_ip', '$client_ip', 'UDP', packet_rate=1,
-                duration='$duration', meter='rttm',
-                wait_finished=synchro_ntp)
-        fping_measure_rtt(
-                scenario, client_entity, '$server_ip', '$duration',
-                wait_launched=srv, wait_delay=1,
-                wait_finished=synchro_ntp)
-    else:
-        srv = ditg_packet_rate(
-                scenario, client_entity, server_entity,
-                '$server_ip', '$client_ip', 'UDP', packet_rate=1,
-                duration='$duration', meter='rttm')
-        fping_measure_rtt(
-                scenario, client_entity, '$server_ip', '$duration',
-                wait_launched=srv, wait_delay=1)
+
+    srv = ditg_packet_rate(
+            scenario, client_entity, server_entity,
+            '$server_ip', '$client_ip', 'UDP', packet_rate=1,
+            duration='$duration', meter='rttm',
+            wait_finished=synchro_ntp)
+    fping_measure_rtt(
+            scenario, client_entity, '$server_ip', '$duration',
+            wait_launched=srv, wait_delay=1,
+            wait_finished=synchro_ntp)
 
     return scenario
 
 
-def delay_sequential(server_entity, client_entity, server_ip, client_ip, duration, maximal_synchronization_offset, synchronization_timeout, scenario_name=SCENARIO_NAME):
+def delay_sequential(
+        server_entity, client_entity, server_ip, client_ip, duration,
+        maximal_synchronization_offset=None, synchronization_timeout=60, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('client_ip', client_ip)
     scenario.add_constant('duration', duration)
 
-    if maximal_synchronization_offset > 0.0:
+    synchro_ntp = None
+    if maximal_synchronization_offset is not None and maximal_synchronization_offset > 0.0:
         synchro_ntp = synchronization(
                 scenario, client_entity, 
                 maximal_synchronization_offset, 
                 synchronization_timeout)
-        ditg = ditg_packet_rate(
-                scenario, client_entity, server_entity,
-                '$server_ip', '$client_ip', 'UDP', packet_rate=1,
-                duration='$duration', meter='rttm',
-                wait_finished=synchro_ntp)
-        fping_measure_rtt(
-                scenario, client_entity, '$server_ip', '$duration',
-                wait_finished=ditg)
-    else:
-        ditg = ditg_packet_rate(
-                scenario, client_entity, server_entity,
-                '$server_ip', '$client_ip', 'UDP', packet_rate=1,
-                duration='$duration', meter='rttm')
-        fping_measure_rtt(
-                scenario, client_entity, '$server_ip', '$duration',
-                wait_finished=ditg)
+
+    ditg = ditg_packet_rate(
+            scenario, client_entity, server_entity,
+            '$server_ip', '$client_ip', 'UDP', packet_rate=1,
+            duration='$duration', meter='rttm',
+            wait_finished=synchro_ntp)
+    fping_measure_rtt(
+            scenario, client_entity, '$server_ip', '$duration',
+            wait_finished=ditg)
 
     return scenario
 
@@ -109,7 +101,8 @@ def delay_sequential(server_entity, client_entity, server_ip, client_ip, duratio
 def build(
         server_entity, client_entity, server_ip, client_ip,
         duration, simultaneous, 
-        maximal_synchronization_offset, synchronization_timeout,
+        maximal_synchronization_offset=None,
+        synchronization_timeout=60,
         post_processing_entity=None, 
         scenario_name=SCENARIO_NAME):
     scenario = (delay_simultaneous if simultaneous else delay_sequential)(

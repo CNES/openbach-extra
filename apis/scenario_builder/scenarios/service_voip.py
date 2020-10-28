@@ -41,22 +41,45 @@ NB : the entities logic is the following :
     - client transmits the voice content
 """
 
-def voip(server_entity, client_entity, server_ip, client_ip, server_port, duration, codec, maximal_synchronization_offset, synchronization_timeout, scenario_name=SCENARIO_NAME):
+def voip(
+        server_entity, client_entity,
+        server_ip, client_ip,
+        server_port, duration, codec,
+        maximal_synchronization_offset=None,
+        synchronization_timeout=60,
+        scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    if maximal_synchronization_offset > 0.0:
-        synchro_ntp = synchronization(scenario, client_entity, maximal_synchronization_offset, synchronization_timeout)
-        voip_qoe(scenario, server_entity, client_entity, client_ip, server_ip, server_port, duration, codec, wait_finished=synchro_ntp)
-    else:
-        voip_qoe(scenario, server_entity, client_entity, client_ip, server_ip, server_port, duration, codec)
+
+    synchro_ntp = None
+    if maximal_synchronization_offset is not None and maximal_synchronization_offset > 0.0:
+        synchro_ntp = synchronization(
+                scenario, client_entity,
+                maximal_synchronization_offset,
+                synchronization_timeout)
+
+    voip_qoe(
+            scenario, server_entity, client_entity,
+            client_ip, server_ip, server_port,
+            duration, codec, wait_finished=synchro_ntp)
+
     return scenario
 
 
 def build(
-        server_entity, client_entity, server_ip, client_ip, server_port, duration,
-        codec, maximal_synchronization_offset, synchronization_timeout,
-        post_processing_entity=None, scenario_name=SCENARIO_NAME):
+        server_entity, client_entity, server_ip,
+        client_ip, server_port, duration, codec,
+        maximal_synchronization_offset=None,
+        synchronization_timeout=60,
+        post_processing_entity=None,
+        scenario_name=SCENARIO_NAME):
 
-    scenario = voip(server_entity, client_entity, server_ip, client_ip, server_port, duration, codec, float(maximal_synchronization_offset), synchronization_timeout, scenario_name)
+    scenario = voip(
+            server_entity, client_entity,
+            server_ip, client_ip,
+            server_port, duration, codec,
+            maximal_synchronization_offset,
+            synchronization_timeout,
+            scenario_name)
 
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('voip_qoe_src'))

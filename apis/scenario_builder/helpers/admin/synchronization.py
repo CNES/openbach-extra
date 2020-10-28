@@ -28,15 +28,25 @@
 
 """Helpers of synchronization job"""
 
+from ..utils import filter_none
+
 
 def synchronization(
-        scenario, entity, synchro_offset, timeout,
+        scenario, entity, synchro_offset,
+        timeout, retries=None, sleep_time=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
+    parameters = filter_none(
+            synchro_offset=synchro_offset,
+            timeout=timeout,
+            retries=retries,
+            sleep_time=sleep_time,
+    )
+
     function = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    function.configure('synchronization', entity, synchro_offset=synchro_offset, timeout=timeout)
+    function.configure('synchronization', entity, **parameters)
 
     return [function]

@@ -42,6 +42,13 @@ from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_traffic_mix
 
 
+def _try_float(value):
+    if value is None or value == "None":
+        return None
+
+    return float(value)
+
+
 def _parse_waited_ids(ids):
     if ids == "None":
         return []
@@ -95,7 +102,7 @@ class _Validate(argparse.Action):
 
 
 class ValidateVoip(_Validate):
-    VALIDATOR = _Validate.VALIDATOR + (int, None)
+    VALIDATOR = _Validate.VALIDATOR + (int, None, _try_float, _try_float)
     TRAFFIC_NAME = 'voip'
     TRAFFIC_TYPE = service_traffic_mix.VoipArguments
 
@@ -132,12 +139,6 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--data-transfer', **_prepare_argparse_arguments(ValidateDataTransfer),
             help='add a data transfer traffic generator sub-scenario')
-    observer.add_scenario_argument(
-            '--maximal-synchronization-offset', default=0.0,
-            help='Maximal offset difference where we have to do a resynchronization between agents (float). If 0, no resynchronization')
-    observer.add_scenario_argument(
-            '--synchronization-timeout', default=30,
-            help='Maximal synchronization duration in seconds (float)')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
