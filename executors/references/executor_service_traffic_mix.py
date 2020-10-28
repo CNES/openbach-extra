@@ -133,6 +133,12 @@ def main(argv=None):
             '--data-transfer', **_prepare_argparse_arguments(ValidateDataTransfer),
             help='add a data transfer traffic generator sub-scenario')
     observer.add_scenario_argument(
+            '--maximal-synchronization-offset', default=0.0,
+            help='Maximal offset difference where we have to do a resynchronization between agents (float). If 0, no resynchronization')
+    observer.add_scenario_argument(
+            '--synchronization-timeout', default=30,
+            help='Maximal synchronization duration in seconds (float)')
+    observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
@@ -141,6 +147,8 @@ def main(argv=None):
 
     scenario = service_traffic_mix.build(
             args.traffic or [],
+            args.maximal_synchronization_offset,
+            args.synchronization_timeout,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
 

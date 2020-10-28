@@ -60,6 +60,12 @@ def main(argv=None):
             '--codec', default='G.711.1',
             help='codec used by the VoIP traffic. Possible values are: G.711.1, G.711.2, G.723.1, G.729.2, G.729.3. Default : G.711.1')
     observer.add_scenario_argument(
+            '--maximal-synchronization-offset', default=0.0,
+            help='Maximal offset difference where we have to do a resynchronization between agents (float). If 0, no resynchronization')
+    observer.add_scenario_argument(
+            '--synchronization-timeout', default=30,
+            help='Maximal synchronization duration in seconds (float)')
+    observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
@@ -73,6 +79,8 @@ def main(argv=None):
             args.server_port,
             args.duration,
             args.codec,
+            args.maximal_synchronization_offset,
+            args.synchronization_timeout,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
 

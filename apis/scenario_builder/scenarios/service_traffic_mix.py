@@ -85,7 +85,7 @@ def _voip_legend(openbach_function):
     return 'VoIP - {} {} {}'.format(destination, address, port)
 
 
-def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
+def traffic_mix(arguments, maximal_synchronization_offset, synchronization_timeout, post_processing_entity, scenario_name=SCENARIO_NAME):
     scenario_mix = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     list_wait_finished = []
     apache_servers = {}
@@ -135,7 +135,8 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
             scenario = service_voip.build(
                     args.destination, args.source, args.destination_ip,
                     args.source_ip, int(args.port),int(args.duration),
-                    args.codec, post_processing_entity, scenario_name)
+                    args.codec, maximal_synchronization_offset, synchronization_timeout,
+                    post_processing_entity, scenario_name)
 
         start_scenario = scenario_mix.add_function(
                 'start_scenario_instance',
@@ -155,8 +156,8 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
     return scenario_mix
 
 
-def build(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
-    scenario = traffic_mix(arguments, post_processing_entity, scenario_name)
+def build(arguments, maximal_synchronization_offset, synchronization_timeout, post_processing_entity, scenario_name=SCENARIO_NAME):
+    scenario = traffic_mix(arguments, maximal_synchronization_offset, synchronization_timeout, post_processing_entity, scenario_name)
 
     if post_processing_entity is not None:
         wait_finished = [function for function in scenario.openbach_functions if isinstance(function, (StartJobInstance, StartScenarioInstance))]

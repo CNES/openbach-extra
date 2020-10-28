@@ -31,6 +31,7 @@ from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.service.voip import voip_qoe
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
+from scenario_builder.helpers.admin.synchronization import synchronization
 
 SCENARIO_NAME = 'service_voip'
 SCENARIO_DESCRIPTION = """This scenario launches one voip transfer.
@@ -40,17 +41,22 @@ NB : the entities logic is the following :
     - client transmits the voice content
 """
 
-def voip(server_entity, client_entity, server_ip, client_ip, server_port, duration, codec, scenario_name=SCENARIO_NAME):
+def voip(server_entity, client_entity, server_ip, client_ip, server_port, duration, codec, maximal_synchronization_offset, synchronization_timeout, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    voip_qoe(scenario, server_entity, client_entity, client_ip, server_ip, server_port, duration, codec)
+    if maximal_synchronization_offset > 0.0:
+        synchro_ntp = synchronization(scenario, client_entity, maximal_synchronization_offset, synchronization_timeout)
+        voip_qoe(scenario, server_entity, client_entity, client_ip, server_ip, server_port, duration, codec, wait_finished=synchro_ntp)
+    else:
+        voip_qoe(scenario, server_entity, client_entity, client_ip, server_ip, server_port, duration, codec)
     return scenario
 
 
 def build(
         server_entity, client_entity, server_ip, client_ip, server_port, duration,
-        codec, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+        codec, maximal_synchronization_offset, synchronization_timeout,
+        post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
-    scenario = voip(server_entity, client_entity, server_ip, client_ip, server_port, duration, codec, scenario_name)
+    scenario = voip(server_entity, client_entity, server_ip, client_ip, server_port, duration, codec, float(maximal_synchronization_offset), synchronization_timeout, scenario_name)
 
     if post_processing_entity is not None:
         post_processed = list(scenario.extract_function_id('voip_qoe_src'))
