@@ -135,7 +135,7 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
             scenario = service_voip.build(
                     args.destination, args.source, args.destination_ip,
                     args.source_ip, args.port, args.duration,
-                    args.codec, synchro_offset, synchro_timeout,
+                    args.codec, args.synchro_offset, args.synchro_timeout,
                     post_processing_entity, scenario_name)
 
         start_scenario = scenario_mix.add_function(

@@ -108,7 +108,7 @@ def build(
     scenario = (delay_simultaneous if simultaneous else delay_sequential)(
             server_entity, client_entity,
             server_ip, client_ip, duration, 
-            float(maximal_synchronization_offset), synchronization_timeout,
+            maximal_synchronization_offset, synchronization_timeout,
             scenario_name)
 
     if post_processing_entity is not None:

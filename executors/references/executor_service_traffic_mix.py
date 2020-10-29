@@ -148,8 +148,6 @@ def main(argv=None):
 
     scenario = service_traffic_mix.build(
             args.traffic or [],
-            args.maximal_synchronization_offset,
-            args.synchronization_timeout,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
 
