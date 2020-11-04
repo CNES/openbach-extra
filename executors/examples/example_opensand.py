@@ -189,6 +189,25 @@ def example_opensand(satellite, gateways, gateways_phy, terminals, duration=0, c
     return scenario
 
 
+def send_files_to_controller(pusher, folder, prefix='opensand'):
+    config_files = [
+            p.relative_to(folder)
+            for extension in ('conf', 'txt', 'csv', 'input')
+            for p in folder.rglob('*.' + extension)
+    ]
+
+    for config_file in config_files:
+        with folder.joinpath(config_file).open() as local_file:
+            pusher.args.local_file = local_file
+            pusher.args.remote_path = (prefix / config_file).as_posix()
+            pusher.execute(False)
+        # If we don't use this, the controller has a tendency to close the
+        # connection after some files, so slowing things down the dirty way.
+        time.sleep(0.1)
+
+    return config_files
+
+
 def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
@@ -218,32 +237,25 @@ def main(argv=None):
             help='Path to a configuration folder that should be '
             'dispatched on agents before the simulation.')
     observer.add_scenario_argument(
+            '--extra-configuration-folder', '--extra-conf', '-e',
+            required=False, nargs=2, action='append', default=[], metavar=('PATH', 'ENTITY'),
+            help='Path to an extra configuration folder that should be dispatched '
+            'to the specified OpenBACH entity before the simulation.')
+    observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
     patch_print_help(observer.parser)
     args = observer.parse(argv, SCENARIO_NAME)
 
-    config_files = None
-    configuration_folder = args.configuration_folder
-    if configuration_folder:
-        config_files = [
-                p.relative_to(configuration_folder)
-                for extension in ('conf', 'txt', 'csv', 'input')
-                for p in configuration_folder.rglob('*.' + extension)
-        ]
-
-        #Store files on the controller
-        pusher = observer._share_state(PushFile)
-        pusher.args.keep = True
-        for config_file in config_files:
-            with configuration_folder.joinpath(config_file).open() as local_file:
-                pusher.args.local_file = local_file
-                pusher.args.remote_path = config_file.as_posix()
-                pusher.execute(False)
-            # If we don't use this, the controller has a tendency to close the
-            # connection after some files, so slowing things down the dirty way.
-            time.sleep(0.1)
+    pusher = observer._share_state(PushFile)
+    pusher.args.keep = True
+    config_files = {
+            entity: send_files_to_controller(pusher, Path(folder), 'opensand_' + entity)
+            for folder, entity in args.extra_configuration_folder
+    }
+    if args.configuration_folder:
+        config_files[None] = send_files_to_controller(pusher, args.configuration_folder)
 
     scenario = example_opensand(
             args.sat,

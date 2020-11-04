@@ -40,15 +40,27 @@ SCENARIO_DESCRIPTION = """This opensand scenario allows to:
 """
 
 
-def _build_remote_and_users(conf, entity_name, prefix='/etc/opensand/'):
-    common_files = conf[None]
-    entity_files = conf[entity_name]
-    local_files = [f.as_posix() for f in chain(common_files, entity_files)]
-    remote_files = [(prefix / f).as_posix() for f in common_files]
-    remote_files.extend((prefix / f.relative_to(entity_name)).as_posix() for f in entity_files)
-    users = ['opensand'] * len(local_files)
-    groups = ['root'] * len(local_files)
-    return remote_files, local_files, users, groups
+def _configure_push_file(scenario, entity_name, entity_type, conf, files, dest_dir='/etc/opensand/'):
+    try:
+        entity_files = files[entity_name]
+    except KeyError:
+        common_files = conf[None]
+        entity_files = conf[entity_type]
+        local_files = [('opensand' / f).as_posix() for f in chain(common_files, entity_files)]
+        remote_files = [(prefix / f).as_posix() for f in common_files]
+        remote_files.extend((prefix / f.relative_to(entity_name)).as_posix() for f in entity_files)
+    else:
+        storage_folder = 'opensand_' + entity_name
+        local_files = [(storage_folder / f).as_posix() for f in entity_files]
+        remote_files = [(dest_dir / f).as_posix() for f in entity_files]
+
+    files_count = len(local_files)
+    assert len(remote_files) == files_count
+
+    if files_count:
+        push_file(
+                scenario, entity_name, remote_files, local_files,
+                ['opensand'] * files_count, ['root'] * files_count)
 
 
 def opensand_satcom_conf(satellite_entity, gw_entities, st_entities, configuration_files, scenario_name=SCENARIO_NAME):
@@ -60,22 +72,18 @@ def opensand_satcom_conf(satellite_entity, gw_entities, st_entities, configurati
     }
     scenario = Scenario(scenario_name + '_files', SCENARIO_DESCRIPTION)
 
-    for config_file in configuration_files:
+    for config_file in configuration_files.get(None, []):
         entity = config_file.parts[0]
 
         if entity not in configuration_per_entity:
             entity = None
         configuration_per_entity[entity].append(config_file)
 
-    push_file(scenario, satellite_entity, *_build_remote_and_users(configuration_per_entity, 'sat'))
-
-    files = _build_remote_and_users(configuration_per_entity, 'gw')
+    _configure_push_file(scenario, satellite_entity, 'sat', configuration_per_entity, configuration_files)
     for gateway in gw_entities:
-        push_file(scenario, gateway, *files)
-
-    files = _build_remote_and_users(configuration_per_entity, 'st')
+        _configure_push_file(scenario, gateway, 'gw', configuration_per_entity, configuration_files)
     for terminal in st_entities:
-        push_file(scenario, terminal, *files)
+        _configure_push_file(scenario, terminal, 'st', configuration_per_entity, configuration_files)
 
     return scenario
 

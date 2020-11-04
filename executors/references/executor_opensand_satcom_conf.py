@@ -37,13 +37,36 @@ from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import opensand_satcom_conf
 
 
+def send_files_to_controller(pusher, folder, prefix='opensand'):
+    config_files = [
+            p.relative_to(folder)
+            for extension in ('conf', 'txt', 'csv', 'input')
+            for p in folder.rglob('*.' + extension)
+    ]
+
+    for config_file in config_files:
+        with folder.joinpath(config_file).open() as local_file:
+            pusher.args.local_file = local_file
+            pusher.args.remote_path = (prefix / config_file).as_posix()
+            pusher.execute(False)
+        # If we don't use this, the controller has a tendency to close the
+        # connection after some files, so slowing things down the dirty way.
+        time.sleep(0.1)
+
+    return config_files
+
+
 def main(argv=None):
     observer = ScenarioObserver()
+    observer.add_scenario_argument('satellite', help='The entity running the satellite of the platform.')
     observer.add_scenario_argument(
-            'configuration_folder', type=Path,
+            '--configuration-folder', '-c', type=Path, metavar='FOLDER',
             help='Path to the configuration folder that should '
             'be dispatched on agents before the simulation.')
-    observer.add_scenario_argument('satellite', help='The entity running the satellite of the platform.')
+    observer.add_scenario_argument(
+            '--extra-configuration-folder', '-e', nargs=2, action='append', default=[],
+            metavar=('FOLDER', 'ENTITY'), help='Path to an extra configuration folder '
+            'that should be dispatched to the specified entity before the simulation.')
     observer.add_scenario_argument(
             '--gateway', '-gw', action='append', default=[],
             help='The entity running a gateway in the platform. Can be supplied several times.')
@@ -53,23 +76,18 @@ def main(argv=None):
 
     args = observer.parse(argv, opensand_satcom_conf.SCENARIO_NAME)
 
-    config_files = [
-            p.relative_to(args.configuration_folder)
-            for extension in ('conf', 'txt', 'csv', 'input')
-            for p in args.configuration_folder.rglob('*.' + extension)
-    ]
+    if not args.configuration_folder and not args.extra_configuration_folder:
+        observer.parser.error('one of the arguments --configuration-folder --extra-configuration-folder is required')
 
     #Store files on the controller
     pusher = observer._share_state(PushFile)
     pusher.args.keep = True
-    for config_file in config_files:
-        with args.configuration_folder.joinpath(config_file).open() as local_file:
-            pusher.args.local_file = local_file
-            pusher.args.remote_path = config_file.as_posix()
-            pusher.execute(False)
-        # If we don't use this, the controller has a tendency to close the
-        # connection after some files, so slowing things down the dirty way.
-        time.sleep(0.1)
+    config_files = {
+            entity: send_files_to_controller(pusher, Path(folder), 'opensand_' + entity)
+            for folder, entity in args.extra_configuration_folder
+    }
+    if args.configuration_folder:
+        config_files[None] = send_files_to_controller(pusher, args.configuration_folder)
 
     scenario = opensand_satcom_conf.build(args.satellite, args.gateway, args.terminal, config_files)
     observer.launch_and_wait(scenario)
