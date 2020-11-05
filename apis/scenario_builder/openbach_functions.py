@@ -417,3 +417,35 @@ def safe_indexor(reference, lookup):
             yield reference.index(element)
         except ValueError:
             pass
+
+class Reboot(OpenBachFunction):
+    """Representation of the reboot openbach function."""
+
+    def __init__(self, launched, finished, delay, label):
+        super().__init__(launched, finished, delay, label)
+        self.arguments = None
+
+    def configure(self, entity_name, kernel):
+        """Define this openbach function with the mandatory values:
+         - entity_name: name of the entity who will reboot
+         - kernel: kernel name on which we want to reboot
+        """
+        self.arguments = {
+                'entity_name': entity_name,
+                'kernel': kernel,
+        }
+
+    def build(self, functions, function_id)
+        """Construct a dictionary representing this function.
+
+        This dictionary is suitable to be included in the
+        `openbach_functions` array of the associated scenario.
+        """
+
+        if self.arguments is None:
+            raise ImproperlyConfiguredFunction('reboot')
+
+        context = super().build(functions, function_id)
+        context['reboot'] = self.arguments.copy()
+        return context
+
