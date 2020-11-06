@@ -177,7 +177,7 @@ class CollectorConnection:
         """Delete data in InfluxDB that matches the given constraints"""
         self.influxdb.remove_statistics(
                 job_name, scenario_instance_id, agent_name,
-                job_instance_id, suffix, condition)
+                job_instance_id, suffix, condition, timestamps)
         self.elasticsearch.remove_logs(
                 job_name, scenario_instance_id, agent_name,
                 job_instance_id, timestamps)

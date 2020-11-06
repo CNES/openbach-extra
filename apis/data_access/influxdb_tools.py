@@ -478,11 +478,14 @@ class InfluxDBConnection(InfluxDBCommunicator):
 
     def raw_statistics(
             self, job=None, scenario=None, agent=None, job_instance=None,
-            suffix=None, fields=None, condition=None):
+            suffix=None, fields=None, condition=None, timestamps=None):
         """Fetch data from InfluxDB that correspond to the given constraints
         and generate values in series.
         """
-        condition = tags_to_condition(scenario, agent, job_instance, suffix, condition)
+        if timestamps is not None:
+            timestamp_condition = ConditionTimestamp.from_timestamps(timestamps)
+            condition = timestamp_condition if condition is None else ConditionAnd(condition, timestamp_condition)
+        _condition = tags_to_condition(scenario, agent, job_instance, suffix, condition)
         response = self.sql_query(select_query(job, fields, condition))
         yield from parse_influx(response)
 
@@ -520,8 +523,11 @@ class InfluxDBConnection(InfluxDBCommunicator):
 
     def remove_statistics(
             self, job=None, scenario=None, agent=None,
-            job_instance=None, suffix=None, condition=None):
+            job_instance=None, suffix=None, condition=None, timestamps=None):
         """Delete data in InfluxDB that matches the given constraints"""
+        if timestamps is not None:
+            timestamp_condition = ConditionTimestamp.from_timestamps(timestamps)
+            condition = timestamp_condition if condition is None else ConditionAnd(condition, timestamp_condition)
         if condition is None or condition.is_timestamp:
             self.sql_query(delete_query(job, scenario, agent, job_instance, suffix, condition))
             return
