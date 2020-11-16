@@ -38,6 +38,7 @@ __credits__ = '''Contributors:
 
 
 from auditorium_scripts.frontend import FrontendBase, pretty_print
+from functools import partial
 
 
 class Reboot(FrontendBase):
