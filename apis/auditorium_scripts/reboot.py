@@ -55,7 +55,7 @@ class Reboot(FrontendBase):
         if kernel is not None:
             action = partial(action, kernel=kernel)
 
-        return action('POST', 'reboot', agent_ip=agent_address,
+        return action('POST', 'reboot', agent_ip=agent,
                 show_response_content=show_response_content)
 
 if __name__ == '__main__':
