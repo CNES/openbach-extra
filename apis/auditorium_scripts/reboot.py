@@ -45,8 +45,10 @@ class Reboot(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Reboot')
         self.parser.add_argument('agent_address', help='IP address of the agent')
-        group = self.parser.add_mutually_exclusive_group(required=False)
-        group.add_argument('--kernel', help='kernel name on which we will reboot')
+        self.parser.add_argument(
+                '--kernel',
+                help='kernel name on which we will reboot; '
+                'leave empty to reboot on the default kernel')
 
     def execute(self, show_response_content=True):
         agent = self.args.agent_address
@@ -58,6 +60,7 @@ class Reboot(FrontendBase):
 
         return action('POST', 'reboot', agent_ip=agent,
                 show_response_content=show_response_content)
+
 
 if __name__ == '__main__':
     Reboot.autorun()
