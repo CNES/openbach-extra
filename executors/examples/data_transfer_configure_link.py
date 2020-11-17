@@ -33,16 +33,16 @@ The test reports
  - The evolution of the received goodput
  - The time needed to receive 10%, 50% and 100% of the file
 
-+-----------+     +-----------------------+     +-----------+
-| data      |<--->| delay/loss/bandwidth  |<--->| data      |
-| server    |     | limitation            |     | client    |
-+-----------+     +-----------------------+     +-----------+
-|  server_ip|     |                       |     |client_ip  |
-|           |     |              midbox_if|     |           |
-+-----------+     +-----------------------+     +-----------+
-| entity:   |     | entity:               |     | entity:   |
-|  server   |     |  midbox (middle-box)  |     |  client   |
-+-----------+     +-----------------------+     +-----------+
++-----------+     +-------------------------+     +-----------+
+| data      |     | delay/loss/bandwidth    |<--->| data      |
+| server    |     | limitation              |     | client    |
++-----------+     +-------------------------+     +-----------+
+|           |     |                         |     |client_ip  |
+|           |<--->|             midbox_iface|<--->|           |
++-----------+     +-------------------------+     +-----------+
+| entity:   |     | entity:                 |     | entity:   |
+|  server   |     |  midbox (middle-box)    |     |  client   |
++-----------+     +-------------------------+     +-----------+
 
 OpenBACH parameters:
  - entity_pp : entity where the post-processing will be performed
@@ -92,15 +92,14 @@ Path characteristics of reference communication systems:
       https://www.tesa.prd.fr/documents/26/quic_1570652837.pdf
 
 Other parameters:
- - server_ip : ip address of the server
  - client_ip : ip address of the client
- - midbox_if: Interface name on which the delay and/or bandwidth
-     limitation is introduced
+ - midbox_if: Interface name on which the delay and/or bandwidth limitation 
+     and/or packet losses is introduced (interface connected to the client)
 
 Step-by-step description of the scenario:
  - clean-midbox-if : clean the middle box interface
- - add-limit-if : add delay and/or bandwidth limitations in both
-     directions on midbox-if                                      
+ - add-limit-if : add delay and/or bandwidth limitations and/or packet losses
+      in both directions on midbox-if                                      
  - qos-eval : run QoS evaluation in both direction
  - download : start the download of file_size
  - clean-midbox-if : clean the middle box interface
@@ -143,22 +142,22 @@ def main(argv=None):
             help='Name of the entity where the post-processing jobs should run')
     observer.add_scenario_argument(
             '--file-size', '--size', '-f', required=True,
-            help='Size of the file transfer')
+            help='Size of the file transfer (bytes expressed as [value][M|K|G])')
     observer.add_scenario_argument(
             '--duration', '-l', default=10, type=int,
-            help='Duration of the file transfer')
+            help='Duration of the file transfer (seconds)')
     observer.add_scenario_argument(
             '--bandwidth-server-to-client', '-B', required=True,
-            help='Bandwidth allocated for the server to answer the client')
+            help='Bandwidth allocated for the server to answer the client (Mbps|Kbps expressed as [value][M|K])')
     observer.add_scenario_argument(
             '--bandwidth-client-to-server', '-b', required=True,
-            help='Bandwidth allocated for the client to ask the server')
+            help='Bandwidth allocated for the client to ask the server (Mbps|Kbps expressed as [value][M|K])')
     observer.add_scenario_argument(
             '--delay-server-to-client', '-D', required=True, type=int,
-            help='Delay for a packet to go from the server to the client')
+            help='Delay for a packet to go from the server to the client (ms)')
     observer.add_scenario_argument(
             '--delay-client-to-server', '-d', required=True, type=int,
-            help='Delay for a packet to go from the client to the server')
+            help='Delay for a packet to go from the client to the server (ms)')
     observer.add_scenario_argument(
             '--loss-model-server-to-client', required=True, choices=['random', 'state', 'gemodel'],
             help='Packet loss model applied in the server to the client direction')
@@ -167,13 +166,10 @@ def main(argv=None):
             help='Packet loss model applied in the client to the server direction')
     observer.add_scenario_argument(
             '--loss-value-server-to-client', required=True, type=float, nargs='+',
-            help='Packet loss value applied in the server to the client direction')
+            help='Packet loss percentage(s) applied in the server to the client direction')
     observer.add_scenario_argument(
             '--loss-value-client-to-server', required=True, type=float, nargs='+',
-            help='Packet loss value applied in client to the server direction')
-    observer.add_scenario_argument(
-            '--server-ip', '-I', required=True,
-            help='IP of the server')
+            help='Packet loss percentage(s) applied in the client to the server direction')
     observer.add_scenario_argument(
             '--client-ip', '-i', required=True,
             help='IP of the client')
@@ -208,10 +204,10 @@ def main(argv=None):
             args.middlebox_interfaces,
             'ingress',
             'apply',
-            args.bandwidth_server_to_client,
-            args.delay_server_to_client,
-            loss_model=args.loss_model_server_to_client,
-            loss_model_params=args.loss_value_server_to_client)
+            args.bandwidth_client_to_server,
+            args.delay_client_to_server,
+            loss_model=args.loss_model_client_to_server,
+            loss_model_params=args.loss_value_client_to_server)
     observer.launch_and_wait(scenario)
 
     scenario = network_configure_link.build(
@@ -219,18 +215,18 @@ def main(argv=None):
             args.middlebox_interfaces,
             'egress',
             'apply',
-            args.bandwidth_client_to_server,
-            args.delay_client_to_server,
-            loss_model=args.loss_model_client_to_server,
-            loss_model_params=args.loss_value_client_to_server)
+            args.bandwidth_server_to_client,
+            args.delay_server_to_client,
+            loss_model=args.loss_model_server_to_client,
+            loss_model_params=args.loss_value_server_to_client)
     observer.launch_and_wait(scenario)
 
     # Test a file transfer using prebuilt scenario
-    print('Download', args.file_size, 'MB')
+    print('Download', args.file_size, 'Bytes')
     scenario = service_data_transfer.build(
-            args.server,
             args.client,
-            args.server_ip,
+            args.server,
+            args.client_ip,
             args.port,
             args.duration,
             args.file_size,
