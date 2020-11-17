@@ -49,6 +49,7 @@ __all__ = [
 
 
 import re
+import sys
 import enum
 import itertools
 from collections import defaultdict
@@ -372,7 +373,10 @@ def line_protocol(job_name, scenario_id, owner_id, agent_name, job_id, suffix, s
 
     def build_lines_of_data(statistics_chunck):
         for timestamp, data in statistics_chunck:
-            fields = ','.join(escape_field(*stat) for stat in data.items())
+            fields = ','.join(
+                    escape_field(name, value)
+                    for name, value in data.items()
+                    if value or value == 0)
             yield '{} {} {}'.format(header, fields, timestamp)
 
     stats_iterator = iter(statistics.items())
@@ -557,7 +561,9 @@ class InfluxDBConnection(InfluxDBCommunicator):
                     job_name, scenario_id, owner_id, agent_name,
                     job_id, suffix[0], statistics.dated_data)
             for chunck in data_stream:
-                self.data_write(chunck)
+                response = self.data_write(chunck)
+                if __debug__ and response.content:
+                    print(response.content, file=sys.stderr)
 
     def get_field_keys(self):
         """Get the names of the fields from InfluxDB"""

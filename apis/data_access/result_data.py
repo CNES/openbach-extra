@@ -201,6 +201,32 @@ class Agent:
         }
 
 
+class _StatisticsProxy:
+    def __init__(self, statistics_data):
+        self.__data = statistics_data
+
+    def __call__(self, suffix=None):
+        try:
+            return self.statistics_data[(suffix,)]
+        except KeyError:
+            raise AttributeError('\'Job\' object has no statistics attribute for the suffix {}'.format(suffix)) from None
+
+    def __getattr__(self, name):
+        if name.startswith(self.__class__.__name__ + '__'):
+            return super().__getattr__(name)
+        return getattr(self(), name)
+
+    def __setattr__(self, name, value):
+        if name.startswith(self.__class__.__name__ + '__'):
+            return super().__setattr__(name, value)
+        return setattr(self(), name, value)
+
+    def __delattr__(self, name):
+        if name.startswith(self.__class__.__name__ + '__'):
+            return super().__delattr__(name)
+        return delattr(self(), name, value)
+
+
 class Job:
     """Container of data for job instances.
 
@@ -231,11 +257,12 @@ class Job:
 
     @property
     def statistics(self):
-        """Default statistics (without suffix)"""
-        try:
-            return self.statistics_data[(None,)]
-        except KeyError:
-            raise AttributeError('\'Job\' object has no attribute statistics') from None
+        """Wraps data into a proxy to ease exploration"""
+        return _StatisticsProxy(self.statistics_data)
+
+    @property
+    def suffixes(self):
+        yield from (suffix for suffix, in self.statistics_data)
 
     @property
     def stats(self):
