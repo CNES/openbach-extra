@@ -34,7 +34,7 @@ The test reports
  - The time needed to receive 10%, 50% and 100% of the file
 
 +-----------+     +-----------------------+     +-----------+
-| data      |<--->| delay/bandwidth       |<--->| data      |
+| data      |<--->| delay/loss/bandwidth  |<--->| data      |
 | server    |     | limitation            |     | client    |
 +-----------+     +-----------------------+     +-----------+
 |  server_ip|     |                       |     |client_ip  |
@@ -59,6 +59,37 @@ Specific scenario parameters:
      server to client direction
  - delay_client_to_server : the delay limitation in the
      client to server direction
+ - loss_model_server_to_client : the loss model in the
+     server to client direction
+ - loss_model_client_to_server : the loss model in the
+     client to server direction
+ - loss_value_server_to_client : the loss value in the
+     server to client direction
+ - loss_value_client_to_server : the loss value in the
+     client to server direction
+
+Path characteristics of reference communication systems:
+ # WLAN :
+   - Bandwidth : 20-30 Mbps
+   - Delay : 20-35 ms
+   - Loss model : random
+   - Loss value : 1-2 %
+ # 3G :
+   - Bandwidth : 3-5 Mbps
+   - Delay : 65-75 ms
+   - Loss model : random
+   - Loss value : 0 %
+ # Satellite :
+   - Bandwidth : 10 Mbps
+   - Delay : 250 ms
+   - Loss model : gemodel
+   - Loss value :  1.7% 93.5% 6.5% 98.3%
+
+--> Path characteristics in accordance with the following sources :
+    - Is Multi-Path Transport Suitable for Latency Sensitive Traffic?
+      COMNET. 105. 10.1016/j.comnet.2016.05.008.
+    - QUIC: Opportunities and threats in SATCOM
+      https://www.tesa.prd.fr/documents/26/quic_1570652837.pdf
 
 Other parameters:
  - server_ip : ip address of the server
@@ -129,6 +160,18 @@ def main(argv=None):
             '--delay-client-to-server', '-d', required=True, type=int,
             help='Delay for a packet to go from the client to the server')
     observer.add_scenario_argument(
+            '--loss-model-server-to-client', required=True, choices=['random', 'state', 'gemodel'],
+            help='Packet loss model applied in the server to the client direction')
+    observer.add_scenario_argument(
+            '--loss-model-client-to-server', required=True, choices=['random', 'state', 'gemodel'],
+            help='Packet loss model applied in the client to the server direction')
+    observer.add_scenario_argument(
+            '--loss-value-server-to-client', required=True, type=float, nargs='+',
+            help='Packet loss value applied in the server to the client direction')
+    observer.add_scenario_argument(
+            '--loss-value-client-to-server', required=True, type=float, nargs='+',
+            help='Packet loss value applied in client to the server direction')
+    observer.add_scenario_argument(
             '--server-ip', '-I', required=True,
             help='IP of the server')
     observer.add_scenario_argument(
@@ -149,18 +192,14 @@ def main(argv=None):
             args.entity,
             args.middlebox_interfaces,
             'ingress',
-            'clear',
-            args.bandwidth_server_to_client,
-            args.delay_server_to_client)
+            'clear')
     observer.launch_and_wait(scenario)
 
     scenario = network_configure_link.build(
             args.entity,
             args.middlebox_interfaces,
             'egress',
-            'clear',
-            args.bandwidth_client_to_server,
-            args.delay_client_to_server)
+            'clear')
     observer.launch_and_wait(scenario)
 
     print('Setting interfaces')
@@ -170,7 +209,9 @@ def main(argv=None):
             'ingress',
             'apply',
             args.bandwidth_server_to_client,
-            args.delay_server_to_client)
+            args.delay_server_to_client,
+            loss_model=args.loss_model_server_to_client,
+            loss_model_params=args.loss_value_server_to_client)
     observer.launch_and_wait(scenario)
 
     scenario = network_configure_link.build(
@@ -179,7 +220,9 @@ def main(argv=None):
             'egress',
             'apply',
             args.bandwidth_client_to_server,
-            args.delay_client_to_server)
+            args.delay_client_to_server,
+            loss_model=args.loss_model_client_to_server,
+            loss_model_params=args.loss_value_client_to_server)
     observer.launch_and_wait(scenario)
 
     # Test a file transfer using prebuilt scenario
@@ -220,18 +263,14 @@ def main(argv=None):
             args.entity,
             args.middlebox_interfaces,
             'ingress',
-            'clear',
-            args.bandwidth_server_to_client,
-            args.delay_server_to_client)
+            'clear')
     observer.launch_and_wait(scenario)
 
     scenario = network_configure_link.build(
             args.entity,
             args.middlebox_interfaces,
             'egress',
-            'clear',
-            args.bandwidth_client_to_server,
-            args.delay_client_to_server)
+            'clear')
     observer.launch_and_wait(scenario)
 
 
