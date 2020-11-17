@@ -435,7 +435,7 @@ class Reboot(OpenBachFunction):
                 'kernel': kernel,
         }
 
-    def build(self, functions, function_id)
+    def build(self, functions, function_id):
         """Construct a dictionary representing this function.
 
         This dictionary is suitable to be included in the
