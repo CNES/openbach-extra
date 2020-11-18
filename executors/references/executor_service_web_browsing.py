@@ -87,7 +87,7 @@ def main(argv=None):
             not args.no_compression,
             args.proxy_address,
             args.proxy_port,
-            args.urls,
+            args.url,
             args.launch_server,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
