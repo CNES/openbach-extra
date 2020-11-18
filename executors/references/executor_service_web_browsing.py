@@ -64,9 +64,9 @@ def main(argv=None):
             '--proxy-port', type=int,
             help='Set the proxy port (also needs a proxy address)')
     observer.add_scenario_argument(
-            '--urls', type=str, nargs='+',
-            help='URLs to fetch (uses config.yaml if not set)'
-            'e.g. : --urls "https://XXX" "https://YYY" ')
+            '--url', type=str, action='append',
+            help='URL to fetch (uses config.yaml if not set). '
+            'Can be used multiple times to fetch several URLs.')
     observer.add_scenario_argument(
             '--without-apache', dest='launch_server', action='store_false',
             help='Disable the associated server. By default, an apache2 HTTP server '
