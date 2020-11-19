@@ -44,21 +44,21 @@ SCENARIO_NAME="""reboot_scenario"""
 def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument('--entity', required=True, help='Name of the entity we want to reboot')
-    observer.add_scenario_argument('--server_ip', required=True, help='Destination of fping (IP address)')
+    observer.add_scenario_argument('--ping-destination', default='127.0.0.1', help='Destination of fping (IP address)')
     observer.add_scenario_argument('--kernel', default=None, help='Kernel on which we want to reboot. No kernel: reboot on the default kernel')
 
     args = observer.parse(argv, SCENARIO_NAME)
 
     scenario_global = Scenario(args.scenario_name, SCENARIO_DESCRIPTION)
 
-    first_fping = fping_measure_rtt(scenario_global, args.entity, args.server_ip, duration=5)
+    first_fping = fping_measure_rtt(scenario_global, args.entity, args.ping_destination, duration=5)
 
     start_reboot_sub_scenario = scenario_global.add_function('start_scenario_instance', wait_finished=first_fping)
     sub_scenario = Scenario("reboot_sub_scenario", "Scenario with reboot function")
     reboot(sub_scenario, args.entity, args.kernel)
     start_reboot_sub_scenario.configure(sub_scenario)
 
-    second_fping = fping_measure_rtt(scenario_global, args.entity, args.server_ip, duration=5, wait_finished=[start_reboot_sub_scenario])
+    second_fping = fping_measure_rtt(scenario_global, args.entity, args.ping_destination, duration=5, wait_finished=[start_reboot_sub_scenario])
 
     observer.launch_and_wait(scenario_global)
 
