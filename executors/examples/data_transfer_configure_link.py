@@ -73,17 +73,23 @@ Path characteristics of reference communication systems:
    - Bandwidth : 20-30 Mbps
    - Delay : 20-35 ms
    - Loss model : random
-   - Loss value : 1-2 %
+   - Loss value (pourcentage of losses): 1-2 %
  # 3G :
    - Bandwidth : 3-5 Mbps
    - Delay : 65-75 ms
    - Loss model : random
-   - Loss value : 0 %
- # Satellite :
+   - Loss value (pourcentage of losses): 0 %
+ # Satellite End-to-End (including congestion losses):
    - Bandwidth : 10 Mbps
    - Delay : 250 ms
    - Loss model : gemodel
-   - Loss value :  1.7% 93.5% 6.5% 98.3%
+   - Loss value (Gilert-Elliot transition probabilities): p r 1-h 1-k
+        - p: 0.017 (probability to move from good to bad state)
+        - r: 0.935 (probability to move from bad to good state)
+        - 1-h: 100 (loss probability in bad state)
+        - 1-k: 0 (loss probability in good state) 
+    (http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.303.7914&rep=rep1&type=pdf)
+    (see tc_configure_link job help files for more information)
 
 --> Path characteristics in accordance with the following sources :
     - Is Multi-Path Transport Suitable for Latency Sensitive Traffic?
@@ -166,10 +172,14 @@ def main(argv=None):
             help='Packet loss model applied in the client to the server direction')
     observer.add_scenario_argument(
             '--loss-value-server-to-client', required=True, type=float, nargs='+',
-            help='Packet loss percentage(s) applied in the server to the client direction')
+            help='Loss value applied in the server to the client direction'
+            '(pourcentage or Gilbert-Elliot transition probabilities)'
+            '(see tc_configure_link job help files for more information)')
     observer.add_scenario_argument(
             '--loss-value-client-to-server', required=True, type=float, nargs='+',
-            help='Packet loss percentage(s) applied in the client to the server direction')
+            help='Loss value applied in the client to the server direction'
+            '(pourcentage or Gilbert-Elliot transition probabilities)'
+            '(see tc_configure_link job help files for more information)')
     observer.add_scenario_argument(
             '--client-ip', '-i', required=True,
             help='IP of the client')
