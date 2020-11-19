@@ -30,6 +30,36 @@
 """This executor builds and launches the *network_configure_link* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
 It permits to configure latency, rate on interfaces with tc component.
+
+Path characteristics of reference communication systems:
+ # WLAN :
+   - Bandwidth : 20-30 Mbps
+   - Delay : 20-35 ms
+   - Loss model : random
+   - Loss value (pourcentage of losses): 1-2 %
+ # 3G :
+   - Bandwidth : 3-5 Mbps
+   - Delay : 65-75 ms
+   - Loss model : random
+   - Loss value (pourcentage of losses): 0 %
+ # Satellite End-to-End (including congestion losses):
+   - Bandwidth : 10 Mbps
+   - Delay : 250 ms
+   - Loss model : gemodel
+   - Loss value (Gilert-Elliot transition probabilities): p r 1-h 1-k
+        - p: 0.017 (probability to move from good to bad state)
+        - r: 0.935 (probability to move from bad to good state)
+        - 1-h: 100 (loss probability in bad state)
+        - 1-k: 0 (loss probability in good state) 
+    (http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.303.7914&rep=rep1&type=pdf)
+    (see tc_configure_link job help files for more information)
+
+--> Path characteristics in accordance with the following sources :
+    - Is Multi-Path Transport Suitable for Latency Sensitive Traffic?
+      COMNET. 105. 10.1016/j.comnet.2016.05.008.
+    - QUIC: Opportunities and threats in SATCOM
+      https://www.tesa.prd.fr/documents/26/quic_1570652837.pdf
+      
 """
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
