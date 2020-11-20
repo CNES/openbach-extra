@@ -39,9 +39,8 @@ import time
 import json
 import pprint
 import warnings
-import datetime
-from sys import exit, stderr
 from pathlib import Path
+from sys import exit, stderr
 from contextlib import suppress
 
 import requests
