@@ -69,25 +69,25 @@ def _prepare_columns(df, columns):
     return df
 
 
-def influx_to_pandas(response):
+def influx_to_pandas(response, query):
     try:
         results = response['results']
     except KeyError:
-        warnings.warn('A query returned no result, ignoring')
+        warnings.warn('The query \'{}\' returned no result, ignoring'.format(query))
         return
 
     for result in results:
         try:
             series = result['series']
         except KeyError:
-            warnings.warn('A query result contained no time series, ignoring')
+            warnings.warn('The query \'{}\' result contained no time series, ignoring'.format(query))
             continue
 
         for serie in series:
             try:
                 yield pd.DataFrame(serie['values'], columns=serie['columns'])
             except KeyError:
-                warnings.warn('A query returned time series with no data, ignoring')
+                warnings.warn('The query \'{}\' returned time series with no data, ignoring'.format(query))
                 pass
 
 
@@ -143,7 +143,7 @@ class Statistics(InfluxDBCommunicator):
             raise TypeError('origin should be None or a timestamp in milliseconds')
         self._origin = value
 
-    def _raw_influx_data(
+    def _raw_influx_query(
             self, job=None, scenario=None, agent=None, job_instances=(),
             suffix=None, fields=None, condition=None):
         conditions = tags_to_condition(scenario, agent, None, suffix, condition)
@@ -160,12 +160,12 @@ class Statistics(InfluxDBCommunicator):
             _condition = ConditionOr(*instances)
         else:
             _condition = ConditionAnd(conditions, ConditionOr(*instances))
-        return self.sql_query(select_query(job, fields, _condition))
+        return select_query(job, fields, _condition)
 
-    def _parse_dataframes(self, response):
+    def _parse_dataframes(self, response, query):
         offset = self.origin
         names = ['job', 'scenario', 'agent', 'suffix', 'statistic']
-        for df in influx_to_pandas(response):
+        for df in influx_to_pandas(response, query):
             converters = dict.fromkeys(df.columns, partial(pd.to_numeric, errors='coerce'))
             converters.pop('@owner_scenario_instance_id')
             converters.pop('@suffix', None)
@@ -194,14 +194,16 @@ class Statistics(InfluxDBCommunicator):
     def fetch(
             self, job=None, scenario=None, agent=None, job_instances=(),
             suffix=None, fields=None, condition=None):
-        data = self._raw_influx_data(job, scenario, agent, job_instances, suffix, fields, condition)
-        yield from (_Plot(df) for df in self._parse_dataframes(data))
+        query = self._raw_influx_query(job, scenario, agent, job_instances, suffix, fields, condition)
+        data = self.sql_query(query)
+        yield from (_Plot(df) for df in self._parse_dataframes(data, query))
 
     def fetch_all(
             self, job=None, scenario=None, agent=None, job_instances=(),
             suffix=None, fields=None, condition=None, columns=None):
-        data = self._raw_influx_data(job, scenario, agent, job_instances, suffix, fields, condition)
-        df = pd.concat(self._parse_dataframes(data), axis=1)
+        query = self._raw_influx_query(job, scenario, agent, job_instances, suffix, fields, condition)
+        data = self.sql_query(query)
+        df = pd.concat(self._parse_dataframes(data, query), axis=1)
         if not job_instances or columns is None:
             return _Plot(df)
         columns = iter(columns)
