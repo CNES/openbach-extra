@@ -45,7 +45,7 @@ def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument('--entity', required=True, help='Name of the entity we want to reboot')
     observer.add_scenario_argument('--ping-destination', default='127.0.0.1', help='Destination of fping (IP address)')
-    observer.add_scenario_argument('--kernel', default=None, help='Kernel on which we want to reboot. No kernel: reboot on the default kernel')
+    observer.add_scenario_argument('--kernel', default=None, help='Kernel on which we want to reboot. No kernel: reboot on the default kernel. Kernel name can be found in /boot/grub/grub.cfg. It will be for example : "Linux 4.4.0-194-generic", so "Linux\ 4.4.0-194-generic" in command line')
 
     args = observer.parse(argv, SCENARIO_NAME)
 
