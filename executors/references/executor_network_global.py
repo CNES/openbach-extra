@@ -84,6 +84,14 @@ def main(argv=None):
             help='The mean average time between owamp packets (specify seconds and distribution type)'
             'If e: random exponential distribution. If f: constant distribution')
     observer.add_scenario_argument(
+            '--loss-measurement', action='store_true',
+            help='Launch a test to measure Packet Loss Rate (Warning : the test takes 10 min for each Tx direction)')
+    observer.add_scenario_argument(
+            '--packet-size', default=500, help='Size of the packets for the packet loss test (bytes)')
+    observer.add_scenario_argument(
+            '--packet-rate', default=10,
+            help='The number of packets to send per second in the packet loss test (pps)')
+    observer.add_scenario_argument(
             '--maximal-synchronization-offset', type=float,
             help='maximal offset difference where we have to do a NTP '
             'resynchronization; if omitted, no NTP checks are performed')
@@ -112,6 +120,9 @@ def main(argv=None):
                       args.mtu,
                       args.count,
                       args.packets_interval,
+                      args.loss_measurement,
+                      args.packet_size,
+                      args.packet_rate,
                       args.maximal_synchronization_offset,
                       args.synchronization_timeout,
                       args.post_processing_entity,
