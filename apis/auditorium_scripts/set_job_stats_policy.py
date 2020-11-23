@@ -56,6 +56,9 @@ class SetJobStatsPolicy(FrontendBase):
                 '-b', '--broadcast', action='store_true',
                 help='allow broadcast of statistics from the collector')
         self.parser.add_argument(
+                '-l', '--local', action='store_true',
+                help='allow storage of statistics locally in the agent')
+        self.parser.add_argument(
                 '-r', '--delete', '--remove', action='store_true',
                 help='revert to the default policy')
         self.parser.add_argument(
@@ -70,9 +73,11 @@ class SetJobStatsPolicy(FrontendBase):
         statistic = self.args.stat_name
         storage = self.args.storage
         broadcast = self.args.broadcast
+        local = self.args.local
         if self.args.delete:
             storage = None
             broadcast = None
+            local = None
         filename = self.args.filename
 
         action = self.request
@@ -80,6 +85,8 @@ class SetJobStatsPolicy(FrontendBase):
             action = partial(action, storage=storage)
         if broadcast is not None:
             action = partial(action, broadcast=broadcast)
+        if local is not None:
+            action = partial(action, local=local)
         if filename is not None:
             action = partial(action, filename=filename)
 
