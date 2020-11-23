@@ -88,10 +88,10 @@ class InstallAgent(FrontendBase):
                 'POST', route, show_response_content=False,
                 address=agent, name=name, username=username,
                 password=password, collector_ip=collector)
-        self.wait_for_success('install', show_response_content=show_response_content)
+        return self.wait_for_success('install', show_response_content=show_response_content)
 
     def query_state(self):
-        address = self.args.agent
+        address = self.args.agent_address
         return self.request(
                 'GET', 'agent/{}/state/'.format(address),
                 show_response_content=False)

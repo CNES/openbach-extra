@@ -285,7 +285,7 @@ class FrontendBase:
                     pretty_print(response, content['response'])
                 if returncode not in valid_statuses:
                     raise ActionFailedError(**content)
-                return
+                return response
 
     def query_state(self):
         return self.session.get(self.base_url)

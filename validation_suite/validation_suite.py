@@ -103,9 +103,20 @@ class ValidationSuite(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH − Validation Suite')
         self.parser.add_argument(
-                '-a', '--address', '--extra-agent-address', dest='new_agents',
-                metavar='ADDRESS', action='append', default=[],
-                help='extra machine to use in the platform for testing purposes')
+                '-s', '--server', '--server-address', metavar='ADDRESS', required=True,
+                help='address of an agent acting as server for the reference scenarios; '
+                'this can be an existing agent or a new machine to be installed.')
+        self.parser.add_argument(
+                '-c', '--client', '--client-address', metavar='ADDRESS', required=True,
+                help='address of an agent acting as client for the reference scenarios; '
+                'this can be an existing agent or a new machine to be installed.')
+        self.parser.add_argument(
+                '-m', '--middlebox', '--middlebox-address', metavar='ADDRESS', required=True,
+                help='address of an agent acting as middlebox for the reference scenarios; '
+                'this can be an existing agent or a new machine to be installed.')
+        self.parser.add_argument(
+                '-i', '--interfaces', '--middlebox-interfaces', required=True,
+                help='comma-separated list of the network interfaces to emulate link on the middlebox')
         self.parser.add_argument(
                 '-u', '--user', default=getpass.getuser(),
                 help='user to log into agent during the installation proccess')
@@ -224,12 +235,18 @@ def main(argv=None):
     validator.parse(argv)
 
     controller = validator.args.controller
-    new_agents = validator.args.new_agents
+    client = validator.args.client
+    server = validator.args.server
+    entity = validator.args.entity
+    middlebox_interfaces = validator.args.interfaces
     openbach_user = validator.args.login
     openbach_password = validator.args.password
     install_user = validator.args.user
     install_password = validator.args.agent_password
-    del validator.args.new_agents
+    del validator.args.client
+    del validator.args.server
+    del validator.args.entity
+    del validator.args.interfaces
     del validator.args.controller
     del validator.args.login
     del validator.args.password
@@ -254,10 +271,11 @@ def main(argv=None):
 
     # Find agents unnatached to a project
     free_agents = {
-            agent['address']: {'name': agent['name'], 'collector': agent['collector']}
+            agent['address']: {'name': agent['name'], 'collector': agent['collector_ip']}
             for agent in response
-            if not agent['project'] and not agent['reserved']
+            if not agent['project'] and not agent['reserved'] and agent['address'] != controller
     }
+    new_agents = [agent for agent in (client, server, entity) if agent not in free_agents]
 
     # List and remember installed jobs on these agents
     installed_jobs = validator.share_state(ListInstalledJobs)
@@ -272,6 +290,7 @@ def main(argv=None):
 
     # Uninstall these agents
     uninstall = validator.share_state(UninstallAgent)
+    uninstall.args.detach = False
     for address in free_agents:
         uninstall.args.agent_address = address
         execute(uninstall)
@@ -293,6 +312,7 @@ def main(argv=None):
     installed_agents = {}
 
     install_agent = validator.share_state(InstallAgent)
+    install_agent.args.reattach = False
     install_agent.args.user = install_user
     install_agent.args.password = install_password
     for address, agent in free_agents.items():
@@ -400,7 +420,7 @@ def main(argv=None):
             for agent in response
             if not agent['project'] or agent['reserved'] == project_name
     }
-    if available_agents != set(free_agents):
+    if available_agents != set(installed_agents):
         logger = logging.getLogger(__name__)
         logger.warning(
                 'Agents available for the project %s are different '
@@ -409,7 +429,8 @@ def main(argv=None):
     # Add Entities, associate agents
     add_entity = validator.share_state(AddEntity)
     add_entity.args.project_name = project_name
-    for i, agent_address in enumerate(free_agents):
+    add_entity.args.description = ''
+    for i, agent_address in enumerate(installed_agents):
         add_entity.args.entity_name = 'Entity{}'.format(i)
         add_entity.args.agent_address = agent_address
         execute(add_entity)
@@ -431,7 +452,15 @@ def main(argv=None):
         execute(remove_entity)
 
     # Add 3 entities back
-    # TODO: topology
+    add_entity.args.entity_name = 'Client'
+    add_entity.args.agent_address = client
+    execute(add_entity)
+    add_entity.args.entity_name = 'Entity'
+    add_entity.args.agent_address = entity
+    execute(add_entity)
+    add_entity.args.entity_name = 'Server'
+    add_entity.args.agent_address = server
+    execute(add_entity)
 
     # List jobs in controller
     jobs = validator.share_state(ListJobs)
@@ -573,7 +602,7 @@ def main(argv=None):
         execute(scenario_data)
 
     # Start job instance times X
-    agent_address = # TODO
+    agent_address, = sample(list(installed_agents), 1)
 
     start_job = validator.share_state(StartJobInstance)
     start_job.args.job_name = 'fping'
@@ -603,24 +632,25 @@ def main(argv=None):
         if response['status'] != 'Running':
             break
 
-    # from ..executors.examples.data_transfer_configure_link import main as data_transfer_configure_link
+    # Run data transfer configure link executor
     data_transfer_path = Path(CWD.parent, 'executors', 'examples', 'data_transfer_configure_link.py')
     data_transfer_configure_link = load_module_from_path(data_transfer_path).main
     data_transfer_configure_link([
         '--controller', controller,
         '--login', openbach_user,
         '--password', openbach_password,
-        # '--entity',
-        # '--server',
-        # '--client',
-        # '--file-size',
-        # '--bandwidth-server-to-client',
-        # '--bandwidth-client-to-server',
-        # '--delay-server-to-client',
-        # '--delay-client-to-server',
-        # '--server-ip',
-        # '--client-ip',
-        # '--middlebox-interfaces',
+        '--entity', 'Entity',
+        '--server', 'Server',
+        '--client', 'Client',
+        '--file-size', 100,
+        '--bandwidth-server-to-client', '10M',
+        '--bandwidth-client-to-server', '10M',
+        '--delay-server-to-client', 10,
+        '--delay-client-to-server', 10,
+        '--server-ip', server,
+        '--client-ip', client,
+        '--middlebox-interfaces', middlebox_interfaces,
+        project_name, 'run',
     ])
 
     # Remove Project
