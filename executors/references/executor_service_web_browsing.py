@@ -45,9 +45,9 @@ def main(argv=None):
             '--client-entity', required=True,
             help='name of the client entity which receives the web_browsing traffic')
     observer.add_scenario_argument(
-            '--duration', required=False, type=int,
-            help='time after which the web browsing transmission is stopped (in seconds)'
-            'Set to 0 to wait for the full web transfer')
+            '--duration', type=int,
+            help='time in seconds after which the web browsing transmission'
+            'is stopped; set to 0 to wait for the full web transfer')
     observer.add_scenario_argument(
             '--nb-runs', default=1,
             help='the number of fetches to perform for each website')
@@ -55,17 +55,23 @@ def main(argv=None):
             '--nb-parallel-runs', default=1,
             help='the maximum number of fetches that can work simultaneously')
     observer.add_scenario_argument(
-            '--no-compression', action = 'store_true', required = False,
-            help = 'Prevent compression for transmission')
+            '--no-compression', action='store_true', 
+            help='Disable HTTP compression')
     observer.add_scenario_argument(
-            '--proxy-address', type = str, required = False,
-            help = 'Set the proxy address (also needs a proxy port)')
+            '--proxy-address', type=str,
+            help='Set the proxy address (also needs a proxy port)')
     observer.add_scenario_argument(
-            '--proxy-port', type = int, required = False,
-            help = 'Set the proxy port (also needs a proxy address)')
+            '--proxy-port', type=int,
+            help='Set the proxy port (also needs a proxy address)')
     observer.add_scenario_argument(
-            '--launch-server', default=True,
-            help='Launch server or not. Optional. Default : True')
+            '--url', type=str, action='append',
+            help='URL to fetch (uses config.yaml if not set). '
+            'Can be used multiple times to fetch several URLs.')
+    observer.add_scenario_argument(
+            '--without-apache', dest='launch_server', action='store_false',
+            help='Disable the associated server. By default, an apache2 HTTP server '
+            'is launched by this scenario to perform files transfer; use this option '
+            'to disable this behaviour and use an existing apache2 instance.')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
@@ -81,6 +87,7 @@ def main(argv=None):
             not args.no_compression,
             args.proxy_address,
             args.proxy_port,
+            args.url,
             args.launch_server,
             args.post_processing_entity,
             scenario_name=args.scenario_name)

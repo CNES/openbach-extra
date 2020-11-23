@@ -31,28 +31,29 @@
 
 def web_browsing_qoe(
         scenario, entity, duration, nb_runs, nb_parallel_runs,
-        no_compression=False, proxy_address=None, proxy_port=None,
+        no_compression=False, proxy_address=None, proxy_port=None, urls=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
+
     launch_browsing = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
 
-    if proxy_port and proxy_address:
-        launch_browsing.configure(
-                'web_browsing_qoe', entity, offset=0,
-                nb_runs=nb_runs,
-                nb_parallel_runs=nb_parallel_runs,
-                no_compression=no_compression,
-                proxy_address=proxy_address,
-                proxy_port=proxy_port)
-    else:
-        launch_browsing.configure(
-                'web_browsing_qoe', entity, offset=0,
-                nb_runs=nb_runs,
-                nb_parallel_runs=nb_parallel_runs,
-                no_compression=no_compression)
+    browsing_parameters = {
+            'nb_runs': nb_runs,
+            'nb_parallel_runs': nb_parallel_runs,
+            'no_compression': no_compression
+    }
+
+    if proxy_port is not None :
+        browsing_parameters['proxy_port'] = proxy_port
+    if proxy_address is not None:
+        browsing_parameters['proxy_address'] = proxy_address
+    if urls is not None:
+        browsing_parameters['urls'] = urls
+
+    launch_browsing.configure('web_browsing_qoe', entity, offset=0, **browsing_parameters)
 
     if duration:
         stop_launch_browsing = scenario.add_function(
