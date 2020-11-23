@@ -50,7 +50,7 @@ class DeleteEntity(FrontendBase):
         project_name = self.args.project_name
 
         return self.request(
-                'GET', 'project/{}/entity/{}/'.format(project_name, entity_name),
+                'DELETE', 'project/{}/entity/{}/'.format(project_name, entity_name),
                 show_response_content=show_response_content)
 
 

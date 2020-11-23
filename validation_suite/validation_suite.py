@@ -153,11 +153,19 @@ def setup_logging(
         env_path_key='LOG_CFG',
         env_lvl_key='LOG_LVL',
 ):
+    def basic_config(level=default_level):
+        logging.basicConfig(
+                level=level,
+                format='[%(levelname)s][%(name)s:%(lineno)d:%(funcName)s]'
+                       '[%(asctime)s.%(msecs)d]:%(message)s',
+                datefmt='%Y-%m-%d:%H:%M:%S',
+        )
+
     warnings = []
     level = os.getenv(env_lvl_key, None)
     if level:
         try:
-            logging.basicConfig(level=level.upper())
+            basic_config(level=level.upper())
         except (TypeError, ValueError) as e:
             warnings.append(
                     'Error when using the environment variable '
@@ -173,7 +181,7 @@ def setup_logging(
     try:
         config_file = open(path, 'rt')
     except FileNotFoundError:
-        logging.basicConfig(level=default_level)
+        basic_config()
     else:
         with config_file:
             try:
@@ -186,7 +194,7 @@ def setup_logging(
                     warnings.append(
                             'File {} is neither in INI nor in JSON format, '
                             'using default level instead'.format(path))
-                    logging.basicConfig(level=default_level)
+                    basic_config()
                 else:
                     try:
                         logging.config.dictConfig(config)
@@ -195,11 +203,26 @@ def setup_logging(
                                 'JSON file {} is not suitable for '
                                 'a logging configuration, using '
                                 'default level instead'.format(path))
-                        logging.basicConfig(level=default_level)
+                        basic_config()
     finally:
         logger = logging.getLogger(__name__)
         for warning in warnings:
             logger.warning(warning)
+
+
+def _verify_response(response):
+    logger = logging.getLogger(__name__)
+    try:
+        response.raise_for_status()
+    except:
+        logger.error('Something went wrong', exc_info=True)
+    else:
+        logger.info('Done')
+    finally:
+        try:
+            return response.json()
+        except (AttributeError, json.JSONDecodeError):
+            return None
 
 
 def execute(openbach_function):
@@ -216,15 +239,10 @@ def execute(openbach_function):
 
     response = openbach_function.execute(False)
 
-    try:
-        response.raise_for_status()
-    except:
-        logger.error('Something went wrong', exc_info=True)
+    if isinstance(response, list):
+        return [_verify_response(r) for r in response]
     else:
-        logger.info('Done')
-    finally:
-        if response.status_code != 204:
-            return response.json()
+        return _verify_response(response)
 
 
 def main(argv=None):
@@ -234,23 +252,19 @@ def main(argv=None):
     validator = ValidationSuite()
     validator.parse(argv)
 
-    controller = validator.args.controller
-    client = validator.args.client
-    server = validator.args.server
-    entity = validator.args.entity
-    middlebox_interfaces = validator.args.interfaces
-    openbach_user = validator.args.login
-    openbach_password = validator.args.password
-    install_user = validator.args.user
-    install_password = validator.args.agent_password
-    del validator.args.client
-    del validator.args.server
-    del validator.args.entity
-    del validator.args.interfaces
+    controller = validator.credentials['controller']
     del validator.args.controller
-    del validator.args.login
-    del validator.args.password
+    client = validator.args.client
+    del validator.args.client
+    server = validator.args.server
+    del validator.args.server
+    middlebox = validator.args.middlebox
+    del validator.args.middlebox
+    middlebox_interfaces = validator.args.interfaces
+    del validator.args.interfaces
+    install_user = validator.args.user
     del validator.args.user
+    install_password = validator.args.agent_password
     del validator.args.agent_password
 
     # List projects
@@ -275,7 +289,8 @@ def main(argv=None):
             for agent in response
             if not agent['project'] and not agent['reserved'] and agent['address'] != controller
     }
-    new_agents = [agent for agent in (client, server, entity) if agent not in free_agents]
+    existing_names = {agent['name'] for agent in response}
+    new_agents = [agent for agent in (client, server, middlebox) if agent not in free_agents]
 
     # List and remember installed jobs on these agents
     installed_jobs = validator.share_state(ListInstalledJobs)
@@ -320,11 +335,16 @@ def main(argv=None):
         install_agent.args.collector_address = agent['collector']
         install_agent.args.agent_name = agent['name']
         execute(install_agent)
-        installed_agents[address] = name
+        installed_agents[address] = agent['name']
 
+    index = 0
     install_agent.args.collector_address = selected_collector
-    for i, address in enumerate(new_agents):
-        name = 'ValidationSuite{}'.format(i)
+    for address in new_agents:
+        while True:
+            name = 'ValidationSuite{}'.format(index)
+            index += 1
+            if name not in existing_names:
+                break
         install_agent.args.agent_address = address
         install_agent.args.agent_name = name
         execute(install_agent)
@@ -456,7 +476,7 @@ def main(argv=None):
     add_entity.args.agent_address = client
     execute(add_entity)
     add_entity.args.entity_name = 'Entity'
-    add_entity.args.agent_address = entity
+    add_entity.args.agent_address = middlebox
     execute(add_entity)
     add_entity.args.entity_name = 'Server'
     add_entity.args.agent_address = server
@@ -464,6 +484,8 @@ def main(argv=None):
 
     # List jobs in controller
     jobs = validator.share_state(ListJobs)
+    jobs.args.string_to_search = None
+    jobs.args.match_ratio = None
     response = execute(jobs)
     installed_jobs = {job['general']['name'] for job in response}
 
@@ -493,12 +515,14 @@ def main(argv=None):
         agent_addresses.append([agent])
         job_names.append(sample(list(external_jobs), 4))
     install_jobs = validator.share_state(InstallJobs)
+    install_jobs.args.launch = False
     install_jobs.args.job_name = job_names
     install_jobs.args.agent_address = agent_addresses
     execute(install_jobs)
 
     # Remove jobs from agents
     uninstall_jobs = validator.share_state(UninstallJobs)
+    uninstall_jobs.args.launch = False
     uninstall_jobs.args.job_name = job_names
     uninstall_jobs.args.agent_address = agent_addresses
     execute(uninstall_jobs)
@@ -553,6 +577,7 @@ def main(argv=None):
     add_scenario.args.project_name = project_name
     add_scenario.args.scenario = scenario_parser.args.scenario
     del scenario_parser
+    execute(add_scenario)
 
     # Run scenarios
     start_scenario = validator.share_state(StartScenarioInstance)
@@ -596,6 +621,7 @@ def main(argv=None):
 
     # Get scenario instance data
     scenario_data = validator.share_state(GetScenarioInstanceData)
+    scenario_data.args.file = []
     scenario_data.args.scenario_instance_id = stops_itself_id
     with tempfile.TemporaryDirectory() as tempdir:
         scenario_data.args.path = Path(tempdir)
@@ -614,7 +640,7 @@ def main(argv=None):
 
     # Stop one
     stop_job = validator.share_state(StopJobInstance)
-    stop_job.args.job_instance_id = response['job_instance_id']
+    stop_job.args.job_instance_id = [response['job_instance_id']]
     execute(stop_job)
 
     # Stop all
@@ -637,16 +663,16 @@ def main(argv=None):
     data_transfer_configure_link = load_module_from_path(data_transfer_path).main
     data_transfer_configure_link([
         '--controller', controller,
-        '--login', openbach_user,
-        '--password', openbach_password,
+        '--login', validator.credentials.get('login', ''),
+        '--password', validator.credentials.get('password', ''),
         '--entity', 'Entity',
         '--server', 'Server',
         '--client', 'Client',
-        '--file-size', 100,
+        '--file-size', '100',
         '--bandwidth-server-to-client', '10M',
         '--bandwidth-client-to-server', '10M',
-        '--delay-server-to-client', 10,
-        '--delay-client-to-server', 10,
+        '--delay-server-to-client', '10',
+        '--delay-client-to-server', '10',
         '--server-ip', server,
         '--client-ip', client,
         '--middlebox-interfaces', middlebox_interfaces,
