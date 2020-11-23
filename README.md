@@ -29,16 +29,16 @@ Vivéris Technologies
 
 Authors
 =======
-*  Adrien Thibaud      Vivéris Technologies      adrien.thibaud@viveris.fr
-*  Mathias Ettinger    Vivéris Technologies      mathias.ettinger@viveris.fr
-*  Joaquin Muguerza    Vivéris Technologies      joaquin.muguerza@viveris.fr
-*  Bastien Tauran      Vivéris Technologies      bastien.tauran@viveris.fr
-*  Francklin Simo      Vivéris Technologies      francklin.simo@viveris.fr
-*  Mathieu Petrou      Vivéris Technologies      mathieu.petrou@viveris.fr
-*  Oumaima Zerrouq     Vivéris Technologies      oumaima.zerrouq@viveris.fr
-*  David Pradas        Vivéris Technologies      david.pradas@viveris.fr
-*  Emmanuel Dubois     CNES                      emmanuel.dubois@cnes.fr
-*  Nicolas Kuhn        CNES                      nicolas.kuhn@cnes.fr               
+*  Adrien Thibaud      (Vivéris Technologies),      adrien.thibaud@viveris.fr
+*  Mathias Ettinger    (Vivéris Technologies),      mathias.ettinger@viveris.fr
+*  Joaquin Muguerza    (Vivéris Technologies),      joaquin.muguerza@viveris.fr
+*  Bastien Tauran      (Vivéris Technologies),      bastien.tauran@viveris.fr
+*  Francklin Simo      (Vivéris Technologies),      francklin.simo@viveris.fr
+*  Mathieu Petrou      (Vivéris Technologies),      mathieu.petrou@viveris.fr
+*  Oumaima Zerrouq     (Vivéris Technologies),      oumaima.zerrouq@viveris.fr
+*  David Pradas        (Vivéris Technologies),      david.pradas@viveris.fr
+*  Emmanuel Dubois     (CNES),                     emmanuel.dubois@cnes.fr
+*  Nicolas Kuhn        (CNES),                      nicolas.kuhn@cnes.fr               
 
 Examples of project using OpenBACH
 =======
