@@ -191,6 +191,8 @@ class ScenarioObserver(FrontendBase):
             scenario_response = self.args._action(builder)
         finally:
             end_date = int(time.time()*1000)
+            print("Retrieving logs if any ...")
+            time.sleep(5) #To be sure the logs are already in Kibana
             elasticsearch = ElasticSearchConnection(self.args.collector_address, self.args.elasticsearch_port)
             response = elasticsearch.orphans(timestamps=(begin_date, end_date))
             for log in response.numbered_data.values():
