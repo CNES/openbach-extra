@@ -191,13 +191,13 @@ class ScenarioObserver(FrontendBase):
             scenario_response = self.args._action(builder)
         finally:
             end_date = int(time.time()*1000)
-            response = requests.get(''.join(["http://",str(self.args.collector_address),":",str(self.args.elasticsearch_port),"/logstash-*/_settings"])).json()
-            es_refresh_interval = response[list(response.keys())[0]]["settings"]["index"]["refresh_interval"]
-            sleep_for = int(''.join([n for n in es_refresh_interval if n.isdigit()]))
-            print("Retrieving logs if any, wait during logstash refreshing ({}) ...".format(es_refresh_interval))
-            if sleep_for:
+            try:
+                response = requests.get(''.join(["http://",str(self.args.collector_address),":",str(self.args.elasticsearch_port),"/logstash-*/_settings"])).json()
+                es_refresh_interval = response[list(response.keys())[0]]["settings"]["index"]["refresh_interval"]
+                sleep_for = int(''.join([n for n in es_refresh_interval if n.isdigit()]))
+                print("Retrieving logs if any, wait during logstash refreshing ({}) ...".format(es_refresh_interval))
                 time.sleep(sleep_for)
-            else:
+            except:
                 time.sleep(1)
             elasticsearch = ElasticSearchConnection(self.args.collector_address, self.args.elasticsearch_port)
             response = elasticsearch.get_logs(timestamps=(begin_date, end_date))
