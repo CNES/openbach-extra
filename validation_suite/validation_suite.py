@@ -67,6 +67,7 @@ from auditorium_scripts.list_collectors import ListCollectors
 from auditorium_scripts.list_installed_jobs import ListInstalledJobs
 from auditorium_scripts.list_jobs import ListJobs
 from auditorium_scripts.list_projects import ListProjects
+from auditorium_scripts.list_job_instances import ListJobInstances
 from auditorium_scripts.install_agent import InstallAgent
 from auditorium_scripts.uninstall_agent import UninstallAgent
 from auditorium_scripts.add_collector import AddCollector
@@ -633,19 +634,37 @@ def main(argv=None):
         execute(scenario_data)
 
     # Start job instance times X
+    job_name = 'fping'
+    instances_amount = 7  # Beware, not too high as the agent can't handle more than 10 tasks at once
     agent_address, = sample(list(installed_agents), 1)
 
     start_job = validator.share_state(StartJobInstance)
-    start_job.args.job_name = 'fping'
+    start_job.args.job_name = job_name
     start_job.args.argument = {'destination_ip': '127.0.0.1'}
     start_job.args.interval = None
     start_job.args.agent_address = agent_address
-    for _ in range(10):
+    for _ in range(instances_amount):
         response = execute(start_job)
+    watched_job = response['job_instance_id']
+
+    # Check instances
+    job_instances = validator.share_state(ListJobInstances)
+    job_instances.args.agent_address = [agent_address]
+    job_instances.args.update = True
+    response = execute(job_instances)
+
+    agent, = (a for a in response['instances'] if a['address'] == agent_address)
+    job, = (j for j in agent['installed_jobs'] if j['job_name'] == job_name)
+    instances = [i for i in job['instances'] if i['status'] == 'Running']
+    if len(instances) != instances_amount:
+        logger = logging.getLogger(__name__)
+        logger.warning(
+                'Expected %d running instances of %s but found %d instead', 
+                instances_amount, job_name, len(instances))
 
     # Stop one
     stop_job = validator.share_state(StopJobInstance)
-    stop_job.args.job_instance_id = [response['job_instance_id']]
+    stop_job.args.job_instance_id = [watched_job]
     execute(stop_job)
 
     # Stop all
@@ -657,13 +676,13 @@ def main(argv=None):
     # Status job instances
     status_job = validator.share_state(StatusJobInstance)
     status_job.args.update = True
-    status_job.args.job_instance_id = response['job_instance_id']
+    status_job.args.job_instance_id = watched_job
     while True:
         response = execute(status_job)
         if response['status'] != 'Running':
             break
 
-    # Run data transfer configure link executor
+    # Run example executors
     data_transfer_path = Path(CWD.parent, 'executors', 'examples', 'data_transfer_configure_link.py')
     data_transfer_configure_link = load_module_from_path(data_transfer_path).main
     data_transfer_configure_link([
@@ -684,6 +703,7 @@ def main(argv=None):
         project_name, 'run',
     ])
 
+    # Run reference executors
     reference_executors_path = Path(CWD.parent, 'executors', 'references')
     network_delay = load_module_from_path(reference_executors_path.joinpath('executor_network_delay.py')).main
     network_delay([
