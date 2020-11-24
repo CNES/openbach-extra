@@ -31,22 +31,30 @@
 __author__ = 'Antoine AUGER'
 __credits__ = '''Contributors:
  * Antoine AUGER <antoine.auger@tesa.prd.fr>
- * Bastien TAURAN <bastien.tauran@toulouse.viveris.com>
+ * Bastien TAURAN <bastien.tauran@viveris.fr>
 '''
 
-import argparse
 import os
-import ipaddress
-import subprocess
-import syslog
-import collect_agent
-import socket
-import shutil
 import time
+import shutil
+import socket
+import syslog
+import argparse
+import ipaddress
 import threading
+import subprocess
 
-job_name = "voip_qoe_dest"
-common_prefix = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))  # /opt/openbach/agent/jobs
+import collect_agent
+
+job_dir = '/opt/openbach/agent/jobs/voip_qoe_dest'
+
+def connect_to_collect_agent():
+    conffile = '{}/voip_qoe_dest_rstats_filter.conf'.format(job_dir)
+    success = collect_agent.register_collect(conffile)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
 
 
 def build_parser():
@@ -74,9 +82,7 @@ def socket_thread(address, port):
     except socket.error as msg:
         print("Socket binding error: " + str(msg) + "\n" + "Retrying...")
     s.listen(1)
-
     print('Server listening.... on',host,port)
-
 
     while True:
         conn, addr = s.accept()
@@ -89,7 +95,7 @@ def socket_thread(address, port):
             if command == "BYE":
                 break
             elif command == "GET_LOG_FILE":
-                f = open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id), 'recv.log'),'rb')
+                f = open('{}/logs/run{}/recv.log'.format(job_dir, run_id),'rb')
                 l = f.read(1024)
                 while (l):
                    conn.send(l)
@@ -99,11 +105,11 @@ def socket_thread(address, port):
                 print("TRANSFERT_FINISHED".encode())
                 conn.send("TRANSFERT_FINISHED".encode())
             elif command == "DELETE_FOLDER":
-                shutil.rmtree(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id)))
+                shutil.rmtree('{}/logs/run{}'.format(job_dir, run_id))
             elif "RUN_ID" in command:
                 run_id = int(command.split("-")[1])
                 print("run_id",run_id)
-                os.mkdir(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id)))
+                os.mkdir('{}/logs/run{}'.format(job_dir, run_id))
 
         conn.close()
 
@@ -114,13 +120,7 @@ def main(args):
 
     :return: nothing
     """
-    success = collect_agent.register_collect(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                                          '{}_rstats_filter.conf'.format(job_name)))
-    if not success:
-        message = 'Could not connect to rstats'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
-
+    connect_to_collect_agent()
     try:
         th = threading.Thread(target=socket_thread, args=(str(args.dest_addr),args.control_port))
         th.daemon = True
@@ -129,8 +129,7 @@ def main(args):
         cleanup_stop_thread()
         exit()
 
-    process = subprocess.Popen([os.path.join(common_prefix, job_name, 'D-ITG-2.8.1-r1023', 'bin', 'ITGRecv')],
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen('ITGRecv', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     while True:
         output = process.stdout.readline().decode().strip()

@@ -31,29 +31,39 @@
 __author__ = 'Antoine AUGER'
 __credits__ = '''Contributors:
  * Antoine AUGER <antoine.auger@tesa.prd.fr>
- * Bastien TAURAN <bastien.tauran@toulouse.viveris.com>
+ * Bastien TAURAN <bastien.tauran@viveris.fr>
 '''
 
-import shutil
-import argparse
 import os
-import ipaddress
-import subprocess
-import syslog
-from time import time, sleep
 import yaml
-import collect_agent
+import socket
+import shutil
+import syslog
+import random
+import argparse
+import ipaddress
+import threading
+import subprocess
+from time import time, sleep
 from codec import CodecConstants
 from compute_mos import compute_r_value, compute_mos_value
-import random
-import socket
-import threading
 
-job_name = "voip_qoe_src"
-receiver_job_name = "voip_qoe_dest"
-common_prefix = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))  # /opt/openbach/agent/jobs
+import collect_agent
+
+job_dir = '/opt/openbach/agent/jobs/voip_qoe_src'
+dest_job_dir = '/opt/openbach/agent/jobs/voip_qoe_dest'
 
 _FINISHED = False
+
+
+def connect_to_collect_agent():
+    conffile = '{}/voip_qoe_dest_rstats_filter.conf'.format(job_dir)
+    success = collect_agent.register_collect(conffile)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+
 
 def get_timestamp():
     """
@@ -115,7 +125,7 @@ def clean(s,run_id):
     s.send("DELETE_FOLDER".encode())
     sleep(2)
     try:
-        shutil.rmtree(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id)))
+        shutil.rmtree('{}/logs/run{}'.format(job_dir, run_id))
     except FileNotFoundError:
         pass  # Do nothing if the directory does not exist
     s.send("BYE".encode())
@@ -144,15 +154,11 @@ def main(config, args):
 
     global _FINISHED
 
-    success = collect_agent.register_collect(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                                          '{}_rstats_filter.conf'.format(job_name)))
-    if not success:
-        message = 'Could not connect to rstats'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
+    connect_to_collect_agent()
 
     # We write into a temp file all VoIP flows to be sent
-    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), config['FILE_TEMP_FLOWS']), "w") as f:
+    #with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), config['FILE_TEMP_FLOWS']), "w") as f:
+    with open('{}/{}'.format(job_dir, config['FILE_TEMP_FLOWS']), "w") as f:
         for port in range(args.starting_port, args.starting_port + args.nb_flows, 1):
             str_to_write = "-a {} -rp {} -Sda {} -Ssa {} -t {} -poll VoIP -x {} -h {}"\
                 .format(args.dest_addr, port, args.sig_dest_addr, args.sig_src_addr, int(args.duration) * 1000,
@@ -174,31 +180,27 @@ def main(config, args):
 
         run_id = random.getrandbits(64)
         s.send(("RUN_ID-"+str(run_id)).encode())
-        os.mkdir(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id)))
+        os.mkdir('{}/logs/run{}'.format(job_dir, run_id))
         sleep(2)
 
         # We locally create one log directory per run
         try:
-            shutil.rmtree(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id)))
+            shutil.rmtree('{}/logs/run{}'.format(job_dir, run_id))
         except FileNotFoundError:
             pass  # Do nothing if the directory does not exist
         try:
-            os.mkdir(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id)))
+            os.mkdir('{}/logs/run{}'.format(job_dir, run_id))
         except FileExistsError:
             pass  # Do nothing if the directory already exist
 
         ref_timestamp = get_timestamp()
         temp_file_name = "{}flows_{}_{}_{}s".format(args.nb_flows, args.codec, args.protocol, args.duration)
-        local_log_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id),
-                                      'send.log')
-        distant_log_file = os.path.join(common_prefix, receiver_job_name, 'logs', 'run{}'.format(run_id),
-                                        'recv.log')
+        local_log_file = '{}/logs/run{}/send.log'.format(job_dir, run_id)
+        distant_log_file = '{}/logs/run{}/recv.log'.format(dest_job_dir, run_id)
 
         # D-ITG command to send VoIP packets, check documentation at http://www.grid.unina.it/software/ITG/manual/
-        d_itg_send_ps = subprocess.Popen([os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                                       'D-ITG-2.8.1-r1023', 'bin', 'ITGSend'),
-                                          os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                                       config['FILE_TEMP_FLOWS']),
+        d_itg_send_ps = subprocess.Popen(['ITGSend',
+                                          '{}/{}'.format(job_dir, config['FILE_TEMP_FLOWS']),
                                           '-l', local_log_file,
                                           '-x', distant_log_file])
 
@@ -219,7 +221,7 @@ def main(config, args):
 
         # We remotely retrieve logs
         s.send("GET_LOG_FILE".encode())
-        with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs', 'run{}'.format(run_id),'recv.log'), 'wb') as f:
+        with open('{}/logs/run{}/recv.log'.format(job_dir, run_id), 'wb') as f:
             print('file opened')
             while True:
                 data = s.recv(1024)
@@ -229,23 +231,16 @@ def main(config, args):
         sleep(2)
 
         # Thanks to ITGDec, we print all average metrics to file every args.granularity (in ms)
-        d_itg_dec = subprocess.Popen([os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                                   'D-ITG-2.8.1-r1023', 'bin', 'ITGDec'),
-                                      os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs',
-                                                   'run{}'.format(run_id), 'recv.log'),
+        d_itg_dec = subprocess.Popen(['ITGDec',
+                                      '{}/logs/run{}/recv.log'.format(job_dir, run_id),
                                       '-f', '1',
                                       '-c', str(args.granularity),
-                                      os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logs',
-                                                   'run{}'.format(run_id),
-                                                   'combined_stats_{}.dat'.format(temp_file_name))])
+                                      '{}/logs/run{}/combined_stats_{}.dat'.format(job_dir, run_id, temp_file_name)])
         d_itg_dec.wait()
 
         # We parse the generated log file with average metrics
         packets_per_granularity = float(config['CODEC_BITRATES'][args.codec]) * float(args.granularity) / 1000.0
-        with open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               'logs',
-                               'run{}'.format(run_id),
-                               'combined_stats_{}.dat'.format(temp_file_name)), "r") as f:
+        with open('{}/logs/run{}/combined_stats_{}.dat'.format(job_dir, run_id, temp_file_name), "r") as f:
             for line in f:
                 stripped_line = line.strip().split()
                 timestamp_line = int(float(stripped_line[0]) * 1000) + ref_timestamp
@@ -256,7 +251,7 @@ def main(config, args):
                 stat_pkt_loss = float(stripped_line[4]) / packets_per_granularity
 
                 my_codec = CodecConstants(collect_agent=collect_agent,
-                                          etc_dir_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), 'etc'),
+                                          etc_dir_path='{}/etc'.format(job_dir),
                                           codec_name=args.codec)
                 if args.use_jitter:
                     stat_r_factor = compute_r_value(my_codec, stat_delay, stat_delay, stat_pkt_loss, stat_jitter,
@@ -285,8 +280,7 @@ def main(config, args):
 
 if __name__ == "__main__":
     # Internal configuration loading
-    config = yaml.safe_load(open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'etc',
-                                              'internal_config.yml')))
+    config = yaml.safe_load(open('{}/etc/internal_config.yml'.format(job_dir)))
 
     # Argument parsing
     args = build_parser().parse_args()
