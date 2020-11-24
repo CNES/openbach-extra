@@ -49,6 +49,7 @@ __credits__ = '''Contributors:
 import os
 import sys
 import json
+import time
 import getpass
 import logging
 import logging.config
@@ -602,6 +603,7 @@ def main(argv=None):
     status_scenario = validator.share_state(StatusScenarioInstance)
     status_scenario.args.scenario_instance_id = stops_itself_id
     while True:
+        time.sleep(1)
         response = execute(status_scenario)
         if response['status'] != 'Running':
             break
@@ -613,6 +615,7 @@ def main(argv=None):
 
     status_scenario.args.scenario_instance_id = should_be_stopped_id
     while True:
+        time.sleep(1)
         response = execute(status_scenario)
         if response['status'] != 'Running':
             break
@@ -678,6 +681,7 @@ def main(argv=None):
     status_job.args.update = True
     status_job.args.job_instance_id = watched_job
     while True:
+        time.sleep(1)
         response = execute(status_job)
         if response['status'] != 'Running':
             break
