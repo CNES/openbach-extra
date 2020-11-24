@@ -19,8 +19,14 @@ This repository contains extra elements for OpenBACH to extend, configure, or in
 
 Get Involved
 ============
-See OpenBACH web site : http://www.openbach.org/
-Mailing list are available : users@openbach.org
+
+*  See OpenBACH web site : http://www.openbach.org/
+*  A mailing list is available : users@openbach.org
+
+Examples of project using OpenBACH
+=======
+*  A simple example chaining reference scenarios in python is available [here](https://forge.net4sat.org/openbach/openbach-extra/tree/master/executors/examples)
+*  A project that let you install, set up and run OpenBACH basic scenarios is available [here](https://forge.net4sat.org/kuhnn/openbach-example-simple)
 
 Project Partners
 =======
@@ -28,15 +34,19 @@ Vivéris Technologies
 
 Authors
 =======
-Adrien Thibaud      Vivéris Technologies      adrien.thibaud@viveris.fr
-Mathias Ettinger    Vivéris Technologies      mathias.ettinger@viveris.fr
-Joaquin Muguerza    Vivéris Technologies      joaquin.muguerza@viveris.fr
-Bastien Tauran      Vivéris Technologies      bastien.tauran@viveris.fr
-Francklin Simo      Vivéris Technologies      francklin.simo@viveris.fr
-Mathieu Petrou      Vivéris Technologies      mathieu.petrou@viveris.fr
-Oumaima Zerrouq     Vivéris Technologies      oumaima.zerrouq@viveris.fr
-David Pradas        Vivéris Technologies      david.pradas@viveris.fr
-Emmanuel Dubois     CNES                      emmanuel.dubois@cnes.fr
+*  Adrien Thibaud      (Vivéris Technologies),      adrien.thibaud@viveris.fr
+*  Mathias Ettinger    (Vivéris Technologies),      mathias.ettinger@viveris.fr
+*  Joaquin Muguerza    (Vivéris Technologies),      joaquin.muguerza@viveris.fr
+*  Léa Thibout         (Vivéris Technologies),      lea.thibout@viveris.fr
+*  David Fernandes     (Vivéris Technologies),      david.fernandes@viveris.fr
+*  Bastien Tauran      (Vivéris Technologies),      bastien.tauran@viveris.fr
+*  Francklin Simo      (Vivéris Technologies),      francklin.simo@viveris.fr
+*  Mathieu Petrou      (Vivéris Technologies),      mathieu.petrou@viveris.fr
+*  Oumaima Zerrouq     (Vivéris Technologies),      oumaima.zerrouq@viveris.fr
+*  David Pradas        (Vivéris Technologies),      david.pradas@viveris.fr
+*  Emmanuel Dubois     (CNES),                      emmanuel.dubois@cnes.fr
+*  Nicolas Kuhn        (CNES),                      nicolas.kuhn@cnes.fr
+*  Santiago Garcia Guillen (CNES),                  santiago.garciaguillen@cnes.fr
 
 Licence
 =======
