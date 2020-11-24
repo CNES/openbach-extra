@@ -165,21 +165,21 @@ def main(argv=None):
             '--delay-client-to-server', '-d', required=True, type=int,
             help='Delay for a packet to go from the client to the server (ms)')
     observer.add_scenario_argument(
-            '--loss-model-server-to-client', required=True, choices=['random', 'state', 'gemodel'],
+            '--loss-model-server-to-client', choices=['random', 'state', 'gemodel'], default='random',
             help='Packet loss model applied in the server to the client direction')
     observer.add_scenario_argument(
-            '--loss-model-client-to-server', required=True, choices=['random', 'state', 'gemodel'],
+            '--loss-model-client-to-server', choices=['random', 'state', 'gemodel'], default='random',
             help='Packet loss model applied in the client to the server direction')
     observer.add_scenario_argument(
-            '--loss-value-server-to-client', required=True, type=float, nargs='+',
+            '--loss-value-server-to-client', type=float, nargs='+', default=[0.0],
             help='Loss value applied in the server to the client direction'
-            '(pourcentage or Gilbert-Elliot transition probabilities)'
-            '(see tc_configure_link job help files for more information)')
+            '(percentage or Gilbert-Elliot transition probabilities; '
+            'see tc_configure_link job help files for more information)')
     observer.add_scenario_argument(
-            '--loss-value-client-to-server', required=True, type=float, nargs='+',
+            '--loss-value-client-to-server', type=float, nargs='+', default=[0.0],
             help='Loss value applied in the client to the server direction'
-            '(pourcentage or Gilbert-Elliot transition probabilities)'
-            '(see tc_configure_link job help files for more information)')
+            '(percentage or Gilbert-Elliot transition probabilities; '
+            'see tc_configure_link job help files for more information)')
     observer.add_scenario_argument(
             '--client-ip', '-i', required=True,
             help='IP of the client')

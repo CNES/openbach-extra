@@ -535,8 +535,13 @@ def main(argv=None):
             execute(remove_job)
 
     # Install predefined list of jobs on agents
-    install_jobs.args.job_name = [['iperf3', 'tc_configure_link', 'fping']]
-    install_jobs.args.agent_address = [list(installed_agents)]
+    install_jobs.args.job_name = [
+            ['fping'],
+            ['tc_configure_link', 'time_series', 'histogram'],
+            ['iperf3', 'd-itg_send', 'owamp-client', 'nuttcp'],
+            ['iperf3', 'd-itg_recv', 'owamp-server', 'nuttcp'],
+    ]
+    install_jobs.args.agent_address = [list(installed_agents), [middlebox], [client], [server]]
     execute(install_jobs)
 
     # Create scenario
@@ -676,6 +681,43 @@ def main(argv=None):
         '--server-ip', server,
         '--client-ip', client,
         '--middlebox-interfaces', middlebox_interfaces,
+        project_name, 'run',
+    ])
+
+    reference_executors_path = Path(CWD.parent, 'executors', 'references')
+    network_delay = load_module_from_path(reference_executors_path.joinpath('executor_network_delay.py')).main
+    network_delay([
+        '--controller', controller,
+        '--login', validator.credentials.get('login', ''),
+        '--password', validator.credentials.get('password', ''),
+        '--server-entity', 'Server',
+        '--client-entity', 'Client',
+        '--server-ip', server,
+        '--client-ip', client,
+        '--post-processing-entity', 'Entity',
+        project_name, 'run',
+    ])
+    network_jitter = load_module_from_path(reference_executors_path.joinpath('executor_network_jitter.py')).main
+    network_jitter([
+        '--controller', controller,
+        '--login', validator.credentials.get('login', ''),
+        '--password', validator.credentials.get('password', ''),
+        '--server-entity', 'Server',
+        '--client-entity', 'Client',
+        '--server-ip', server,
+        '--post-processing-entity', 'Entity',
+        project_name, 'run',
+    ])
+    network_rate = load_module_from_path(reference_executors_path.joinpath('executor_network_rate.py')).main
+    network_rate([
+        '--controller', controller,
+        '--login', validator.credentials.get('login', ''),
+        '--password', validator.credentials.get('password', ''),
+        '--server-entity', 'Server',
+        '--client-entity', 'Client',
+        '--server-ip', server,
+        '--rate-limit', '10M',
+        '--post-processing-entity', 'Entity',
         project_name, 'run',
     ])
 
