@@ -30,6 +30,7 @@ from scenario_builder import Scenario
 from scenario_builder.helpers.network.owamp import owamp_measure_owd
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
+from scenario_builder.helpers.admin.synchronization import synchronization
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 SCENARIO_NAME = 'network_jitter'
@@ -40,25 +41,38 @@ It can then, optionally, plot the jitter measurements using time-series and CDF.
 
 def jitter(
         server_entity, client_entity, server_ip,
-        count, packets_interval, scenario_name=SCENARIO_NAME):
+        count, packets_interval, maximal_synchronization_offset=None,
+        synchronization_timeout=60, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('count', count)
     scenario.add_constant('packets_interval', packets_interval)
 
+
+    synchro_ntp = None
+    if maximal_synchronization_offset is not None and maximal_synchronization_offset > 0.0:
+        synchro_ntp = synchronization(
+                scenario, client_entity,
+                maximal_synchronization_offset,
+                synchronization_timeout)
+
     owamp_measure_owd(
             scenario, client_entity, server_entity,
-            '$server_ip', '$count', '$packets_interval')
+            '$server_ip', '$count', '$packets_interval',
+            wait_finished=synchro_ntp)
 
     return scenario
 
 
 def build(
         server_entity, client_entity, server_ip, count,
-        packets_interval, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+        packets_interval, maximal_synchronization_offset=None,
+        synchronization_timeout=60, post_processing_entity=None,
+        scenario_name=SCENARIO_NAME):
     scenario = jitter(
             server_entity, client_entity, server_ip,
-            count, packets_interval, scenario_name)
+            count, packets_interval, maximal_synchronization_offset,
+            synchronization_timeout, scenario_name)
 
     if post_processing_entity is not None:
         waiting_jobs = []

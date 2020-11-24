@@ -79,7 +79,10 @@ def build(
     # Add Jitter metrology scenario
     scenario_network_jitter = network_jitter.build(
             server_entity, client_entity, server_ip, 
-            count, packets_interval, post_processing_entity)
+            count, packets_interval,
+            maximal_synchronization_offset,
+            synchronization_timeout,
+            post_processing_entity)
     start_network_jitter = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_network_one_way_delay],
