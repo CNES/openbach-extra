@@ -112,9 +112,17 @@ class ValidationSuite(FrontendBase):
                 help='address of an agent acting as server for the reference scenarios; '
                 'this can be an existing agent or a new machine to be installed.')
         self.parser.add_argument(
+                '-S', '--server-ip', metavar='ADDRESS',
+                help='private address of the server, for sockets to listen on; in case '
+                'it is different from its public install address.')
+        self.parser.add_argument(
                 '-c', '--client', '--client-address', metavar='ADDRESS', required=True,
                 help='address of an agent acting as client for the reference scenarios; '
                 'this can be an existing agent or a new machine to be installed.')
+        self.parser.add_argument(
+                '-C', '--client-ip', metavar='ADDRESS',
+                help='private address of the client, for sockets to send from; in case '
+                'it is different from its public install address.')
         self.parser.add_argument(
                 '-m', '--middlebox', '--middlebox-address', metavar='ADDRESS', required=True,
                 help='address of an agent acting as middlebox for the reference scenarios; '
@@ -268,8 +276,12 @@ def main(argv=None):
     del validator.args.agent
     client = validator.args.client
     del validator.args.client
+    client_ip = validator.args.client_ip or client
+    del validator.args.client_ip
     server = validator.args.server
     del validator.args.server
+    server_ip = validator.args.server_ip or server
+    del validator.args.server_ip
     middlebox = validator.args.middlebox
     del validator.args.middlebox
     middlebox_interfaces = validator.args.interfaces
@@ -723,8 +735,7 @@ def main(argv=None):
         '--bandwidth-client-to-server', '10M',
         '--delay-server-to-client', '10',
         '--delay-client-to-server', '10',
-        '--server-ip', server,
-        '--client-ip', client,
+        '--client-ip', client_ip,
         '--middlebox-interfaces', middlebox_interfaces,
         project_name, 'run',
     ])
@@ -741,8 +752,8 @@ def main(argv=None):
         '--password', validator.credentials.get('password', ''),
         '--server-entity', 'Server',
         '--client-entity', 'Client',
-        '--server-ip', server,
-        '--client-ip', client,
+        '--server-ip', server_ip,
+        '--client-ip', client_ip,
         '--post-processing-entity', 'Entity',
         project_name, 'run',
     ])
@@ -755,7 +766,7 @@ def main(argv=None):
         '--password', validator.credentials.get('password', ''),
         '--server-entity', 'Server',
         '--client-entity', 'Client',
-        '--server-ip', server,
+        '--server-ip', server_ip,
         '--post-processing-entity', 'Entity',
         project_name, 'run',
     ])
@@ -768,7 +779,7 @@ def main(argv=None):
         '--password', validator.credentials.get('password', ''),
         '--server-entity', 'Server',
         '--client-entity', 'Client',
-        '--server-ip', server,
+        '--server-ip', server_ip,
         '--rate-limit', '10M',
         '--post-processing-entity', 'Entity',
         project_name, 'run',
