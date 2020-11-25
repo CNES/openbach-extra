@@ -46,7 +46,9 @@ import subprocess
 
 import collect_agent
 
+
 job_dir = '/opt/openbach/agent/jobs/voip_qoe_dest'
+
 
 def connect_to_collect_agent():
     conffile = '{}/voip_qoe_dest_rstats_filter.conf'.format(job_dir)
@@ -67,12 +69,13 @@ def build_parser():
     parser = argparse.ArgumentParser(description='Start a receiver (destination) component to measure QoE of one or '
                                                  'many VoIP sessions generated with D-ITG software',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('dest_addr', type=ipaddress.ip_address, help='The destination IPv4 address to use for the '
-                                                                     'signaling channel')
+    parser.add_argument('dest_addr', type=ipaddress.ip_address,
+                        help='The destination IPv4 address to use for the signaling channel')
     parser.add_argument('-cp', '--control_port', type=int, default=50000,
                         help='The port used on the sender side to send and receive OpenBACH commands from the client.'
                              'Should be the same on the destination side.  Default: 50000.')
     return parser
+
 
 def socket_thread(address, port):
     s = socket.socket()
@@ -95,12 +98,11 @@ def socket_thread(address, port):
             if command == "BYE":
                 break
             elif command == "GET_LOG_FILE":
-                f = open('{}/logs/run{}/recv.log'.format(job_dir, run_id),'rb')
-                l = f.read(1024)
-                while (l):
-                   conn.send(l)
-                   l = f.read(1024)
-                f.close()
+                with open('{}/logs/run{}/recv.log'.format(job_dir, run_id),'rb') as f:
+                    l = f.read(1024)
+                    while (l):
+                       conn.send(l)
+                       l = f.read(1024)
                 time.sleep(5)
                 print("TRANSFERT_FINISHED".encode())
                 conn.send("TRANSFERT_FINISHED".encode())
@@ -126,10 +128,14 @@ def main(args):
         th.daemon = True
         th.start()
     except (KeyboardInterrupt, SystemExit):
-        cleanup_stop_thread()
         exit()
 
-    process = subprocess.Popen('ITGRecv', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        process = subprocess.Popen('ITGRecv', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except Exception as ex:
+        message = 'Error running ITGRecv : {}'.format(ex)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
 
     while True:
         output = process.stdout.readline().decode().strip()
