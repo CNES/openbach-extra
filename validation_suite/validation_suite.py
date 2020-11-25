@@ -52,9 +52,10 @@ import json
 import time
 import getpass
 import logging
-import logging.config
 import textwrap
 import tempfile
+import itertools
+import logging.config
 from pathlib import Path
 from random import sample
 from collections import Counter
@@ -85,6 +86,7 @@ from auditorium_scripts.add_job import AddJob
 from auditorium_scripts.install_jobs import InstallJobs
 from auditorium_scripts.start_job_instance import StartJobInstance
 from auditorium_scripts.status_job_instance import StatusJobInstance
+from auditorium_scripts.state_job import StateJob
 from auditorium_scripts.stop_job_instance import StopJobInstance
 from auditorium_scripts.stop_all_job_instances import StopAllJobInstances
 from auditorium_scripts.uninstall_jobs import UninstallJobs
@@ -97,6 +99,7 @@ from auditorium_scripts.status_scenario_instance import StatusScenarioInstance
 from auditorium_scripts.stop_scenario_instance import StopScenarioInstance
 from auditorium_scripts.delete_scenario import DeleteScenario
 from auditorium_scripts.get_scenario_instance_data import GetScenarioInstanceData
+
 
 
 class ValidationSuite(FrontendBase):
@@ -116,6 +119,10 @@ class ValidationSuite(FrontendBase):
                 '-m', '--middlebox', '--middlebox-address', metavar='ADDRESS', required=True,
                 help='address of an agent acting as middlebox for the reference scenarios; '
                 'this can be an existing agent or a new machine to be installed.')
+        self.parser.add_argument(
+                '-e', '--agent', '--extra-agent', metavar='ADDRESS', action='append', default=[],
+                help='address of an extra agent to install during the tests; can be specified '
+                'several times.')
         self.parser.add_argument(
                 '-i', '--interfaces', '--middlebox-interfaces', required=True,
                 help='comma-separated list of the network interfaces to emulate link on the middlebox')
@@ -235,9 +242,9 @@ def execute(openbach_function):
 
     openbach_function_args = vars(openbach_function.args)
     if openbach_function_args:
-        logger.info('Arguments used:')
+        logger.debug('Arguments used:')
         for name, value in openbach_function_args.items():
-            logger.info('\t%s: %s', name, '*****' if name == 'password' else value)
+            logger.debug('\t%s: %s', name, '*****' if name == 'password' else value)
 
     response = openbach_function.execute(False)
 
@@ -248,7 +255,8 @@ def execute(openbach_function):
 
 
 def main(argv=None):
-    # TODO: detach/reatach agents
+    logger = logging.getLogger(__name__)
+    logger.debug('TODO: detach and reatach agents')
 
     # Parse arguments
     validator = ValidationSuite()
@@ -256,6 +264,8 @@ def main(argv=None):
 
     controller = validator.credentials['controller']
     del validator.args.controller
+    new_agents = validator.args.agent
+    del validator.args.agent
     client = validator.args.client
     del validator.args.client
     server = validator.args.server
@@ -292,7 +302,7 @@ def main(argv=None):
             if not agent['project'] and not agent['reserved'] and agent['address'] != controller
     }
     existing_names = {agent['name'] for agent in response}
-    new_agents = [agent for agent in (client, server, middlebox) if agent not in free_agents]
+    new_agents.extend(agent for agent in (client, server, middlebox) if agent not in free_agents)
 
     # List and remember installed jobs on these agents
     installed_jobs = validator.share_state(ListInstalledJobs)
@@ -358,12 +368,14 @@ def main(argv=None):
             for agent in installed_agents
             if agent not in available_collectors
     }
-    if collector_candidates and False:
+    if collector_candidates:
         # Install a second collector
         installed_collector, *_ = collector_candidates
         install_collector = validator.share_state(AddCollector)
         install_collector.args.collector = installed_collector
         install_collector.args.agent_name = installed_agents[installed_collector]
+        install_collector.args.logs_port = 10514
+        install_collector.args.stats_port = 2222
         install_collector.args.user = install_user
         install_collector.args.password = install_password
         execute(install_collector)
@@ -373,14 +385,15 @@ def main(argv=None):
         change_collector.args.collector_address = selected_collector
         execute(change_collector)
 
-        # TODO: Modify ? How ?
+        logger.debug('TODO: Modify collector (How?)')
+
         # Remove collector
         remove_collector = validator.share_state(DeleteCollector)
         remove_collector.args.collector_address = installed_collector
         execute(remove_collector)
 
         # Reinstall the agent we just lost
-        install_agent.args.agent_addess = installed_collector
+        install_agent.args.agent_address = installed_collector
         install_agent.args.agent_name = installed_agents[installed_collector]
         try:
             install_agent.args.collector_address = free_agents[installed_collector]['collector']
@@ -388,7 +401,7 @@ def main(argv=None):
             install_agent.args.collector_address = selected_collector
         execute(install_agent)
 
-    # TODO: Reserve an agent for the upcomming project
+    logger.debug('TODO: Reserve an agent for the upcomming project')
 
     # Create project
     add_project = validator.share_state(CreateProject)
@@ -443,7 +456,6 @@ def main(argv=None):
             if not agent['project'] or agent['reserved'] == project_name
     }
     if available_agents != set(installed_agents):
-        logger = logging.getLogger(__name__)
         logger.warning(
                 'Agents available for the project %s are different '
                 'than the ones computed previously', project_name)
@@ -521,6 +533,14 @@ def main(argv=None):
     install_jobs.args.job_name = job_names
     install_jobs.args.agent_address = agent_addresses
     execute(install_jobs)
+
+    for names, addresses in zip(job_names, agent_addresses):
+        for name, address in itertools.product(names, addresses):
+            state_job = validator.share_state(StateJob)
+            state_job.args.job_name = name
+            state_job.args.agent_address = address
+            response = execute(state_job)
+            logger.debug('Last installation date: %s', response['install']['last_operation_date'])
 
     # Remove jobs from agents
     uninstall_jobs = validator.share_state(UninstallJobs)
@@ -660,7 +680,6 @@ def main(argv=None):
     job, = (j for j in agent['installed_jobs'] if j['job_name'] == job_name)
     instances = [i for i in job['instances'] if i['status'] == 'Running']
     if len(instances) != instances_amount:
-        logger = logging.getLogger(__name__)
         logger.warning(
                 'Expected %d running instances of %s but found %d instead', 
                 instances_amount, job_name, len(instances))
@@ -687,6 +706,9 @@ def main(argv=None):
             break
 
     # Run example executors
+    logger.info('Running example executors:')
+
+    logger.info('  Data transfer configure link')
     data_transfer_path = Path(CWD.parent, 'executors', 'examples', 'data_transfer_configure_link.py')
     data_transfer_configure_link = load_module_from_path(data_transfer_path).main
     data_transfer_configure_link([
@@ -708,7 +730,10 @@ def main(argv=None):
     ])
 
     # Run reference executors
+    logger.info('Running reference executors:')
     reference_executors_path = Path(CWD.parent, 'executors', 'references')
+
+    logger.info('  Network Delay')
     network_delay = load_module_from_path(reference_executors_path.joinpath('executor_network_delay.py')).main
     network_delay([
         '--controller', controller,
@@ -721,6 +746,8 @@ def main(argv=None):
         '--post-processing-entity', 'Entity',
         project_name, 'run',
     ])
+
+    logger.info('  Network Jitter')
     network_jitter = load_module_from_path(reference_executors_path.joinpath('executor_network_jitter.py')).main
     network_jitter([
         '--controller', controller,
@@ -732,6 +759,8 @@ def main(argv=None):
         '--post-processing-entity', 'Entity',
         project_name, 'run',
     ])
+
+    logger.info('  Network Rate')
     network_rate = load_module_from_path(reference_executors_path.joinpath('executor_network_rate.py')).main
     network_rate([
         '--controller', controller,
