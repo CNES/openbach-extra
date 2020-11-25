@@ -51,7 +51,7 @@ def main(argv=None):
             '--client-ip', required=True,
             help='source ip address for the VoIP traffic')
     observer.add_scenario_argument(
-            '--server-port', required=True,
+            '--server-port', type=int, default=10000,
             help='destination port for the VoIP traffic')
     observer.add_scenario_argument(
             '--duration', default=10,

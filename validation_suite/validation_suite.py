@@ -572,8 +572,8 @@ def main(argv=None):
     install_jobs.args.job_name = [
             ['fping'],
             ['tc_configure_link', 'time_series', 'histogram'],
-            ['iperf3', 'd-itg_send', 'owamp-client', 'nuttcp'],
-            ['iperf3', 'd-itg_recv', 'owamp-server', 'nuttcp'],
+            ['iperf3', 'd-itg_send', 'owamp-client', 'nuttcp', 'ftp_clt', 'dashjs_client', 'voip_qoe_src', 'web_browsing_qoe'],
+            ['iperf3', 'd-itg_recv', 'owamp-server', 'nuttcp', 'ftp_srv', 'apache2', 'voip_qoe_dest'],
     ]
     install_jobs.args.agent_address = [list(installed_agents), [middlebox], [client], [server]]
     execute(install_jobs)
@@ -742,10 +742,10 @@ def main(argv=None):
 
     # Run reference executors
     logger.info('Running reference executors:')
-    reference_executors_path = Path(CWD.parent, 'executors', 'references')
+    executors_path = Path(CWD.parent, 'executors', 'references')
 
     logger.info('  Network Delay')
-    network_delay = load_module_from_path(reference_executors_path.joinpath('executor_network_delay.py')).main
+    network_delay = load_module_from_path(executors_path.joinpath('executor_network_delay.py')).main
     network_delay([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -759,7 +759,7 @@ def main(argv=None):
     ])
 
     logger.info('  Network Jitter')
-    network_jitter = load_module_from_path(reference_executors_path.joinpath('executor_network_jitter.py')).main
+    network_jitter = load_module_from_path(executors_path.joinpath('executor_network_jitter.py')).main
     network_jitter([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -772,7 +772,7 @@ def main(argv=None):
     ])
 
     logger.info('  Network Rate')
-    network_rate = load_module_from_path(reference_executors_path.joinpath('executor_network_rate.py')).main
+    network_rate = load_module_from_path(executors_path.joinpath('executor_network_rate.py')).main
     network_rate([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -784,6 +784,144 @@ def main(argv=None):
         '--post-processing-entity', 'Entity',
         project_name, 'run',
     ])
+
+    #~logger.info('  Network QOS')
+    #~network_qos = load_module_from_path(executors_path.joinpath('executor_network_qos.py')).main
+    #~network_qos([
+    #~    '--controller', controller,
+    #~    '--login', validator.credentials.get('login', ''),
+    #~    '--password', validator.credentials.get('password', ''),
+    #~    project_name, 'run',
+    #~])
+
+    logger.info('  Network One Way Delay')
+    network_owd = load_module_from_path(executors_path.joinpath('executor_network_one_way_delay.py')).main
+    network_owd([
+        '--controller', controller,
+        '--login', validator.credentials.get('login', ''),
+        '--password', validator.credentials.get('password', ''),
+        '--server-entity', 'Server',
+        '--client-entity', 'Client',
+        '--server-ip', server_ip,
+        '--client-ip', client_ip,
+        '--post-processing-entity', 'Entity',
+        project_name, 'run',
+    ])
+
+    logger.info('  Network Global')
+    network_global = load_module_from_path(executors_path.joinpath('executor_network_global.py')).main
+    network_global([
+        '--controller', controller,
+        '--login', validator.credentials.get('login', ''),
+        '--password', validator.credentials.get('password', ''),
+        '--server-entity', 'Server',
+        '--client-entity', 'Client',
+        '--server-ip', server_ip,
+        '--client-ip', client_ip,
+        '--rate-limit', '10M',
+        '--post-processing-entity', 'Entity',
+        project_name, 'run',
+    ])
+
+    logger.info('  Service FTP')
+    service_ftp = load_module_from_path(executors_path.joinpath('executor_service_ftp.py')).main
+    service_ftp([
+        '--controller', controller,
+        '--login', validator.credentials.get('login', ''),
+        '--password', validator.credentials.get('password', ''),
+        '--server-entity', 'Server',
+        '--client-entity', 'Client',
+        '--server-ip', server_ip,
+        '--client-ip', client_ip,
+        '--mode', 'download',
+        '--post-processing-entity', 'Entity',
+        project_name, 'run',
+    ])
+
+    logger.info('  Service Video Dash')
+    service_dash = load_module_from_path(executors_path.joinpath('executor_service_video_dash.py')).main
+    service_dash([
+        '--controller', controller,
+        '--login', validator.credentials.get('login', ''),
+        '--password', validator.credentials.get('password', ''),
+        '--server-entity', 'Server',
+        '--client-entity', 'Client',
+        '--server-ip', server_ip,
+        '--duration', '30',
+        '--launch-server',
+        '--post-processing-entity', 'Entity',
+        project_name, 'run',
+    ])
+
+    logger.info('  Service VoIP')
+    service_voip = load_module_from_path(executors_path.joinpath('executor_service_voip.py')).main
+    service_voip([
+        '--controller', controller,
+        '--login', validator.credentials.get('login', ''),
+        '--password', validator.credentials.get('password', ''),
+        '--server-entity', 'Server',
+        '--client-entity', 'Client',
+        '--server-ip', server_ip,
+        '--client-ip', client_ip,
+        '--server-port', '8010',
+        '--duration', '30',
+        '--post-processing-entity', 'Entity',
+        project_name, 'run',
+    ])
+
+    logger.info('  Service Web Browsing')
+    service_web = load_module_from_path(executors_path.joinpath('executor_service_web_browsing.py')).main
+    service_web([
+        '--controller', controller,
+        '--login', validator.credentials.get('login', ''),
+        '--password', validator.credentials.get('password', ''),
+        '--server-entity', 'Server',
+        '--client-entity', 'Client',
+        '--duration', '30',
+        '--post-processing-entity', 'Entity',
+        project_name, 'run',
+    ])
+
+    logger.info('  Service Traffic Mix')
+    service_mix = load_module_from_path(executors_path.joinpath('executor_service_traffic_mix.py')).main
+    service_mix([
+        '--controller', controller,
+        '--login', validator.credentials.get('login', ''),
+        '--password', validator.credentials.get('password', ''),
+        '--data-transfer', '1', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, '5201', '10M', '0', '1500',
+        '--dash', '2', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, 'http/2', '5301',
+        '--web-browsing', '3', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, '10', '2',
+        '--voip', '4', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, '8011', 'G.711.1',
+        '--data-transfer', '5', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '5201', '10M', '0', '1500',
+        '--dash', '6', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, 'http/2', '5301',
+        '--web-browsing', '7', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '10', '2',
+        '--voip', '8', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '8012', 'G.711.1',
+        '--post-processing-entity', 'Entity',
+        project_name, 'run',
+    ])
+
+    logger.info('  Transport TCP One Flow')
+    transport_oneflow = load_module_from_path(executors_path.joinpath('executor_transport_tcp_one_flow.py')).main
+    transport_oneflow([
+        '--controller', controller,
+        '--login', validator.credentials.get('login', ''),
+        '--password', validator.credentials.get('password', ''),
+        '--server-entity', 'Server',
+        '--client-entity', 'Client',
+        '--server-ip', server_ip,
+        '--transmitted-size', '1G',
+        '--post-processing-entity', 'Entity',
+        project_name, 'run',
+    ])
+
+    #~logger.info('  Transport TCP Stack Conf')
+    #~transport_stack = load_module_from_path(executors_path.joinpath('executor_transport_tcp_stack_conf.py')).main
+    #~transport_stack([
+    #~    '--controller', controller,
+    #~    '--login', validator.credentials.get('login', ''),
+    #~    '--password', validator.credentials.get('password', ''),
+    #~    project_name, 'run',
+    #~])
 
     # Remove Project
     execute(remove_project)
