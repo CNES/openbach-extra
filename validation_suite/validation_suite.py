@@ -128,6 +128,10 @@ class ValidationSuite(FrontendBase):
                 help='address of an agent acting as middlebox for the reference scenarios; '
                 'this can be an existing agent or a new machine to be installed.')
         self.parser.add_argument(
+                '-M', '--middlebox-ip', metavar='ADDRESS',
+                help='private address of the middlebox, for routes management; in case '
+                'it is different from its public install address.')
+        self.parser.add_argument(
                 '-e', '--agent', '--extra-agent', metavar='ADDRESS', action='append', default=[],
                 help='address of an extra agent to install during the tests; can be specified '
                 'several times.')
@@ -284,6 +288,8 @@ def main(argv=None):
     del validator.args.server_ip
     middlebox = validator.args.middlebox
     del validator.args.middlebox
+    middlebox_ip = validator.args.middlebox_ip or middlebox
+    del validator.args.middlebox_ip
     middlebox_interfaces = validator.args.interfaces
     del validator.args.interfaces
     install_user = validator.args.user
@@ -570,7 +576,7 @@ def main(argv=None):
 
     # Install predefined list of jobs on agents
     install_jobs.args.job_name = [
-            ['fping'],
+            ['fping', 'ip_route'],
             ['tc_configure_link', 'time_series', 'histogram'],
             ['iperf3', 'd-itg_send', 'owamp-client', 'nuttcp', 'ftp_clt', 'dashjs_client', 'voip_qoe_src', 'web_browsing_qoe'],
             ['iperf3', 'd-itg_recv', 'owamp-server', 'nuttcp', 'ftp_srv', 'apache2', 'voip_qoe_dest'],
@@ -739,6 +745,24 @@ def main(argv=None):
         '--middlebox-interfaces', middlebox_interfaces,
         project_name, 'run',
     ])
+
+    # Setup routes between client and server to use the middlebox
+    start_job.args.job_name = 'ip_route'
+    start_job.args.interval = None
+    start_job.args.agent_address = server
+    start_job.args.argument = {
+            'operation': 'add',
+            'gateway_ip': middlebox_ip,
+            'destination_ip': {'network_ip': '{}/32'.format(client_ip)}
+    }
+    execute(start_job)
+    start_job.args.agent_address = client
+    start_job.args.argument = {
+            'operation': 'add',
+            'gateway_ip': middlebox_ip,
+            'destination_ip': {'network_ip': '{}/32'.format(server_ip)}
+    }
+    execute(start_job)
 
     # Run reference executors
     logger.info('Running reference executors:')
@@ -922,6 +946,22 @@ def main(argv=None):
     #~    '--password', validator.credentials.get('password', ''),
     #~    project_name, 'run',
     #~])
+
+    # Remove routes between client and server to use the middlebox
+    start_job.args.job_name = 'ip_route'
+    start_job.args.interval = None
+    start_job.args.agent_address = server
+    start_job.args.argument = {
+            'operation': 'delete',
+            'destination_ip': {'network_ip': '{}/32'.format(client_ip)}
+    }
+    execute(start_job)
+    start_job.args.agent_address = client
+    start_job.args.argument = {
+            'operation': 'delete',
+            'destination_ip': {'network_ip': '{}/32'.format(server_ip)}
+    }
+    execute(start_job)
 
     # Remove Project
     execute(remove_project)
