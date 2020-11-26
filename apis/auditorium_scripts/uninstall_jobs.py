@@ -37,12 +37,43 @@ __credits__ = '''Contributors:
 '''
 
 
+import inspect
 import argparse
 import itertools
 import threading
 
 from auditorium_scripts.frontend import FrontendBase
 from auditorium_scripts.state_job import StateJob
+
+
+class WaitForUninstall(threading.Thread):
+    def run(self):
+        try:
+            result = self._run()
+        except Exception as e:
+            self._exception = e
+        else:
+            self._exception = None
+            self._result = result
+
+
+    def _run(self):
+        signature = inspect.signature(lambda state_job, show_response_content=None: None)
+        arguments = signature.bind(*self._args, **self._kwargs)
+        arguments.apply_defaults()
+
+        state_job = arguments.arguments['state_job']
+        show = arguments.arguments['show_response_content']
+        if show is None:
+            return state_job.wait_for_success('uninstall')
+        else:
+            return state_job.wait_for_success('uninstall', show_response_content=show)
+
+    def join(self, timeout=None):
+        super().join(timeout)
+        if self._exception is not None:
+            raise self._exception
+        return self._result
 
 
 class UninstallJobs(FrontendBase):
@@ -93,8 +124,7 @@ class UninstallJobs(FrontendBase):
                     response.raise_for_status()
         else:
             threads = list(self._start_monitoring(show_response_content))
-            for thread in threads:
-                thread.join()
+            responses = [thread.join() for thread in threads]
 
         return responses
 
@@ -104,10 +134,7 @@ class UninstallJobs(FrontendBase):
                 state_job = self.share_state(StateJob)
                 state_job.args.job_name = job
                 state_job.args.agent_address = agent
-                thread = threading.Thread(
-                        target=state_job.wait_for_success,
-                        args=('uninstall',),
-                        kwargs={'show_response_content': show_response_content})
+                thread = WaitForUninstall(args=(state_job, show_response_content))
                 thread.start()
                 yield thread
 
