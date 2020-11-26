@@ -60,8 +60,8 @@ def main(argv=None):
             '--codec', default='G.711.1',
             help='codec used by the VoIP traffic. Possible values are: G.711.1, G.711.2, G.723.1, G.729.2, G.729.3. Default : G.711.1')
     observer.add_scenario_argument(
-            '--maximal-synchronization-offset', type=float,
-            help='maximal offset difference where we have to do a NTP '
+            '--max-synchro-off', type=float,
+            help='maximal offset difference in milliseconds where we have to do a NTP '
             'resynchronization; if omitted, no NTP checks are performed')
     observer.add_scenario_argument(
             '--synchronization-timeout', type=float, default=60,
@@ -80,7 +80,7 @@ def main(argv=None):
             args.server_port,
             args.duration,
             args.codec,
-            args.maximal_synchronization_offset,
+            args.max_synchro_off,
             args.synchronization_timeout,
             args.post_processing_entity,
             scenario_name=args.scenario_name)

@@ -46,14 +46,14 @@ SCENARIO_DESCRIPTION = """This scenario allows to :
 
 def one_way_delay(
         server_entity, client_entity, server_ip, client_ip,
-        maximal_synchronization_offset=None, synchronization_timeout=60, scenario_name=SCENARIO_NAME):
+        max_synchro_off=None, synchronization_timeout=60, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('client_ip', client_ip)
 
     synchro_ntp = None
-    if maximal_synchronization_offset is not None and maximal_synchronization_offset > 0.0:
-        synchro_ntp = synchronization(scenario, client_entity, maximal_synchronization_offset, synchronization_timeout)
+    if max_synchro_off is not None and max_synchro_off > 0.0:
+        synchro_ntp = synchronization(scenario, client_entity, max_synchro_off, synchronization_timeout)
 
     owamp_measure_owd(scenario, client_entity, server_entity, '$server_ip', wait_finished=synchro_ntp)
     ditg_packet_rate(scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', packet_rate=1, wait_finished=synchro_ntp)
@@ -63,12 +63,12 @@ def one_way_delay(
 
 def build(
         server_entity, client_entity, server_ip, client_ip, 
-        maximal_synchronization_offset=None, synchronization_timeout=60,
+        max_synchro_off=None, synchronization_timeout=60,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = one_way_delay(
             server_entity, client_entity,
             server_ip, client_ip,
-            maximal_synchronization_offset,
+            max_synchro_off,
             synchronization_timeout, scenario_name)
 
     if post_processing_entity is not None:

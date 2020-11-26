@@ -45,7 +45,7 @@ It is a general network QoS metrics scenario.
 def build(
         server_entity, client_entity, server_ip, client_ip, server_port, client_port,
         command_port, duration, rate_limit, num_flows, tos, mtu, count, packets_interval,
-        maximal_synchronization_offset=None, synchronization_timeout=60,
+        max_synchro_off=None, synchronization_timeout=60,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
     #Create top network_global scenario
@@ -57,7 +57,7 @@ def build(
             server_entity, client_entity,
             server_ip, client_ip,
             duration, simultaneous,
-            maximal_synchronization_offset,
+            max_synchro_off,
             synchronization_timeout,
             post_processing_entity)
     start_network_delay = scenario.add_function('start_scenario_instance')
@@ -67,7 +67,7 @@ def build(
     scenario_network_one_way_delay = network_one_way_delay.build(
             server_entity, client_entity,
             server_ip, client_ip,
-            maximal_synchronization_offset,
+            max_synchro_off,
             synchronization_timeout,
             post_processing_entity)
     start_network_one_way_delay = scenario.add_function(
@@ -80,7 +80,7 @@ def build(
     scenario_network_jitter = network_jitter.build(
             server_entity, client_entity, server_ip, 
             count, packets_interval,
-            maximal_synchronization_offset,
+            max_synchro_off,
             synchronization_timeout,
             post_processing_entity)
     start_network_jitter = scenario.add_function(

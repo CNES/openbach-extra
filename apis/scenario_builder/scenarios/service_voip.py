@@ -45,16 +45,16 @@ def voip(
         server_entity, client_entity,
         server_ip, client_ip,
         server_port, duration, codec,
-        maximal_synchronization_offset=None,
+        max_synchro_off=None,
         synchronization_timeout=60,
         scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
     synchro_ntp = None
-    if maximal_synchronization_offset is not None and maximal_synchronization_offset > 0.0:
+    if max_synchro_off is not None and max_synchro_off > 0.0:
         synchro_ntp = synchronization(
                 scenario, client_entity,
-                maximal_synchronization_offset,
+                max_synchro_off,
                 synchronization_timeout)
 
     voip_qoe(
@@ -68,7 +68,7 @@ def voip(
 def build(
         server_entity, client_entity, server_ip,
         client_ip, server_port, duration, codec,
-        maximal_synchronization_offset=None,
+        max_synchro_off=None,
         synchronization_timeout=60,
         post_processing_entity=None,
         scenario_name=SCENARIO_NAME):
@@ -77,7 +77,7 @@ def build(
             server_entity, client_entity,
             server_ip, client_ip,
             server_port, duration, codec,
-            maximal_synchronization_offset,
+            max_synchro_off,
             synchronization_timeout,
             scenario_name)
 

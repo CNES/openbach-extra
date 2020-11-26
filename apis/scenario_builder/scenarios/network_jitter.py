@@ -41,7 +41,7 @@ It can then, optionally, plot the jitter measurements using time-series and CDF.
 
 def jitter(
         server_entity, client_entity, server_ip,
-        count, packets_interval, maximal_synchronization_offset=None,
+        count, packets_interval, max_synchro_off=None,
         synchronization_timeout=60, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
@@ -50,10 +50,10 @@ def jitter(
 
 
     synchro_ntp = None
-    if maximal_synchronization_offset is not None and maximal_synchronization_offset > 0.0:
+    if max_synchro_off is not None and max_synchro_off > 0.0:
         synchro_ntp = synchronization(
                 scenario, client_entity,
-                maximal_synchronization_offset,
+                max_synchro_off,
                 synchronization_timeout)
 
     owamp_measure_owd(
@@ -66,12 +66,12 @@ def jitter(
 
 def build(
         server_entity, client_entity, server_ip, count,
-        packets_interval, maximal_synchronization_offset=None,
+        packets_interval, max_synchro_off=None,
         synchronization_timeout=60, post_processing_entity=None,
         scenario_name=SCENARIO_NAME):
     scenario = jitter(
             server_entity, client_entity, server_ip,
-            count, packets_interval, maximal_synchronization_offset,
+            count, packets_interval, max_synchro_off,
             synchronization_timeout, scenario_name)
 
     if post_processing_entity is not None:
