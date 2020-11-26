@@ -207,7 +207,7 @@ class _StatisticsProxy:
 
     def __call__(self, suffix=None):
         try:
-            return self.statistics_data[(suffix,)]
+            return self.__data[(suffix,)]
         except KeyError:
             raise AttributeError('\'Job\' object has no statistics attribute for the suffix {}'.format(suffix)) from None
 
