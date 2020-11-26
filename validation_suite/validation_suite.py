@@ -902,6 +902,8 @@ def main(argv=None):
         '--server-entity', 'Server',
         '--client-entity', 'Client',
         '--duration', '30',
+        '--url', 'https://{}:8081/website_openbach/www.openbach.org/content/home.php'.format(server_ip),
+        '--url', 'https://{}:8082/website_cnes/cnes.fr/fr/index.html'.format(server_ip),
         '--post-processing-entity', 'Entity',
         project_name, 'run',
     ])
@@ -914,11 +916,13 @@ def main(argv=None):
         '--password', validator.credentials.get('password', ''),
         '--data-transfer', '1', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, '5201', '10M', '0', '1500',
         '--dash', '2', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, 'http/2', '5301',
-        '--web-browsing', '3', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, '10', '2',
+        # To avoid proxy issues using config.yml, disable web-browsing
+        # '--web-browsing', '3', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, '10', '2',
         '--voip', '4', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, '8011', 'G.711.1',
         '--data-transfer', '5', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '5201', '10M', '0', '1500',
         '--dash', '6', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, 'http/2', '5301',
-        '--web-browsing', '7', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '10', '2',
+        # To avoid proxy issues using config.yml, disable web-browsing
+        # '--web-browsing', '7', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '10', '2',
         '--voip', '8', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '8012', 'G.711.1',
         '--post-processing-entity', 'Entity',
         project_name, 'run',
