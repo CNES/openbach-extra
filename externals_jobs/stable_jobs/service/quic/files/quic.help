@@ -1,0 +1,40 @@
+=== Job description ===
+
+This job runs a client or a server QUIC. Supported QUIC implementations are ngtcp2, picoquic, quicly. In server mode, resources are served from /var/www/quic.openbach.com. Some resources are deployed there when installing the job. You can add more resources if needed.
+
+=== Examples ===
+
+== Example 1 ==
+
+Launch picoquic in client mode on an agent named "client" to download both logo.jpg and index.html, 10 times from a ngtcp2 server running on an agent named "server" (IP Address ''192.168.1.1'').
+
+From the web interface of the controller, in an existing project, create an scenario and add two start_job_instance running this job on agents "server" and "client". Set job's parameters as follows:
+  * For agent "server":
+    * **implementation** = ngtcp2
+    * **server_port** = 4433
+    * **mode** = server
+ 
+  * For agent "client":
+    * **implementation** = picoquic
+    * **server_port** = 4433
+    * **mode** = client
+    * ** server_ip** = 192.168.1.1
+    * **resources** = logo.jpg,index.htlm
+    * **nb_run** = 10
+
+Or launch the job manually from the CLI of the Agent as follows: 
+
+From server agent:
+<code>
+JOB_NAME=quic sudo -E python3 /opt/openbach/agent/jobs/quic/quic.py ngtcp2 -p 4433 server  
+</code>
+
+From client agent:
+<code>
+JOB_NAME=quic sudo -E python3 /opt/openbach/agent/jobs/quic/quic.py picoquuic -p 4433 client  192.168.1.1  logo.jpg;index.html -n 10
+</code>
+
+=== Additional Information ===
+
+Know that, if you wish to install a specific version for any implementation, you can modify related global variables that are defined at the begining of the install file of the job, by specifying the address of the git repository as well as the version to install
+
