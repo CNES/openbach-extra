@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016-2020 CNES
+#   Copyright © 2016−2019 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -26,35 +26,21 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of ip_address job """
+"""Helper of command push_file"""
 
-def ip_address(
-        scenario, entity, interface, cmd, address_mask='',
+
+def push_file(
+        scenario, entity, remote_path, controller_path=None,
+        users=None, groups=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
+    if controller_path is None:
+        controller_path = remote_path
 
-    ip_address = scenario.add_function(
-            'start_job_instance',
+    push = scenario.add_function(
+            'push_file',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
+    push.configure(entity, controller_path, remote_path, users or [], groups or [])
 
-    if cmd == 'add':
-        ip_address.configure(
-                'ip_address',
-                entity,
-                interface=interface,
-                add={'address_mask': address_mask})
-    elif cmd == 'delete':
-        ip_address.configure(
-                'ip_address',
-                entity,
-                interface=interface,
-                delete={'address_mask': address_mask})
-    else:
-        ip_address.configure(
-                'ip_address',
-                entity,
-                interface=interface,
-                flush={})
-
-    return [ip_address]
+    return [push]

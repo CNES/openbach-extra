@@ -1,0 +1,20 @@
+Job-OpenSAND
+=============
+
+Job-OpenSAND is the OpenBACH Job to install, configure and launch OpenSAND with the testbed OpenBACH
+
+Read the documentation and more at http://opensand.org/support/wiki/doku.php?id= (TBD)
+
+Design Principles
+=================
+The Job opensand will install the package opensand-core and dependencies. It permits to configure a connection with a terrestrial network and to run the emulation of a Satcom entity.
+
+Get Involved
+============
+
+
+
+Authors
+=======
+
+Jobs-OpenSAND is promoted by CNES (French Space Center) as a reference open-source software tool within its research and development studies and activities in the domain of satellite communication systems and networks.

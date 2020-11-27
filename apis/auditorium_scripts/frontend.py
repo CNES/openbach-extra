@@ -152,7 +152,7 @@ def pretty_print(response, content=None, check_status=True):
 class FromFileArgumentParser(argparse.ArgumentParser):
     def convert_arg_line_to_args(self, line):
         if line.lstrip().startswith('#'):
-            return ''
+            return []
         return shlex.split(line)
 
 
@@ -180,7 +180,6 @@ class FrontendBase:
         controller, login, password, unspecified = read_controller_configuration(self.__filename)
         self.parser = FromFileArgumentParser(
                 description=description,
-                fromfile_prefix_chars='@',
                 epilog='Backend-specific arguments can be specified by '
                 'providing a file called \'controller\' in the same folder '
                 'than this script. This file can contain a JSON dictionary '
@@ -189,7 +188,8 @@ class FrontendBase:
                 '\'controller\' argument default value. If no password is '
                 'specified using either this file or the command-line, it '
                 'will be prompted without echo.',
-                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                fromfile_prefix_chars='@')
         backend = self.parser.add_argument_group('backend')
         backend.add_argument(
                 '--controller', default=controller,
