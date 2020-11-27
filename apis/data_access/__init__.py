@@ -7,7 +7,7 @@
 # tested).
 #
 #
-# Copyright © 2016 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.

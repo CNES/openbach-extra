@@ -50,5 +50,5 @@ Authors
 
 Licence
 =======
-Copyright © 2016−2020 CNES
+Copyright © 2016-2020 CNES
 OpenBACH is released under GPLv3 (see [LICENSE](LICENSE.md) file).
