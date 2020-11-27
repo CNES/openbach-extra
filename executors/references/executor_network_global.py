@@ -51,16 +51,16 @@ def main(argv=None):
             '--client-ip', required=True,
             help='IP address of source of pings and packets')
     observer.add_scenario_argument(
-            '--server-port', default=7001,
+            '--server-port', default=7001, type=int,
             help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
-            '--client-port', default=7001,
+            '--client-port', default=7001, type=int,
             help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
-            '--command-port', default=7000,
+            '--command-port', default=7000, type=int,
             help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
-            '--duration', default=30,
+            '--duration', default=30, type=int,
             help='duration of each delay, rate,   scenario (s)')
     observer.add_scenario_argument(
             '--rate-limit', required=True,
@@ -68,32 +68,45 @@ def main(argv=None):
             'than what you estimate between server and client for the '
             'UDP test (add m/g to set M/G b/s)')
     observer.add_scenario_argument(
-            '--num-flows', default=1,
-            help='Number of iperf3 flows generated (default : 1)')
+            '--num-flows', default=1, type=int,
+            help='Number of iperf3 flows generated')
     observer.add_scenario_argument(
-            '--tos', default=0,
-            help='Type of Service of the trafic (default : 0)')
+            '--tos', default=0, type=int,
+            help='Type of Service of the trafic')
     observer.add_scenario_argument(
-            '--mtu', default=1400,
-            help='MTU size (default : 1400)')
+            '--mtu', default=1400, type=int,
+            help='MTU size')
     observer.add_scenario_argument(
-            '--count', default=100,
+            '--count', default=100, type=int,
             help='The number of owamp packets to send')
     observer.add_scenario_argument(
             '--packets-interval', default='0.1e',
-            help='The mean average time between owamp packets (specify seconds and distribution type)'
-            'If e: random exponential distribution. If f: constant distribution')
+            help='The mean average time between owamp packets (specify '
+            'seconds and distribution type) If e: random exponential '
+            'distribution. If f: constant distribution')
     observer.add_scenario_argument(
-            '--max-synchro-off', type=float,
-            help='maximal offset difference in milliseconds where we have to do a NTP '
-            'resynchronization; if omitted, no NTP checks are performed')
+            '--loss-measurement', action='store_true',
+            help='Launch a test to measure Packet Loss Rate (Warning: '
+            'the test takes 10 minutes for each Tx direction)')
+    observer.add_scenario_argument(
+            '--packet-size', default=500, type=int,
+            help='Size of the packets in bytes for the packet loss test')
+    observer.add_scenario_argument(
+            '--packet-rate', default=10, type=int,
+            help='The number of packets to send per second (pps) '
+            'in the packet loss test')
+    observer.add_scenario_argument(
+            '--max-synchro-off', '--maximal-synchronization-offset', type=float,
+            help='maximal offset difference in milliseconds where we have to do '
+            'a NTP resynchronization; if omitted, no NTP checks are performed')
     observer.add_scenario_argument(
             '--synchronization-timeout', type=float, default=60,
             help='maximal synchronization duration in seconds')
     observer.add_scenario_argument(
             '--post-processing-entity',
             help='The entity where the post-processing will be '
-            'performed (histogram/time-series jobs must be installed) if defined')
+            'performed (histogram/time-series jobs must be '
+            'installed) if defined')
 
     args = observer.parse(argv, network_global.SCENARIO_NAME)
 
@@ -112,6 +125,9 @@ def main(argv=None):
                       args.mtu,
                       args.count,
                       args.packets_interval,
+                      args.loss_measurement,
+                      args.packet_size,
+                      args.packet_rate,
                       args.max_synchro_off,
                       args.synchronization_timeout,
                       args.post_processing_entity,
