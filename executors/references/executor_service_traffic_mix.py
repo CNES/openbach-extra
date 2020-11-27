@@ -42,6 +42,13 @@ from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_traffic_mix
 
 
+def _try_float(value):
+    if value is None or value == "None":
+        return None
+
+    return float(value)
+
+
 def _parse_waited_ids(ids):
     if ids == "None":
         return []
@@ -95,7 +102,7 @@ class _Validate(argparse.Action):
 
 
 class ValidateVoip(_Validate):
-    VALIDATOR = _Validate.VALIDATOR + (int, None)
+    VALIDATOR = _Validate.VALIDATOR + (int, None, _try_float, _try_float)
     TRAFFIC_NAME = 'voip'
     TRAFFIC_TYPE = service_traffic_mix.VoipArguments
 

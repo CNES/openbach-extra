@@ -43,8 +43,9 @@ It is a general network QoS metrics scenario.
 
 
 def build(
-        server_entity, client_entity, server_ip, client_ip, server_port, client_port, command_port,
-        duration, rate_limit, num_flows, tos, mtu, count, packets_interval,
+        server_entity, client_entity, server_ip, client_ip, server_port, client_port,
+        command_port, duration, rate_limit, num_flows, tos, mtu, count, packets_interval,
+        max_synchro_off=None, synchronization_timeout=60,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
     #Create top network_global scenario
@@ -52,13 +53,23 @@ def build(
 
     # Add Delay metrology scenario in sequential mode.
     simultaneous=False
-    scenario_network_delay = network_delay.build(server_entity, client_entity, server_ip, client_ip, duration, simultaneous, post_processing_entity)
+    scenario_network_delay = network_delay.build(
+            server_entity, client_entity,
+            server_ip, client_ip,
+            duration, simultaneous,
+            max_synchro_off,
+            synchronization_timeout,
+            post_processing_entity)
     start_network_delay = scenario.add_function('start_scenario_instance')
     start_network_delay.configure(scenario_network_delay)
 
     # Add One Way Delay metrology scenario
     scenario_network_one_way_delay = network_one_way_delay.build(
-            server_entity, client_entity, server_ip, client_ip, post_processing_entity)
+            server_entity, client_entity,
+            server_ip, client_ip,
+            max_synchro_off,
+            synchronization_timeout,
+            post_processing_entity)
     start_network_one_way_delay = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_network_delay],
@@ -68,7 +79,10 @@ def build(
     # Add Jitter metrology scenario
     scenario_network_jitter = network_jitter.build(
             server_entity, client_entity, server_ip, 
-            count, packets_interval, post_processing_entity)
+            count, packets_interval,
+            max_synchro_off,
+            synchronization_timeout,
+            post_processing_entity)
     start_network_jitter = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_network_one_way_delay],

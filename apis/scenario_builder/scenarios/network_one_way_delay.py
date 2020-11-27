@@ -32,6 +32,7 @@ from scenario_builder.helpers.network.owamp import owamp_measure_owd
 from scenario_builder.helpers.network.d_itg import ditg_packet_rate
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
+from scenario_builder.helpers.admin.synchronization import synchronization
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 SCENARIO_NAME = 'network_one_way_delay'
@@ -43,19 +44,32 @@ SCENARIO_DESCRIPTION = """This scenario allows to :
 """
 
 
-def one_way_delay(server_entity, client_entity, server_ip, client_ip, scenario_name=SCENARIO_NAME):
+def one_way_delay(
+        server_entity, client_entity, server_ip, client_ip,
+        max_synchro_off=None, synchronization_timeout=60, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('client_ip', client_ip)
 
-    owamp_measure_owd(scenario, client_entity, server_entity, '$server_ip')
-    ditg_packet_rate(scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', packet_rate=1)
+    synchro_ntp = None
+    if max_synchro_off is not None and max_synchro_off > 0.0:
+        synchro_ntp = synchronization(scenario, client_entity, max_synchro_off, synchronization_timeout)
+
+    owamp_measure_owd(scenario, client_entity, server_entity, '$server_ip', wait_finished=synchro_ntp)
+    ditg_packet_rate(scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', packet_rate=1, wait_finished=synchro_ntp)
 
     return scenario
 
 
-def build(server_entity, client_entity, server_ip, client_ip, post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = one_way_delay(server_entity, client_entity, server_ip, client_ip, scenario_name)
+def build(
+        server_entity, client_entity, server_ip, client_ip, 
+        max_synchro_off=None, synchronization_timeout=60,
+        post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    scenario = one_way_delay(
+            server_entity, client_entity,
+            server_ip, client_ip,
+            max_synchro_off,
+            synchronization_timeout, scenario_name)
 
     if post_processing_entity is not None:
         waiting_jobs = []
