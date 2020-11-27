@@ -38,7 +38,6 @@ __credits__ = '''Contributors:
 
 
 import inspect
-import argparse
 import itertools
 import threading
 

@@ -50,10 +50,10 @@ class DeleteCollector(FrontendBase):
         self.request(
                 'DELETE', 'collector/{}'.format(address),
                 show_response_content=False)
-        self.wait_for_success('del', show_response_content=show_response_content)
+        return self.wait_for_success('del', show_response_content=show_response_content)
 
     def query_state(self):
-        address = self.args.collector
+        address = self.args.collector_address
         return self.request(
                 'GET', 'collector/{}/state/'.format(address),
                 show_response_content=False)

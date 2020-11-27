@@ -201,6 +201,7 @@ class FrontendBase:
                 '--password', help='OpenBACH password')
         self._default_password = password
         self._default_controller = controller if unspecified else None
+        self.credentials = {'controller': self._default_controller}
 
         self.session = requests.Session()
 
@@ -217,13 +218,19 @@ class FrontendBase:
                     .format(self.__filename, args.controller))
             warnings.warn(message, RuntimeWarning)
 
+        del self._default_controller
         self.base_url = url = 'http://{}:8000/'.format(args.controller)
-        login = args.login
-        if login:
+
+        self.credentials = {'controller': args.controller}
+        if args.login:
             password = args.password or self._default_password
             if password is None:
                 password = getpass.getpass('OpenBACH password: ')
-            credentials = {'login': login, 'password': password}
+            credentials = {'login': args.login, 'password': password}
+            self.credentials.update(credentials)
+            del self.args.login
+            del self.args.password
+            del self._default_password
             response = self.session.post(url + 'login/', json=credentials)
             response.raise_for_status()
 
@@ -285,7 +292,7 @@ class FrontendBase:
                     pretty_print(response, content['response'])
                 if returncode not in valid_statuses:
                     raise ActionFailedError(**content)
-                return
+                return response
 
     def query_state(self):
         return self.session.get(self.base_url)
