@@ -39,12 +39,13 @@ import time
 import json
 import pprint
 import warnings
-from sys import exit
 from pathlib import Path
+from sys import exit, stderr
 from contextlib import suppress
 
 import requests
 from data_access import CollectorConnection
+from data_access.elasticsearch_tools import ElasticSearchConnection
 
 from auditorium_scripts.frontend import FrontendBase
 from auditorium_scripts.create_scenario import CreateScenario
@@ -185,7 +186,24 @@ class ScenarioObserver(FrontendBase):
         if not hasattr(self, 'args'):
             self.parse()
 
-        return self.args._action(builder)
+        begin_date = int(time.time()*1000)
+        try:
+            scenario_response = self.args._action(builder)
+        finally:
+            end_date = int(time.time()*1000)
+            try:
+                response = requests.get(''.join(["http://",str(self.args.collector_address),":",str(self.args.elasticsearch_port),"/logstash-*/_settings"])).json()
+                es_refresh_interval = response[list(response.keys())[0]]["settings"]["index"]["refresh_interval"]
+                sleep_for = int(''.join([n for n in es_refresh_interval if n.isdigit()]))
+                print("Retrieving logs if any, wait during logstash refreshing ({}) ...".format(es_refresh_interval))
+                time.sleep(sleep_for)
+            except:
+                time.sleep(1)
+            elasticsearch = ElasticSearchConnection(self.args.collector_address, self.args.elasticsearch_port)
+            response = elasticsearch.get_logs(timestamps=(begin_date, end_date))
+            for log in response:
+                print(log, file=stderr)
+        return scenario_response
 
     def _send_scenario_to_controller(self, builder=None):
         scenario_getter = self.share_state(GetScenario)

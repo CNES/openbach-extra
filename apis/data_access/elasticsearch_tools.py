@@ -325,6 +325,14 @@ class ElasticSearchConnection(ElasticSearchCommunicator):
         response = self.search_query(query)
         yield from parse_logs(response)
 
+    def get_logs(self, timestamps=None):
+        """Fetch data from ElasticSearch that correspond to the given
+        constraints and return the according logs.
+        """
+        query = tags_to_query(None, None, None, None, timestamps)
+        response = self.search_query(query)
+        return response
+
     def orphans(self, timestamps=None):
         """Fetch data from ElasticSearch that were not emitted using
         the collect-agent API and generate according `Log`s instances.
