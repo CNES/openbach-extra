@@ -73,3 +73,6 @@ class UninstallAllJobs(FrontendBase):
         uninstaller.args.job_name = job_names
         uninstaller.args.agent_address = addresses
         return uninstaller.execute(show_response_content)
+
+if __name__ == '__main__':
+	UninstallAllJobs.autorun()
