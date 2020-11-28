@@ -45,7 +45,8 @@ from auditorium_scripts.add_job import AddJob
 
 class CleanInstallJob(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Install Job on agents after Uninstalling it first')
+        super().__init__('OpenBACH — Install Job on agents after Uninstalling it first'
+		'This script requires that the job is already installed on Agents.')
         self.parser.add_argument(
                 'job_name', metavar='NAME',
                 help='Name of the Job to install on the specified agents.')
@@ -56,7 +57,7 @@ class CleanInstallJob(FrontendBase):
         self.parser.set_defaults(launch=False, clean_controller=False)
 
         subparsers = self.parser.add_subparsers(title='extra action')
-        parser = subparsers.add_parser('clean_contoller')
+        parser = subparsers.add_parser('clean_controller')
         job_options = parser.add_mutually_exclusive_group(required=True)
         job_options.add_argument(
                 '-p', '--path', help='path to the folder (on the controller) '
