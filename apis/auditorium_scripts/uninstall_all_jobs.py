@@ -44,10 +44,10 @@ from auditorium_scripts.uninstall_jobs import UninstallJobs
 
 class UninstallAllJobs(FrontendBase):
     def __init__(self):
-        super().__init__('OpenBACH — Uninstall all Jobs on any Agent')
+        super().__init__('OpenBACH — Uninstall all Jobs on all the Agents')
         self.parser.add_argument(
                 '-l', '--launch', '--launch-only', action='store_true',
-                help='do not wait until installation of the jobs completes '
+                help='do not wait until uninstallation of the jobs completes '
                 'on each agent; return as soon as orders have been sent.')
         self.parser.set_defaults(update=False, services=False)
 
