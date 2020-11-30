@@ -2,7 +2,7 @@ general:
   name:  dambox
   description: >
       This Job launch the binary dam_box on the agent 
-  job_version:     '1.0'
+  job_version:     '1.1'
   keywords:        [Beam Hopping, dam_box, Dam Slot, Beam Period, Timeline, FIFO]
   persistent:      true
   need_privileges: yes
