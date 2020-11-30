@@ -35,9 +35,11 @@ __credits__ = '''Contributors:
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
+import re
 import time
 import json
 import pprint
+import datetime
 import warnings
 from pathlib import Path
 from sys import exit, stderr
@@ -186,23 +188,21 @@ class ScenarioObserver(FrontendBase):
         if not hasattr(self, 'args'):
             self.parse()
 
-        begin_date = int(time.time()*1000)
+        begin_date = _now()
         try:
             scenario_response = self.args._action(builder)
         finally:
-            end_date = int(time.time()*1000)
-            try:
-                response = requests.get(''.join(["http://",str(self.args.collector_address),":",str(self.args.elasticsearch_port),"/logstash-*/_settings"])).json()
-                es_refresh_interval = response[list(response.keys())[0]]["settings"]["index"]["refresh_interval"]
-                sleep_for = int(''.join([n for n in es_refresh_interval if n.isdigit()]))
-                print("Retrieving logs if any, wait during logstash refreshing ({}) ...".format(es_refresh_interval))
-                time.sleep(sleep_for)
-            except:
-                time.sleep(1)
+            end_date = _now()
+            sleep_duration = 1
             elasticsearch = ElasticSearchConnection(self.args.collector_address, self.args.elasticsearch_port)
+            with suppress(requests.exceptions.BaseHTTPError, LookupError, ValueError):
+                settings = elasticsearch.settings_query("index.refresh_interval")
+                intervals = (settings[index]["settings"]["index"]["refresh_interval"] for index in settings)
+                sleep_duration = max(map(_convert_time, intervals), default=1)
+                print("Retrieving logs if any, wait during logstash refreshing ({}s) ...".format(sleep_duration))
+            time.sleep(sleep_duration)
             response = elasticsearch.get_logs(timestamps=(begin_date, end_date))
-            for log in response:
-                print(log, file=stderr)
+            pprint.pprint(response, stream=stderr, width=300)
         return scenario_response
 
     def _send_scenario_to_controller(self, builder=None):
@@ -384,3 +384,13 @@ class DataProcessor:
                 callbacks[job.instance_id][0]: callbacks[job.instance_id][1](job)
                 for job in scenario.jobs if job.instance_id in callbacks
         }
+
+
+def _now():
+    return int(time.time() * 1000)
+
+
+def _convert_time(duration):
+    amount, unit = re.match('(\d+)(d$|h$|m$|s$|ms$)', duration).groups()
+    unit = {'s': 'seconds', 'm': 'minutes', 'd': 'days', 'h': 'hours', 'ms': 'milliseconds'}[unit]
+    return datetime.timedelta(**{unit: int(amount)}).total_seconds()

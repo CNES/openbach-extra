@@ -232,6 +232,7 @@ class ElasticSearchCommunicator:
         """Configure the routes to send/get data to/from ElasticSearch"""
 
         base_url = 'http://{}:{}'.format(ip, port)
+        self.settings_URL = base_url + '/logstash-*/_settings/'
         self.querying_URL = base_url + '/logstash-*/_search'
         self.writing_URL = base_url + '/_bulk'
         self.scrolling_URL = base_url + '/_search/scroll'
@@ -240,6 +241,11 @@ class ElasticSearchCommunicator:
             self.auth_header = None
         else:
             self.auth_header = {'Authorization': 'Basic {}'.format(credentials)}
+
+    def settings_query(self, *settings):
+        filters = ','.join(settings)
+        response = requests.get(self.querying_URL + filters, headers=self.auth_header)
+        return response.json()
 
     def search_query(self, body=None, **query):
         """Send a query to ElasticSearch and gather the results"""
@@ -325,7 +331,7 @@ class ElasticSearchConnection(ElasticSearchCommunicator):
         response = self.search_query(query)
         yield from parse_logs(response)
 
-    def get_logs(self, timestamps=None):
+    def all_logs(self, timestamps=None):
         """Fetch data from ElasticSearch that correspond to the given
         constraints and return the according logs.
         """
