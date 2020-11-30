@@ -54,7 +54,8 @@ def main(argv=None):
     group.add_argument(
             '--duration', type=int,
             help='duration of iperf3 transmission (in seconds)')
-    group.add_argument('--file-size', help='size of the file to transmit (in bytes)')
+    group.add_argument('--file-size', help='size of the file to transmit (in bytes). '
+            'The value must be stricly higher than 1 MB')
     observer.add_scenario_argument(
             '--tos', default=0,
             help='set the ToS field of the TCP iperf3 traffic (e.g. 0x04)')
