@@ -63,7 +63,7 @@ class AddProject(FrontendBase):
             except ValueError:
                 self.parser.error('invalid JSON data in {}'.format(project_file.name))
 
-        self.args.project['owners'] = [] if self.args.public else [self.credentials['login']]
+        self.args.project['owners'] = [] if self.args.public else [self.credentials.get('login')]
 
     def execute(self, show_response_content=True):
         return self.request(

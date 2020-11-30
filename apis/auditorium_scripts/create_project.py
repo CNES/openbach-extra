@@ -55,7 +55,7 @@ class CreateProject(FrontendBase):
         self.args.project = {
                 'name': self.args.project_name,
                 'description': self.args.description,
-                'owners': [] if self.args.public else [self.credentials['login']],
+                'owners': [] if self.args.public else [self.credentials.get('login')],
         }
 
     def execute(self, show_response_content=True):
