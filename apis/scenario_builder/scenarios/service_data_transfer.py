@@ -38,7 +38,8 @@ SCENARIO_NAME = 'service_data_transfer'
 SCENARIO_DESCRIPTION = """This scenario launches one iperf3 transfer.
 It can then, optionally, plot the throughput using time-series and CDF.
 NB : client and server entities/IPs/ports are in accordance
-with iperf3 logic (server = receiver and client = sender)
+with iperf3 logic (server = receiver and client = sender).
+The file size, if set, must be stricly higher than 1 MB.
 """
 
 
