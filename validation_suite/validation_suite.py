@@ -552,6 +552,7 @@ def main(argv=None):
     install_jobs.args.agent_address = agent_addresses
     execute(install_jobs)
 
+    # Check installation status
     for names, addresses in zip(job_names, agent_addresses):
         for name, address in itertools.product(names, addresses):
             state_job = validator.share_state(StateJob)
@@ -568,19 +569,21 @@ def main(argv=None):
     execute(uninstall_jobs)
 
     # Remove extra jobs from controller
-    remove_job = validator.share_state(DeleteJob)
-    for job_name in external_jobs:
-        if job_name not in installed_jobs:
-            remove_job.args.job_name = job_name
-            execute(remove_job)
-
-    # Install predefined list of jobs on agents
-    install_jobs.args.job_name = [
+    required_jobs = [
             ['fping', 'ip_route'],
             ['tc_configure_link', 'time_series', 'histogram'],
             ['iperf3', 'd-itg_send', 'owamp-client', 'nuttcp', 'ftp_clt', 'dashjs_client', 'voip_qoe_src', 'web_browsing_qoe'],
             ['iperf3', 'd-itg_recv', 'owamp-server', 'nuttcp', 'ftp_srv', 'apache2', 'voip_qoe_dest'],
     ]
+    required_jobs_set = {j for jobs in required_jobs for j in jobs}
+    remove_job = validator.share_state(DeleteJob)
+    for job_name in external_jobs:
+        if job_name not in installed_jobs and job_name not in required_jobs_set:
+            remove_job.args.job_name = job_name
+            execute(remove_job)
+
+    # Install predefined list of jobs on agents
+    install_jobs.args.job_name = required_jobs
     install_jobs.args.agent_address = [list(installed_agents), [middlebox], [client], [server]]
     execute(install_jobs)
 
