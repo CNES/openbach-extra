@@ -51,22 +51,32 @@ def delay_simultaneous(
     scenario.add_constant('client_ip', client_ip)
     scenario.add_constant('duration', duration)
 
-    synchro_ntp = None
+
+    wait_finished = []
     if max_synchro_off is not None and max_synchro_off > 0.0:
-        synchro_ntp = synchronization(
+        synchro_ntp_client = synchronization(
+                scenario, server_entity,
+                max_synchro_off,
+                synchronization_timeout)
+        synchro_ntp_server = synchronization(
                 scenario, client_entity,
                 max_synchro_off, 
                 synchronization_timeout)
+
+        wait_finished = []
+        for function in scenario.openbach_functions:
+            if isinstance(function, StartJobInstance):
+                wait_finished.append(function)
 
     srv = ditg_packet_rate(
             scenario, client_entity, server_entity,
             '$server_ip', '$client_ip', 'UDP', packet_rate=1,
             duration='$duration', meter='rttm',
-            wait_finished=synchro_ntp)
+            wait_finished=wait_finished)
     fping_measure_rtt(
             scenario, client_entity, '$server_ip', '$duration',
             wait_launched=srv, wait_delay=1,
-            wait_finished=synchro_ntp)
+            wait_finished=wait_finished)
 
     return scenario
 
@@ -79,18 +89,27 @@ def delay_sequential(
     scenario.add_constant('client_ip', client_ip)
     scenario.add_constant('duration', duration)
 
-    synchro_ntp = None
+    wait_finished = []
     if max_synchro_off is not None and max_synchro_off > 0.0:
-        synchro_ntp = synchronization(
+        synchro_ntp_client = synchronization(
                 scenario, client_entity,
                 max_synchro_off,
                 synchronization_timeout)
+        synchro_ntp_server = synchronization(
+                scenario, server_entity,
+                max_synchro_off,
+                synchronization_timeout)
+
+        wait_finished = []
+        for function in scenario.openbach_functions:
+            if isinstance(function, StartJobInstance):
+                wait_finished.append(function)
 
     ditg = ditg_packet_rate(
             scenario, client_entity, server_entity,
             '$server_ip', '$client_ip', 'UDP', packet_rate=1,
             duration='$duration', meter='rttm',
-            wait_finished=synchro_ntp)
+            wait_finished=wait_finished)
     fping_measure_rtt(
             scenario, client_entity, '$server_ip', '$duration',
             wait_finished=ditg)

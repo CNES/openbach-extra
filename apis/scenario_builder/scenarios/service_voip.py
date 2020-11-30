@@ -50,17 +50,25 @@ def voip(
         scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
-    synchro_ntp = None
+    wait_finished = []
     if max_synchro_off is not None and max_synchro_off > 0.0:
-        synchro_ntp = synchronization(
+        synchro_ntp_client = synchronization(
                 scenario, client_entity,
                 max_synchro_off,
                 synchronization_timeout)
+        synchro_ntp_server = synchronization(
+                scenario, server_entity,
+                max_synchro_off,
+                synchronization_timeout)
+        wait_finished = []
+        for function in scenario.openbach_functions:
+            if isinstance(function, StartJobInstance):
+                wait_finished.append(function)
 
     voip_qoe(
             scenario, server_entity, client_entity,
             client_ip, server_ip, server_port,
-            duration, codec, wait_finished=synchro_ntp)
+            duration, codec, wait_finished=wait_finished)
 
     return scenario
 

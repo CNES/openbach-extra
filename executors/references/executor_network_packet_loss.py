@@ -55,6 +55,13 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--packet-rate', default=10, help='The number of packets to send per second (pps)')
     observer.add_scenario_argument(
+            '--max-synchro-off', type=float,
+            help='maximal offset difference in milliseconds where we have to do a NTP '
+            'resynchronization; if omitted, no NTP checks are performed')
+    observer.add_scenario_argument(
+            '--synchronization-timeout', type=float, default=60,
+            help='maximal synchronization duration in seconds')
+    observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
 
@@ -68,6 +75,8 @@ def main(argv=None):
                       args.duration,
                       args.packet_size,
                       args.packet_rate,
+                      args.max_synchro_off,
+                      args.synchronization_timeout,
                       args.post_processing_entity,
                       scenario_name=args.scenario_name)
 

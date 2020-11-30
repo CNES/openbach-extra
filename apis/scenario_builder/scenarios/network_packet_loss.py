@@ -30,6 +30,7 @@ from scenario_builder import Scenario
 from scenario_builder.helpers.network.d_itg import ditg_packet_rate
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
+from scenario_builder.helpers.admin.synchronization import synchronization
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 SCENARIO_NAME = 'network_packet_loss'
@@ -41,7 +42,8 @@ It can then, optionally, plot the packet loss measurements using time-series and
 
 def packet_loss(
         server_entity, client_entity, server_ip, client_ip, duration,
-        packet_size, packet_rate, scenario_name=SCENARIO_NAME):
+        packet_size, packet_rate, max_synchro_off=None,
+        synchronization_timeout=60, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('client_ip', client_ip)
@@ -49,10 +51,28 @@ def packet_loss(
     scenario.add_constant('packet_size', packet_size)
     scenario.add_constant('packet_rate', packet_rate)
 
+    wait_finished = []
+    if max_synchro_off is not None and max_synchro_off > 0.0:
+        synchro_ntp_client = synchronization(
+                scenario, client_entity,
+                max_synchro_off,
+                synchronization_timeout)
+        synchro_ntp_server = synchronization(
+                scenario, server_entity,
+                max_synchro_off,
+                synchronization_timeout)
+
+        wait_finished = []
+        for function in scenario.openbach_functions:
+            if isinstance(function, StartJobInstance):
+                wait_finished.append(function)
+
+
     ditg = ditg_packet_rate(
             scenario, client_entity, server_entity,
             '$server_ip', '$client_ip', 'UDP', packet_rate='$packet_rate',
-            packet_size='$packet_size', duration='$duration', meter='owdm')
+            packet_size='$packet_size', duration='$duration', meter='owdm',
+            wait_finished=wait_finished)
 
     return scenario
 
@@ -60,10 +80,12 @@ def packet_loss(
 
 def build(
         server_entity, client_entity, server_ip, client_ip, duration,
-        packet_size, packet_rate, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+        packet_size, packet_rate, max_synchro_off=None, synchronization_timeout=60,
+        post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = packet_loss(
             server_entity, client_entity, server_ip, client_ip,
-            duration, packet_size, packet_rate, scenario_name)
+            duration, packet_size, packet_rate, max_synchro_off,
+            synchronization_timeout, scenario_name)
 
     if post_processing_entity is not None:
         waiting_jobs = []

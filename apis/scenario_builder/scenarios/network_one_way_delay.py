@@ -51,12 +51,18 @@ def one_way_delay(
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('client_ip', client_ip)
 
-    synchro_ntp = None
+    wait_finished = []
     if max_synchro_off is not None and max_synchro_off > 0.0:
-        synchro_ntp = synchronization(scenario, client_entity, max_synchro_off, synchronization_timeout)
+        synchro_ntp_client = synchronization(scenario, client_entity, max_synchro_off, synchronization_timeout)
+        synchro_ntp_server = synchronization(scenario, server_entity, max_synchro_off, synchronization_timeout)
+        wait_finished = []
+        for function in scenario.openbach_functions:
+            if isinstance(function, StartJobInstance):
+                wait_finished.append(function)
 
-    owamp_measure_owd(scenario, client_entity, server_entity, '$server_ip', wait_finished=synchro_ntp)
-    ditg_packet_rate(scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', packet_rate=1, wait_finished=synchro_ntp)
+
+    owamp_measure_owd(scenario, client_entity, server_entity, '$server_ip', wait_finished=wait_finished)
+    ditg_packet_rate(scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', packet_rate=1, wait_finished=wait_finished)
 
     return scenario
 
