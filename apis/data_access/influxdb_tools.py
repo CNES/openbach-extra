@@ -490,7 +490,7 @@ class InfluxDBConnection(InfluxDBCommunicator):
             timestamp_condition = ConditionTimestamp.from_timestamps(timestamps)
             condition = timestamp_condition if condition is None else ConditionAnd(condition, timestamp_condition)
         _condition = tags_to_condition(scenario, agent, job_instance, suffix, condition)
-        response = self.sql_query(select_query(job, fields, condition))
+        response = self.sql_query(select_query(job, fields, _condition))
         yield from parse_influx(response)
 
     def statistics(
