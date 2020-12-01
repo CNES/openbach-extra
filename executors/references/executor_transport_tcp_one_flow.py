@@ -52,7 +52,7 @@ def main(argv=None):
             help='The iperf3 transmitted_size (in bytes - you can use [K/M/G]: '
             'set 100M to send 100 MBytes)')
     observer.add_scenario_argument(
-            '--tos', default=0, help='Type of Service of the trafic')
+            '--tos', default='0', help='Type of Service of the trafic')
     observer.add_scenario_argument(
             '--mtu', type=int, default=1400, help='MTU size')
     observer.add_scenario_argument(

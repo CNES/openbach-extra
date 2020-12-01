@@ -60,16 +60,16 @@ def main(argv=None):
             '--reset', action='store_true',
             help='Reset the parameters to default configuration before applying changes')
     observer.add_scenario_argument(
-            '--tcp_slow_start_after_idle', choices=[0, 1],
+            '--tcp_slow_start_after_idle', type=int, choices=[0, 1],
             help='The tcp_slow_start_after_idle field')
     observer.add_scenario_argument(
-            '--tcp_no_metrics_save', choices=[0, 1],
+            '--tcp_no_metrics_save', type=int, choices=[0, 1],
             help='The tcp_no_metrics_save field')
     observer.add_scenario_argument(
-            '--tcp_sack', choices=[0, 1],
+            '--tcp_sack', type=int, choices=[0, 1],
             help='The tcp_sack field')
     observer.add_scenario_argument(
-            '--tcp_recovery', choices=[1, 2, 4],
+            '--tcp_recovery', type=int, choices=[1, 2, 4],
             help='The tcp_recovery field')
     observer.add_scenario_argument(
             '--tcp_wmem_min', type=int,
@@ -90,7 +90,7 @@ def main(argv=None):
             '--tcp_rmem_max', type=int,
             help='The tcp_rmem_max field')
     observer.add_scenario_argument(
-            '--tcp_fastopen', choices=[1, 2, 4, 200, 400],
+            '--tcp_fastopen', type=int, choices=[1, 2, 4, 200, 400],
             help='The tcp_fastopen field')
     observer.add_scenario_argument(
             '--core_wmem_default', type=int,

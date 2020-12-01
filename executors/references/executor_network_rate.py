@@ -62,7 +62,7 @@ def main(argv=None):
             '--num-flows', type=int, default=10,
             help='Number of iperf3/nuttcp flows generated')
     observer.add_scenario_argument(
-            '--tos', default=0,
+            '--tos', default='0',
             help='Type of Service of the trafic')
     observer.add_scenario_argument(
             '--mtu', type=int, default=1400,
