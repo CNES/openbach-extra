@@ -244,7 +244,7 @@ class ElasticSearchCommunicator:
 
     def settings_query(self, *settings):
         filters = ','.join(settings)
-        response = requests.get(self.querying_URL + filters, headers=self.auth_header)
+        response = requests.get(self.settings_URL + filters, headers=self.auth_header)
         return response.json()
 
     def search_query(self, body=None, **query):
