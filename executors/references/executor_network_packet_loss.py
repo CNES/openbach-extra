@@ -45,21 +45,26 @@ def main(argv=None):
             '--client-entity', required=True,
             help='Name of the entity which sends the traffic')
     observer.add_scenario_argument(
-            '--server-ip', required=True, help='IP address of the traffic receiver')
+            '--server-ip', required=True,
+            help='IP address of the traffic receiver')
     observer.add_scenario_argument(
-            '--client-ip', required=True, help='IP address of the traffic sender')
+            '--client-ip', required=True,
+            help='IP address of the traffic sender')
     observer.add_scenario_argument(
-            '--duration', default=600, help='Duration of the transmission (seconds)')
+            '--duration', type=int, default=600,
+            help='Duration of the transmission (seconds)')
     observer.add_scenario_argument(
-            '--packet-size', default=500, help='Size of the packets (bytes)')
+            '--packet-size', type=int, default=500,
+            help='Size of the packets (bytes)')
     observer.add_scenario_argument(
-            '--packet-rate', default=10, help='The number of packets to send per second (pps)')
+            '--packet-rate', type=int, default=10,
+            help='The number of packets to send per second (pps)')
     observer.add_scenario_argument(
             '--max-synchro-off', type=float,
             help='maximal offset difference in milliseconds where we have to do a NTP '
             'resynchronization; if omitted, no NTP checks are performed')
     observer.add_scenario_argument(
-            '--synchronization-timeout', type=float, default=60,
+            '--synchronization-timeout', type=float, default=60.0,
             help='maximal synchronization duration in seconds')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '

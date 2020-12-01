@@ -44,19 +44,19 @@ def main(argv=None):
             '--entity', '-e', required=True,
             help='Name of the openbach entity to capture/analyze packets on')
     observer.add_scenario_argument(
-            '--mode', '-m', type=str, choices=['capture', 'analyze'],
+            '--mode', '-m', choices=['capture', 'analyze'],
             help='Select a mode: \'capture\' for live capture or \'analyze\' for analyze a capture file')
     observer.add_scenario_argument(
-            '--iface', '-i', type=str, 
+            '--iface', '-i',
             help='Network interface to sniff (only for capture mode)')
     observer.add_scenario_argument(
-            '--capture-file', '-f', type=str, 
+            '--capture-file', '-f',
             help='Path to the file to save captured packets or to read packets to analyze')
     observer.add_scenario_argument(
-            '--src-ip', '-A', type=str,
+            '--src-ip', '-A',
             help='Source IP address of packets to process')
     observer.add_scenario_argument(
-            '--dst-ip', '-a', type=str,
+            '--dst-ip', '-a',
             help='Destination IP address of packets to process')
     observer.add_scenario_argument(
             '--src-port', '-D', type=int,
@@ -65,7 +65,7 @@ def main(argv=None):
             '--dst-port', '-d', type=int,
             help='Destination port number of packets to process')
     observer.add_scenario_argument(
-            '--proto', '-p', type=str, choices=['udp', 'tcp'],
+            '--proto', '-p', choices=['udp', 'tcp'],
             help='Transport protocol of packets to process')
     observer.add_scenario_argument(
             '--duration', '-t', type=int,
@@ -77,7 +77,7 @@ def main(argv=None):
             '--metrics-interval', '-T', type=int, default=500,
             help='Time period in ms to compute metrics (only used when packets are analyzed)')
     observer.add_scenario_argument(
-            '--post-processing-entity', type=str, 
+            '--post-processing-entity', 
             help='The entity where the post-processing will be performed '
                  '(histogram/time-series jobs must be installed) if defined. ' 
                  '(only used when packets are analyzed)')

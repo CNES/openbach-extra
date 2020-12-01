@@ -81,7 +81,7 @@ def main(argv=None):
             '--operation', choices=['apply', 'clear'], required=True,
             help='Choose apply to add configuration or clear to delete existing ones')
     observer.add_scenario_argument(
-            '--bandwidth', type=str,
+            '--bandwidth',
             help='The link bandwidth in Mbps or Kbps, expressed as [value][M|K] '
                   '(only for apply operation)')
     observer.add_scenario_argument(

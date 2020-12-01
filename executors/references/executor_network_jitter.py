@@ -48,7 +48,7 @@ def main(argv=None):
             '--server-ip', required=True,
             help='server ip address and target of the pings')
     observer.add_scenario_argument(
-            '--count', default=100,
+            '--count', type=int, default=100,
             help='The number of owamp packets to send')
     observer.add_scenario_argument(
             '--packets-interval', default='0.1e',
@@ -59,7 +59,7 @@ def main(argv=None):
             help='maximal offset difference in milliseconds where we have to do a NTP '
             'resynchronization; if omitted, no NTP checks are performed')
     observer.add_scenario_argument(
-            '--synchronization-timeout', type=float, default=60,
+            '--synchronization-timeout', type=float, default=60.0,
             help='maximal synchronization duration in seconds')
     observer.add_scenario_argument(
             '--post-processing-entity',

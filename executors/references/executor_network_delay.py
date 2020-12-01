@@ -49,7 +49,7 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--client-ip', required=True, help='IP address of source of pings and packets')
     observer.add_scenario_argument(
-            '--duration', default=10, help='duration of delay scenario in seconds')
+            '--duration', type=int, default=10, help='duration of delay scenario in seconds')
     observer.add_scenario_argument(
             '--simultaneous', action='store_true',
             help='option whether or not the test is simultaneous. Default sequential')
@@ -58,7 +58,7 @@ def main(argv=None):
             help='maximal offset difference in milliseconds where we have to do a NTP '
             'resynchronization; if omitted, no NTP checks are performed')
     observer.add_scenario_argument(
-            '--synchronization-timeout', type=float, default=60,
+            '--synchronization-timeout', type=float, default=60.0,
             help='maximal synchronization duration in seconds')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '

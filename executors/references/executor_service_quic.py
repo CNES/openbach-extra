@@ -39,24 +39,23 @@ def main(argv=None):
             '--server-entity', required=True,
             help='name of the server entity on which to run quic server')
     observer.add_scenario_argument(
-            '--server-ip', required=True,
-            help='The IP address of the server')
-    observer.add_scenario_argument(
-            '--server-port', default=4433,
-            help='The port of the server to connect to/listen on')
-    observer.add_scenario_argument(
-            '--server-implementation', required=True,
-            help='The QUIC implementation to run by the server. Possible values are: ngtcp2, picoquic, quicly')
-    observer.add_scenario_argument(
             '--client-entity', required=True,
             help='name of the client entity on which to run quic client')
     observer.add_scenario_argument(
-            '--client-implementation', required=True,
-            help='The QUIC implementation to run by the client. Possible values are: ngtcp2, picoquic, quicly')
+            '--server-ip', required=True,
+            help='The IP address of the server')
+    observer.add_scenario_argument(
+            '--server-port', type=int, default=4433,
+            help='The port of the server to connect to/listen on')
+    observer.add_scenario_argument(
+            '--server-implementation', required=True, choices=['ngtcp2', 'picoquic', 'quicly'],
+            help='The QUIC implementation to run by the server')
+    observer.add_scenario_argument(
+            '--client-implementation', required=True, choices=['ngtcp2', 'picoquic', 'quicly'],
+            help='The QUIC implementation to run by the client')
     observer.add_scenario_argument(
             '--resources', required=True,
             help='Comma-separed list of resources to download in parallel over concurrent streams')
-   
     observer.add_scenario_argument(
             '--download-dir',
             help='The path to the directory to save downloaded resources')
@@ -73,7 +72,7 @@ def main(argv=None):
             '--client-extra-args',
             help='Specify additionnal CLI arguments that are supported by the chosen client implementation')
     observer.add_scenario_argument(
-            '--nb-runs', default=1,
+            '--nb-runs', type=int, default=1,
             help='The number of times resources will be downloaded')
     observer.add_scenario_argument(
             '--post-processing-entity', 

@@ -90,7 +90,7 @@ def main(argv=None):
             metavar=('ENTITY', 'OPENSAND_ID', 'EMULATION_ADDRESS', 'TAP_NAME'),
             help='A gateway in the platform. Must be supplied at least once.')
     observer.add_scenario_argument(
-            '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy,
+            '--gateway-phy', '-gwp', action=ValidateGatewayPhy,
             nargs=4, metavar=('ENTITY_PHY', 'ENTITY_NET_ACC','INTERCONNECT_PHY_ADDRESS', 'INTERCONNECT_NET_ACC_ADDRESS'),
             help='The physical part of a split gateway. Must reference the '
             'net access part previously provided using the --gateway option. '
@@ -100,7 +100,7 @@ def main(argv=None):
             metavar=('ENTITY', 'OPENSAND_ID', 'EMULATION_ADDRESS', 'TAP_NAME'),
             help='A satellite terminal in the platform. Must be supplied at least once.')
     observer.add_scenario_argument(
-            '--duration', '-d', required=False, default=0, type=int,
+            '--duration', '-d', type=int, default=0,
             help='Duration of the opensand run test, leave blank for endless emulation.')
 
     args = observer.parse(argv, opensand_run.SCENARIO_NAME)

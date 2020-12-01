@@ -54,17 +54,17 @@ def main(argv=None):
             '--server-port', type=int, default=10000,
             help='destination port for the VoIP traffic')
     observer.add_scenario_argument(
-            '--duration', default=10,
+            '--duration', type=int, default=10,
             help='duration of VoIP transmission in seconds')
     observer.add_scenario_argument(
-            '--codec', default='G.711.1',
-            help='codec used by the VoIP traffic. Possible values are: G.711.1, G.711.2, G.723.1, G.729.2, G.729.3. Default : G.711.1')
+            '--codec', choices=['G.711.1', 'G.711.2', 'G.723.1', 'G.729.2', 'G.729.3'], default='G.711.1',
+            help='codec used by the VoIP traffic')
     observer.add_scenario_argument(
             '--max-synchro-off', type=float,
             help='maximal offset difference in milliseconds where we have to do a NTP '
             'resynchronization; if omitted, no NTP checks are performed')
     observer.add_scenario_argument(
-            '--synchronization-timeout', type=float, default=60,
+            '--synchronization-timeout', type=float, default=60.0,
             help='maximal synchronization duration in seconds')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '

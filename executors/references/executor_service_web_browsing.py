@@ -49,22 +49,22 @@ def main(argv=None):
             help='time in seconds after which the web browsing transmission'
             'is stopped; set to 0 to wait for the full web transfer')
     observer.add_scenario_argument(
-            '--nb-runs', default=1,
+            '--nb-runs', type=int, default=1,
             help='the number of fetches to perform for each website')
     observer.add_scenario_argument(
-            '--nb-parallel-runs', default=1,
+            '--nb-parallel-runs', type=int, default=1,
             help='the maximum number of fetches that can work simultaneously')
     observer.add_scenario_argument(
             '--no-compression', action='store_true', 
             help='Disable HTTP compression')
     observer.add_scenario_argument(
-            '--proxy-address', type=str,
+            '--proxy-address',
             help='Set the proxy address (also needs a proxy port)')
     observer.add_scenario_argument(
             '--proxy-port', type=int,
             help='Set the proxy port (also needs a proxy address)')
     observer.add_scenario_argument(
-            '--url', type=str, action='append',
+            '--url', action='append',
             help='URL to fetch (uses config.yaml if not set). '
             'Can be used multiple times to fetch several URLs.')
     observer.add_scenario_argument(

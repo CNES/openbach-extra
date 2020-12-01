@@ -48,19 +48,20 @@ def main(argv=None):
             '--server-ip', required=True,
             help='destination ip address for the iperf3 traffic')
     observer.add_scenario_argument(
-            '--server-port', default=7001,
+            '--server-port', type=int, default=7001,
             help='destination port for the iperf3 traffic (default : 7001)')
     group = observer.scenario_group.add_mutually_exclusive_group(required=True)
     group.add_argument(
             '--duration', type=int,
             help='duration of iperf3 transmission (in seconds)')
-    group.add_argument('--file-size', help='size of the file to transmit (in bytes). '
+    group.add_argument(
+            '--file-size', help='size of the file to transmit (in bytes). '
             'The value must be stricly higher than 1 MB')
     observer.add_scenario_argument(
             '--tos', default=0,
             help='set the ToS field of the TCP iperf3 traffic (e.g. 0x04)')
     observer.add_scenario_argument(
-            '--mtu', default=1400,
+            '--mtu', type=int, default=1400,
             help='set the MTU of the TCP iperf3 traffic (in bytes, e.g. 1400)')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
