@@ -44,14 +44,14 @@ def main(argv=None):
             '--entity', '-e', required=True,
             help='Name of the openbach entity to capture/analyze packets on')
     observer.add_scenario_argument(
-            '--mode', '-m', choices=['capture', 'analyze'],
+            '--mode', '-m', choices=['capture', 'analyze', 'both'],
             help='Select a mode: \'capture\' for live capture or \'analyze\' for analyze a capture file')
     observer.add_scenario_argument(
-            '--iface', '-i',
-            help='Network interface to sniff (only for capture mode)')
-    observer.add_scenario_argument(
-            '--capture-file', '-f',
+            '--capture-file', '-f', required=True,
             help='Path to the file to save captured packets or to read packets to analyze')
+    observer.add_scenario_argument(
+            '--interface', '-i', default='any',
+            help='Network interface to sniff (only for capture mode)')
     observer.add_scenario_argument(
             '--src-ip', '-A',
             help='Source IP address of packets to process')
@@ -71,9 +71,6 @@ def main(argv=None):
             '--duration', '-t', type=int,
             help='Duration in seconds of the capture (only for capture mode)')
     observer.add_scenario_argument(
-            '--capture-analyze', '-k', action='store_true',
-            help='Analyze captured packets once capture is completed (only for capture mode)')
-    observer.add_scenario_argument(
             '--metrics-interval', '-T', type=int, default=500,
             help='Time period in ms to compute metrics (only used when packets are analyzed)')
     observer.add_scenario_argument(
@@ -88,15 +85,14 @@ def main(argv=None):
     scenario = transport_tcpdump.build(
             args.entity,
             args.mode,
-            args.iface,
             args.capture_file,
+            args.interface,
             args.src_ip,
             args.dst_ip,
             args.src_port,
             args.dst_port,
             args.proto,
             args.duration,
-            args.capture_analyze,
             args.metrics_interval,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
