@@ -120,7 +120,8 @@ def build(
         # Add forward Packet Loss Rate metrology sub scenario
         scenario_network_packet_loss_forward = network_packet_loss.build(
                 server_entity, client_entity, server_ip, client_ip,
-                600, packet_size, packet_rate, post_processing_entity,
+                600, packet_size, packet_rate, maximal_synchronization_offset,
+                synchronization_timeout, post_processing_entity,
                 scenario_name='network_packet_loss_forward')
         start_network_packet_loss_forward = scenario.add_function(
                 'start_scenario_instance',
@@ -131,7 +132,8 @@ def build(
         # Add return Packet Loss Rate metrology sub scenario
         scenario_network_packet_loss_return = network_packet_loss.build(
                 client_entity, server_entity, client_ip, server_ip,
-                600, packet_size, packet_rate, post_processing_entity,
+                600, packet_size, packet_rate, maximal_synchronization_offset,
+                synchronization_timeout, post_processing_entity,
                 scenario_name='network_packet_loss_return')
         start_network_packet_loss_return = scenario.add_function(
                 'start_scenario_instance',
