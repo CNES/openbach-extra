@@ -42,6 +42,14 @@
   shell: uname -p
   register: cpu_arch
 
+- name: Remove conflicting packages
+  apt: name={{ item }} state=absent purge=yes
+  with_items:
+    - firefox
+    - hunspell-en-us
+  become: yes
+  environment: "{{ openbach_proxies }}"
+
 - name: Install tornado
   pip: name=tornado executable=pip3
   become: yes

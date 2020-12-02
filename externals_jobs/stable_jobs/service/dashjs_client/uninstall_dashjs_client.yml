@@ -33,13 +33,5 @@
 
 ---
 
-- name: Uninstall Gecko Driver
-  file: path=/usr/local/bin/geckodriver state=absent
-  become: yes
-
-- name: Uninstall selenium
-  pip: name=selenium executable=pip3 state=absent
-  become: yes
-
 - name: Uninstall Job
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
