@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016-2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -30,23 +30,26 @@
 
 
 def time_series_on_same_graph(
-        scenario, post_processing_entity, job_instances,
-        statistics, label, title, legend, no_suffix=False,
+        scenario, post_processing_entity, job_instances, statistics,
+        label, title, legend, no_suffix=False, filename=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
+
+    parameters = dict(
+        jobs=[job_instances],
+        statistics=statistics,
+        no_suffix=no_suffix,
+        label=label,
+        title=title,
+        legend=legend,
+    )
+    if filename is not None:
+        parameters['filename'] = filename
 
     time_series = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    time_series.configure(
-            'time_series', post_processing_entity,
-            offset=0,
-            jobs=[job_instances],
-            statistics=statistics,
-            no_suffix=no_suffix,
-            label=label,
-            title=title,
-            legend=legend)
+    time_series.configure('time_series', post_processing_entity, **parameters)
 
     return [time_series]

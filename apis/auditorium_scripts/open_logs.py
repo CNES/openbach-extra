@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -102,7 +102,7 @@ class OpenLogs(FrontendBase):
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         collector = self.parser.add_argument_group('collector')
         collector.add_argument(
-                'collector',
+                'collector_address',
                 help='IP address of the collector running ElasticSearch')
         collector.add_argument(
                 '-p', '--port', type=int, default=9200,
@@ -140,7 +140,7 @@ class OpenLogs(FrontendBase):
         else:
             args.date = [start, now]
 
-        self.base_url = 'http://{}:{}/'.format(args.collector, args.port)
+        self.base_url = 'http://{}:{}/'.format(args.collector_address, args.port)
         return args
 
     def execute(self, show_response_content=True):

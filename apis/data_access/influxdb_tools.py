@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -49,6 +49,7 @@ __all__ = [
 
 
 import re
+import sys
 import enum
 import itertools
 from collections import defaultdict
@@ -164,6 +165,17 @@ class ConditionTimestamp(ComparatorCondition):
     @property
     def is_timestamp(self):
         return True
+
+    @classmethod
+    def from_timestamps(cls, timestamps):
+        try:
+            timestamp_lower, timestamp_upper = timestamps
+        except (TypeError, ValueError):
+            return cls(Operator.Equal, timestamps)
+        else:
+            return ConditionAnd(
+                cls(Operator.GreaterOrEqual, timestamp_lower),
+                cls(Operator.LessOrEqual, timestamp_upper))
 
 
 ############################################
@@ -303,21 +315,24 @@ def parse_statistics(influx_result):
     """Generate `Scenario`s instances from InfluxDB stored data"""
     scenarios = {}  # Cache
     for job_name, statistics in parse_influx(influx_result):
-        with suppress(KeyError, ValueError):
+        try:
             timestamp = statistics.pop('time')
-            agent = statistics.pop('@agent_name')
-            job = int(statistics.pop('@job_instance_id'))
-            scenario = int(statistics.pop('@scenario_instance_id'))
-            owner = int(statistics.pop('@owner_scenario_instance_id'))
+            agent = statistics.pop('@agent_name', 'unknown_agent')
+            job = int(statistics.pop('@job_instance_id', 0))
+            scenario = int(statistics.pop('@scenario_instance_id', 0))
+            owner = int(statistics.pop('@owner_scenario_instance_id', 0))
             suffix = statistics.pop('@suffix', None)
-        scenario = get_or_create_scenario(scenario, scenarios)
-        owner = get_or_create_scenario(owner, scenarios)
-        if owner is not scenario:
-            scenario.owner = owner
-            owner.sub_scenarios[(scenario.instance_id,)] = scenario
-        job = scenario.get_or_create_job(job_name, job, agent)
-        stats = job.get_or_create_statistics(suffix)
-        stats.add_statistic(timestamp, **statistics)
+        except (KeyError, ValueError):
+            pass
+        else:
+            scenario = get_or_create_scenario(scenario, scenarios)
+            owner = get_or_create_scenario(owner, scenarios)
+            if owner is not scenario:
+                scenario.owner = owner
+                owner.sub_scenarios[(scenario.instance_id,)] = scenario
+            job = scenario.get_or_create_job(job_name, job, agent)
+            stats = job.get_or_create_statistics(suffix)
+            stats.add_statistic(timestamp, **statistics)
 
     yield from scenarios.values()
 
@@ -347,21 +362,21 @@ def line_protocol(job_name, scenario_id, owner_id, agent_name, job_id, suffix, s
         '@agent_name': agent_name,
         '@suffix': suffix,
     }
-    for tag, value in tags.items():
-        if isinstance(value, str):
-            tags[tag] = escape_names(value)
 
     measurement = [escape_names(job_name, True)]
     measurement.extend(
             # No need to call escape_names on tag as they
             # already fullfil the rules for proper names.
-            '{}={}'.format(tag, value)
-            for tag, value in tags.items() if value)
+            '{}={}'.format(tag, escape_names(value) if isinstance(value, str) else value)
+            for tag, value in tags.items() if value or value == 0)
     header = ','.join(measurement)
 
     def build_lines_of_data(statistics_chunck):
         for timestamp, data in statistics_chunck:
-            fields = ','.join(escape_field(*stat) for stat in data.items())
+            fields = ','.join(
+                    escape_field(name, value)
+                    for name, value in data.items()
+                    if value or value == 0)
             yield '{} {} {}'.format(header, fields, timestamp)
 
     stats_iterator = iter(statistics.items())
@@ -467,20 +482,26 @@ class InfluxDBConnection(InfluxDBCommunicator):
 
     def raw_statistics(
             self, job=None, scenario=None, agent=None, job_instance=None,
-            suffix=None, fields=None, condition=None):
+            suffix=None, fields=None, condition=None, timestamps=None):
         """Fetch data from InfluxDB that correspond to the given constraints
         and generate values in series.
         """
-        condition = tags_to_condition(scenario, agent, job_instance, suffix, condition)
-        response = self.sql_query(select_query(job, fields, condition))
+        if timestamps is not None:
+            timestamp_condition = ConditionTimestamp.from_timestamps(timestamps)
+            condition = timestamp_condition if condition is None else ConditionAnd(condition, timestamp_condition)
+        _condition = tags_to_condition(scenario, agent, job_instance, suffix, condition)
+        response = self.sql_query(select_query(job, fields, _condition))
         yield from parse_influx(response)
 
     def statistics(
             self, job=None, scenario=None, agent=None, job_instance=None,
-            suffix=None, fields=None, condition=None):
+            suffix=None, fields=None, condition=None, timestamps=None):
         """Fetch data from InfluxDB that correspond to the given constraints
         and generate according `Scenario`s instances.
         """
+        if timestamps is not None:
+            timestamp_condition = ConditionTimestamp.from_timestamps(timestamps)
+            condition = timestamp_condition if condition is None else ConditionAnd(condition, timestamp_condition)
         _condition = tags_to_condition(scenario, agent, job_instance, suffix, condition, subscenarios=True)
         response = self.sql_query(select_query(job, fields, _condition))
 
@@ -500,21 +521,17 @@ class InfluxDBConnection(InfluxDBCommunicator):
         """
         condition = tags_to_condition('', '', '', '', condition)
         if timestamps is not None:
-            try:
-                timestamp_lower, timestamp_upper = timestamps
-            except (TypeError, ValueError):
-                timestamp_condition = ConditionTimestamp(Operator.Equal, timestamps)
-            else:
-                timestamp_condition = ConditionAnd(
-                        ConditionTimestamp(Operator.GreaterOrEqual, timestamp_lower),
-                        ConditionTimestamp(Operator.LessOrEqual, timestamp_upper))
+            timestamp_condition = ConditionTimestamp.from_timestamps(timestamps)
             condition = ConditionAnd(condition, timestamp_condition)
         return parse_orphans(self.sql_query(select_query(None, None, condition)))
 
     def remove_statistics(
             self, job=None, scenario=None, agent=None,
-            job_instance=None, suffix=None, condition=None):
+            job_instance=None, suffix=None, condition=None, timestamps=None):
         """Delete data in InfluxDB that matches the given constraints"""
+        if timestamps is not None:
+            timestamp_condition = ConditionTimestamp.from_timestamps(timestamps)
+            condition = timestamp_condition if condition is None else ConditionAnd(condition, timestamp_condition)
         if condition is None or condition.is_timestamp:
             self.sql_query(delete_query(job, scenario, agent, job_instance, suffix, condition))
             return
@@ -544,7 +561,9 @@ class InfluxDBConnection(InfluxDBCommunicator):
                     job_name, scenario_id, owner_id, agent_name,
                     job_id, suffix[0], statistics.dated_data)
             for chunck in data_stream:
-                self.data_write(chunck)
+                response = self.data_write(chunck)
+                if __debug__ and response.content:
+                    print(response.content, file=sys.stderr)
 
     def get_field_keys(self):
         """Get the names of the fields from InfluxDB"""

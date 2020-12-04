@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -43,14 +43,14 @@ from auditorium_scripts.frontend import FrontendBase
 class StateJob(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — State of an Installed Job')
-        self.parser.add_argument('name', help='name of the job to query')
+        self.parser.add_argument('job_name', help='name of the job to query')
         self.parser.add_argument(
-                'agent',
+                'agent_address',
                 help='IP address of the agent the job is installed on')
 
     def execute(self, show_response_content=True):
-        job = self.args.name
-        address = self.args.agent
+        job = self.args.job_name
+        address = self.args.agent_address
 
         return self.request(
                 'GET', 'job/{}/state/'.format(job), address=address,

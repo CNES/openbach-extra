@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -49,7 +49,7 @@ class ModifyEntity(FrontendBase):
                 help='explanation of the entity role')
         group = self.parser.add_mutually_exclusive_group()
         group.add_argument(
-                '-a', '--agent',
+                '-a', '--agent-address', '--agent',
                 help='address of an agent to associate with the entity')
         group.add_argument(
                 '-c', '--clear', action='store_true',
@@ -59,7 +59,7 @@ class ModifyEntity(FrontendBase):
         entity_name = self.args.entity_name
         project_name = self.args.project_name
         description = self.args.description
-        agent = {'address': self.args.agent} if self.args.agent else None
+        agent = {'address': self.args.agent_address} if self.args.agent_address else None
         clear = self.args.clear
 
         url = 'project/{}/entity/{}/'.format(project_name, entity_name)

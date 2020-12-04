@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -45,12 +45,12 @@ class ListScenarioInstances(FrontendBase):
         super().__init__('OpenBACH — List Instances of a Scenario')
         self.parser.add_argument('project_name', help='name of the project')
         self.parser.add_argument(
-                '-s', '--scenario',
+                '-s', '--scenario-name', '--scenario',
                 help='name of the scenario whose instances should be listed'
                 '. Defaults to all scenarios.')
 
     def execute(self, show_response_content=True):
-        scenario = self.args.scenario
+        scenario = self.args.scenario_name
         project = self.args.project_name
 
         if scenario is None:

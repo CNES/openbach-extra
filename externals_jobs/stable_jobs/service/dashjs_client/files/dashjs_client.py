@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #   
 #   
-#   Copyright © 2017 CNES
+#   Copyright © 2016-2020 CNES
 #   
 #   
 #   This file is part of the OpenBACH testbed.
@@ -34,10 +34,11 @@ __credits__ = '''Contributors:
 '''
 
 import sys
-import time
 import syslog
 import signal
 import argparse
+import subprocess
+import socket
 from functools import partial
 
 import collect_agent
@@ -50,39 +51,55 @@ from selenium.webdriver.support import expected_conditions as expected
 from selenium.webdriver.support.wait import WebDriverWait
 
 
-DEFAULT_URL='{}://{}:{}/vod-dash/'
-DEFAULT_PATH='/vod-dash/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd'
 HTTP1 = 'http/1.1'
 HTTP2 = 'http/2'
+DEFAULT_URL='{}://{}:{}/dash_content/?tornado_port={}'
+DEFAULT_PATH='/dash_content/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd'
 
 # The following variables *_PORT must have the same values as in installation file of the job 
 # 'dashjs_player_server'. So don't change, unless you also change them in un/installation files 
 # requiring to reinstall both jobs: 'dashjs_client' and 'dashjs_player_server'  on agents.
 
-HTTP1_PORT = 8083
-HTTP2_PORT = 8084
+HTTP1_PORT = 8081
+HTTP2_PORT = 8082
 
-def close_firefox(driver, signum, frame):
+def isPortUsed(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        used = (s.connect_ex(('localhost', port)) == 0)
+    return used
+
+def close_all(driver, p_tornado, signum, frame):
     """ Closes the browser if open """
     driver.quit()
+    p_tornado.terminate()
+    p_tornado.wait()
 
-def main(dst_ip, proto, path, time):
+def main(dst_ip, proto, tornado_port, path, time):
     # Connect to collect agent
     conffile = '/opt/openbach/agent/jobs/dashjs_client/dashjs_client.conf'
     collect_agent.register_collect(conffile)
  
     collect_agent.send_log(syslog.LOG_DEBUG, "About to launch Dash client")
 
+    if isPortUsed(tornado_port):
+        message = "Port {} already used, cannot launch Tornado server. Aborting...".format(tornado_port)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+
+    # Launch Tornado TODO add except ?
+    p_tornado = subprocess.Popen([sys.executable, '/opt/openbach/agent/jobs/dashjs_client/tornado_server.py', '--port', str(tornado_port)])
+
     # Launch Firefox
     options = Options()
     options.add_argument('-headless')
+    options.set_preference("network.websocket.allowInsecureFromHTTPS", True)
     driver = Firefox(executable_path='geckodriver', firefox_options=options)
     wait = WebDriverWait(driver, timeout=10)
     
     # Get page
     try:
         url_proto, port = ('http', HTTP1_PORT) if (proto == HTTP1) else ('https', HTTP2_PORT)
-        driver.get(DEFAULT_URL.format(url_proto, dst_ip, port))
+        driver.get(DEFAULT_URL.format(url_proto, dst_ip, port, tornado_port))
 
         # Update path
         wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR,
@@ -96,12 +113,13 @@ def main(dst_ip, proto, path, time):
     except WebDriverException as ex:
         message = "Exception with webdriver: {}".format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
+        close_all(driver, p_tornado, 0, 0)
         sys.exit(message)
 
     # Set signal handler
-    close_firefox_partial = partial(close_firefox, driver)
-    signal.signal(signal.SIGTERM, close_firefox_partial)
-    signal.signal(signal.SIGALRM, close_firefox_partial)
+    close_all_partial = partial(close_all, driver, p_tornado)
+    signal.signal(signal.SIGTERM, close_all_partial)
+    signal.signal(signal.SIGALRM, close_all_partial)
     signal.alarm(time)
 
     signal.pause()
@@ -120,6 +138,9 @@ if __name__ == "__main__":
             "protocol",  choices=[HTTP1, HTTP2],
              help='The protocol to use by server to stream video')
     parser.add_argument(
+            '-p', '--tornado_port', type=int, default=5301,
+            help='Port used by the Tornado Server to get statistics from the DASH client (Default: 5301)')
+    parser.add_argument(
             '-d', '--dir', type=str, default=DEFAULT_PATH,
             help='The path of the dir containing the video to stream')
     parser.add_argument(
@@ -130,7 +151,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     dst_ip = args.dst_ip
     proto = args.protocol
+    tornado_port = args.tornado_port
     path = args.dir
     time = args.time
     
-    main(dst_ip, proto, path, time)
+    main(dst_ip, proto, tornado_port, path, time)

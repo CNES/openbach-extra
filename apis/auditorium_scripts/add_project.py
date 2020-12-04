@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -63,7 +63,7 @@ class AddProject(FrontendBase):
             except ValueError:
                 self.parser.error('invalid JSON data in {}'.format(project_file.name))
 
-        self.args.project['owners'] = [] if self.args.public else [self.args.login]
+        self.args.project['owners'] = [] if self.args.public else [self.credentials.get('login')]
 
     def execute(self, show_response_content=True):
         return self.request(

@@ -46,7 +46,7 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--server-port', default=2121, help='Listened port (default = 2121)')
+            '--server-port', type=int, default=2121, help='Listened port')
     observer.add_scenario_argument(
             '--mode', required=True,
             choices=['upload', 'download'], help='upload or download')
@@ -59,7 +59,7 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--ftp-password', default='openbach', help="Authorized FTP user's password")
     observer.add_scenario_argument(
-            '--blocksize', default=8192, help='Set maximum chunk size  (default = 8192)')
+            '--blocksize', type=int, default=8192, help='Set maximum chunk size')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')

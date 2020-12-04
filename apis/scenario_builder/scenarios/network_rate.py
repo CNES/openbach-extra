@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2020 CNES
+#   Copyright © 2016-2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -86,10 +86,10 @@ def build(
         post_processed = list(scenario.extract_function_id(iperf3=iperf3_find_server, nuttcp=nuttcp_find_client))
 
         no_suffix = num_flows != '1'
-        legends = [
-                ['{} TCP flow with iperf3'.format(num_flows)],
-                ['{} TCP flows with nuttcp'.format(num_flows)],
-                ['1 UDP flow with nuttcp'],
+        legend = [
+                ['{} TCP flow with iperf3 ({} to {})'.format(num_flows, client_entity, server_entity)],
+                ['{} TCP flows with nuttcp ({} to {})'.format(num_flows, client_entity, server_entity)],
+                ['1 UDP flow with nuttcp ({} to {})'.format(client_entity, server_entity)],
         ]
 
         time_series_on_same_graph(
@@ -98,9 +98,11 @@ def build(
                 post_processed,
                 [['rate', 'throughput']],
                 [['Rate (b/s)']], [['Rate time series']],
-                legends,
+                legend,
                 no_suffix,
-                waiting_jobs, None, 2)
+                'time_series_rate_{}_to_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -108,8 +110,10 @@ def build(
                 100,
                 [['rate', 'throughput']],
                 [['Rate (b/s)']], [['Rate CDF']],
-                legends,
+                legend,
                 no_suffix,
-                waiting_jobs, None, 2)
+                'histogram_rate_{}_to_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
 
     return scenario

@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -44,6 +44,7 @@ __credits__ = '''Contributors:
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
+import sys
 import json
 import fcntl
 import shlex
@@ -54,11 +55,15 @@ import getpass
 import datetime
 import argparse
 import warnings
+from copy import copy
 from time import sleep
 from pathlib import Path
 from contextlib import suppress
 
 import requests
+
+
+DEFAULT_DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
 
 def get_interfaces():
@@ -125,25 +130,29 @@ def read_controller_configuration(filename='controller'):
     return controller, login, password, should_warn
 
 
-def pretty_print(response):
+def pretty_print(response, content=None, check_status=True):
     """Helper function to nicely format the response
     from the server.
     """
 
-    if response.status_code != 204:
-        try:
-            content = response.json()
-        except ValueError:
-            content = response.text
-        pprint.pprint(content, width=120)
+    if content is None:
+        if response.status_code != 204:
+            try:
+                content = response.json()
+            except ValueError:
+                content = response.text
 
-    response.raise_for_status()
+    if content:
+        pprint.pprint(content, width=200)
+
+    if check_status:
+        response.raise_for_status()
 
 
 class FromFileArgumentParser(argparse.ArgumentParser):
     def convert_arg_line_to_args(self, line):
         if line.lstrip().startswith('#'):
-            return ''
+            return []
         return shlex.split(line)
 
 
@@ -157,16 +166,20 @@ class FrontendBase:
             self.parse()
             self.execute()
         except requests.RequestException as error:
-            self.parser.error(str(error))
+            error_message = str(error)
         except ActionFailedError as error:
-            self.parser.error(error.message)
+            error_message = error.message
+        else:
+            print('Operation successfull')
+            return
+
+        sys.exit(error_message)
 
     def __init__(self, description):
         self.__filename = 'controller'
         controller, login, password, unspecified = read_controller_configuration(self.__filename)
         self.parser = FromFileArgumentParser(
                 description=description,
-                fromfile_prefix_chars='@',
                 epilog='Backend-specific arguments can be specified by '
                 'providing a file called \'controller\' in the same folder '
                 'than this script. This file can contain a JSON dictionary '
@@ -175,7 +188,8 @@ class FrontendBase:
                 '\'controller\' argument default value. If no password is '
                 'specified using either this file or the command-line, it '
                 'will be prompted without echo.',
-                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                fromfile_prefix_chars='@')
         backend = self.parser.add_argument_group('backend')
         backend.add_argument(
                 '--controller', default=controller,
@@ -187,6 +201,7 @@ class FrontendBase:
                 '--password', help='OpenBACH password')
         self._default_password = password
         self._default_controller = controller if unspecified else None
+        self.credentials = {'controller': self._default_controller}
 
         self.session = requests.Session()
 
@@ -203,19 +218,32 @@ class FrontendBase:
                     .format(self.__filename, args.controller))
             warnings.warn(message, RuntimeWarning)
 
+        del self._default_controller
         self.base_url = url = 'http://{}:8000/'.format(args.controller)
-        login = args.login
-        if login:
+
+        self.credentials = {'controller': args.controller}
+        if args.login:
             password = args.password or self._default_password
             if password is None:
                 password = getpass.getpass('OpenBACH password: ')
-            credentials = {'login': login, 'password': password}
+            credentials = {'login': args.login, 'password': password}
+            self.credentials.update(credentials)
+            del self.args.login
+            del self.args.password
+            del self._default_password
             response = self.session.post(url + 'login/', json=credentials)
             response.raise_for_status()
 
         return args
 
-    def date_to_timestamp(self, fmt='%Y-%m-%d %H:%M:%S.%f'):
+    def share_state(self, other_cls):
+        instance = other_cls()
+        instance.session = self.session
+        instance.base_url = self.base_url
+        instance.args = copy(self.args)
+        return instance
+
+    def date_to_timestamp(self, fmt=DEFAULT_DATE_FORMAT):
         date = getattr(self.args, 'date', None)
         if date is not None:
             try:
@@ -230,7 +258,7 @@ class FrontendBase:
     def execute(self, show_response_content=True):
         pass
 
-    def request(self, verb, route, show_response_content=True, files=None, **kwargs):
+    def request(self, verb, route, show_response_content=True, check_status=True, files=None, **kwargs):
         verb = verb.upper()
         url = self.base_url + route
         if verb == 'GET':
@@ -241,7 +269,7 @@ class FrontendBase:
             else:
                 response = self.session.request(verb, url, data=kwargs, files=files)
         if show_response_content:
-            pretty_print(response)
+            pretty_print(response, check_status=check_status)
         return response
 
     def wait_for_success(self, status=None, valid_statuses=(200, 204), show_response_content=True):
@@ -261,10 +289,10 @@ class FrontendBase:
             returncode = content['returncode']
             if returncode != 202:
                 if show_response_content:
-                    pprint.pprint(content['response'], width=200)
+                    pretty_print(response, content['response'])
                 if returncode not in valid_statuses:
                     raise ActionFailedError(**content)
-                return
+                return response
 
     def query_state(self):
         return self.session.get(self.base_url)

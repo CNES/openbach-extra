@@ -46,9 +46,18 @@ def main(argv=None):
             '--client-entity', required=True,
             help='name of the entity for the client of the RTT tests')
     observer.add_scenario_argument(
-            '--server-ip', required=True, help='server ip address and target of owamp and d-itg test')
+            '--server-ip', required=True,
+            help='server ip address and target of owamp and d-itg test')
     observer.add_scenario_argument(
-            '--client-ip', required=True, help='client ip address of d-itg test')
+            '--client-ip', required=True,
+            help='client ip address of d-itg test')
+    observer.add_scenario_argument(
+            '--max-synchro-off', type=float,
+            help='maximal offset difference in milliseconds where we have to do a NTP '
+            'resynchronization; if omitted, no NTP checks are performed')
+    observer.add_scenario_argument(
+            '--synchronization-timeout', type=float, default=60.0,
+            help='maximal synchronization duration in seconds')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')
@@ -60,6 +69,8 @@ def main(argv=None):
                       args.client_entity,
                       args.server_ip,
                       args.client_ip,
+                      args.max_synchro_off,
+                      args.synchronization_timeout,
                       args.post_processing_entity,
                       scenario_name=args.scenario_name)
 

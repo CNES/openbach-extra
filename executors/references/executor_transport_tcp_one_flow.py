@@ -46,15 +46,15 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--server-port', default=7000,  help='The iperf3 server port for data')
+            '--server-port', type=int, default=7000,  help='The iperf3 server port for data')
     observer.add_scenario_argument(
-            '--transmitted-size', required=True, help='The iperf3 '
-            'transmitted_size (in bytes - you can use [K/M/G]: '
+            '--transmitted-size', required=True,
+            help='The iperf3 transmitted_size (in bytes - you can use [K/M/G]: '
             'set 100M to send 100 MBytes)')
     observer.add_scenario_argument(
-            '--tos', default=0, help='Type of Service of the trafic (default : 0)')
+            '--tos', default='0', help='Type of Service of the trafic')
     observer.add_scenario_argument(
-            '--mtu', default=1400, help='MTU size (default : 1400)')
+            '--mtu', type=int, default=1400, help='MTU size')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')

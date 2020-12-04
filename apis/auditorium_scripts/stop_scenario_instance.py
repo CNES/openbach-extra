@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -46,14 +46,14 @@ class StopScenarioInstance(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Stop a Scenario Instance')
         self.parser.add_argument(
-                'instance_id',
+                'scenario_instance_id',
                 help='ID of the scenario instance to stop')
         self.parser.add_argument(
                 '-d', '--date', nargs=2, metavar=('DATE', 'TIME'),
                 help='date of the execution')
 
     def execute(self, show_response_content=True):
-        scenario = self.args.instance_id
+        scenario = self.args.scenario_instance_id
         date = self.date_to_timestamp()
 
         action = self.request

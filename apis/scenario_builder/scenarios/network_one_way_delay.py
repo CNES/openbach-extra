@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2020 CNES
+#   Copyright © 2016-2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -32,6 +32,7 @@ from scenario_builder.helpers.network.owamp import owamp_measure_owd
 from scenario_builder.helpers.network.d_itg import ditg_packet_rate
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
+from scenario_builder.helpers.admin.synchronization import synchronization
 from scenario_builder.openbach_functions import StartJobInstance, StartScenarioInstance
 
 SCENARIO_NAME = 'network_one_way_delay'
@@ -43,19 +44,38 @@ SCENARIO_DESCRIPTION = """This scenario allows to :
 """
 
 
-def one_way_delay(server_entity, client_entity, server_ip, client_ip, scenario_name=SCENARIO_NAME):
+def one_way_delay(
+        server_entity, client_entity, server_ip, client_ip,
+        max_synchro_off=None, synchronization_timeout=60, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('client_ip', client_ip)
 
-    owamp_measure_owd(scenario, client_entity, server_entity, '$server_ip')
-    ditg_packet_rate(scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', packet_rate=1)
+    wait_finished = []
+    if max_synchro_off is not None and max_synchro_off > 0.0:
+        synchro_ntp_client = synchronization(scenario, client_entity, max_synchro_off, synchronization_timeout)
+        synchro_ntp_server = synchronization(scenario, server_entity, max_synchro_off, synchronization_timeout)
+        wait_finished = []
+        for function in scenario.openbach_functions:
+            if isinstance(function, StartJobInstance):
+                wait_finished.append(function)
+
+
+    owamp_measure_owd(scenario, client_entity, server_entity, '$server_ip', wait_finished=wait_finished)
+    ditg_packet_rate(scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', packet_rate=1, wait_finished=wait_finished)
 
     return scenario
 
 
-def build(server_entity, client_entity, server_ip, client_ip, post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = one_way_delay(server_entity, client_entity, server_ip, client_ip, scenario_name)
+def build(
+        server_entity, client_entity, server_ip, client_ip, 
+        max_synchro_off=None, synchronization_timeout=60,
+        post_processing_entity=None, scenario_name=SCENARIO_NAME):
+    scenario = one_way_delay(
+            server_entity, client_entity,
+            server_ip, client_ip,
+            max_synchro_off,
+            synchronization_timeout, scenario_name)
 
     if post_processing_entity is not None:
         waiting_jobs = []
@@ -64,15 +84,22 @@ def build(server_entity, client_entity, server_ip, client_ip, post_processing_en
                 waiting_jobs.append(function)
 
         post_processed = list(scenario.extract_function_id('owamp-client', 'd-itg_send'))
+        legend = [
+                ['Owamp OWD ({} to {})'.format(server_entity, client_entity)],
+                ['Owamp OWD ({} to {})'.format(client_entity, server_entity)],
+                ['D-ITG OWD ({} to {})'.format(client_entity, server_entity)],
+                ['D-ITG OWD ({} to {})'.format(server_entity, client_entity)]
+        ]
         time_series_on_same_graph(
                 scenario,
                 post_processing_entity,
                 post_processed,
                 [['owd_sent','owd_received', 'owd_receiver', 'owd_return']],
                 [['One Way Delay (ms)']], [['Both One Way delays time series']],
-                [['owd_received_owamp'],['owd_sent_owamp'], ['owd_sent_d-itg'], ['owd_received_d-itg']],
-                False,
-                waiting_jobs, None, 2)
+                legend,
+                filename='time_series_owd_{}_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -80,8 +107,9 @@ def build(server_entity, client_entity, server_ip, client_ip, post_processing_en
                 100,
                 [['owd_sent','owd_received', 'owd_receiver', 'owd_return']],
                 [['One Way Delay (ms)']], [['Both One Way delay CDF']],
-                [['owd_received_owamp'],['owd_sent_owamp'], ['owd_sent_d-itg'], ['owd_received_d-itg']],
-                False,
-                waiting_jobs, None, 2)
+                legend,
+                filename='histogram_owd_{}_{}'.format(client_entity, server_entity),
+                wait_finished=waiting_jobs,
+                wait_delay=2)
 
     return scenario

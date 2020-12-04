@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -43,10 +43,10 @@ from auditorium_scripts.frontend import FrontendBase
 class DeleteProject(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Delete a Project')
-        self.parser.add_argument('name', help='name of the project to delete')
+        self.parser.add_argument('project_name', help='name of the project to delete')
 
     def execute(self, show_response_content=True):
-        project = self.args.name
+        project = self.args.project_name
 
         return self.request(
                 'DELETE', 'project/{}/'.format(project),

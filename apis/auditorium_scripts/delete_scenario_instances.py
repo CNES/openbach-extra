@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -45,25 +45,23 @@ class DeleteScenarioInstances(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Delete a Scenario Instance')
         self.parser.add_argument(
-                'id', nargs='+', type=int,
+                'scenario_instance_id', nargs='+', type=int,
                 help='scenario instance ID to delete')
 
     def execute(self, show_response_content=True):
-        instance_ids = self.args.id
-        show = show_response_content if len(instance_ids) == 1 else False
+        instance_ids = self.args.scenario_instance_id
+        check_status = len(instance_ids) == 1
         responses = [
                 self.request(
                     'DELETE', 'scenario_instance/{}/'.format(id),
-                    show_response_content=show)
+                    show_response_content=show_response_content,
+                    check_status=check_status)
                 for id in instance_ids
         ]
 
-        if len(instance_ids) == 1:
-            return responses[0]
-
-        if show_response_content:
+        if show_response_content and not check_status:
             for response in responses:
-                pprint.pprint(response.json(), width=120)
+                response.raise_for_status()
 
         return responses
 

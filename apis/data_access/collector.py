@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -141,7 +141,7 @@ class CollectorConnection:
 
         response = self.influxdb.statistics(
                 job_name, scenario_instance_id, agent_name,
-                job_instance_id, suffix, fields, condition)
+                job_instance_id, suffix, fields, condition, timestamps)
         # For each job found in InfluxDB
         for scenario_with_stats in response:
             for scenario_id, owner_id, job in extract_jobs(scenario_with_stats):
@@ -177,7 +177,7 @@ class CollectorConnection:
         """Delete data in InfluxDB that matches the given constraints"""
         self.influxdb.remove_statistics(
                 job_name, scenario_instance_id, agent_name,
-                job_instance_id, suffix, condition)
+                job_instance_id, suffix, condition, timestamps)
         self.elasticsearch.remove_logs(
                 job_name, scenario_instance_id, agent_name,
                 job_instance_id, timestamps)

@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -43,7 +43,7 @@ from auditorium_scripts.frontend import FrontendBase
 class UninstallAgent(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Uninstall Agent')
-        self.parser.add_argument('agent', help='IP address of the agent')
+        self.parser.add_argument('agent_address', help='IP address of the agent')
         self.parser.add_argument(
                 '-d', '--detach', '--render-autonomous',
                 action='store_true',
@@ -51,15 +51,15 @@ class UninstallAgent(FrontendBase):
                 'detach it from the controller to render it autonomous.')
 
     def execute(self, show_response_content=True):
-        route = 'agent/{}/'.format(self.args.agent)
+        route = 'agent/{}/'.format(self.args.agent_address)
         if self.args.detach:
             route += '?detach_only'
 
         self.request('DELETE', route, show_response_content=False)
-        self.wait_for_success('uninstall', show_response_content=show_response_content)
+        return self.wait_for_success('uninstall', show_response_content=show_response_content)
 
     def query_state(self):
-        address = self.args.agent
+        address = self.args.agent_address
         return self.request(
                 'GET', 'agent/{}/state/'.format(address),
                 show_response_content=False)

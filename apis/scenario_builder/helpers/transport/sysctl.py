@@ -8,7 +8,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016-2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -30,6 +30,7 @@
 """Helpers of sysctl job"""
 
 
+
 def sysctl_configure_tcp_congestion_control(
         scenario, entity, congestion_control,
         wait_finished=None, wait_launched=None, wait_delay=0):
@@ -37,6 +38,23 @@ def sysctl_configure_tcp_congestion_control(
             scenario, entity,
             'net.ipv4.tcp_congestion_control', congestion_control,
             wait_finished, wait_launched, wait_delay)
+
+
+def sysctl_configure_ip_forwarding(
+        scenario, entity, interface=None, enable=True, version=4,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    if interface is None:
+        parameter = 'net.ipv{}.ip_forward'.format(version)
+    else:
+        parameter = 'net.ipv{}.conf.{}.forwarding'.format(version, interface)
+
+    function = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    function.configure('sysctl', entity, parameter=parameter, value=int(enable))
+    return [function]
 
 
 def sysctl(

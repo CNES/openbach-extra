@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016-2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -32,11 +32,11 @@
 def command_shell(
         scenario, entity, command,
         wait_finished=None, wait_launched=None, wait_delay=0):
-    command = scenario.add_function(
+    function = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    command.configure('command_shell', entity, command_line=command)
+    function.configure('command_shell', entity, command_line=command)
 
-    return [command]
+    return [function]

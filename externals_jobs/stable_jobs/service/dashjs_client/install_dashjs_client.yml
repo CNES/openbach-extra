@@ -5,7 +5,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #   
 #   
-#   Copyright © 2017 CNES
+#   Copyright © 2016-2020 CNES
 #   
 #   
 #   This file is part of the OpenBACH testbed.
@@ -33,9 +33,27 @@
 
 ---
 
+- name: Init global variables  
+  set_fact:
+    domain: dash.openbach.com
+    cacheable: yes
+
 - name: Get client architecture
   shell: uname -p
   register: cpu_arch
+
+- name: Remove conflicting packages
+  apt: name={{ item }} state=absent purge=yes
+  with_items:
+    - firefox
+    - hunspell-en-us
+  become: yes
+  environment: "{{ openbach_proxies }}"
+
+- name: Install tornado
+  pip: name=tornado executable=pip3
+  become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Install Firefox
   apt:
@@ -57,6 +75,14 @@
   become: yes
   environment: "{{ openbach_proxies }}"
 
+- name: Install mod_http2's  dependencies
+  apt: name={{ item }} state=present
+  with_items:
+    - software-properties-common
+    - python-software-properties
+  become: yes
+  environment: "{{ openbach_proxies }}"
+
 - name: Install Selenium for python3
   pip: name=selenium executable=pip3 state=present
   become: yes
@@ -70,4 +96,5 @@
   with_items:
     - { file: 'dashjs_client.help', mode: '0644' }
     - { file: 'dashjs_client.py', mode: '0755' }
+    - { file: 'tornado_server.py', mode: '0755' }
     - { file: 'dashjs_client_rstats_filter.conf', mode: '0644' }

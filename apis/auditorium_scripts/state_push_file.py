@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -44,7 +44,7 @@ class StatePushFile(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — State of a Push File request')
         self.parser.add_argument(
-                'agent',
+                'agent_address',
                 help='IP address of the agent the file has been pushed to')
         self.parser.add_argument(
                 'path',
@@ -52,7 +52,7 @@ class StatePushFile(FrontendBase):
         self.parser.add_argument('name', help='name of the file')
 
     def execute(self, show_response_content=True):
-        address = self.args.agent
+        address = self.args.agent_address
         filename = self.args.name
         path = self.args.path
 

@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -46,20 +46,27 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(
-            '--server-port', default=7001,  help='The iperf3/nuttcp server port for data')
+            '--server-port', type=int, default=7001,
+            help='The iperf3/nuttcp server port for data')
     observer.add_scenario_argument(
-            '--command-port', default=7000, help='The port of nuttcp server for signalling')
+            '--command-port', type=int, default=7000,
+            help='The port of nuttcp server for signalling')
     observer.add_scenario_argument(
-            '--duration', default=30, help='duration of iperf3/nuttcp tests')
+            '--duration', type=int, default=30,
+            help='duration of iperf3/nuttcp tests')
     observer.add_scenario_argument(
-            '--rate-limit', help='Set a higher rate (in kb/s) than what you estimate between server and client '
-            'for the UDP test (add M/G to set M/G b/s)', required=True)
+            '--rate-limit', required=True,
+            help='Set a higher rate (in kb/s) than what you estimate between server and client '
+            'for the UDP test (add M/G to set M/G b/s)')
     observer.add_scenario_argument(
-            '--num-flows', default=10, help='Number of iperf3/nuttcp flows generated')
+            '--num-flows', type=int, default=10,
+            help='Number of iperf3/nuttcp flows generated')
     observer.add_scenario_argument(
-            '--tos', default=0, help='Type of Service of the trafic (default : 0)')
+            '--tos', default='0',
+            help='Type of Service of the trafic')
     observer.add_scenario_argument(
-            '--mtu', default=1400, help='MTU size (default : 1400)')
+            '--mtu', type=int, default=1400,
+            help='MTU size')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be '
             'performed (histogram/time-series jobs must be installed) if defined')

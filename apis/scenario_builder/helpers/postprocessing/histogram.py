@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016-2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -30,17 +30,11 @@
 
 
 def cdf_on_same_graph(
-        scenario, post_processing_entity, job_instances, bins,
-        statistics, label, title, legend, no_suffix=False,
+        scenario, post_processing_entity, job_instances, bins, statistics,
+        label, title, legend, no_suffix=False, filename=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
-    histogram = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    histogram.configure(
-            'histogram', post_processing_entity,
-            offset=0,
+
+    parameters = dict(
             jobs=[job_instances],
             bins=bins,
             statistics=statistics,
@@ -48,23 +42,27 @@ def cdf_on_same_graph(
             label=label,
             title=title,
             legend=legend,
-            cumulative=True)
+            cumulative=True,
+    )
+    if filename is not None:
+        parameters['filename'] = filename
+
+    histogram = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    histogram.configure('histogram', post_processing_entity, **parameters)
 
     return [histogram]
 
 
 def pdf_on_same_graph(
-        scenario, post_processing_entity, job_instances, bins,
-        statistics, label, title, legend, no_suffix=False,
+        scenario, post_processing_entity, job_instances, bins, statistics,
+        label, title, legend, no_suffix=False, filename=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
-    histogram = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    histogram.configure(
-            'histogram', post_processing_entity,
-            offset=0,
+
+    parameters = dict(
             jobs=[job_instances],
             bins=bins,
             statistics=statistics,
@@ -72,6 +70,16 @@ def pdf_on_same_graph(
             label=label,
             title=title,
             legend=legend,
-            cumulative=False)
+            cumulative=False,
+    )
+    if filename is not None:
+        parameters['filename'] = filename
+
+    histogram = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+    histogram.configure('histogram', post_processing_entity, **parameters)
 
     return [histogram]

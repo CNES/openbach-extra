@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -44,10 +44,12 @@ from auditorium_scripts.frontend import FrontendBase
 
 
 class AddCollector(FrontendBase):
+    PASSWORD_SENTINEL = object()
+
     def __init__(self):
         super().__init__('OpenBACH — Add a new Collector and corresponding agent')
         self.parser.add_argument(
-                'collector',
+                'collector_address',
                 help='IP address of the collector')
         self.parser.add_argument(
                 'agent_name',
@@ -63,24 +65,29 @@ class AddCollector(FrontendBase):
                 help='username to connect as on the collector-to-be '
                 'if the SSH key of the controller cannot be used to '
                 'connect to the openbach user on the machine.')
+        self.parser.add_argument(
+                '-p', '--passwd', '--agent-password',
+                dest='agent_password', nargs='?', const=self.PASSWORD_SENTINEL,
+                help='password to log into the machine for the installation '
+                'process. if the flag is used without a value, an echoless '
+                'prompt will ask for it; if the flag is omitted, the controller '
+                'will only be able to rely on its SSH keys instead.')
 
     def parse(self, args=None):
-        super().parse(args)
-        username = self.args.user
-        password = None
-        if username is not None:
-            address = self.args.collector
-            prompt = 'Password for {} on {}: '.format(username, address)
+        args = super().parse(args)
+        if args.agent_password is self.PASSWORD_SENTINEL:
+            address = args.collector_address
+            prompt = 'Password for {} on {}: '.format(args.user, address)
             password = getpass.getpass(prompt)
-        self.args.password = password
+            self.args.agent_password = password
 
     def execute(self, show_response_content=True):
-        collector = self.args.collector
+        collector = self.args.collector_address
         agent_name = self.args.agent_name
         logs_port = self.args.logs_port
         stats_port = self.args.stats_port
         username = self.args.user
-        password = self.args.password
+        password = self.args.agent_password
 
         action = self.request
         if logs_port is not None:
@@ -90,10 +97,10 @@ class AddCollector(FrontendBase):
         action('POST', 'collector', show_response_content=False,
                username=username, password=password,
                address=collector, name=agent_name)
-        self.wait_for_success('add', show_response_content)
+        return self.wait_for_success('add', show_response_content=show_response_content)
 
     def query_state(self):
-        address = self.args.collector
+        address = self.args.collector_address
         return self.request(
                 'GET', 'collector/{}/state/'.format(address),
                 show_response_content=False)

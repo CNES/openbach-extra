@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -45,8 +45,8 @@ from auditorium_scripts.frontend import FrontendBase
 class SetJobLogSeverity(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Update Log Severity of a Job')
-        self.parser.add_argument('agent', help='IP address of the agent')
-        self.parser.add_argument('name', help='name of the job to update')
+        self.parser.add_argument('agent_address', help='IP address of the agent')
+        self.parser.add_argument('job_name', help='name of the job to update')
         self.parser.add_argument(
                 'severity', choices=range(1, 5), type=int,
                 help='severity up to which logs are sent to the collector')
@@ -58,8 +58,8 @@ class SetJobLogSeverity(FrontendBase):
                 nargs=2, help='date of the execution')
 
     def execute(self, show_response_content=True):
-        agent = self.args.agent
-        job = self.args.name
+        agent = self.args.agent_address
+        job = self.args.job_name
         severity = self.args.severity
         local_severity = self.args.local_severity
         date = self.date_to_timestamp()

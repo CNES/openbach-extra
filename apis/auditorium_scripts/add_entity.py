@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -48,13 +48,13 @@ class AddEntity(FrontendBase):
                 '-d', '--description',
                 help='explanation of the entity role')
         self.parser.add_argument(
-                '-a', '--agent',
+                '-a', '--agent-address', '--agent',
                 help='address of an agent to associate with the entity')
 
     def execute(self, show_response_content=True):
         project_name = self.args.project_name
         description = self.args.description
-        agent = self.args.agent
+        agent = self.args.agent_address
 
         entity = {'name': self.args.entity_name}
         if description:

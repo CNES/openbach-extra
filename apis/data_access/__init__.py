@@ -7,7 +7,7 @@
 # tested).
 #
 #
-# Copyright © 2016 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -37,7 +37,7 @@ well as means to filter them at will.
 
 __author__ = 'Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>'
 __credits__ = 'Maintainer: Mathias ETTINGER <mettinger@toulouse.viveris.com>'
-__version__ = 'v1.8.0'
+__version__ = 'v1.9.5'
 __all__ = [
     'read_scenario',
     'CollectorConnection',

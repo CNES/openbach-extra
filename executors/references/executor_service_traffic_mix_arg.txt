@@ -4,7 +4,7 @@
 # and multiple Agents (one for each network entity that wants to be
 # tested).
 #
-# Copyright © 2020 CNES
+# Copyright © 2016-2020 CNES
 # This file is part of the OpenBACH testbed.
 #
 # OpenBACH is a free software : you can redistribute it and/or modify
@@ -29,26 +29,26 @@
 ### wait_launched and wait_finished can contain several elements -> they must be separated by a '-'. If no element, put None
 #
 # extra_args:
-### data-transfer	-> dst_port file_size tos mtu 	(if file_size is 0, the transfer will last duration seconds. Otherwise, it will transfer the whole specified file_size, regardless of the duration)
-### dash  		    -> protocol
-### voip  		    -> dst_port codecs				(Warning: it is impossible to launch several voip_src at same time... should be fixed later)
-### web-browsing	-> nb_runs nb_parallel_runs		(do not forget to edit the config file with correct address)
+### data_transfer  -> dst_port file_size tos mtu  (if file_size is 0, the transfer will last duration seconds. Otherwise, it will transfer the whole specified file_size, regardless of the duration. The file size must be set to a value stricly higher than 1MB.)
+### dash  			   -> protocol tornado_port
+### voip  			   -> dst_port codecs             (Warning: it is impossible to launch several voip_src at same time... should be fixed later)
+### web_browsing	 -> nb_runs nb_parallel_runs    (do not forget to edit the config file with correct address)
 
 # Example launch command:
 # PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 executor_service_traffic_mix.py @executor_service_traffic_mix_arg.txt --post-processing-entity name_entity_post_processing -o my_project run
 
 # Example of trafic mix with data_transfer,dash, web_browsing and voip traffic
 --data-transfer 1 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 5201 10M 0 1500
---dash 2 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2
+--dash 2 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2 5301
 --web-browsing 3 SRC ST1 60 None None 0 10.42.42.11 10.42.14.3 10 2
---voip 4 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 8011 G.711.1
+--voip 4 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 8011 G.711.1 75.0 120.0
 
 --data-transfer 5 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 5201 10M 0 1500
---dash 6 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 http/2
+--dash 6 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 http/2 5301
 --web-browsing 7 SRC ST2 60 4 None 5 10.42.42.11 10.42.15.3 10 2
---voip 8 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 8012 G.711.1
+--voip 8 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 8012 G.711.1 None None
 
 --data-transfer 9 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 5201 0 0 1500
---dash 10 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 http/2
+--dash 10 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 http/2 5301
 --web-browsing 11 SRC ST3 60 8 None 5 10.42.42.11 10.42.16.3 10 2
---voip 12 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 8013 G.711.1
+--voip 12 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 8013 G.711.1 None None

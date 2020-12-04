@@ -48,14 +48,17 @@ def main(argv=None):
             '--server-ip', required=True,
             help='source ip address for the DASH traffic')
     observer.add_scenario_argument(
-            '--duration', required=True,
-            help='duration of DASH traffic transmission')
+            '--duration',type=int, default=60,
+            help='duration of DASH traffic transmission in seconds')
     observer.add_scenario_argument(
             '--protocol', default='http/2',
             help='protocol used by DASH. Possible values are http/1.1 and http/2')
     observer.add_scenario_argument(
-            '--launch-server', default=True,
-            help='Launch video dash server or not. Optional. Default : True')
+            '--tornado_port', type=int, default=5301,
+            help='Port used by the Tornado Server to get statistics from the DASH client (Default: 5301)')
+    observer.add_scenario_argument(
+            '--launch-server', action='store_true',
+            help='Launch an Apache2 server for the server agent. Optional. Default : False')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
@@ -68,6 +71,7 @@ def main(argv=None):
             args.server_ip,
             args.duration,
             args.protocol,
+            args.tornado_port,
             args.launch_server,
             args.post_processing_entity,
             scenario_name=args.scenario_name)

@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -46,7 +46,7 @@ class ListJobInstances(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — List Job Instances from agents')
         self.parser.add_argument(
-                'agent', nargs='+',
+                'agent_address', nargs='+',
                 help='IP addresses of the agents')
         self.parser.add_argument(
                 '-u', '--update', action='store_true',
@@ -54,7 +54,7 @@ class ListJobInstances(FrontendBase):
                 'status of the jobs instances')
 
     def execute(self, show_response_content=True):
-        agents = self.args.agent
+        agents = self.args.agent_address
         update = self.args.update
 
         query_string = [('address', ip) for ip in agents]

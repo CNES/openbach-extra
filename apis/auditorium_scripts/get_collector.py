@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -43,10 +43,10 @@ from auditorium_scripts.frontend import FrontendBase
 class GetCollector(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Get Collector')
-        self.parser.add_argument('collector', help='IP address of the collector')
+        self.parser.add_argument('collector_address', help='IP address of the collector')
 
     def execute(self, show_response_content=True):
-        address = self.args.collector
+        address = self.args.collector_address
         return self.request(
                 'GET', 'collector/{}/'.format(address),
                 show_response_content=show_response_content)

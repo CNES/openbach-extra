@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -44,7 +44,7 @@ from auditorium_scripts.frontend import FrontendBase
 class SetAgentLogSeverity(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Update Log Severity of an Agent')
-        self.parser.add_argument('agent', help='IP address of the agent')
+        self.parser.add_argument('agent_address', help='IP address of the agent')
         self.parser.add_argument(
                 'severity', choices=range(1, 5), type=int,
                 help='severity up to which logs are sent to the collector')
@@ -53,7 +53,7 @@ class SetAgentLogSeverity(FrontendBase):
                 help='severity up to which logs are saved on the agent')
 
     def execute(self, show_response_content=True):
-        agent = self.args.agent
+        agent = self.args.agent_address
         severity = self.args.severity
         local_severity = self.args.local_severity
 

@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -50,7 +50,7 @@ class DeleteEntity(FrontendBase):
         project_name = self.args.project_name
 
         return self.request(
-                'GET', 'project/{}/entity/{}/'.format(project_name, entity_name),
+                'DELETE', 'project/{}/entity/{}/'.format(project_name, entity_name),
                 show_response_content=show_response_content)
 
 

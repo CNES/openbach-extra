@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -44,11 +44,11 @@ class StatusScenarioInstance(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Status of an Instance of a Scenario')
         self.parser.add_argument(
-                'instance_id',
+                'scenario_instance_id',
                 help='ID of the scenario instance to query')
 
     def execute(self, show_response_content=True):
-        scenario = self.args.instance_id
+        scenario = self.args.scenario_instance_id
 
         return self.request(
                 'GET', 'scenario_instance/{}/'.format(scenario),

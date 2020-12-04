@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -38,7 +38,7 @@ def read(fname):
 
 setup(
     name='openbach-api',
-    version='3.9.1',
+    version='3.10.4',
     author='OpenBACH Team',
     author_email='admin@openbach.org',
     description='OpenBACH API: build scenario JSONs and access Collector Data',

@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016−2020 CNES
+#   Copyright © 2016-2020 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -38,7 +38,8 @@ SCENARIO_NAME = 'service_data_transfer'
 SCENARIO_DESCRIPTION = """This scenario launches one iperf3 transfer.
 It can then, optionally, plot the throughput using time-series and CDF.
 NB : client and server entities/IPs/ports are in accordance
-with iperf3 logic (server = receiver and client = sender)
+with iperf3 logic (server = receiver and client = sender).
+The file size, if set, must be stricly higher than 1 MB.
 """
 
 
@@ -74,8 +75,8 @@ def build(
                 [['Rate (b/s)']],
                 [['Rate time series']],
                 [legends],
-                False,
-                jobs, None, 2)
+                wait_finished=jobs,
+                wait_delay=2)
         cdf_on_same_graph(
                 scenario,
                 post_processing_entity,
@@ -85,7 +86,7 @@ def build(
                 [['Rate (b/s)']],
                 [['Rate CDF']],
                 [legends],
-                False,
-                jobs, None, 2)
+                wait_finished=jobs,
+                wait_delay=2)
 
     return scenario

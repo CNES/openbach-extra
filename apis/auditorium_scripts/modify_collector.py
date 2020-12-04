@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -46,7 +46,7 @@ class ModifyCollector(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Modify Collector')
         self.parser.add_argument(
-                'collector',
+                'collector_address',
                 help='new IP address of the collector')
         self.parser.add_argument(
                 '-l', '--logs-port', type=int,
@@ -56,7 +56,7 @@ class ModifyCollector(FrontendBase):
                 help='new port for the stats')
 
     def execute(self, show_response_content=True):
-        collector = self.args.collector
+        collector = self.args.collector_address
         logs_port = self.args.logs_port
         stats_port = self.args.stats_port
 

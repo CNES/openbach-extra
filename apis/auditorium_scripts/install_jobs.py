@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -37,7 +37,7 @@ __credits__ = '''Contributors:
 '''
 
 
-import argparse
+import inspect
 import itertools
 import threading
 
@@ -45,19 +45,50 @@ from auditorium_scripts.frontend import FrontendBase
 from auditorium_scripts.state_job import StateJob
 
 
+class WaitForInstall(threading.Thread):
+    def run(self):
+        try:
+            result = self._run()
+        except Exception as e:
+            self._exception = e
+        else:
+            self._exception = None
+            self._result = result
+
+
+    def _run(self):
+        signature = inspect.signature(lambda state_job, show_response_content=None: None)
+        arguments = signature.bind(*self._args, **self._kwargs)
+        arguments.apply_defaults()
+
+        state_job = arguments.arguments['state_job']
+        show = arguments.arguments['show_response_content']
+        if show is None:
+            return state_job.wait_for_success('install')
+        else:
+            return state_job.wait_for_success('install', show_response_content=show)
+
+    def join(self, timeout=None):
+        super().join(timeout)
+        if self._exception is not None:
+            raise self._exception
+        return self._result
+
+
 class InstallJobs(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — Install Jobs on agents')
         self.parser.add_argument(
-                '-j', '--job-name', metavar='NAME', action='append', nargs='+',
-                required=True, help='Name of the Jobs to install on the next '
-                'agent. May be specified several times to install different '
-                'sets of jobs on different agents.')
+                '-j', '--job-name', '--job', metavar='NAME', action='append',
+                nargs='+', required=True, help='Name of the Jobs to install '
+                'on the next agent. May be specified several times to '
+                'install different sets of jobs on different agents.')
         self.parser.add_argument(
-                '-a', '--agent', metavar='ADDRESS', action='append', nargs='+',
-                required=True, help='IP address of the agent where the next '
-                'set of jobs should be installed. May be specified several '
-                'times to install different sets of jobs on different agents.')
+                '-a', '--agent-address', '--agent', metavar='ADDRESS',
+                action='append', nargs='+', required=True, help='IP address of '
+                'the agent where the next set of jobs should be installed. May '
+                'be specified several times to install different sets of jobs '
+                'on different agents.')
         self.parser.add_argument(
                 '-l', '--launch', '--launch-only', action='store_true',
                 help='do not wait until installation of the jobs completes '
@@ -66,45 +97,45 @@ class InstallJobs(FrontendBase):
     def parse(self, args=None):
         super().parse(args)
         jobs = self.args.job_name
-        agents = self.args.agent
+        agents = self.args.agent_address
 
         if len(jobs) != len(agents):
             self.parser.error('-j and -a arguments should appear by pairs')
 
     def execute(self, show_response_content=True):
         jobs_names = self.args.job_name
-        agents_ips = self.args.agent
+        agents_ips = self.args.agent_address
         launch_only = self.args.launch
+        check_status = len(jobs_names) == 1
 
         responses = [
                 self.request(
                     'POST', 'job', action='install',
                     names=jobs, addresses=agents,
-                    show_response_content=launch_only and show_response_content)
+                    show_response_content=launch_only and show_response_content,
+                    check_status=check_status)
                 for agents, jobs in zip(agents_ips, jobs_names)
         ]
 
-        if not launch_only:
+        if launch_only:
+            if show_response_content and not check_status:
+                for response in responses:
+                    response.raise_for_status()
+        else:
             threads = list(self._start_monitoring(show_response_content))
-            for thread in threads:
-                thread.join()
+            responses = [thread.join() for thread in threads]
+
         return responses
 
     def _start_monitoring(self, show_response_content=True):
-        for agents, jobs in zip(self.args.agent, self.args.job_name):
+        for agents, jobs in zip(self.args.agent_address, self.args.job_name):
             for agent, job in itertools.product(agents, jobs):
-                args = (self.session, self.base_url, job, agent, show_response_content)
-                thread = threading.Thread(target=check_install_state, args=args)
+                state_job = self.share_state(StateJob)
+                state_job.args.job_name = job
+                state_job.args.agent_address = agent
+                thread = WaitForInstall(args=(state_job, show_response_content))
                 thread.start()
                 yield thread
-
-
-def check_install_state(session, base_url, job_name, agent_address, show=True):
-    self = StateJob()
-    self.session = session
-    self.base_url = base_url
-    self.args = argparse.Namespace(name=job_name, agent=agent_address)
-    self.wait_for_success('install', show_response_content=show)
 
 
 if __name__ == '__main__':

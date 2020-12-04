@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -55,7 +55,7 @@ class CreateProject(FrontendBase):
         self.args.project = {
                 'name': self.args.project_name,
                 'description': self.args.description,
-                'owners': [] if self.args.public else [self.args.login],
+                'owners': [] if self.args.public else [self.credentials.get('login')],
         }
 
     def execute(self, show_response_content=True):

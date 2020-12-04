@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2019 CNES
+# Copyright © 2016-2020 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -45,13 +45,14 @@ from auditorium_scripts.frontend import FrontendBase
 class ListInstalledJobs(FrontendBase):
     def __init__(self):
         super().__init__('OpenBACH — List Installed Jobs')
-        self.parser.add_argument('agent', help='IP address of the agent')
+        self.parser.add_argument(
+                'agent_address', help='IP address of the agent')
         self.parser.add_argument(
                 '-u', '--update', action='store_true',
                 help='contact the agent to refresh the jobs list')
 
     def execute(self, show_response_content=True):
-        agent = self.args.agent
+        agent = self.args.agent_address
         update = self.args.update
 
         action = self.request

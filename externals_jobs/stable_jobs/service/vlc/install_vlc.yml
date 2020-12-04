@@ -5,7 +5,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #   
 #   
-#   Copyright © 2017 CNES
+#   Copyright © 2016-2020 CNES
 #   
 #   
 #   This file is part of the OpenBACH testbed.
@@ -34,19 +34,29 @@
 ---
 
 - name: Install package vlc
-  apt: name=vlc state=present
+  apt:
+    name: vlc
+    state: present
   become: yes
   environment: "{{ openbach_proxies }}"
 
 - name: Create vlc repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: "0755"
   
 - name: Download sample video
-  get_url: url=http://distribution.bbb3d.renderfarming.net/video/mp4/bbb_sunflower_1080p_30fps_normal.mp4 dest=/opt/openbach/agent/jobs/{{ job_name }}/bigbuckbunny.mp4
+  get_url:
+    url: http://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_480p_surround-fix.avi
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/bigbuckbunny.mp4
   environment: "{{ openbach_proxies }}"
 
 - name: Install vlc
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'vlc.help', mode: '0644' }
     - { file: 'vlc.py', mode: '0755' }
