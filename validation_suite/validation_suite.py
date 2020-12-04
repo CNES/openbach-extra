@@ -142,7 +142,7 @@ class ValidationSuite(FrontendBase):
                 '-u', '--user', default=getpass.getuser(),
                 help='user to log into agent during the installation proccess')
         self.parser.add_argument(
-                '-p', '--pass', '--agent-password',
+                '-p', '--passwd', '--agent-password',
                 dest='agent_password', nargs='?', const=self.PASSWORD_SENTINEL,
                 help='password to log into agent during the installation process. '
                 'use the flag but omit the value to get it asked using an echoless prompt; '
@@ -390,12 +390,12 @@ def main(argv=None):
         # Install a second collector
         installed_collector, *_ = collector_candidates
         install_collector = validator.share_state(AddCollector)
-        install_collector.args.collector = installed_collector
+        install_collector.args.collector_address = installed_collector
         install_collector.args.agent_name = installed_agents[installed_collector]
         install_collector.args.logs_port = 10514
         install_collector.args.stats_port = 2222
         install_collector.args.user = install_user
-        install_collector.args.password = install_password
+        install_collector.args.agent_password = install_password
         execute(install_collector)
 
         change_collector = validator.share_state(AssignCollector)
