@@ -47,7 +47,7 @@ setup(
     url='http://openbach.org',
 
     packages=find_packages(),
-    install_requires=['requests', 'pandas', 'matplotlib', 'psycopg2', 'uwsgi'],
+    install_requires=['requests', 'pandas', 'matplotlib', 'uwsgi'],
 
     test_suite='nose.collector',
     tests_require=['nose'],
