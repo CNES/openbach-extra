@@ -33,11 +33,12 @@
 ---
 
 - name: Install Python Dependencies
-  pip: name={{ item }} executable=pip3
-  with_items:
+  pip:
+    name:
     - matplotlib
     - numpy
     - scipy
+    executable: pip3
   become: yes
   environment: "{{ openbach_proxies }}"
 

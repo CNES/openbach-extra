@@ -61,11 +61,13 @@
   environment: "{{ openbach_proxies }}"
 
 - name: Install Selenium/bs4 for python3
-  pip: name={{ item }} executable=pip3 state=present
+  pip:
+    name:
+      - selenium
+      - bs4
+    executable: pip3
+    state: present
   become: yes
-  with_items:
-    - selenium
-    - bs4
   environment: "{{ openbach_proxies }}"
     
 - name: Install youtube file

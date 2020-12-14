@@ -34,9 +34,7 @@
 ---
 
 - name: Install twinkle
-  apt: name={{ item }} state=absent
-  with_items:
-    - twinkle
+  apt: name=twinkle state=absent
   become: yes
   
 - name: Uninstall Job

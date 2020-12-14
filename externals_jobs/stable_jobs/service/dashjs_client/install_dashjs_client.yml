@@ -43,10 +43,12 @@
   register: cpu_arch
 
 - name: Remove conflicting packages
-  apt: name={{ item }} state=absent purge=yes
-  with_items:
-    - firefox
-    - hunspell-en-us
+  apt:
+    name:
+      - firefox
+      - hunspell-en-us
+    state: absent
+    purge: yes
   become: yes
   environment: "{{ openbach_proxies }}"
 
@@ -76,10 +78,10 @@
   environment: "{{ openbach_proxies }}"
 
 - name: Install mod_http2's  dependencies
-  apt: name={{ item }} state=present
-  with_items:
+  apt:
+    name:
     - software-properties-common
-    - python-software-properties
+    state: present
   become: yes
   environment: "{{ openbach_proxies }}"
 

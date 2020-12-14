@@ -56,7 +56,7 @@
   become: yes
 
 - name: Uninstall pyOpenSSL
-  pip: name=pyopenssl executable=pip2 state=absent
+  pip: name=pyopenssl executable=pip3 state=absent
   become: yes
 
 - name: Delete certificates and private keys

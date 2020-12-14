@@ -29,7 +29,7 @@ general:
   name: ip_tuntap
   description: >
       This Job runs ip-tuntap utilities. 
-  job_version: '1'
+  job_version: '1.0'
   keywords:
     - ip
     - tun
@@ -38,6 +38,12 @@ general:
   need_privileges: yes
 
 platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/ip_tuntap/ip_tuntap.py'
+    command_stop:
+
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '16.04'

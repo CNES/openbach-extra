@@ -50,7 +50,7 @@
 
 - name: Install software properties common
   apt: 
-    pkg: ['software-properties-common', 'python-software-properties'] 
+    pkg: ['software-properties-common']
     state: present 
     update_cache: false
   become: yes
@@ -216,7 +216,7 @@
 
 # Install keys
 - name: Install pyOpenSSL
-  pip: name=pyopenssl executable=pip2 state=latest
+  pip: name=pyopenssl executable=pip3 state=latest
   become: yes
 
 - name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
