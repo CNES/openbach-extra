@@ -201,7 +201,7 @@ class ScenarioObserver(FrontendBase):
                 sleep_duration = max(map(_convert_time, intervals), default=1)
                 print("Retrieving logs if any, wait during logstash refreshing ({}s) ...".format(sleep_duration))
             time.sleep(sleep_duration)
-            response = elasticsearch.all_logs(timestamps=(begin_date, end_date))
+            response = elasticsearch.all_logs(timestamps=(int(int(begin_date)/1000)*1000, end_date))
             for log in response:
                 pprint.pprint(log, stream=stderr, width=300)
         return scenario_response
