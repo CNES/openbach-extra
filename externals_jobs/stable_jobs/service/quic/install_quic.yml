@@ -61,6 +61,10 @@
       - ppa:ubuntu-toolchain-r/test
   become: yes
 
+# Create job repository and deploy files
+- name: Create the quic job repository
+  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+
 # Install ngtcp2
 - name: Install ngtcp2 requirements
   apt: 
@@ -72,41 +76,50 @@
   become: yes
 
 - name: Clone OpenSSL for QUIC from github
-  git: repo=https://github.com/tatsuhiro-t/openssl depth=1 version=OpenSSL_1_1_1g-quic-draft-29 dest=/tmp/OpenSSL_1_1_1g-quic-draft-29 force=yes 
+  git:
+    repo: https://github.com/tatsuhiro-t/openssl
+    depth: 1
+    version: OpenSSL_1_1_1g-quic-draft-29
+    dest: /tmp/OpenSSL_1_1_1g-quic-draft-29
+    force: yes 
 
 - name: Compile and install lib OpenSSL for QUIC 
   shell: "{{ item }} chdir=/tmp/OpenSSL_1_1_1g-quic-draft-29"
   with_items:
-    - "./config enable-tls1_3 CC=gcc-8 CXX=g++-8"
+    - "./config enable-tls1_3 CC=gcc-8 CXX=g++-8 --prefix=/opt/openbach/agent/jobs/quic"
     - "make -j$(nproc)"
     - "make install_sw"
-  become: yes
 
 - name: Clone ghttp3 from github
-  git: repo=https://github.com/ngtcp2/nghttp3 dest=/tmp/nghttp3 force=yes version=HEAD
+  git:
+    repo: https://github.com/ngtcp2/nghttp3
+    dest: /tmp/nghttp3
+    force: yes
+    version: HEAD
 
 - name: Compile and install lib nghttp3
   shell: "{{ item }} chdir=/tmp/nghttp3/"
   with_items:
     - "autoreconf -i"
-    - "./configure --enable-lib-only CC=gcc-8 CXX=g++-8"
+    - "./configure --enable-lib-only CC=gcc-8 CXX=g++-8 CXXFLAGS=\"-I/opt/openbach/agent/jobs/quic/include\" LDFLAGS=\"-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib\" --prefix=/opt/openbach/agent/jobs/quic"
     - "make -j$(nproc) check"
     - "make install"
-  become: yes
 
 - name: Clone ngtcp2 from github
-  git: "repo={{ ngtcp2.git_repo }}  dest=/tmp/ngtcp2 force=yes version={{ ngtcp2.version }}"
+  git:
+    repo: "{{ ngtcp2.git_repo }}"
+    dest: /tmp/ngtcp2
+    force: yes
+    version: "{{ ngtcp2.version }}"
 
 - name: Compile and install ngtcp2
   shell: "{{ item }} chdir=/tmp/ngtcp2/"
   with_items:
     - "autoreconf -i"
-    #- "./configure PKG_CONFIG_PATH=/tmp/OpenSSL_1_1_1g-quic-draft-29/build/lib/pkgconfig:/tmp/nghttp3/build/lib/pkgconfig LDFLAGS=\"-Wl,-rpath,/tmp/OpenSSL_1_1_1g-quic-draft-29/build/lib\" CC=gcc-8 CXX=g++-8"
-    - "./configure CC=gcc-8 CXX=g++-8"
-    - "ldconfig"
+    - "./configure CC=gcc-8 CXX=g++-8 PKG_CONFIG_PATH=/opt/openbach/agent/jobs/quic/lib/pkgconfig CXXFLAGS=\"-I/opt/openbach/agent/jobs/quic/include\" LDFLAGS=\"-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib\" --prefix=/opt/openbach/agent/jobs/quic"
+      # - "ldconfig"
     - "make -j$(nproc) check"
     - "make install"
-  become: yes
 
 - name: Install ngtcp2 binaries
   copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
@@ -125,35 +138,42 @@
 
 
 - name: Clone Picotls for QUIC from github
-  git: repo=https://github.com/h2o/picotls version=HEAD dest=/tmp/picotls force=yes 
+  git:
+    repo: https://github.com/h2o/picotls
+    version: HEAD
+    dest: /tmp/picotls
+    force: yes 
+    recursive: yes
 
-- name: Initialize submodules
-  shell: "git submodule {{ item }} chdir=/tmp/picotls"
-  with_items:
-    - "init"
-    - "update"
- 
 - name: Set environment variables and Build picotls
   environment: 
     CC: gcc-8
     CXX: g++-8
+    CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
+    LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib"
   shell: "{{ item }} chdir=/tmp/picotls"
   with_items:
-    - "cmake ."
-    - "make"
-    - "make check" 
+    - "cmake . -DCMAKE_INSTALL_PREFIX=/opt/openbach/agent/jobs/quic"
+    - "make preinstall" 
+    - "make check"
 
 - name: Clone Picoquic from github
-  git: "repo={{ picoquic.git_repo }}  dest=/tmp/picoquic force=yes version={{ picoquic.version }}"
+  git:
+    repo: "{{ picoquic.git_repo }}"
+    dest: /tmp/picoquic
+    force: yes
+    version: "{{ picoquic.version }}"
     
 - name: Build picoquic
   environment:
     CC: gcc-8
     CXX: g++-8 
+    CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
+    LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib"
   shell: "{{ item }} chdir=/tmp/picoquic"
   with_items:
-    - "cmake ."
-    - "make"
+    - "cmake . -DCMAKE_INSTALL_PREFIX=/opt/openbach/agent/jobs/quic"
+    - "make preinstall"
 
 - name: Install picoquic binaries
   copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
@@ -170,18 +190,22 @@
   become: yes
  
 - name: Clone quicly github
-  git: "repo={{ quicly.git_repo }}  dest=/tmp/quicly force=yes version={{ quicly.version }}"
+  git:
+    repo: "{{ quicly.git_repo }}"
+    dest: /tmp/quicly
+    force: yes
+    version: "{{ quicly.version }}"
+    recursive: yes
 
-- name: Initialize submodules
-  shell: "git submodule update --init --recursive chdir=/tmp/quicly"
- 
 - name: Set environment variables and Build quicly
   environment: 
     CC: gcc-8
     CXX: g++-8
+    CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
+    LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib"
   shell: "{{ item }} chdir=/tmp/quicly"
   with_items:
-    - "cmake ."
+    - "cmake . -DCMAKE_INSTALL_PREFIX=/opt/openbach/agent/jobs/quic"
     - "make"
 
 - name: Install quicly binaries
@@ -189,10 +213,6 @@
   with_items:
     - { file: '/tmp/quicly/cli', mode: '0755', name: 'quicly' }
   become: yes
-
-# Create job repository and deploy files
-- name: Create the quic job repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
 
 - name: Copy files into job repository
   copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
@@ -239,7 +259,7 @@
     provider: selfsigned
   become: yes
 
-- name: Refresh dynamic linker
-  shell: ldconfig
-  become: yes
+# - name: Refresh dynamic linker
+  # shell: ldconfig
+  # become: yes
 
