@@ -60,11 +60,12 @@
   become: yes
   environment: "{{ openbach_proxies }}"
 
-- name: Install Selenium/bs4 for python3
+- name: Install dependencies
   pip:
     name:
       - selenium
       - bs4
+      - lxml
     executable: pip3
     state: present
   become: yes
