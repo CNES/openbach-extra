@@ -35,13 +35,18 @@ __credits__ = '''Contributors:
 '''
 
 
+import os
+import re
+import sys
+import syslog
 import argparse
 import subprocess
-import syslog
-import collect_agent
-import sys
+
+os.environ['XTABLES_LIBDIR'] = '$XTABLES_LIBDIR:/usr/lib/x86_64-linux-gnu/xtables' # Required for Ubuntu 20.04
 import iptc
-import re
+
+import collect_agent
+
 
 def set_conf(ifaces, src_ip, dst_ip, port, mark, table_num, unset=False):
     # Set (or unset) routing configuration for PEPSal
