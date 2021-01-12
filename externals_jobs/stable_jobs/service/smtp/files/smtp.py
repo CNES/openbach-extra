@@ -65,7 +65,7 @@ class CustomSMTPServer(smtpd.SMTPServer):
         self.nb_messages = 0
         self.data_received = 0
         
-    def process_message(self, peer, mailfrom, rcpttos, data):
+    def process_message(self, peer, mailfrom, rcpttos, data, mail_options=None, rcpt_options=None):
         ''' Handle messages received '''
         self.nb_messages += 1
         self.data_received += (len(data) + sys.getsizeof(''))//1024
@@ -147,7 +147,7 @@ if __name__ == "__main__":
             '-T', '--To', type=str, default=RECEIVER['email'],
             help='The receiver email address (client only)')
     parser.add_argument(
-            '-l', '--lenght', type=int, default=100,
+            '-S', '--size', type=int, default=100,
             help='The size in kilobyte of the message to send (client only)')
     parser.add_argument(
             '-i', '--interval', type=float, default=1,
@@ -166,7 +166,7 @@ if __name__ == "__main__":
         server_ip = args.server_ip
         sender = {'name':args.From.split("@")[0], 'email':args.From}
         receiver = {'name':args.To.split("@")[0], 'email':args.To}
-        message_size = args.lenght
+        message_size = args.size
         interval = args.interval
         duration = args.duration
         client(server_ip, server_port, sender, receiver, message_size, interval, duration)
