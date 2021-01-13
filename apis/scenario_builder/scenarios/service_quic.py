@@ -63,8 +63,9 @@ def build(server_entity, server_ip, server_port, server_implementation,
                [['DLT (ms)']], 
                [['DLT time series']], 
                [legends], 
-               False,
-               wait_finished, None, 5)
+               no_suffix=False,
+               wait_finished=wait_finished, 
+               wait_delay=5)
        cdf_on_same_graph(
                scenario, 
                post_processing_entity, 
@@ -74,7 +75,8 @@ def build(server_entity, server_ip, server_port, server_implementation,
                [['DLT (ms)']], 
                [['DLT CDF']], 
                [legends],
-               False, 
-               wait_finished, None, 2)
+               no_suffix=False, 
+               wait_finished=wait_finished, 
+               wait_delay=5)
 
     return scenario
