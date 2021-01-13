@@ -77,10 +77,11 @@
   become: yes
   environment: "{{ openbach_proxies }}"
 
-- name: Install mod_http2's  dependencies
+- name: Install some dependencies
   apt:
     name:
     - software-properties-common
+    - libdbus-glib-1-2
     state: present
   become: yes
   environment: "{{ openbach_proxies }}"
