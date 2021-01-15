@@ -41,8 +41,20 @@
   file: path=/etc/squid/cache/ state=directory owner=proxy group=proxy
   become: yes 
 
+- name: Stop squid service
+  service:
+    name: squid
+    state: stopped
+  become: yes
+
 - name: Create cache files
   shell: squid -z
+  become: yes
+
+- name: Start squid service
+  service:
+    name: squid
+    state: started
   become: yes
 
 - name: Install python dependencies
