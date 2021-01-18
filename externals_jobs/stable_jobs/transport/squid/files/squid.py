@@ -43,8 +43,10 @@ import sys
 import collect_agent
 import shutil
 import enum
-import os.path
+import os
 import socket
+
+os.environ['XTABLES_LIBDIR'] = '$XTABLES_LIBDIR:/usr/lib/x86_64-linux-gnu/xtables' # Required for Ubuntu 20.04
 import iptc
 
 CURRENT_DIRECTORY=os.path.abspath(os.path.dirname(__file__))
