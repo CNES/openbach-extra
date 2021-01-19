@@ -34,6 +34,7 @@ __credits__ = '''Contributors:
  * Corentin Ormiere  <cormiere@silicom.fr>
 '''
 
+import os
 import sys
 import shlex
 import syslog
@@ -41,6 +42,7 @@ import pathlib
 import argparse
 import subprocess
 
+os.environ['XTABLES_LIBDIR'] = '$XTABLES_LIBDIR:/usr/lib/x86_64-linux-gnu/xtables' # Required for Ubuntu 20.04
 import iptc
 
 import collect_agent
@@ -89,7 +91,7 @@ def main(beamslot, mode, value_mode, iface, duration, simultaneous_verdict):
         collect_agent.send_log(syslog.LOG_WARNING, message)
 
     cmd = ["dambox"]
-    cmd.extend(command_line_flag_for_argument(damslot*1000, "-bs")) 
+    cmd.extend(command_line_flag_for_argument(damslot*1000, "-ds")) 
     # Check between frequency or timeline mode
     if mode == "timeline":
         # Create and put the timeline (ex 1000101) in a file for the BH binary
@@ -104,7 +106,7 @@ def main(beamslot, mode, value_mode, iface, duration, simultaneous_verdict):
 
     # Launch of the bh box
     with PATH_CONF.joinpath('logfile.txt').open('w+') as f:
-        process = subprocess.run(command, universal_newlines=True, stdout=f)
+        process = subprocess.run(cmd, universal_newlines=True, stdout=f)
     if process.returncode:
         message = "WARNING \'{}\' exited with non-zero code".format(' '.join(cmd))
         collect_agent.send_log(syslog.LOG_WARNING, message)
@@ -140,3 +142,4 @@ if __name__ == '__main__':
     iface = args.iface
 
     main(damslot, mode, value_mode, iface,  duration, simultaneous_verdict)
+

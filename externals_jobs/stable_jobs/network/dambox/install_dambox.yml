@@ -32,12 +32,6 @@
 #
 ---
 
-#- name: Add APT GPG key Net4sat 
-#  apt_key: 
-#    url: http://packages.net4sat.org/support_net4sat_org_pub.gpg.key
-#    state: present
-#  become: yes    
-
 - name: Add DamBOX release repository
   apt_repository:
     repo: "deb https://packages.net4sat.org/openbach/ xenial stable" 
@@ -60,8 +54,11 @@
     mode: 0755
 
 - name: Install the DamBOX Job
-  copy: src={{ item.name }} dest=/opt/openbach/agent/jobs/{{ job_name }}/{{ item.name }} mode={{ item.mode }}
+  copy:
+    src: "{{ item.name }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/{{ item.name }}
+    mode: "{{ item.mode }}"
   with_items:
-    - { name: 'dambox.help', mode: '0644' }  
-    - { name: 'dambox_rstats_filter.conf', mode: '0644' }
-    - { name: 'dambox.py', mode: '0755' }
+    - { name: "dambox.help", mode: "0644" }
+    - { name: "dambox_rstats_filter.conf", mode: "0644" }
+    - { name: "dambox.py", mode: "0755" }
