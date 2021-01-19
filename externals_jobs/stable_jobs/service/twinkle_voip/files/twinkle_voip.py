@@ -149,7 +149,7 @@ def wait_for(p, string, timeout=TIMEOUT):
 
 def launch_twinkle():
     # Launch twinkle
-    t = subprocess.Popen(["twinkle-console"], stdin=subprocess.PIPE,
+    t = subprocess.Popen(["twinkle", "-c"], stdin=subprocess.PIPE,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if not wait_for(t, "Local IP"):
         message = "ERROR when launching twinkle"
@@ -290,3 +290,4 @@ if __name__ == "__main__":
         port = int(port)
     
     main(server, remote, audio, length, ip, port, nat)
+
