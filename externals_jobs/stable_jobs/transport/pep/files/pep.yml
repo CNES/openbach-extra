@@ -15,12 +15,6 @@ platform_configuration:
     command: 'python3 /opt/openbach/agent/jobs/pep/pep.py'
     command_stop: 'python3 /opt/openbach/agent/jobs/pep/pep.py -x'
 
-  - ansible_system: 'Debian'
-    ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '16.04'
-    command: 'python3 /opt/openbach/agent/jobs/pep/pep.py'
-    command_stop: 'python3 /opt/openbach/agent/jobs/pep/pep.py -x'
-
 arguments:
   required:
   optional:

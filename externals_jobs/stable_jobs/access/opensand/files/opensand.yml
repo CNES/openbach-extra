@@ -18,12 +18,6 @@ platform_configuration:
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/opensand/opensand.py'
     command_stop:
 
-  - ansible_system: 'Debian'
-    ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '16.04'
-    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/opensand/opensand.py'
-    command_stop:
-
 # maybe 'ip' as ipv4 and ipv6 type
 
 arguments:

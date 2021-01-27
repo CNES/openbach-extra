@@ -14,12 +14,6 @@ platform_configuration:
     command: 'python3 /opt/openbach/agent/jobs/tcp_conf_linux/tcp_conf_linux.py'
     command_stop:
 
-  - ansible_system: 'Debian'
-    ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '16.04'
-    command: 'python3 /opt/openbach/agent/jobs/tcp_conf_linux/tcp_conf_linux.py'
-    command_stop:
-
 arguments:
   subcommand:
     - group_name: congestion control

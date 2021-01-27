@@ -17,12 +17,6 @@ platform_configuration:
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/voip_qoe_dest/voip_qoe_dest.py'
     command_stop: 'killall -v ITGRecv'
 
-  - ansible_system: 'Debian'
-    ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '16.04'
-    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/voip_qoe_dest/voip_qoe_dest.py'
-    command_stop: 'killall -v ITGRecv'
-
 arguments:
   required:
     - name: dest_addr
