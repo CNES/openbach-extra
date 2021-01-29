@@ -34,12 +34,15 @@ __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 '''
 
+import os
 import re
 import sys
 import time
 import syslog
 import argparse
+import traceback
 import subprocess
+import contextlib
 from math import floor
 from contextlib import suppress
 
@@ -47,11 +50,22 @@ import collect_agent
 
 ERROR = re.compile(r'local error: Message too long')
 
-def main(dest, lowest, highest, count):
-    collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/pmtud/'
-            'pmtud_rstats_filter.conf')     
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
+def main(dest, lowest, highest, count):
     collect_agent.send_log(syslog.LOG_DEBUG, 'Starting ifconfig pmtud')
 
     if lowest >= highest:
@@ -96,22 +110,23 @@ def main(dest, lowest, highest, count):
     collect_agent.send_stat(timestamp, mtu=mtu)
 
 if __name__ == '__main__':
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('dest', type=str, help='Destination IP or URL')
-    parser.add_argument(
-            '-l', '--lowest', type=int, default=1,
-            help='Lowest value to test')
-    parser.add_argument(
-            '-H', '--highest', type=int, default=1500,
-            help='Highest value to test')
-    parser.add_argument(
-            '-c', '--count', type=int, default=1,
-            help='Number of pings to perform per iteration')
-
-    # get args
-    args = parser.parse_args()
-
-    main(args.dest, args.lowest, args.highest, args.count)
+    with use_configuration('/opt/openbach/agent/jobs/pmtud/pmtud_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('dest', type=str, help='Destination IP or URL')
+        parser.add_argument(
+                '-l', '--lowest', type=int, default=1,
+                help='Lowest value to test')
+        parser.add_argument(
+                '-H', '--highest', type=int, default=1500,
+                help='Highest value to test')
+        parser.add_argument(
+                '-c', '--count', type=int, default=1,
+                help='Number of pings to perform per iteration')
+    
+        # get args
+        args = parser.parse_args()
+    
+        main(args.dest, args.lowest, args.highest, args.count)

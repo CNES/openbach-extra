@@ -34,13 +34,30 @@ __credits__ = '''Contributors:
  * David FERNANDES <david.fernandes@viveris.fr>
 '''
 
+import os
 import sys
 import syslog
 import argparse
+import traceback
+import contextlib
 import subprocess
 
 import collect_agent
 
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
 def run_command(cmd):
     p = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -55,17 +72,6 @@ def run_command(cmd):
 def extend_arguments(cmd, name, argument):
     if argument is not None:
         cmd.extend([name, str(argument)])
-
-
-def register_collector():
-    success = collect_agent.register_collect(
-        '/opt/openbach/agent/jobs/ip_link/'
-        'ip_link_rstats_filter.conf')
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ip_link')
 
 
 def ip_link_add(name, link, txqueuelen, address, broadcast, mtu, type, **type_args):
@@ -109,70 +115,70 @@ def ip_link_set(dev, group, state, arp, dynamic, multicast, txqueuelen, address,
 
 
 if __name__ == '__main__':
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    subparsers_command = parser.add_subparsers(title='ip-link command operation')
-    subparsers_command.required=True
-
-    #ip link add
-    parser_add = subparsers_command.add_parser('add', help='ip link add')
-    parser_add.add_argument('name', type=str,
-            help='the name of the new virtual device')
-    parser_add.add_argument('--link', type=str, metavar='DEVICE',
-            help='the physical device to act operate on')
-    parser_add.add_argument('--txqueuelen', type=int, metavar='NUMBER',
-            help='the transmit queue length of the device')
-    parser_add.add_argument('--address', type=str, metavar='LLADDRESS',
-            help='the link layer address of the interface')
-    parser_add.add_argument('--broadcast', type=str, metavar='LLADDRESS',
-            help='the link layer broadcast address of the interface')
-    parser_add.add_argument('--mtu', type=int,
-            help='the mtu of the device')
-    subparsers_add_type = parser_add.add_subparsers(
-            title='Type of the new device', dest='type',
-            help='specifies the type of the new device.')
-    subparsers_add_type.required=True
-    parser_add_type_bridge = subparsers_add_type.add_parser('bridge', help='Ethernet Bridge device')
-    parser_add_type_dummy = subparsers_add_type.add_parser('dummy', help='Dummy network interface')
-
-    #ip link delete
-    parser_del = subparsers_command.add_parser('delete', help='ip link delete')
-    parser_del.add_argument('--dev', type=str, help='network device to delete')
-    parser_del.add_argument('--group', type=str, help='group of devices to delete (at least "dev" or "group" is required)')
-
-    #ip link set
-    parser_set = subparsers_command.add_parser('set', help='ip link set')
-    parser_set.add_argument('--dev', type=str, help='network device to operate on')
-    parser_set.add_argument('--group', type=str, help='group to operate on (at least "dev" or "group" is required)')
-    parser_set.add_argument('--state', choices=['up', 'down'], help='set the state of the device to UP or DOWN')
-    parser_set.add_argument('--arp', choices=['on', 'off'],
-            help='change the NOARP flag on the device')
-    parser_set.add_argument('--dynamic', choices=['on', 'off'],
-            help='change the DYNAMIC flag on the device')
-    parser_set.add_argument('--multicast', choices=['on', 'off'],
-            help='change the MULTICAST flag on the device')
-    parser_set.add_argument('--txqueuelen', type=int, metavar='NUMBER',
-            help='the transmit queue length of the device')
-    parser_set.add_argument('--address', type=str, metavar='LLADDRESS',
-            help='the link layer address of the interface')
-    parser_set.add_argument('--broadcast', type=str, metavar='LLADDRESS',
-            help='the link layer broadcast address of the interface')
-    parser_set.add_argument('--mtu', type=int,
-            help='the mtu of the device')
-    parser_set.add_argument('--netns', type=str, metavar='NETNSNAME_OR_PID',
-            help='move the device to the network namespace associated with name NETNSNAME or process PID')
-    parser_set.add_argument('--master', type=str, help='set master device of the device (enslave device)')
-    parser_set.add_argument('--nomaster', action='store_true', help='unset master device of the device (release device)')
-
-    parser_del.set_defaults(function=ip_link_del)
-    parser_add.set_defaults(function=ip_link_add)
-    parser_set.set_defaults(function=ip_link_set)
-    args = vars(parser.parse_args())
-    main = args.pop('function')
-    register_collector()
-    main(**args)
+    with use_configuration('/opt/openbach/agent/jobs/ip_link/ip_link_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    
+        subparsers_command = parser.add_subparsers(title='ip-link command operation')
+        subparsers_command.required=True
+    
+        #ip link add
+        parser_add = subparsers_command.add_parser('add', help='ip link add')
+        parser_add.add_argument('name', type=str,
+                help='the name of the new virtual device')
+        parser_add.add_argument('--link', type=str, metavar='DEVICE',
+                help='the physical device to act operate on')
+        parser_add.add_argument('--txqueuelen', type=int, metavar='NUMBER',
+                help='the transmit queue length of the device')
+        parser_add.add_argument('--address', type=str, metavar='LLADDRESS',
+                help='the link layer address of the interface')
+        parser_add.add_argument('--broadcast', type=str, metavar='LLADDRESS',
+                help='the link layer broadcast address of the interface')
+        parser_add.add_argument('--mtu', type=int,
+                help='the mtu of the device')
+        subparsers_add_type = parser_add.add_subparsers(
+                title='Type of the new device', dest='type',
+                help='specifies the type of the new device.')
+        subparsers_add_type.required=True
+        parser_add_type_bridge = subparsers_add_type.add_parser('bridge', help='Ethernet Bridge device')
+        parser_add_type_dummy = subparsers_add_type.add_parser('dummy', help='Dummy network interface')
+    
+        #ip link delete
+        parser_del = subparsers_command.add_parser('delete', help='ip link delete')
+        parser_del.add_argument('--dev', type=str, help='network device to delete')
+        parser_del.add_argument('--group', type=str, help='group of devices to delete (at least "dev" or "group" is required)')
+    
+        #ip link set
+        parser_set = subparsers_command.add_parser('set', help='ip link set')
+        parser_set.add_argument('--dev', type=str, help='network device to operate on')
+        parser_set.add_argument('--group', type=str, help='group to operate on (at least "dev" or "group" is required)')
+        parser_set.add_argument('--state', choices=['up', 'down'], help='set the state of the device to UP or DOWN')
+        parser_set.add_argument('--arp', choices=['on', 'off'],
+                help='change the NOARP flag on the device')
+        parser_set.add_argument('--dynamic', choices=['on', 'off'],
+                help='change the DYNAMIC flag on the device')
+        parser_set.add_argument('--multicast', choices=['on', 'off'],
+                help='change the MULTICAST flag on the device')
+        parser_set.add_argument('--txqueuelen', type=int, metavar='NUMBER',
+                help='the transmit queue length of the device')
+        parser_set.add_argument('--address', type=str, metavar='LLADDRESS',
+                help='the link layer address of the interface')
+        parser_set.add_argument('--broadcast', type=str, metavar='LLADDRESS',
+                help='the link layer broadcast address of the interface')
+        parser_set.add_argument('--mtu', type=int,
+                help='the mtu of the device')
+        parser_set.add_argument('--netns', type=str, metavar='NETNSNAME_OR_PID',
+                help='move the device to the network namespace associated with name NETNSNAME or process PID')
+        parser_set.add_argument('--master', type=str, help='set master device of the device (enslave device)')
+        parser_set.add_argument('--nomaster', action='store_true', help='unset master device of the device (release device)')
+    
+        parser_del.set_defaults(function=ip_link_del)
+        parser_add.set_defaults(function=ip_link_add)
+        parser_set.set_defaults(function=ip_link_set)
+        args = vars(parser.parse_args())
+        main = args.pop('function')
+        main(**args)
 
 

@@ -37,15 +37,34 @@ __credits__ = '''Contributors:
  * Bastien TAURAN <bastien.tauran@toulouse.viveris.com>
 '''
 
+import os
 import sys
 import time
 import shlex
 import syslog
 import argparse
+import traceback
+import contextlib
 from subprocess import Popen, PIPE, STDOUT
 from statistics import mean
 
 import collect_agent
+
+
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
 
 def main(destination_ip, count, interval, microseconds, n_mean, destport):
@@ -60,16 +79,6 @@ def main(destination_ip, count, interval, microseconds, n_mean, destport):
             cmd += ['-i', 'u'+str(interval)]
         else:
             cmd += ['-i', str(interval)]
-
-
-    success = collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/hping/'
-            'hping_rstats_filter.conf')
-    if not success:
-        message = "ERROR connecting to collect-agent"
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job hping')
 
     measurements = []
 
@@ -108,53 +117,54 @@ def main(destination_ip, count, interval, microseconds, n_mean, destport):
 
 
 if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            'destination_ip', help='The destination the '
-            'hping (IP address, hostname, domain name, etc.)')
-    parser.add_argument(
-            '-p', '--destport', type=int, default=443,
-            help='Destination port for TCP SYN  (default=443, strongly '
-            'recommended)')
-    parser.add_argument(
-            '-c', '--count', type=int, 
-            help='Number of packets to send (default=unlimited).')
-    parser.add_argument(
-            '-i', '--interval', type=str,
-            help='Interval, in seconds, between each packet sent (default=1). '
-            'The interval can be set in micro seconds '
-            'by adding u before the interval value (u40 for 40 micro seconds). '
-            'The interval can be a float, '
-            'with a minimum granularity of 1 micro second.', default=1)
-    parser.add_argument(
-            '-m', '--mean', type=int, 
-            help='Collect the mean RTT of every N packets.', default=1)
+    with use_configuration('/opt/openbach/agent/jobs/hping/hping_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument(
+                'destination_ip', help='The destination the '
+                'hping (IP address, hostname, domain name, etc.)')
+        parser.add_argument(
+                '-p', '--destport', type=int, default=443,
+                help='Destination port for TCP SYN  (default=443, strongly '
+                'recommended)')
+        parser.add_argument(
+                '-c', '--count', type=int, 
+                help='Number of packets to send (default=unlimited).')
+        parser.add_argument(
+                '-i', '--interval', type=str,
+                help='Interval, in seconds, between each packet sent (default=1). '
+                'The interval can be set in micro seconds '
+                'by adding u before the interval value (u40 for 40 micro seconds). '
+                'The interval can be a float, '
+                'with a minimum granularity of 1 micro second.', default=1)
+        parser.add_argument(
+                '-m', '--mean', type=int, 
+                help='Collect the mean RTT of every N packets.', default=1)
 
-    # get args
-    args = parser.parse_args()
-    destport = args.destport
-    destination_ip = args.destination_ip
-    count = args.count
-    interval = str(args.interval)
-    n_mean = args.mean
+        # get args
+        args = parser.parse_args()
+        destport = args.destport
+        destination_ip = args.destination_ip
+        count = args.count
+        interval = str(args.interval)
+        n_mean = args.mean
 
-    try:
-        if len(interval) > 0 and interval[0] == 'u':
-            interval = int(float(interval[1:]))
-            microseconds = True
-        else:
-            microseconds = False
-            interval = float(interval)
-            if interval != int(interval):
-                interval = int(interval*1000000)
+        try:
+            if len(interval) > 0 and interval[0] == 'u':
+                interval = int(float(interval[1:]))
                 microseconds = True
             else:
-                interval = int(interval)
-    except ValueError:
-        interval = 0
-        microseconds = False
+                microseconds = False
+                interval = float(interval)
+                if interval != int(interval):
+                    interval = int(interval*1000000)
+                    microseconds = True
+                else:
+                    interval = int(interval)
+        except ValueError:
+            interval = 0
+            microseconds = False
 
-    main(destination_ip, count, interval, microseconds, n_mean, destport)
+        main(destination_ip, count, interval, microseconds, n_mean, destport)

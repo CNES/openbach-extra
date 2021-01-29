@@ -36,22 +36,33 @@ __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 '''
 
+import os
 import sys
 import syslog
 import argparse
 import ipaddress
+import traceback
 import subprocess
+import contextlib
 
 import collect_agent
 
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
 def main(interface_name, ip_address, action):
-    collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/ifconfig/'
-            'ifconfig_rstats_filter.conf')     
-
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting ifconfig job')
-
     if action == 1:
         # Add an ip add
         try:
@@ -104,20 +115,21 @@ def main(interface_name, ip_address, action):
 
 
 if __name__ == '__main__':
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('interface_name', type=str, help='')
-    parser.add_argument(
-            '-i', '--ip_address', type=ipaddress.ip_address,
-            help='')
-    parser.add_argument('-a', '--action', type=int, default=1, help='')
-
-    # get args
-    args = parser.parse_args()
-    interface_name = args.interface_name
-    ip_address = args.ip_address
-    action = args.action
-
-    main(interface_name, ip_address, action)
+    with use_configuration('/opt/openbach/agent/jobs/ifconfig/ifconfig_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('interface_name', type=str, help='')
+        parser.add_argument(
+                '-i', '--ip_address', type=ipaddress.ip_address,
+                help='')
+        parser.add_argument('-a', '--action', type=int, default=1, help='')
+    
+        # get args
+        args = parser.parse_args()
+        interface_name = args.interface_name
+        ip_address = args.ip_address
+        action = args.action
+    
+        main(interface_name, ip_address, action)

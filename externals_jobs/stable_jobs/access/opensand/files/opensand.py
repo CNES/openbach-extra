@@ -34,7 +34,7 @@
 @author   Aurélien DELRIEU <aurelien.delrieu@viveris.fr>
 """
 
-
+import os
 import re
 import sys
 import json
@@ -45,6 +45,8 @@ import syslog
 import argparse
 import ipaddress
 import threading
+import traceback
+import contextlib
 import subprocess
 import os.path as path
 
@@ -66,6 +68,20 @@ PROC = None
 LOG_RCV = None
 STAT_RCV = None
 
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
 def run_entity(command, addr, logs_port, stats_port):
     global LOG_RCV
@@ -221,138 +237,135 @@ def udp_port(text):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description='Set up the network configuration and launch an OpenSAND entity',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-
-    parser.add_argument(
-        '--conf-dir',
-        type=str,
-        default='/etc/opensand/',
-        help='The directory of the OpenSAND entity configuration',
-    )
-    parser.add_argument(
-        '--output-addr',
-        type=str,
-        default='127.0.0.1',
-        help='The internal output address (format: "ADDRESS")',
-    )
-    parser.add_argument(
-        '--logs-port',
-        type=udp_port,
-        default=63000,
-        help='The internal logs UDP port',
-    )
-    parser.add_argument(
-        '--stats-port',
-        type=udp_port,
-        default=63001,
-        help='The internal stats UDP port',
-    )
-    parser.add_argument(
-        '--bin-dir',
-        type=str,
-        default='/usr/bin/',
-        help='The directory of OpenSAND binaries',
-    )
-
-    run_entity_cmd = parser.add_subparsers(
-        dest='entity',
-        metavar='entity',
-        help='the OpenSAND entity type',
-    )
-    run_entity_cmd.required = True
-
-    run_st_parser = run_entity_cmd.add_parser(
-        'st',
-        help='Satellite Terminal',
-    )
-    run_gw_parser = run_entity_cmd.add_parser(
-        'gw',
-        help='Gateway',
-    )
-    run_sat_parser = run_entity_cmd.add_parser(
-        'sat',
-        help='Satellite',
-    )
-    run_gw_net_acc_parser = run_entity_cmd.add_parser(
-        'gw-net-acc',
-        help='Gateway (network and access layers)',
-    )
-    run_gw_phy_parser = run_entity_cmd.add_parser(
-        'gw-phy',
-        help='Gateway (physical layer)',
-    )
-
-    for p in [ run_st_parser, run_gw_parser, run_gw_net_acc_parser, run_gw_phy_parser ]:
-        p.add_argument(
-            'id',
-            type=int,
-            help='the OpenSAND entity identifier',
+    with use_configuration('/opt/openbach/agent/jobs/opensand/opensand_rstats_filter.conf'):
+        parser = argparse.ArgumentParser(
+            description='Set up the network configuration and launch an OpenSAND entity',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
 
-    for p in [ run_st_parser, run_gw_parser, run_gw_phy_parser, run_sat_parser ]:
-        p.add_argument(
-            'emu_addr',
-            type=ip_address,
-            help='the emulation address (format: "ADDRESS")',
-        )
-
-    for p in [ run_gw_net_acc_parser, run_gw_phy_parser ]:
-        p.add_argument(
-            'interco_addr',
-            type=ip_address,
-            help='the remote interconnection address (format: "ADDRESS")',
-        )
-
-    for p in [ run_st_parser, run_gw_parser, run_gw_net_acc_parser ]:
-        p.add_argument(
-            '-t',
-            '--tap-name',
+        parser.add_argument(
+            '--conf-dir',
             type=str,
-            default=DFLT_TAPNAME,
-            help='the TAP interface name (default: {})'.format(DFLT_TAPNAME),
+            default='/etc/opensand/',
+            help='The directory of the OpenSAND entity configuration',
+        )
+        parser.add_argument(
+            '--output-addr',
+            type=str,
+            default='127.0.0.1',
+            help='The internal output address (format: "ADDRESS")',
+        )
+        parser.add_argument(
+            '--logs-port',
+            type=udp_port,
+            default=63000,
+            help='The internal logs UDP port',
+        )
+        parser.add_argument(
+            '--stats-port',
+            type=udp_port,
+            default=63001,
+            help='The internal stats UDP port',
+        )
+        parser.add_argument(
+            '--bin-dir',
+            type=str,
+            default='/usr/bin/',
+            help='The directory of OpenSAND binaries',
         )
 
-    args = parser.parse_args()
-
-    collect_agent.register_collect(
-        '/opt/openbach/agent/jobs/opensand/opensand_rstats_filter.conf',
-    )
-
-    command = [path.join(args.bin_dir, 'opensand'), args.entity]
-    if args.entity == 'sat':
-        command += [
-            '-a', args.emu_addr,
-            '-c', args.conf_dir,
-        ]
-    elif args.entity in [ 'st', 'gw' ]:
-        command += [
-            '-i', str(args.id),
-            '-a', args.emu_addr,
-            '-t', args.tap_name,
-            '-c', args.conf_dir,
-        ]
-    elif args.entity == 'gw-net-acc':
-        command += [
-            '-i', str(args.id),
-            '-t', args.tap_name,
-            '-w', args.interco_addr,
-            '-c', args.conf_dir,
-        ]
-    elif args.entity == 'gw-phy':
-        command += [
-            '-i', str(args.id),
-            '-a', args.emu_addr,
-            '-w', args.interco_addr,
-            '-c', args.conf_dir,
-        ]
-    else:
-        collect_agent.send_message(
-            syslog.LOG_ERR,
-            'The OpenSAND entity "{}" is not handled by this script'.format(args.entity)
+        run_entity_cmd = parser.add_subparsers(
+            dest='entity',
+            metavar='entity',
+            help='the OpenSAND entity type',
         )
-        sys.exit(-1)
+        run_entity_cmd.required = True
 
-    run_entity(command, args.output_addr, args.logs_port, args.stats_port)
+        run_st_parser = run_entity_cmd.add_parser(
+            'st',
+            help='Satellite Terminal',
+        )
+        run_gw_parser = run_entity_cmd.add_parser(
+            'gw',
+            help='Gateway',
+        )
+        run_sat_parser = run_entity_cmd.add_parser(
+            'sat',
+            help='Satellite',
+        )
+        run_gw_net_acc_parser = run_entity_cmd.add_parser(
+            'gw-net-acc',
+            help='Gateway (network and access layers)',
+        )
+        run_gw_phy_parser = run_entity_cmd.add_parser(
+            'gw-phy',
+            help='Gateway (physical layer)',
+        )
+
+        for p in [ run_st_parser, run_gw_parser, run_gw_net_acc_parser, run_gw_phy_parser ]:
+            p.add_argument(
+                'id',
+                type=int,
+                help='the OpenSAND entity identifier',
+            )
+
+        for p in [ run_st_parser, run_gw_parser, run_gw_phy_parser, run_sat_parser ]:
+            p.add_argument(
+                'emu_addr',
+                type=ip_address,
+                help='the emulation address (format: "ADDRESS")',
+            )
+
+        for p in [ run_gw_net_acc_parser, run_gw_phy_parser ]:
+            p.add_argument(
+                'interco_addr',
+                type=ip_address,
+                help='the remote interconnection address (format: "ADDRESS")',
+            )
+
+        for p in [ run_st_parser, run_gw_parser, run_gw_net_acc_parser ]:
+            p.add_argument(
+                '-t',
+                '--tap-name',
+                type=str,
+                default=DFLT_TAPNAME,
+                help='the TAP interface name (default: {})'.format(DFLT_TAPNAME),
+            )
+
+        args = parser.parse_args()
+
+        command = [path.join(args.bin_dir, 'opensand'), args.entity]
+        if args.entity == 'sat':
+            command += [
+                '-a', args.emu_addr,
+                '-c', args.conf_dir,
+            ]
+        elif args.entity in [ 'st', 'gw' ]:
+            command += [
+                '-i', str(args.id),
+                '-a', args.emu_addr,
+                '-t', args.tap_name,
+                '-c', args.conf_dir,
+            ]
+        elif args.entity == 'gw-net-acc':
+            command += [
+                '-i', str(args.id),
+                '-t', args.tap_name,
+                '-w', args.interco_addr,
+                '-c', args.conf_dir,
+            ]
+        elif args.entity == 'gw-phy':
+            command += [
+                '-i', str(args.id),
+                '-a', args.emu_addr,
+                '-w', args.interco_addr,
+                '-c', args.conf_dir,
+            ]
+        else:
+            collect_agent.send_message(
+                syslog.LOG_ERR,
+                'The OpenSAND entity "{}" is not handled by this script'.format(args.entity)
+            )
+            sys.exit(-1)
+
+        run_entity(command, args.output_addr, args.logs_port, args.stats_port)

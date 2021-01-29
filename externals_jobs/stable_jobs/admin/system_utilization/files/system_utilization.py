@@ -34,22 +34,31 @@ __credits__ = '''Contributors:
  * Francklin SIMO <francklin.simo@toulouse.viveris.com>
 '''
 
-import collect_agent
-import syslog
 import os
-import argparse
-import psutil
 import time
+import psutil
+import syslog
+import argparse
+import traceback
+import contextlib
+import collect_agent
 
-
-def main(interval):
-    # Connect to collect agent
-    conffile = '/opt/openbach/agent/jobs/system_utilization/system_utilization_rstats_filter.conf'
-    success = collect_agent.register_collect(conffile)
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
     if not success:
         message = 'ERROR connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+
+def main(interval):
     while True:
         statistics= dict()
         statistics.update({'cpu_percent':psutil.cpu_percent()})
@@ -62,12 +71,13 @@ def main(interval):
       
     
 if __name__ == "__main__":
-    # Argument parsing
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--interval', type=int, 
-                        help='The pause *interval* seconds between periodic information retrieval (Default: 1 second)',
-                        default=1)
-                            
-    args = parser.parse_args()
-    main(args.interval)
-    
+    with use_configuration('/opt/openbach/agent/jobs/system_utilization/system_utilization_rstats_filter.conf'):
+        # Argument parsing
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-i', '--interval', type=int, 
+                            help='The pause *interval* seconds between periodic information retrieval (Default: 1 second)',
+                            default=1)
+                                
+        args = parser.parse_args()
+        main(args.interval)
+        
