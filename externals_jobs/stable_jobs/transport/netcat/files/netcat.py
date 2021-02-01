@@ -35,28 +35,34 @@ __credits__ = '''Contributors:
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
+import os
 import sys
 import time
 import syslog
 import argparse
+import traceback
+import contextlib
 import subprocess
 from functools import partial
 
 import collect_agent
 
-
-def main(mode, port, persist, measure_t, filename, n_times):
-    # Connect to collect agent
-    success = collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/netcat/'
-            'netcat_rstats_filter.conf')
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
     if not success:
         message = 'ERROR connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
-    collect_agent.send_log(syslog.LOG_DEBUG, "Starting job netcat")
-
+def main(mode, port, persist, measure_t, filename, n_times):
     cmd = ['nc', mode, str(port)]
     if persist:
         cmd.insert(1, '-k')
@@ -104,42 +110,43 @@ def main(mode, port, persist, measure_t, filename, n_times):
 
 
 if __name__ == '__main__':
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-            '-l', '--listen', action='store_true',
-            help='Run in server mode')
-    group.add_argument(
-            '-c', '--client', type=str,
-            help='Run in client mode (specify remote IP address)')
-    parser.add_argument(
-            '-p', '--port', type=int, default=5000,
-            help='The port number')
-    parser.add_argument(
-            '-k', '--persist', action='store_true',
-            help='Keep listening after current connection is completed')
-    parser.add_argument(
-            '-t', '--time', action='store_true',
-            help='Measure the duration of the process')
-    parser.add_argument(
-            '-n', '--n-times', type=int, default=1,
-            help='The number of times the connection is established')
-    parser.add_argument(
-            '-f', '--file', type=str,
-            help='The path of a file to send to the server')
-
-    # get args
-    args = parser.parse_args()
-    server = args.listen
-    client = args.client
-    n_times = args.n_times
-    port = args.port
-    mode = '-l' if server else client
-    persist = args.persist
-    measure_t = args.time
-    filename = args.file
-
-    main(mode, port, persist, measure_t, filename, n_times)
+    with use_configuration('/opt/openbach/agent/jobs/netcat/netcat_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument(
+                '-l', '--listen', action='store_true',
+                help='Run in server mode')
+        group.add_argument(
+                '-c', '--client', type=str,
+                help='Run in client mode (specify remote IP address)')
+        parser.add_argument(
+                '-p', '--port', type=int, default=5000,
+                help='The port number')
+        parser.add_argument(
+                '-k', '--persist', action='store_true',
+                help='Keep listening after current connection is completed')
+        parser.add_argument(
+                '-t', '--time', action='store_true',
+                help='Measure the duration of the process')
+        parser.add_argument(
+                '-n', '--n-times', type=int, default=1,
+                help='The number of times the connection is established')
+        parser.add_argument(
+                '-f', '--file', type=str,
+                help='The path of a file to send to the server')
+    
+        # get args
+        args = parser.parse_args()
+        server = args.listen
+        client = args.client
+        n_times = args.n_times
+        port = args.port
+        mode = '-l' if server else client
+        persist = args.persist
+        measure_t = args.time
+        filename = args.file
+    
+        main(mode, port, persist, measure_t, filename, n_times)

@@ -36,20 +36,31 @@ __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 '''
 
+import os
 import sys
 import syslog
 import argparse
+import traceback
 import subprocess
+import contextlib
 import collect_agent
 
-def main(name, min_size, size, max_size):
-    # Connect to collect agent
-    collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/tcp_buffer/'
-            'tcp_buffer_rstats_filter.conf'
-    )
-    collect_agent.send_log(syslog.LOG_DEBUG, "Starting job tcp_buffer")
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
+def main(name, min_size, size, max_size):
     cmd = "sysctl net.ipv4.tcp_{}=\'{} {} {}\'".format(name, min_size, size, max_size)
     rc = subprocess.call(cmd, shell=True)
     if rc:
@@ -57,20 +68,21 @@ def main(name, min_size, size, max_size):
 
 
 if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('name', help='The name of the tcp buffer to set')
-    parser.add_argument('min_size', type=int, help='The minial size of the buffer')
-    parser.add_argument('size', type=int, help='The size of the buffer')
-    parser.add_argument('max_size', type=int, help='The maximum size of the buffer')
-
-    # get args
-    args = parser.parse_args()
-    name = args.name
-    min_size = args.min_size
-    size = args.size
-    max_size = args.max_size
-
-    main(name, min_size, size, max_size)
+    with use_configuration('/opt/openbach/agent/jobs/tcp_buffer/tcp_buffer_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('name', help='The name of the tcp buffer to set')
+        parser.add_argument('min_size', type=int, help='The minial size of the buffer')
+        parser.add_argument('size', type=int, help='The size of the buffer')
+        parser.add_argument('max_size', type=int, help='The maximum size of the buffer')
+    
+        # get args
+        args = parser.parse_args()
+        name = args.name
+        min_size = args.min_size
+        size = args.size
+        max_size = args.max_size
+    
+        main(name, min_size, size, max_size)

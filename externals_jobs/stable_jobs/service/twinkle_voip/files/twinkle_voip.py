@@ -33,17 +33,19 @@ __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 '''
 
-import subprocess
-import argparse
-import select
-import time
-import fcntl
 import re
 import os
-import random
-import syslog
-import collect_agent
 import sys
+import time
+import fcntl
+import syslog
+import select
+import random
+import argparse
+import traceback
+import contextlib
+import subprocess
+import collect_agent
 
 TIMEOUT = 5         # timeout for commands
 CALL_TIMEOUT = 600  # timeout for calls
@@ -52,6 +54,21 @@ PORT_MIN = 49152
 PORT_MAX = 57500
 
 dev = None     # the sound device to use as mic
+
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
 def conf(ip, port, nat):
     global dev
@@ -216,10 +233,6 @@ def close_twinkle(p):
     p.wait()
 
 def main(server, remote, audio, length, ip, port, nat):
-    # Connect to collect agent
-    conffile = '/opt/openbach/agent/jobs/twinkle_voip/twinkle_voip_rstats_filter.conf'
-    collect_agent.register_collect(conffile)
-
     if not server and not remote:
         message = "ERROR must provide a remote address"
         collect_agent.send_log(syslog.LOG_ERR, message)
@@ -254,40 +267,41 @@ def main(server, remote, audio, length, ip, port, nat):
     close_twinkle(t)
 
 if __name__ == "__main__":
-    # Define usage
-    parser = argparse.ArgumentParser(description='',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument("ip", type=str,
-                        help='The local IP address')
-    parser.add_argument('-s', '--server', action='store_true',
-                        help='Run in server mode')
-    parser.add_argument('-n', '--nat', action='store_true',
-                        help='Use a fixed IP NAT')
-    parser.add_argument('-r', '--remote', type=str,
-                        help='The remotes address')
-    parser.add_argument('-a', '--audio', type=str,
-                        default=DEFAULT_AUDIO, help='The audio file path to play')
-    parser.add_argument('-l', '--length', type=str,
-                        default='0', help='The length of the call in seconds')
-    parser.add_argument('-p', '--port', type=str,
-                        default='{}-{}'.format(PORT_MIN, PORT_MAX), help='The RTP port')
+    with use_configuration('/opt/openbach/agent/jobs/twinkle_voip/twinkle_voip_rstats_filter.conf'):
+        # Define usage
+        parser = argparse.ArgumentParser(description='',
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
-    # Get arguments
-    args = parser.parse_args()
-    server = args.server
-    remote = args.remote
-    audio = args.audio
-    length = float(args.length)
-    port = args.port
-    ip = args.ip
-    nat = args.nat
-
-    if len(port.split('-')) > 1:
-        port = random.randrange(int(port.split('-')[0]),
-                                int(port.split('-')[1]))
-    else:
-        port = int(port)
+        parser.add_argument("ip", type=str,
+                            help='The local IP address')
+        parser.add_argument('-s', '--server', action='store_true',
+                            help='Run in server mode')
+        parser.add_argument('-n', '--nat', action='store_true',
+                            help='Use a fixed IP NAT')
+        parser.add_argument('-r', '--remote', type=str,
+                            help='The remotes address')
+        parser.add_argument('-a', '--audio', type=str,
+                            default=DEFAULT_AUDIO, help='The audio file path to play')
+        parser.add_argument('-l', '--length', type=str,
+                            default='0', help='The length of the call in seconds')
+        parser.add_argument('-p', '--port', type=str,
+                            default='{}-{}'.format(PORT_MIN, PORT_MAX), help='The RTP port')
+        
+        # Get arguments
+        args = parser.parse_args()
+        server = args.server
+        remote = args.remote
+        audio = args.audio
+        length = float(args.length)
+        port = args.port
+        ip = args.ip
+        nat = args.nat
     
-    main(server, remote, audio, length, ip, port, nat)
-
+        if len(port.split('-')) > 1:
+            port = random.randrange(int(port.split('-')[0]),
+                                    int(port.split('-')[1]))
+        else:
+            port = int(port)
+        
+        main(server, remote, audio, length, ip, port, nat)
+    

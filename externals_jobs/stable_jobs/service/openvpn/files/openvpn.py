@@ -34,17 +34,19 @@ __credits__ = '''Contributors:
  * Francklin SIMO <francklin.simo@viveris.fr>
 '''
 
-import collect_agent
-import syslog
 import os
 import sys
-import argparse
-import subprocess
 import time
 import signal
-from functools import partial
 import psutil
+import syslog
+import argparse
+import traceback
+import contextlib
+import subprocess
+from functools import partial
 
+import collect_agent
 
 
 DESCRIPTION = ("This job relies on OpenVPN program to launch openvpn daemon as server or client. " 
@@ -65,15 +67,20 @@ REMOTE_TUN_IP = TUN_IP.format(CLIENT_TUN_IP, SERVER_TUN_IP)
 SECRET_PATH = '/opt/openbach/agent/jobs/openvpn/secret.key'
 
 
-def connect_to_collect_agent():
-    success = collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/openvpn/'
-            'openvpn_rstats_filter.conf')
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
     if not success:
-        message = 'Error connecting to collect-agent'
+        message = 'ERROR connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
-
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
 def build_cmd(mode, local_ip, protocol, local_port, tun_device, local_tun_ip, 
               remote_tun_ip, pass_tos, no_security):
@@ -105,7 +112,6 @@ def build_cmd(mode, local_ip, protocol, local_port, tun_device, local_tun_ip,
 
 def server(local_ip, protocol, local_port, tun_device, local_tun_ip, 
            remote_tun_ip, pass_tos, no_security):
-    connect_to_collect_agent()
     cmd = build_cmd('server', local_ip, protocol, local_port, tun_device, local_tun_ip, 
                     remote_tun_ip, pass_tos, no_security)
     try:
@@ -119,7 +125,6 @@ def server(local_ip, protocol, local_port, tun_device, local_tun_ip,
     
 def client(local_ip, protocol, local_port, tun_device, local_tun_ip, remote_tun_ip, pass_tos, 
            no_security, server_ip, server_port):
-    connect_to_collect_agent()
     cmd = build_cmd('client', local_ip, protocol, local_port, tun_device, local_tun_ip, 
                     remote_tun_ip, pass_tos, no_security)
     if protocol == 'tcp':
@@ -135,69 +140,70 @@ def client(local_ip, protocol, local_port, tun_device, local_tun_ip, remote_tun_
 
 
 if __name__ == "__main__":
-    # Argument parsing
-    parser = argparse.ArgumentParser(description=DESCRIPTION, 
-                 formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    parser.add_argument(
-            'local_ip', type=str,
-            help='The IP address used to communicate with peer'
-    )
-    parser.add_argument(
-            '-proto', '--protocol', choices=['udp', 'tcp'], default=PROTOCOL,
-            help=('The transport protocol to use to communicate with peer. '
-                   '(It must be same on server and client)')
-    )
-    parser.add_argument(
-            '-lport', '--local_port', type=int, default=PORT,
-            help='The port number used for bind'
-    )
-    parser.add_argument(
-            '-dev', '--tun_device', type=str, default=DEVICE,
-            help='The name of virtual TUN device acting as VPN endpoint'
-    )
-    parser.add_argument(
-            '-ltun_ip', '--local_tun_ip', type=str, default=LOCAL_TUN_IP,
-             help='The IP address of the local VPN endpoint'
-    )
-
-    parser.add_argument(
-            '-rtun_ip', '--remote_tun_ip', type=str, default=REMOTE_TUN_IP,
-             help='The IP address of the remote VPN endpoint'
-    )
-    parser.add_argument(
-             '-pass_tos', '--pass_tos', action='store_true',
-             help=('Set the TOS field of the tunnel packet to what ' 
-                   'the payload TOS is.')
-    )
+    with use_configuration('/opt/openbach/agent/jobs/openvpn/openvpn_rstats_filter.conf'):
+        # Argument parsing
+        parser = argparse.ArgumentParser(description=DESCRIPTION, 
+                     formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+        parser.add_argument(
+                'local_ip', type=str,
+                help='The IP address used to communicate with peer'
+        )
+        parser.add_argument(
+                '-proto', '--protocol', choices=['udp', 'tcp'], default=PROTOCOL,
+                help=('The transport protocol to use to communicate with peer. '
+                       '(It must be same on server and client)')
+        )
+        parser.add_argument(
+                '-lport', '--local_port', type=int, default=PORT,
+                help='The port number used for bind'
+        )
+        parser.add_argument(
+                '-dev', '--tun_device', type=str, default=DEVICE,
+                help='The name of virtual TUN device acting as VPN endpoint'
+        )
+        parser.add_argument(
+                '-ltun_ip', '--local_tun_ip', type=str, default=LOCAL_TUN_IP,
+                 help='The IP address of the local VPN endpoint'
+        )
     
-    parser.add_argument(
-            '-no_sec', '--no_security', action='store_true', 
-             help=('Disable authentification and encryption. (It must be same ' 
-                   'on server and client)') 
-    )
-    # Sub-commands to split server and client mode
-    subparsers = parser.add_subparsers(
-            title='Subcommand mode',
-            help='Choose the OpenVPN mode (server mode or client mode)'
-    )
-    parser_server = subparsers.add_parser('server', help='Run in server mode')
-    parser_client = subparsers.add_parser('client', help='Run in client mode')
-    parser_client.add_argument(
-            'server_ip', type=str, 
-            help='The IP address of the server'
-    )
-    parser_client.add_argument(
-            '-rport', '--server_port', type=int, default=PORT,
-            help='The port number that the server is bound to' 
-    )
-    # Set subparsers options to automatically call the right
-    # function depending on the chosen subcommand
-    parser_server.set_defaults(function=server)
-    parser_client.set_defaults(function=client)
-
-    # Get args and call the appropriate function
-    args = vars(parser.parse_args())
-    main = args.pop('function')
-    main(**args)
-   
+        parser.add_argument(
+                '-rtun_ip', '--remote_tun_ip', type=str, default=REMOTE_TUN_IP,
+                 help='The IP address of the remote VPN endpoint'
+        )
+        parser.add_argument(
+                 '-pass_tos', '--pass_tos', action='store_true',
+                 help=('Set the TOS field of the tunnel packet to what ' 
+                       'the payload TOS is.')
+        )
+        
+        parser.add_argument(
+                '-no_sec', '--no_security', action='store_true', 
+                 help=('Disable authentification and encryption. (It must be same ' 
+                       'on server and client)') 
+        )
+        # Sub-commands to split server and client mode
+        subparsers = parser.add_subparsers(
+                title='Subcommand mode',
+                help='Choose the OpenVPN mode (server mode or client mode)'
+        )
+        parser_server = subparsers.add_parser('server', help='Run in server mode')
+        parser_client = subparsers.add_parser('client', help='Run in client mode')
+        parser_client.add_argument(
+                'server_ip', type=str, 
+                help='The IP address of the server'
+        )
+        parser_client.add_argument(
+                '-rport', '--server_port', type=int, default=PORT,
+                help='The port number that the server is bound to' 
+        )
+        # Set subparsers options to automatically call the right
+        # function depending on the chosen subcommand
+        parser_server.set_defaults(function=server)
+        parser_client.set_defaults(function=client)
+    
+        # Get args and call the appropriate function
+        args = vars(parser.parse_args())
+        main = args.pop('function')
+        main(**args)
+       

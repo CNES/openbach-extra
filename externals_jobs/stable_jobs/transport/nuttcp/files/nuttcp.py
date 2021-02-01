@@ -37,12 +37,15 @@ __credits__ = '''Contributors:
 '''
 
 
+import os
 import re
 import sys
 import time
 import syslog
 import argparse
+import traceback
 import subprocess
+import contextlib
 from itertools import repeat
 from collections import defaultdict
 
@@ -91,6 +94,21 @@ UDP_END_STAT = re.compile(
     """pkt=(?P<total_sent_pkts>[0-9]+) """
     """data_loss=(?P<total_data_loss>[0-9\.]+)""")
 
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+
 def _command_build_helper(flag, value):
     if value is not None:
         yield flag
@@ -106,14 +124,6 @@ def client(
         server_ip, receiver, n_streams, stats_interval, protocol, 
         port=None, command_port=None, dscp=None, duration=None, 
         rate_limit=None, buffer_size=None, mss=None, **kwargs):
-    # Connect to collect_agent
-    success = collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/nuttcp/'
-            'nuttcp_rstats_filter.conf')
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
 
     cmd = ['stdbuf', '-oL', 'nuttcp', '-fparse', '-frunningtotal']
     cmd.extend(('-r', ) if receiver else '')
@@ -180,75 +190,76 @@ def client(
 
 
 if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            '-P', '--command-port', type=int,
-            help='Set server port for control connection '
-            '(default 5000)')
-    # Sub-commands functionnality to split server and client mode
-    subparsers = parser.add_subparsers(
-            title='Subcommand mode',
-            help='Choose the nuttcp mode (server mode or client mode)')
-    subparsers.required=True
-    parser_server = subparsers.add_parser('server', help='Run in server mode')
-    # Only Client parameters
-    parser_client = subparsers.add_parser('client', help='Run in client mode')
-    parser_client.add_argument(
-            'server_ip', type=str, help='Server IP address')
-    parser_client.add_argument(
-            '-p', '--port', type=int,
-            help='Set server port for the data transmission'
-            '(default 5001)')
-    parser_client.add_argument(
-            '-R', '--receiver', action='store_true',
-            help='Launch client as receiver (else, by default the client is the '
-           ' transmitter). ')
-    parser_client.add_argument(
-            '-c', '--dscp', type=str,
-            help='The DSP value on data streams (t|T suffix for full TOS field)')
-    parser_client.add_argument(
-            '-n', '--n-streams', type=int, default=1,
-            help='The number of parallel flows')
-    parser_client.add_argument(
-            '-d', '--duration', type=int,
-            help='The duration of the transmission (default: 10s)')
-    parser_client.add_argument(
-            '-r', '--rate-limit', type=str,
-            help='The transmit rate limit in Kbps or Mbps (add m suffix) or '
-            'Gbps (add g)  or bps (add p). Example: 10m sends data at 10Mbps rate.')
-    parser_client.add_argument(
-            '-I', '--stats-interval', type=float, default=1,
-            help='Interval (seconds) between periodic collected statistics')
-    # Second group of sub-commands to split the use of protocol
-    # UDP or TCP (within client mode) "dest" is used within the
-    # client function to indicate if udp or tcp has been selected.
-    subparsers = parser_client.add_subparsers(
-            title='Subcommands protocol', dest='protocol',
-            help='Choose a transport protocol (UDP or TCP)')
-    # Only TCP client parameters
-    parser_client_tcp = subparsers.add_parser('tcp', help='TCP protocol')
-    parser_client_tcp.add_argument(
-            '-u', '--udp', action='store_true',
-            help='Use UDP rather than TCP')
-    parser_client_tcp.add_argument(
-            '-b', '--buffer-size', type=int,
-            help='The receiver and transmitter TCP buffer size (then effectively '
-            'sets the window size)')
-    parser_client_tcp.add_argument(
-            '-m', '--mss', type=int,
-            help='The MSS for TCP data connection')
-    parser_client_udp = subparsers.add_parser('udp', help='UDP protocol')
-
-    # Set subparsers options to automatically call the right
-    # function depending on the chosen subcommand
-    parser_server.set_defaults(function=server)
-    parser_client.set_defaults(function=client)
+    with use_configuration('/opt/openbach/agent/jobs/nuttcp/nuttcp_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument(
+                '-P', '--command-port', type=int,
+                help='Set server port for control connection '
+                '(default 5000)')
+        # Sub-commands functionnality to split server and client mode
+        subparsers = parser.add_subparsers(
+                title='Subcommand mode',
+                help='Choose the nuttcp mode (server mode or client mode)')
+        subparsers.required=True
+        parser_server = subparsers.add_parser('server', help='Run in server mode')
+        # Only Client parameters
+        parser_client = subparsers.add_parser('client', help='Run in client mode')
+        parser_client.add_argument(
+                'server_ip', type=str, help='Server IP address')
+        parser_client.add_argument(
+                '-p', '--port', type=int,
+                help='Set server port for the data transmission'
+                '(default 5001)')
+        parser_client.add_argument(
+                '-R', '--receiver', action='store_true',
+                help='Launch client as receiver (else, by default the client is the '
+               ' transmitter). ')
+        parser_client.add_argument(
+                '-c', '--dscp', type=str,
+                help='The DSP value on data streams (t|T suffix for full TOS field)')
+        parser_client.add_argument(
+                '-n', '--n-streams', type=int, default=1,
+                help='The number of parallel flows')
+        parser_client.add_argument(
+                '-d', '--duration', type=int,
+                help='The duration of the transmission (default: 10s)')
+        parser_client.add_argument(
+                '-r', '--rate-limit', type=str,
+                help='The transmit rate limit in Kbps or Mbps (add m suffix) or '
+                'Gbps (add g)  or bps (add p). Example: 10m sends data at 10Mbps rate.')
+        parser_client.add_argument(
+                '-I', '--stats-interval', type=float, default=1,
+                help='Interval (seconds) between periodic collected statistics')
+        # Second group of sub-commands to split the use of protocol
+        # UDP or TCP (within client mode) "dest" is used within the
+        # client function to indicate if udp or tcp has been selected.
+        subparsers = parser_client.add_subparsers(
+                title='Subcommands protocol', dest='protocol',
+                help='Choose a transport protocol (UDP or TCP)')
+        # Only TCP client parameters
+        parser_client_tcp = subparsers.add_parser('tcp', help='TCP protocol')
+        parser_client_tcp.add_argument(
+                '-u', '--udp', action='store_true',
+                help='Use UDP rather than TCP')
+        parser_client_tcp.add_argument(
+                '-b', '--buffer-size', type=int,
+                help='The receiver and transmitter TCP buffer size (then effectively '
+                'sets the window size)')
+        parser_client_tcp.add_argument(
+                '-m', '--mss', type=int,
+                help='The MSS for TCP data connection')
+        parser_client_udp = subparsers.add_parser('udp', help='UDP protocol')
     
-    # Get args and call the appropriate function
-    args = vars(parser.parse_args())
-    main = args.pop('function')
-    main(**args)
+        # Set subparsers options to automatically call the right
+        # function depending on the chosen subcommand
+        parser_server.set_defaults(function=server)
+        parser_client.set_defaults(function=client)
+        
+        # Get args and call the appropriate function
+        args = vars(parser.parse_args())
+        main = args.pop('function')
+        main(**args)
 

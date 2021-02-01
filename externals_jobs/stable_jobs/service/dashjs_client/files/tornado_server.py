@@ -35,11 +35,14 @@ __credits__ = '''Contributors:
 '''
 
 
+import os
 import sys
 import json
 import syslog
-import argparse
 import asyncio
+import argparse
+import traceback
+import contextlib
 from contextlib import suppress
 
 import collect_agent
@@ -49,14 +52,20 @@ from tornado.options import define, options
 DESCRIPTION = "This script launches a tornado server to collect statistics from dashjs_client"
 
 
-def connect_to_collect_agent():
-    success = collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/dashjs_client/'
-            'dashjs_client_rstats_filter.conf')
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
     if not success:
-        message = 'Error connecting to collect-agent'
+        message = 'ERROR connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
 class CustomWebSocket(websocket.WebSocketHandler):
     def check_origin(self, origin):
@@ -104,20 +113,20 @@ def run_tornado():
 
 def main():
     # Connect to collect_agent
-    connect_to_collect_agent()
     collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job dashjs_client')
 
     run_tornado() 
 
 if __name__ == '__main__':
-    # Define usage
-    parser = argparse.ArgumentParser(
-            description='',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument(
-            '-p', '--port', type=int, default=5301,
-            help='Port used by the Tornado Server to get statistics from the DASH client (Default: 5301)')
-
-    define("port", default=parser.parse_args().port, help="port to listen on")
-    main()
+    with use_configuration('/opt/openbach/agent/jobs/dashjs_client/dashjs_client_rstats_filter.conf'):
+        # Define usage
+        parser = argparse.ArgumentParser(
+                description='',
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    
+        parser.add_argument(
+                '-p', '--port', type=int, default=5301,
+                help='Port used by the Tornado Server to get statistics from the DASH client (Default: 5301)')
+    
+        define("port", default=parser.parse_args().port, help="port to listen on")
+        main()

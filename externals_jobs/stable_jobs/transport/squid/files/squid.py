@@ -35,16 +35,18 @@ __credits__ = '''Contributors:
 '''
 
 
-import time
-import syslog
-import argparse
-import subprocess
-import sys
-import collect_agent
-import shutil
-import enum
 import os
+import sys
+import enum
+import time
+import shutil
+import syslog
 import socket
+import argparse
+import traceback
+import contextlib
+import subprocess
+import collect_agent
 
 os.environ['XTABLES_LIBDIR'] = '$XTABLES_LIBDIR:/usr/lib/x86_64-linux-gnu/xtables' # Required for Ubuntu 20.04
 import iptc
@@ -56,6 +58,20 @@ class Platform(enum.Enum):
     GATEWAY = 'gw'
     SATELLITE_TERMINAL = 'st'
 
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
 def configure_platform(trans_proxy, non_transp_proxy):
     hostname=socket.gethostname()
@@ -88,12 +104,7 @@ def remove_squid_cache():
             collect_agent.send_log(syslog.LOG_ERR, message)
             sys.exit(message)
 
-
 def main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file, clean_cache):
-    collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/squid/'
-            'squid_rstats_filter.conf')
-    
     if path_conf_file is not None:
     # copy squid configuration file from other dir
         shutil.copy(path_conf_file, dstdir)
@@ -166,11 +177,12 @@ def parse_command_line():
 
 
 if __name__ == "__main__":
-    args = parse_command_line()
-    trans_proxy = args.trans_proxy
-    source_addr = args.source_addr
-    input_iface = args.input_iface
-    non_transp_proxy = args.non_transp_proxy
-    path_conf_file = args.path_conf_file
-    clean_cache = args.clean_cache
-    main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file, clean_cache)
+    with use_configuration('/opt/openbach/agent/jobs/squid/squid_rstats_filter.conf'):
+        args = parse_command_line()
+        trans_proxy = args.trans_proxy
+        source_addr = args.source_addr
+        input_iface = args.input_iface
+        non_transp_proxy = args.non_transp_proxy
+        path_conf_file = args.path_conf_file
+        clean_cache = args.clean_cache
+        main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file, clean_cache)

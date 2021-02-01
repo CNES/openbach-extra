@@ -39,17 +39,34 @@ CLI = "cli={{host='telnet://localhost:{}', password='vlc'}}"
 DEFAULT_PORT = 6000
 STATS_TO_SEND = ['demux bytes read', 'demux bitrate', 'frames displayed', 'frames lost']
 
-import syslog
-import collect_agent
-import subprocess
-import argparse
 import os
-import time
 import sys
-import telnetlib
+import time
 import math
+import syslog
 import socket
+import argparse
+import telnetlib
+import traceback
+import contextlib
+import subprocess
 
+import collect_agent
+
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
 def find_free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -67,15 +84,8 @@ def multiplier (unit):
         return 1024 * 1024 * 1024
     collect_agent.send_log(syslog.LOG_ERR, 'Units of vlc metrics are not availables/correct')
     return 1
-	
+
 def main(mrl, duration, interval):
-    # Connect to collect agent
-    conffile = '/opt/openbach/agent/jobs/vlc_receiver/vlc_receiver_rstats_filter.conf'
-    success = collect_agent.register_collect(conffile)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
     # Find an available port
     vlc_port = find_free_port()
     if vlc_port is None:
@@ -127,23 +137,24 @@ def main(mrl, duration, interval):
         p.kill()               
         			
 if __name__ == "__main__":
-    # Define usage
-    parser = argparse.ArgumentParser(description='',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('recv_ip', type=str,
-                        help='The receiving IP address (may be multicast or a local unicast address)')
-    parser.add_argument('-p', '--recv_port', type=int, default=DEFAULT_PORT,
-                        help='The receiving port')
-    parser.add_argument('-d', '--duration', type=int, default=math.inf,
-                        help='The duration in seconds for receiving video (Default: infinite)')
-    parser.add_argument('-i', '--interval', type=float, default=1,
-                        help='The period in seconds to retrieve statistics (Default: 1s)')
-    
-    # Parse arguments
-    args = parser.parse_args()
-    recv_ip = args.recv_ip
-    recv_port = args.recv_port
-    duration = args.duration
-    interval = args.interval
-    mrl = MRL.format(recv_ip, recv_port)
-    main(mrl, duration, interval)
+    with use_configuration('/opt/openbach/agent/jobs/vlc_receiver/vlc_receiver_rstats_filter.conf'):
+        # Define usage
+        parser = argparse.ArgumentParser(description='',
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('recv_ip', type=str,
+                            help='The receiving IP address (may be multicast or a local unicast address)')
+        parser.add_argument('-p', '--recv_port', type=int, default=DEFAULT_PORT,
+                            help='The receiving port')
+        parser.add_argument('-d', '--duration', type=int, default=math.inf,
+                            help='The duration in seconds for receiving video (Default: infinite)')
+        parser.add_argument('-i', '--interval', type=float, default=1,
+                            help='The period in seconds to retrieve statistics (Default: 1s)')
+        
+        # Parse arguments
+        args = parser.parse_args()
+        recv_ip = args.recv_ip
+        recv_port = args.recv_port
+        duration = args.duration
+        interval = args.interval
+        mrl = MRL.format(recv_ip, recv_port)
+        main(mrl, duration, interval)

@@ -34,18 +34,21 @@ __credits__ = '''Contributors:
  * Francklin SIMO <armelfrancklin.simotegueu@viveris.fr>
 '''
 
-import collect_agent
-import syslog
 import os
 import sys
-import argparse
-import subprocess
 import time
+import shlex
+import syslog
+import argparse
+import tempfile
+import traceback
+import contextlib
+import subprocess
 from enum import Enum
 from ipaddress import ip_address
 from pathlib import Path
-import tempfile
-import shlex
+
+import collect_agent
 
 DESCRIPTION = ("This job runs a client or a server QUIC. Supported QUIC implementations are: "
                "ngtcp2, picoquic, quicly \n"
@@ -68,17 +71,20 @@ class Implementations(Enum):
     PICOQUIC='picoquic'
     QUICLY='quicly'
 
-
-def connect_to_collect_agent():
-    success = collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/quic/'
-            'quic_rstats_filter.conf')
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
     if not success:
-        message = 'Error connecting to collect-agent'
-        print(message)
+        message = 'ERROR connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
-
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
 def now():
     return int(time.time() * 1000)
@@ -182,7 +188,6 @@ def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resou
 
 
 def client(implementation, server_port, log_dir, extra_args, server_ip, resources, download_dir, nb_runs):
-    connect_to_collect_agent()
     for run_number in range(nb_runs):
         with open(os.path.join(log_dir, 'log_client_{}.txt'.format(str(run_number+1))), 'w+') as log_file:
              cmd = build_cmd(implementation, 'client', server_port, log_file.name, server_ip, [r for r in resources.split(',')], 
@@ -197,7 +202,6 @@ def client(implementation, server_port, log_dir, extra_args, server_ip, resource
 
        
 def server(implementation, server_port, log_dir, extra_args):
-    connect_to_collect_agent()
     with open(os.path.join(log_dir, 'log_server.txt'), 'w+') as log_file:
          cmd = build_cmd(implementation, 'server', server_port, log_file.name, extra_args=extra_args)
          p = run_command(cmd, cwd=HTDOCS)
@@ -227,74 +231,75 @@ def writable_dir(path):
 
 
 if __name__ == "__main__":
-    # Argument parsing
-    parser = argparse.ArgumentParser(
-               description=DESCRIPTION, 
-               formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+    with use_configuration('/opt/openbach/agent/jobs/quic/quic_rstats_filter.conf'):
+        # Argument parsing
+        parser = argparse.ArgumentParser(
+                   description=DESCRIPTION, 
+                   formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+        
+        parser.add_argument(
+                   'implementation', 
+                   choices=[implem.value for implem in Implementations], 
+                   help='Choose a QUIC implementation. Know that, for each implementation ' 
+                        'you can modify global variables in install file to specify the address of the git repository '
+                        'as well as the version to checkout',
+        )
+        
+        parser.add_argument(
+                   '-p', '--server-port', type=int, default=SERVER_PORT,
+                   help='The server port to connect to/listen on' 
+        )
+        parser.add_argument(
+                   '-l', '--log-dir', type=writable_dir, default=LOG_DIR,
+                   help='The Path to the directory to save log files'
+        ) 
+        parser.add_argument(
+                   '-e', '--extra-args', type=str, default=None,
+                   help=('Allow to specify additional CLI arguments that are supported by chosen implementation. ' 
+                         'From terminal, you need to run the name of the implementation follows by ' 
+                          '\'-h\' to see specific supported arguments' 
+                        )
+        ) 
+        # Sub-commands to split server and client mode
+        subparsers = parser.add_subparsers(
+                   title='mode', help='Choose the running mode (server or client)'
+        )
+        parser_server = subparsers.add_parser(
+                   'server', 
+                   help='Run in server mode'
+        )
+        parser_client = subparsers.add_parser(
+                   'client', 
+                   help='Run in client mode'
+        )
+        parser_client.add_argument(
+                   'server_ip', type=ip_address, 
+                   help='The IP address of the server'
+        )
+        parser_client.add_argument(
+                   'resources', type=str, 
+                   help=('Comma-seprated list of resources to fetch in parallel over concurrent streams. '
+                         'These resources must be located to the root of the directory \'{}\''.format(HTDOCS))
+        )
+        parser_client.add_argument(
+                   '-d', '--download-dir', type=writable_dir, default=DOWNLOAD_DIR, 
+                   help='The path to the directory  to save downloaded resources'
+        )
+        parser_client.add_argument(
+                   '-n', '--nb-runs', type=int, default=1,
+                   help='The number of times resources will be downloaded'
+        )
     
-    parser.add_argument(
-               'implementation', 
-               choices=[implem.value for implem in Implementations], 
-               help='Choose a QUIC implementation. Know that, for each implementation ' 
-                    'you can modify global variables in install file to specify the address of the git repository '
-                    'as well as the version to checkout',
-    )
+        # Set subparsers options to automatically call the right
+        # function depending on the chosen subcommand
+        parser_server.set_defaults(function=server)
+        parser_client.set_defaults(function=client)
     
-    parser.add_argument(
-               '-p', '--server-port', type=int, default=SERVER_PORT,
-               help='The server port to connect to/listen on' 
-    )
-    parser.add_argument(
-               '-l', '--log-dir', type=writable_dir, default=LOG_DIR,
-               help='The Path to the directory to save log files'
-    ) 
-    parser.add_argument(
-               '-e', '--extra-args', type=str, default=None,
-               help=('Allow to specify additional CLI arguments that are supported by chosen implementation. ' 
-                     'From terminal, you need to run the name of the implementation follows by ' 
-                      '\'-h\' to see specific supported arguments' 
-                    )
-    ) 
-    # Sub-commands to split server and client mode
-    subparsers = parser.add_subparsers(
-               title='mode', help='Choose the running mode (server or client)'
-    )
-    parser_server = subparsers.add_parser(
-               'server', 
-               help='Run in server mode'
-    )
-    parser_client = subparsers.add_parser(
-               'client', 
-               help='Run in client mode'
-    )
-    parser_client.add_argument(
-               'server_ip', type=ip_address, 
-               help='The IP address of the server'
-    )
-    parser_client.add_argument(
-               'resources', type=str, 
-               help=('Comma-seprated list of resources to fetch in parallel over concurrent streams. '
-                     'These resources must be located to the root of the directory \'{}\''.format(HTDOCS))
-    )
-    parser_client.add_argument(
-               '-d', '--download-dir', type=writable_dir, default=DOWNLOAD_DIR, 
-               help='The path to the directory  to save downloaded resources'
-    )
-    parser_client.add_argument(
-               '-n', '--nb-runs', type=int, default=1,
-               help='The number of times resources will be downloaded'
-    )
-
-    # Set subparsers options to automatically call the right
-    # function depending on the chosen subcommand
-    parser_server.set_defaults(function=server)
-    parser_client.set_defaults(function=client)
-
-    # Get args and call the appropriate function
-    args = vars(parser.parse_args())
-    main = args.pop('function')
-    main(**args)
+        # Get args and call the appropriate function
+        args = vars(parser.parse_args())
+        main = args.pop('function')
+        main(**args)
 
 
 

@@ -42,8 +42,10 @@ import syslog
 import random
 import argparse
 import ipaddress
+import traceback
 import threading
 import subprocess
+import contextlib
 from time import time, sleep
 from codec import CodecConstants
 from compute_mos import compute_r_value, compute_mos_value
@@ -56,14 +58,20 @@ dest_job_dir = '/opt/openbach/agent/jobs/voip_qoe_dest'
 _FINISHED = False
 
 
-def connect_to_collect_agent():
-    conffile = '{}/voip_qoe_dest_rstats_filter.conf'.format(job_dir)
-    success = collect_agent.register_collect(conffile)
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
     if not success:
         message = 'ERROR connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
-
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
 def get_timestamp():
     """
@@ -170,8 +178,6 @@ def main(config, args):
     """
 
     global _FINISHED
-
-    connect_to_collect_agent()
 
     # We write into a temp file all VoIP flows to be sent
     #with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), config['FILE_TEMP_FLOWS']), "w") as f:
@@ -294,14 +300,15 @@ def main(config, args):
 
 
 if __name__ == "__main__":
-    # Internal configuration loading
-    config = yaml.safe_load(open('{}/etc/internal_config.yml'.format(job_dir)))
-
-    # Argument parsing
-    args = build_parser().parse_args()
-
-    if args.sig_src_addr is None or args.sig_dest_addr is None:
-        args.sig_src_addr = args.src_addr
-        args.sig_dest_addr = args.dest_addr
-
-    main(config, args)
+    with use_configuration('{}/voip_qoe_dest_rstats_filter.conf'.format(job_dir)):
+        # Internal configuration loading
+        config = yaml.safe_load(open('{}/etc/internal_config.yml'.format(job_dir)))
+    
+        # Argument parsing
+        args = build_parser().parse_args()
+    
+        if args.sig_src_addr is None or args.sig_dest_addr is None:
+            args.sig_src_addr = args.src_addr
+            args.sig_dest_addr = args.dest_addr
+    
+        main(config, args)

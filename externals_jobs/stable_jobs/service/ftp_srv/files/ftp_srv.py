@@ -36,11 +36,13 @@ __credits__ = '''Contributors:
 '''
 
 import os
+import sys
+import time
 import syslog
 import argparse
-import time
+import traceback
+import contextlib
 import subprocess
-import sys
 import collect_agent
 
 from pyftpdlib.authorizers import DummyAuthorizer
@@ -80,6 +82,20 @@ class MyHandler(FTPHandler):
         failed_sent += 1
         collect_agent.send_stat(timestamp, failed_file_sent = failed_sent)
 
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
 def build_parser():
     parser = argparse.ArgumentParser(description='FTP Parser')
@@ -97,13 +113,6 @@ def build_parser():
 
 
 def main(server_ip, port, user, password, max_cons, max_cons_ip,):
-    config_file = '/opt/openbach/agent/jobs/ping/ping_rstats_filter.conf'
-    success = collect_agent.register_collect(config_file)
-    if not success:
-        message = 'Could not connect to rstats'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
-
     authorizer = DummyAuthorizer()
     authorizer.add_user(user, password, '/srv/', perm='elradfmwMT')
     handler = MyHandler
@@ -122,6 +131,7 @@ def main(server_ip, port, user, password, max_cons, max_cons_ip,):
 
 
 if __name__ == '__main__':
-    args = build_parser().parse_args()
-    main(args.server_ip, args.port, args.user, args.password, args.max_cons,
-        args.max_cons_ip)
+    with use_configuration('/opt/openbach/agent/jobs/ping/ping_rstats_filter.conf'):
+        args = build_parser().parse_args()
+        main(args.server_ip, args.port, args.user, args.password, args.max_cons,
+            args.max_cons_ip)

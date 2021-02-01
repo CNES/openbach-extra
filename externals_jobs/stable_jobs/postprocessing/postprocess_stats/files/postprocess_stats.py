@@ -36,9 +36,12 @@ __credits__ = '''Contributors:
 '''
 
 
+import os
 import time
 import syslog
 import argparse
+import traceback
+import contextlib
 from sys import exit
 
 import matplotlib
@@ -50,17 +53,22 @@ from scipy import stats
 import collect_agent
 from data_access import CollectorConnection
 
-
-def main(scenario_id, agent_name, job_ids, job_name, stat_name):
-    # Connect to the collect-agent service
-    success = collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/postprocess_stats/'
-            'postprocess_stats_rstats_filter.conf')
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
     if not success:
         message = 'ERROR connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
+def main(scenario_id, agent_name, job_ids, job_name, stat_name):
     requester = CollectorConnection('localhost')
     for job_instance_id in job_ids:
         # Import results from Collector Database
@@ -127,36 +135,37 @@ def main(scenario_id, agent_name, job_ids, job_name, stat_name):
 
 
 if __name__ == '__main__':
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            'scenario_instance_id', type=int,
-            help='The ID of the scenario instance where the stat can be found')
-    parser.add_argument(
-            'agent_name',
-            help='The agent name where the stat has been generated')
-    parser.add_argument(
-            'job_name', help='The job name that has generated the stat')
-    parser.add_argument(
-            'stat_name',
-            help='The name of the stat that shall be post-processed')
-    parser.add_argument(
-            'job_instance_ids', nargs='+', type=int,
-            help='The IDs of the job instances that have '
-            'generated the stat')
-    parser.add_argument(
-            '-m', '--export-mode',
-            type=int, help='The type of export')
-
-    # get args
-    args = parser.parse_args()
-    scenario_id = args.scenario_instance_id
-    agent_name = args.agent_name
-    job_ids = args.job_instance_ids
-    job_name = args.job_name
-    stat_name = args.stat_name
-    # export_mode = args.export_mode
-
-    main(scenario_id, agent_name, job_ids, job_name, stat_name)
+    with use_configuration('/opt/openbach/agent/jobs/postprocess_stats/postprocess_stats_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument(
+                'scenario_instance_id', type=int,
+                help='The ID of the scenario instance where the stat can be found')
+        parser.add_argument(
+                'agent_name',
+                help='The agent name where the stat has been generated')
+        parser.add_argument(
+                'job_name', help='The job name that has generated the stat')
+        parser.add_argument(
+                'stat_name',
+                help='The name of the stat that shall be post-processed')
+        parser.add_argument(
+                'job_instance_ids', nargs='+', type=int,
+                help='The IDs of the job instances that have '
+                'generated the stat')
+        parser.add_argument(
+                '-m', '--export-mode',
+                type=int, help='The type of export')
+    
+        # get args
+        args = parser.parse_args()
+        scenario_id = args.scenario_instance_id
+        agent_name = args.agent_name
+        job_ids = args.job_instance_ids
+        job_name = args.job_name
+        stat_name = args.stat_name
+        # export_mode = args.export_mode
+    
+        main(scenario_id, agent_name, job_ids, job_name, stat_name)

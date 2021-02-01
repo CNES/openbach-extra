@@ -41,20 +41,36 @@ CLI = "cli={{host='telnet://localhost:{}', password='vlc'}}"
 STATS_TO_SEND = ['demux bytes read', 'demux bitrate', 'frames displayed', 'frames lost']
 
 
-import subprocess
-import argparse
-import select
 import os
-import syslog
-import collect_agent
-import time
 import sys
 import math
-import telnetlib
+import time
 import socket
+import select
+import syslog
+import argparse
+import telnetlib
+import traceback
+import contextlib
+import subprocess
+import collect_agent
 
 DESCRIPTION = 'This job launches VLC tool (sender or receiver mode) in order to send or receive a video stream. Statistics about medias contained in this video are sent by the receiver. You would start sender first'
 
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
 
 def find_free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -72,16 +88,9 @@ def multiplier (unit):
         return 1024 * 1024 * 1024
     collect_agent.send_log(syslog.LOG_ERR, 'Units of vlc metrics are not availables/correct')
     return 1
-	
+
 def receive(dst_ip, port, duration, interval):
     mrl = MRL.format(dst_ip, port)
-    # Connect to collect agent
-    conffile = '/opt/openbach/agent/jobs/vlc/vlc_rstats_filter.conf'
-    success = collect_agent.register_collect(conffile)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
     # Find an available port
     vlc_port = find_free_port()
     if vlc_port is None:
@@ -166,56 +175,57 @@ def send(dst_ip, port, filename, vb, ab, duration):
 
 
 if __name__ == "__main__":
-    # Define usage
-    parser = argparse.ArgumentParser(description=DESCRIPTION,
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    # Sender or receiver arguments
-    parser.add_argument("dst_ip", type=str,
-                        help='The destination IP address'
-    )
-    parser.add_argument('-p', '--port', type=int, default=DEFAULT_PORT,
-                        help="The destination port"
-    )
-    parser.add_argument('-d', '--duration', type=int, default=math.inf,
-                        help='The duration of the transmission/reception, in seconds (Default: infinite)'
-    )
-    
-    # Sub-commands functionnality to split 'sender' mode and 'receiver' mode
-    subparsers = parser.add_subparsers(
-            title='Subcommand mode',
-            help='Choose the vlc mode (sender mode or receiver mode)'
-    )
-    subparsers.required=True
-    # Sender specific arguments
-    parser_sender = subparsers.add_parser('sender', help='Run in sender mode')
-                                     
-    parser_sender.add_argument('-f', '--filename', type=str, 
-                              default=DEFAULT_VIDEO, 
-                              help='The filename to stream'
-    )
-    parser_sender.add_argument('-v', '--vb', type=int, 
-                              default=0,
-                              help='The video bitrate when transcoding'
-    )
-    parser_sender.add_argument('-a', '--ab', type=int, 
-                              default=0,
-                              help='The audio bitrate when transcoding'
-    )
-    # Receiver specific arguments
-    parser_receiver = subparsers.add_parser('receiver', help='Run in receiver mode')
-    parser_receiver.add_argument('-i', '--interval', type=float, 
-                      default=1,
-                      help='The period in seconds to retrieve and send statistics (Default: 1s)'
-    )
-    
-    # Set subparsers options to automatically call the right
-    # function depending on the chosen subcommand
-    parser_sender.set_defaults(function=send)
-    parser_receiver.set_defaults(function=receive)
-    
-    # Get args and call the appropriate function
-    args = vars(parser.parse_args())
-    main = args.pop('function')
-    main(**args)
-    
+    with use_configuration('/opt/openbach/agent/jobs/vlc/vlc_rstats_filter.conf'):
+        # Define usage
+        parser = argparse.ArgumentParser(description=DESCRIPTION,
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+        # Sender or receiver arguments
+        parser.add_argument("dst_ip", type=str,
+                            help='The destination IP address'
+        )
+        parser.add_argument('-p', '--port', type=int, default=DEFAULT_PORT,
+                            help="The destination port"
+        )
+        parser.add_argument('-d', '--duration', type=int, default=math.inf,
+                            help='The duration of the transmission/reception, in seconds (Default: infinite)'
+        )
+        
+        # Sub-commands functionnality to split 'sender' mode and 'receiver' mode
+        subparsers = parser.add_subparsers(
+                title='Subcommand mode',
+                help='Choose the vlc mode (sender mode or receiver mode)'
+        )
+        subparsers.required=True
+        # Sender specific arguments
+        parser_sender = subparsers.add_parser('sender', help='Run in sender mode')
+                                         
+        parser_sender.add_argument('-f', '--filename', type=str, 
+                                  default=DEFAULT_VIDEO, 
+                                  help='The filename to stream'
+        )
+        parser_sender.add_argument('-v', '--vb', type=int, 
+                                  default=0,
+                                  help='The video bitrate when transcoding'
+        )
+        parser_sender.add_argument('-a', '--ab', type=int, 
+                                  default=0,
+                                  help='The audio bitrate when transcoding'
+        )
+        # Receiver specific arguments
+        parser_receiver = subparsers.add_parser('receiver', help='Run in receiver mode')
+        parser_receiver.add_argument('-i', '--interval', type=float, 
+                          default=1,
+                          help='The period in seconds to retrieve and send statistics (Default: 1s)'
+        )
+        
+        # Set subparsers options to automatically call the right
+        # function depending on the chosen subcommand
+        parser_sender.set_defaults(function=send)
+        parser_receiver.set_defaults(function=receive)
+        
+        # Get args and call the appropriate function
+        args = vars(parser.parse_args())
+        main = args.pop('function')
+        main(**args)
+        

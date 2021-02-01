@@ -36,21 +36,32 @@ __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 '''
 
+import os
 import sys
 import syslog
 import argparse
+import traceback
+import contextlib
 import subprocess
 
 import collect_agent
 
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+
 def main(network, gw, interface, initcwnd, initrwnd):
-    # Connect to collect agent
-    collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/initial_windows/'
-            'initial_windows_rstats_filter.conf')
-
-    collect_agent.send_log(syslog.LOG_DEBUG, "Starting job initial_windows")
-
     cmd = ['ip', 'route', 'change', network]
 
     if gw is not None:
@@ -67,28 +78,29 @@ def main(network, gw, interface, initcwnd, initrwnd):
 
 
 if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('network', type=str, help='The destination network')
-    parser.add_argument('interface', help='Interface where to set the initial windows')
-    parser.add_argument('-g', '--gw', type=str, help='The next hop of the route')
-    parser.add_argument(
-            '-i', '--initcwnd', type=int,
-            help='Initial congestion window'
-    )
-    parser.add_argument(
-            '-r', '--initrwnd', type=int, 
-            help='Initial congestion receipt window'
-    )
-
-    # get args
-    args = parser.parse_args()
-    network = args.network
-    gw = args.gw
-    interface = args.interface
-    initcwnd = args.initcwnd
-    initrwnd = args.initrwnd
-
-    main(network, gw, interface, initcwnd, initrwnd)
+    with use_configuration('/opt/openbach/agent/jobs/initial_windows/initial_windows_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('network', type=str, help='The destination network')
+        parser.add_argument('interface', help='Interface where to set the initial windows')
+        parser.add_argument('-g', '--gw', type=str, help='The next hop of the route')
+        parser.add_argument(
+                '-i', '--initcwnd', type=int,
+                help='Initial congestion window'
+        )
+        parser.add_argument(
+                '-r', '--initrwnd', type=int, 
+                help='Initial congestion receipt window'
+        )
+    
+        # get args
+        args = parser.parse_args()
+        network = args.network
+        gw = args.gw
+        interface = args.interface
+        initcwnd = args.initcwnd
+        initrwnd = args.initrwnd
+    
+        main(network, gw, interface, initcwnd, initrwnd)
