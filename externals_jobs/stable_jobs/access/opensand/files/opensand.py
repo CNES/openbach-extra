@@ -78,9 +78,13 @@ def use_configuration(filepath):
     collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
     try:
         yield
-    except:
+    except Exception:
         message = traceback.format_exc()
         collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
         raise
 
 def run_entity(command, addr, logs_port, stats_port):
