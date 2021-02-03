@@ -30,11 +30,36 @@ __author__ = 'Silicom'
 __credits__ = '''Contributor: Marlene MOST <mmost@silicom.fr>'''
 
 
-import argparse
-import subprocess
+import os
 import signal
+import syslog
+import argparse
+import traceback
+import subprocess
+import contextlib
 from sys import exit
 from time import sleep
+
+import collect_agent
+
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
 
 def build_parser():
@@ -73,8 +98,9 @@ def server(server_address):
 
 
 if __name__ == '__main__':
-    args = build_parser().parse_args()
-    server(args.server_address)
+    with use_configuration('/opt/openbach/agent/jobs/owamp-server/server_rstats_filter.conf'):
+        args = build_parser().parse_args()
+        server(args.server_address)
 
 
 
