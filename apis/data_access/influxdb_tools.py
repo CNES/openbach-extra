@@ -305,7 +305,7 @@ def parse_influx(response):
     for result in response.get('results', []):
         for serie in result.get('series', []):
             with suppress(KeyError):
-                name = serie['name']
+                name = serie.get('name')
                 fields = serie['columns']
                 for values in serie['values']:
                     yield name, {f: v for f, v in zip(fields, values) if v is not None}
