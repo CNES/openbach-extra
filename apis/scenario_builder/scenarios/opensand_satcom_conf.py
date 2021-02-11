@@ -47,8 +47,8 @@ def _configure_push_file(scenario, entity_name, entity_type, conf, files, dest_d
         common_files = conf[None]
         entity_files = conf[entity_type]
         local_files = [('opensand' / f).as_posix() for f in chain(common_files, entity_files)]
-        remote_files = [(prefix / f).as_posix() for f in common_files]
-        remote_files.extend((prefix / f.relative_to(entity_name)).as_posix() for f in entity_files)
+        remote_files = [(dest_dir / f).as_posix() for f in common_files]
+        remote_files.extend((dest_dir / f.relative_to(entity_name)).as_posix() for f in entity_files)
     else:
         storage_folder = 'opensand_' + entity_name
         local_files = [(storage_folder / f).as_posix() for f in entity_files]
@@ -60,7 +60,7 @@ def _configure_push_file(scenario, entity_name, entity_type, conf, files, dest_d
     if files_count:
         push_file(
                 scenario, entity_name, remote_files, local_files,
-                ['opensand'] * files_count, ['root'] * files_count)
+                ['root'] * files_count, ['root'] * files_count)
 
 
 def opensand_satcom_conf(satellite_entity, gw_entities, st_entities, configuration_files, scenario_name=SCENARIO_NAME):
