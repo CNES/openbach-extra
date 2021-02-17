@@ -44,7 +44,7 @@ def main(argv=None):
             '--entity', '-e', required=True,
             help='Name of the openbach entity to capture/analyze packets on')
     observer.add_scenario_argument(
-            '--mode', '-m', choices=['capture', 'analyze', 'both'],
+            '--mode', '-m', choices=['capture', 'analyze', 'both'], required=True,
             help='Select a mode: \'capture\' for live capture or \'analyze\' for analyze a capture file')
     observer.add_scenario_argument(
             '--capture-file', '-f', required=True,
