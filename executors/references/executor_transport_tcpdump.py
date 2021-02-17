@@ -48,7 +48,7 @@ def main(argv=None):
             help='Select a mode: \'capture\' for live capture or \'analyze\' for analyze a capture file')
     observer.add_scenario_argument(
             '--capture-file', '-f', required=True,
-            help='Path to the file to save captured packets or to read packets to analyze')
+            help='Path to the file to save captured packets or to read packets to analyze (big files are not recommended: check .help of pcap_postprocessing job)')
     observer.add_scenario_argument(
             '--interface', '-i', default='any',
             help='Network interface to sniff (only for capture mode)')
