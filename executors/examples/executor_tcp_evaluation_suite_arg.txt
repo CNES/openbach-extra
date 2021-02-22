@@ -1,0 +1,17 @@
+--endpointA endpointA 
+--endpointB endpointB 
+--endpointC endpointC 
+--endpointD endpointD 
+--routerL routerL 
+--routerR routerR  
+--endpointA_network_ip 192.168.0.0/24
+--endpointB_network_ip 192.168.1.0/24
+--endpointC_network_ip 192.168.3.0/24
+--endpointD_network_ip 192.168.4.0/24
+--routerL_ens3_ip 192.168.0.14
+--routerL_ens6_ip 192.168.1.5
+--routerR_ens6_ip 192.168.3.3
+--routerR_ens3_ip 192.168.4.8
+--routerL_ens4_ip 192.168.2.15
+--routerR_ens5_ip 192.168.2.25
+--congestion-control CUBIC
