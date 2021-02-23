@@ -41,6 +41,8 @@ import random
 import syslog
 import pathlib
 import argparse
+import traceback
+import contextlib
 from sys import exit
 from ftplib import FTP
 
@@ -51,6 +53,25 @@ class Stat_data:
     block_len = 0
     total_block_len = 0
     timer = 0
+
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
 def handleUpload(block, stat_data):
     timestamp = time.time() * 1000
@@ -179,37 +200,29 @@ def build_parser():
     return parser
 
 if __name__ == '__main__':
-    #parse the command
-    args = build_parser().parse_args()
-
-    #Open the register collect
-    success = collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/ftp_clt/'
-            'ftp_clt_rstats_filter.conf')
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
-
-    #set file path
-    if args.file == 'existing':
-        file_path = args.file_choice
-    elif args.file == 'own':
-        file_path = args.own_file
-    else:
-        message = 'No file chosen'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
-
-    #Depending on the mode, call the dedicated function
-    if args.mode == 'upload':
-        file_path = format_path(file_path, '/srv/')
-        upload(args.server_ip, args.port, args.user, args.password, args.blocksize, file_path)
-    elif args.mode == 'download':
-        file_path = format_path(file_path)
-        download(args.server_ip, args.port, args.user, args.password, args.blocksize, file_path)
-    else:
-        message = 'No mode chosen'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
-
+    with use_configuration('/opt/openbach/agent/jobs/ftp_clt/ftp_clt_rstats_filter.conf'):
+        #parse the command
+        args = build_parser().parse_args()
+    
+        #set file path
+        if args.file == 'existing':
+            file_path = args.file_choice
+        elif args.file == 'own':
+            file_path = args.own_file
+        else:
+            message = 'No file chosen'
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            exit(message)
+    
+        #Depending on the mode, call the dedicated function
+        if args.mode == 'upload':
+            file_path = format_path(file_path, '/srv/')
+            upload(args.server_ip, args.port, args.user, args.password, args.blocksize, file_path)
+        elif args.mode == 'download':
+            file_path = format_path(file_path)
+            download(args.server_ip, args.port, args.user, args.password, args.blocksize, file_path)
+        else:
+            message = 'No mode chosen'
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            exit(message)
+    

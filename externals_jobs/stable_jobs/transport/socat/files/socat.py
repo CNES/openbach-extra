@@ -36,15 +36,17 @@ __credits__ = '''Contributors:
 '''
 
 
+import re
+import os
 import sys
 import time
 import syslog
 import argparse
+import traceback
+import contextlib
 import subprocess
 
 import collect_agent
-import re
-import os
 
 
 TMP_FILENAME='/tmp/socat.out'
@@ -66,18 +68,26 @@ def get_file_size(name):
         size = size * 1024
     return size
     
-
-def main(server, dest, port, fn, measure_t, create_f):
-    # Connect to collect agent
-    success = collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/socat/'
-            'socat_rstats_filter.conf')
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
     if not success:
         message = 'ERROR connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, "Starting job socat")
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
+def main(server, dest, port, fn, measure_t, create_f):
     # Verify arguments
     if server:
         if not port:
@@ -175,32 +185,33 @@ def main(server, dest, port, fn, measure_t, create_f):
 
 
 if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # TODO: add mutual exclusivities
-    parser.add_argument('-s', '--server', action='store_true',
-                        help='Launch on server mode')
-    parser.add_argument('-d', '--dest', type=str, default='',
-                        help='The dest IP address')
-    parser.add_argument('-f', '--file', type=str, default='',
-                        help='The output file path, or size if create file')#req server
-    parser.add_argument('-t', '--time', action='store_true',
-                        help='Measure the duration of the process') # opt client
-    parser.add_argument('-c', '--create', action='store_true',
-                        help='Create the file') # opt server
+    with use_configuration('/opt/openbach/agent/jobs/socat/socat_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        # TODO: add mutual exclusivities
+        parser.add_argument('-s', '--server', action='store_true',
+                            help='Launch on server mode')
+        parser.add_argument('-d', '--dest', type=str, default='',
+                            help='The dest IP address')
+        parser.add_argument('-f', '--file', type=str, default='',
+                            help='The output file path, or size if create file')#req server
+        parser.add_argument('-t', '--time', action='store_true',
+                            help='Measure the duration of the process') # opt client
+        parser.add_argument('-c', '--create', action='store_true',
+                            help='Create the file') # opt server
+        
+        parser.add_argument('-p', '--port', type=int, default=0,
+                            help='The TCP port number')
     
-    parser.add_argument('-p', '--port', type=int, default=0,
-                        help='The TCP port number')
-
-    # get args
-    args = parser.parse_args()
-    server = args.server
-    dest = args.dest
-    port = args.port
-    fn = args.file
-    measure_t = args.time
-    create_f = args.create
-
-    main(server, dest, port, fn, measure_t, create_f)
+        # get args
+        args = parser.parse_args()
+        server = args.server
+        dest = args.dest
+        port = args.port
+        fn = args.file
+        measure_t = args.time
+        create_f = args.create
+    
+        main(server, dest, port, fn, measure_t, create_f)

@@ -35,9 +35,11 @@
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory
 
 - name: Install ethtool
-  apt: pkg={{ item }} state=present update_cache=false
-  with_items:
-    - ethtool
+  apt:
+    pkg:
+      - ethtool
+    state: present
+    update_cache: false
   become: yes
   environment: "{{ openbach_proxies }}"
 

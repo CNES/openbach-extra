@@ -34,11 +34,13 @@
 ---
 
 - name: Install twinkle
-  apt: name={{ item }} state=absent
-  with_items:
-    - twinkle
+  apt:
+    name: twinkle
+    state: absent
   become: yes
   
 - name: Uninstall Job
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: absent
   become: yes

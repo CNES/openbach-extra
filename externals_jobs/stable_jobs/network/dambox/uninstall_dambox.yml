@@ -36,4 +36,6 @@
 ---
 
 - name: Remove the DamBOX Job Repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: absent

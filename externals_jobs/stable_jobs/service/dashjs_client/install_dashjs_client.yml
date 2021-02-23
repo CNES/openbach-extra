@@ -90,7 +90,7 @@
   apt:
     name:
       - software-properties-common
-      - python-software-properties
+      - libdbus-glib-1-2
     state: present
   become: yes
   environment: "{{ openbach_proxies }}"

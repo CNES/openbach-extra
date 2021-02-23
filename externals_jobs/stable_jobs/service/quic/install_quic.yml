@@ -1,40 +1,39 @@
-# 
+#
 #   OpenBACH is a generic testbed able to control/configure multiple
 #   network/physical entities (under test) and collect data from them. It is
 #   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
 #   Agents (one for each network entity that wants to be tested).
-#   
-#   
+#
+#
 #   Copyright © 2016-2020 CNES
-#   
-#   
+#
+#
 #   This file is part of the OpenBACH testbed.
-#   
-#   
+#
+#
 #   OpenBACH is a free software : you can redistribute it and/or modify it under the
 #   terms of the GNU General Public License as published by the Free Software
 #   Foundation, either version 3 of the License, or (at your option) any later
 #   version.
-#   
+#
 #   This program is distributed in the hope that it will be useful, but WITHOUT
 #   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
 #   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 #   details.
-#   
+#
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
-#   
-#   
-#   
+#
+#
+#
 #   @file     install_quic.yml
 #   @brief    Playbook that install the Job quic
 #   @author   Francklin SIMO <armelfrancklin.simotegueu@viveris.fr>
 
 
-
 ---
 
-- name: Init global variables  
+- name: Init global variables
   set_fact:
     domain: quic.openbach.com
     ngtcp2:
@@ -46,14 +45,13 @@
     quicly:
       git_repo: https://github.com/h2o/quicly
       version: HEAD
-    cacheable: yes 
+    cacheable: yes
 
 - name: Install software properties common
-  apt: 
+  apt:
     pkg:
       - software-properties-common
-      - python-software-properties
-    state: present 
+    state: present
     update_cache: no
   become: yes
   environment: "{{ openbach_proxies }}"
@@ -65,6 +63,10 @@
     update_cache: yes
   become: yes
   environment: "{{ openbach_proxies }}"
+
+# Create job repository and deploy files
+- name: Create the quic job repository
+  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
 
 # Install ngtcp2
 - name: Install ngtcp2 requirements
@@ -107,13 +109,12 @@
     force: yes
   environment: "{{ openbach_proxies }}"
 
-- name: Compile and install lib OpenSSL for QUIC 
+- name: Compile and install lib OpenSSL for QUIC
   shell: "{{ item }} chdir=/tmp/OpenSSL_1_1_1g-quic-draft-29"
   with_items:
-    - "./config enable-tls1_3 CC=gcc-8 CXX=g++-8"
+    - "./config enable-tls1_3 CC=gcc-8 CXX=g++-8 --prefix=/opt/openbach/agent/jobs/quic"
     - "make -j$(nproc)"
     - "make install_sw"
-  become: yes
 
 - name: Clone ghttp3 from github
   git:
@@ -127,10 +128,9 @@
   shell: "{{ item }} chdir=/tmp/nghttp3/"
   with_items:
     - "autoreconf -i"
-    - "./configure --enable-lib-only CC=gcc-8 CXX=g++-8"
+    - "./configure --enable-lib-only CC=gcc-8 CXX=g++-8 CXXFLAGS=\"-I/opt/openbach/agent/jobs/quic/include\" LDFLAGS=\"-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib\" --prefix=/opt/openbach/agent/jobs/quic"
     - "make -j$(nproc) check"
     - "make install"
-  become: yes
 
 - name: Clone ngtcp2 from github
   git:
@@ -144,12 +144,10 @@
   shell: "{{ item }} chdir=/tmp/ngtcp2/"
   with_items:
     - "autoreconf -i"
-    #- "./configure PKG_CONFIG_PATH=/tmp/OpenSSL_1_1_1g-quic-draft-29/build/lib/pkgconfig:/tmp/nghttp3/build/lib/pkgconfig LDFLAGS=\"-Wl,-rpath,/tmp/OpenSSL_1_1_1g-quic-draft-29/build/lib\" CC=gcc-8 CXX=g++-8"
-    - "./configure CC=gcc-8 CXX=g++-8"
-    - "ldconfig"
+    - "./configure CC=gcc-8 CXX=g++-8 PKG_CONFIG_PATH=/opt/openbach/agent/jobs/quic/lib/pkgconfig CXXFLAGS=\"-I/opt/openbach/agent/jobs/quic/include\" LDFLAGS=\"-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib\" --prefix=/opt/openbach/agent/jobs/quic"
+      # - "ldconfig"
     - "make -j$(nproc) check"
     - "make install"
-  become: yes
 
 - name: Install ngtcp2 binaries
   copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
@@ -181,21 +179,20 @@
     version: HEAD
     dest: /tmp/picotls
     force: yes 
+    recursive: yes
   environment: "{{ openbach_proxies }}"
 
-- name: Initialize submodules
-  shell: "git submodule update --init --recursive chdir=/tmp/picotls"
-  environment: "{{ openbach_proxies }}"
- 
 - name: Set environment variables and Build picotls
   environment: 
     CC: gcc-8
     CXX: g++-8
+    CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
+    LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib"
   shell: "{{ item }} chdir=/tmp/picotls"
   with_items:
-    - "cmake ."
-    - "make"
-    - "make check" 
+    - "cmake . -DCMAKE_INSTALL_PREFIX=/opt/openbach/agent/jobs/quic"
+    - "make preinstall" 
+    - "make check"
 
 - name: Clone Picoquic from github
   git:
@@ -204,15 +201,17 @@
     force: yes
     version: "{{ picoquic.version }}"
   environment: "{{ openbach_proxies }}"
-    
+
 - name: Build picoquic
   environment:
     CC: gcc-8
     CXX: g++-8 
+    CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
+    LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib"
   shell: "{{ item }} chdir=/tmp/picoquic"
   with_items:
-    - "cmake ."
-    - "make"
+    - "cmake . -DCMAKE_INSTALL_PREFIX=/opt/openbach/agent/jobs/quic"
+    - "make preinstall"
 
 - name: Install picoquic binaries
   copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
@@ -240,19 +239,18 @@
     dest: /tmp/quicly
     force: yes
     version: "{{ quicly.version }}"
+    recursive: yes
   environment: "{{ openbach_proxies }}"
 
-- name: Initialize submodules
-  shell: "git submodule update --init --recursive chdir=/tmp/quicly"
-  environment: "{{ openbach_proxies }}"
- 
 - name: Set environment variables and Build quicly
-  environment: 
+  environment:
     CC: gcc-8
     CXX: g++-8
+    CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
+    LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib"
   shell: "{{ item }} chdir=/tmp/quicly"
   with_items:
-    - "cmake ."
+    - "cmake . -DCMAKE_INSTALL_PREFIX=/opt/openbach/agent/jobs/quic"
     - "make"
 
 - name: Install quicly binaries
@@ -260,10 +258,6 @@
   with_items:
     - { file: '/tmp/quicly/cli', mode: '0755', name: 'quicly' }
   become: yes
-
-# Create job repository and deploy files
-- name: Create the quic job repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
 
 - name: Copy files into job repository
   copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
@@ -287,7 +281,7 @@
 
 # Install keys
 - name: Install pyOpenSSL
-  pip: name=pyopenssl executable=pip2 state=latest
+  pip: name=pyopenssl executable=pip3 state=latest
   become: yes
   environment: "{{ openbach_proxies }}"
 
@@ -311,6 +305,3 @@
     provider: selfsigned
   become: yes
 
-- name: Refresh dynamic linker
-  shell: ldconfig
-  become: yes

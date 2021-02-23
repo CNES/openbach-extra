@@ -5,14 +5,14 @@ general:
   description: >
       Launch a Twinkle server that awaits for incoming connection, or a 
       client that starts a connection, and sends an audio file.
-  job_version:     '1.0'
+  job_version:     '1.1'
   keywords:        [twinkle, voip]
   persistent:      True
 
 platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '16.04'
+    ansible_distribution_version: '20.04'
     command: 'python3 /opt/openbach/agent/jobs/twinkle_voip/twinkle_voip.py'
     command_stop:
 

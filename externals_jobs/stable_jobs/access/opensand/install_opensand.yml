@@ -50,13 +50,11 @@
 
 - name: Install OpenSAND Job requirements
   apt:
-    name: "{{ item }}"
+    name: python3-netifaces
     state: present
     update_cache: no
   register: install
   become: yes
-  with_items :
-    - python3-netifaces
   environment: "{{ openbach_proxies }}"
 
 - name: Install OpenSAND Job
@@ -79,13 +77,12 @@
 - name: Install OpenSAND
   environment: "{{ openbach_proxies | combine({'DEBIAN_FRONTEND': 'noninteractive'}) }}"
   apt:
-    name: '{{ item }}'
-    state: installed
+    name:
+      - opensand-core
+      - libopensand-gse-encap-plugin
+      - libopensand-rle-encap-plugin
+    state: present
     force: yes
     update_cache: yes
-  with_items:
-    - opensand-core
-    - libopensand-gse-encap-plugin
-    - libopensand-rle-encap-plugin
   register: install
   become: yes

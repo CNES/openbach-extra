@@ -30,15 +30,36 @@ __author__ = 'Silicom'
 __credits__ = '''Contributor: Marlene MOST <mmost@silicom.fr>'''
 
 
+import os
 import syslog
 import argparse
+import traceback
 import subprocess
+import contextlib
 import numpy as np
 from sys import exit
 from time import sleep
 
 import collect_agent
 
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
 def build_parser():
     parser = argparse.ArgumentParser(description='', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -66,8 +87,6 @@ def client(destination_address, count, packets_interval):
     # the length of the sample used to compute jitter mean
     granularity = 5
 
-    conffile = "/opt/openbach/agent/jobs/owamp-client/owamp-client_rstats_filter.conf"
-
     # case of output == raw data (singleton metric)
     cmd = ['owping', '-U', '-v', destination_address]
 
@@ -76,14 +95,6 @@ def client(destination_address, count, packets_interval):
 
     if packets_interval:
         cmd += ['-i', packets_interval]
-
-    success = collect_agent.register_collect(conffile)
-    if not success:
-        message = 'ERROR connecting to rstats'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
-
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job opwing')
 
     # launch command
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -244,10 +255,6 @@ def client(destination_address, count, packets_interval):
 
 
 if __name__ == '__main__':
-    args = build_parser().parse_args()
-    client(args.destination_address, args.count, args.packets_interval)
-
-
-
-
-
+    with use_configuration('/opt/openbach/agent/jobs/owamp-client/owamp-client_rstats_filter.conf'):
+        args = build_parser().parse_args()
+        client(args.destination_address, args.count, args.packets_interval)

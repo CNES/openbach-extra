@@ -48,7 +48,7 @@
   
 - name: Download sample video
   get_url:
-    url: http://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_480p_surround-fix.avi
+    url: http://ftp.itec.aau.at/datasets/DASHDataset2014/BigBuckBunny/1sec/bunny_1312787bps/BigBuckBunny_1snonSeg.mp4
     dest: /opt/openbach/agent/jobs/{{ job_name }}/bigbuckbunny.mp4
   environment: "{{ openbach_proxies }}"
 

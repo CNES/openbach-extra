@@ -34,17 +34,35 @@ __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 '''
 
-import subprocess
-import argparse
-import syslog
-import collect_agent
+import os
 import sys
+import syslog
+import argparse
+import traceback
+import subprocess
+import contextlib
+import collect_agent
+
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
 def main(param, value):
-    
-    conffile = "/opt/openbach/agent/jobs/sysctl/sysctl_rstats_filter.conf"
-    collect_agent.register_collect(conffile)
-
     shell = False
     cmd = ['sysctl', '{}={}'.format(param, value)]
     if len(value.split()) > 1:
@@ -63,18 +81,19 @@ def main(param, value):
             
 
 if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(description='',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('param', metavar='param', type=str,
-                        help='The sysctl parameter name')
-    parser.add_argument('value', metavar='value', type=str, 
-                        help='The sysctl parameter desired value')
-
-    # get args
-    args = parser.parse_args()
-    param = args.param
-    value = args.value
+    with use_configuration('/opt/openbach/agent/jobs/sysctl/sysctl_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(description='',
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('param', metavar='param', type=str,
+                            help='The sysctl parameter name')
+        parser.add_argument('value', metavar='value', type=str, 
+                            help='The sysctl parameter desired value')
     
-    main(param, value)
-
+        # get args
+        args = parser.parse_args()
+        param = args.param
+        value = args.value
+        
+        main(param, value)
+    

@@ -26,12 +26,34 @@
 #   
 #   
 #   
-#   @file     uninstall_initial_windows.yml
-#   @brief    Playbook that uninstall the Job initial_windows
-#   @author   Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>
+#   @file     uninstall_netflix.yml
+#   @brief    Playbook that uninstall netflix
+#   @author   Francklin SIMO <francklin.simo@toulouse.viveris.com>
 
 
 ---
 
-- name: Remove the Initial Windows Job Repository
+
+- name: Uninstall selenium/bs4
+  pip:
+    name:
+      - selenium
+      - bs4
+    executable: pip3
+    state: present
+  become: yes
+  
+- name: Uninstall package unzip
+  apt: name=unzip state=absent
+  become: yes
+  
+- name: Uninstall package google-chrome
+  apt: name=google-chrome state=absent
+  become: yes
+  
+- name: Uninstall package chrome-driver
+  apt: name=chromedriver state=absent
+  become: yes
+
+- name: Uninstall Job
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent

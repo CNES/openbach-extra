@@ -34,6 +34,7 @@ __credits__ = '''Contributors:
  * David FERNANDES <david.fernandes@viveris.fr>
 '''
 
+import os
 import re
 import sys
 import time
@@ -41,6 +42,8 @@ import signal
 import socket
 import syslog
 import argparse
+import traceback
+import contextlib
 from functools import partial
 
 import collect_agent
@@ -51,18 +54,26 @@ def signal_term_handler(udp_socket, signal, frame):
     udp_socket.close()
     sys.exit(message)
 
-
-def main(args):
-    # Connect to collect agent
-    success = collect_agent.register_collect(
-        '/opt/openbach/agent/jobs/socket_stats_forwarder/'
-        'socket_stats_forwarder_rstats_filter.conf')
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
     if not success:
         message = 'ERROR connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job socket_stats_forwarder')
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
+def main(args):
     # Bind UDP socket
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
@@ -101,22 +112,23 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        '-a', '--address', type=str, default='0.0.0.0',
-        help='IP address to listen to')
-    parser.add_argument(
-        '-p', '--port', type=int, default=8321,
-        help='Port number to listen to')
-    parser.add_argument(
-        '-b', '--buffersize', type=int, default=1024,
-        help='Buffer size for data reception')
-    parser.add_argument(
-        '-s', '--stats', nargs=2, metavar=('NAMES', 'REGEXPS'), type=str,
-        required=True, action='append',
-        help='A comma-separated list of the stats names followed by the corresponding regexp')
-
-    args = parser.parse_args()
-    main(args)
+    with use_configuration('/opt/openbach/agent/jobs/socket_stats_forwarder/socket_stats_forwarder_rstats_filter.conf'):
+        parser = argparse.ArgumentParser(
+            description=__doc__,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument(
+            '-a', '--address', type=str, default='0.0.0.0',
+            help='IP address to listen to')
+        parser.add_argument(
+            '-p', '--port', type=int, default=8321,
+            help='Port number to listen to')
+        parser.add_argument(
+            '-b', '--buffersize', type=int, default=1024,
+            help='Buffer size for data reception')
+        parser.add_argument(
+            '-s', '--stats', nargs=2, metavar=('NAMES', 'REGEXPS'), type=str,
+            required=True, action='append',
+            help='A comma-separated list of the stats names followed by the corresponding regexp')
+    
+        args = parser.parse_args()
+        main(args)

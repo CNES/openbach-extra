@@ -4,14 +4,14 @@ general:
   name:           squid
   description: >
       This Job launches the Squid caching proxy (in transparent or non transparent modes) and redirects traffic in transparent mode.
-  job_version:     '1.0'
+  job_version:     '1.1'
   keywords:        [squid, proxy, server, caching]
   persistent:      true
 
 platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '16.04'
+    ansible_distribution_version: '20.04'
     command: 'python3 /opt/openbach/agent/jobs/squid/squid.py'
     command_stop: 'python3 /opt/openbach/agent/jobs/squid/squid_stop.py'
 

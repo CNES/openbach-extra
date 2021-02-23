@@ -39,20 +39,42 @@ RECEIVER = {'name' : 'Receiver', 'email':'receiver@mail.dummy.com'}
 SUBJECT = 'Background traffic'
 DEFAULT_PORT = 1025
 
+import os
 import sys
-import argparse
-import collect_agent
 import math
-import syslog
-import smtplib
-import email.utils
-from email.mime.text import MIMEText
 import time
 import smtpd
+import syslog
+import smtplib
 import asyncore
+import argparse
+import traceback
+import contextlib
+import email.utils
 from random import choice
 from string import ascii_uppercase
+from email.mime.text import MIMEText
 
+import collect_agent
+
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
 def handle_exception(exception):
     message = 'ERROR: {}'.format(exception)
@@ -65,7 +87,7 @@ class CustomSMTPServer(smtpd.SMTPServer):
         self.nb_messages = 0
         self.data_received = 0
         
-    def process_message(self, peer, mailfrom, rcpttos, data):
+    def process_message(self, peer, mailfrom, rcpttos, data, mail_options=None, rcpt_options=None):
         ''' Handle messages received '''
         self.nb_messages += 1
         self.data_received += (len(data) + sys.getsizeof(''))//1024
@@ -75,13 +97,6 @@ class CustomSMTPServer(smtpd.SMTPServer):
         return
 
 def server(server_port):
-    # Connect to collect agent
-    conffile = '/opt/openbach/agent/jobs/smtp/smtp_rstats_filter.conf'
-    success = collect_agent.register_collect(conffile)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
     server = CustomSMTPServer(('0.0.0.0', server_port), None)
     asyncore.loop()
     
@@ -93,13 +108,6 @@ def generate_string(size):
     return result
     
 def client(server_ip, server_port, sender, receiver, message_size, interval, duration):
-    # Connect to collect agent
-    conffile = '/opt/openbach/agent/jobs/smtp/smtp_rstats_filter.conf'
-    success = collect_agent.register_collect(conffile)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        exit(message)
     # Create the message
     message = generate_string(message_size)
     msg = MIMEText(message)
@@ -127,47 +135,48 @@ def client(server_ip, server_port, sender, receiver, message_size, interval, dur
     
     
 if __name__ == "__main__":
-    # Define usage
-    parser = argparse.ArgumentParser(description='',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-            '-s', '--server_mode', action='store_true',
-            help='Run in server mode')
-    group.add_argument(
-            '-c', '--server_ip', type=str,
-            help='Run in client mode and specify server IP address')
-    parser.add_argument(
-            '-p', '--server_port', type=int, default=DEFAULT_PORT,
-            help='Set server port to listen on/connect to')      
-    parser.add_argument(
-            '-F', '--From', type=str, default=SENDER['email'],
-            help='The sender email address (client only)')
-    parser.add_argument(
-            '-T', '--To', type=str, default=RECEIVER['email'],
-            help='The receiver email address (client only)')
-    parser.add_argument(
-            '-l', '--lenght', type=int, default=100,
-            help='The size in kilobyte of the message to send (client only)')
-    parser.add_argument(
-            '-i', '--interval', type=float, default=1,
-            help='The pause *interval* seconds between messages to send'
-            '(client only)')
-    parser.add_argument(
-            '-d', '--duration', type=int, default=math.inf,
-            help='The time in seconds to send messages (client only)')
-        
-    # Parse arguments
-    args = parser.parse_args()
-    server_port = args.server_port
-    if args.server_mode:
-        server(server_port)
-    else:
-        server_ip = args.server_ip
-        sender = {'name':args.From.split("@")[0], 'email':args.From}
-        receiver = {'name':args.To.split("@")[0], 'email':args.To}
-        message_size = args.lenght
-        interval = args.interval
-        duration = args.duration
-        client(server_ip, server_port, sender, receiver, message_size, interval, duration)
-        
+    with use_configuration('/opt/openbach/agent/jobs/smtp/smtp_rstats_filter.conf'):
+        # Define usage
+        parser = argparse.ArgumentParser(description='',
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument(
+                '-s', '--server_mode', action='store_true',
+                help='Run in server mode')
+        group.add_argument(
+                '-c', '--server_ip', type=str,
+                help='Run in client mode and specify server IP address')
+        parser.add_argument(
+                '-p', '--server_port', type=int, default=DEFAULT_PORT,
+                help='Set server port to listen on/connect to')      
+        parser.add_argument(
+                '-F', '--From', type=str, default=SENDER['email'],
+                help='The sender email address (client only)')
+        parser.add_argument(
+                '-T', '--To', type=str, default=RECEIVER['email'],
+                help='The receiver email address (client only)')
+        parser.add_argument(
+                '-S', '--size', type=int, default=100,
+                help='The size in kilobyte of the message to send (client only)')
+        parser.add_argument(
+                '-i', '--interval', type=float, default=1,
+                help='The pause *interval* seconds between messages to send'
+                '(client only)')
+        parser.add_argument(
+                '-d', '--duration', type=int, default=math.inf,
+                help='The time in seconds to send messages (client only)')
+            
+        # Parse arguments
+        args = parser.parse_args()
+        server_port = args.server_port
+        if args.server_mode:
+            server(server_port)
+        else:
+            server_ip = args.server_ip
+            sender = {'name':args.From.split("@")[0], 'email':args.From}
+            receiver = {'name':args.To.split("@")[0], 'email':args.To}
+            message_size = args.size
+            interval = args.interval
+            duration = args.duration
+            client(server_ip, server_port, sender, receiver, message_size, interval, duration)
+            

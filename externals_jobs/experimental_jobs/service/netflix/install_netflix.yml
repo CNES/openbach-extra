@@ -26,8 +26,8 @@
 #   
 #   
 #   
-#   @file     install_youtube.yml
-#   @brief    Playbook that install the Job youtube
+#   @file     install_netflix.yml
+#   @brief    Playbook that install the Job netflix
 #   @author   Francklin SIMO <francklin.simo@toulouse.viveris.com>
 
 
@@ -61,19 +61,21 @@
   environment: "{{ openbach_proxies }}"
 
 - name: Install Selenium/bs4 for python3
-  pip: name={{ item }} executable=pip3 state=present
+  pip:
+    name:
+      - selenium
+      - bs4
+    executable: pip3
+    state: present
   become: yes
-  with_items:
-    - selenium
-    - bs4
   environment: "{{ openbach_proxies }}"
     
-- name: Install youtube file
+- name: Install netflix file
   copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
   with_items:
-    - { file: 'youtube.help', mode: '0644' }
-    - { file: 'youtube.py', mode: '0755' }
-    - { file: 'youtube_rstats_filter.conf', mode: '0644' }
+    - { file: 'netflix.help', mode: '0644' }
+    - { file: 'netflix.py', mode: '0755' }
+    - { file: 'netflix_rstats_filter.conf', mode: '0644' }
     - { file: 'config.yaml', mode: '0644' }
 
   

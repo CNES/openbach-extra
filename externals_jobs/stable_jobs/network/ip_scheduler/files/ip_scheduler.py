@@ -35,14 +35,38 @@ __credits__ = '''Contributors:
 
 '''
 
-import json
+import os
 import sys
+import json
+import syslog
 import argparse
+import traceback
+import contextlib
 import subprocess
 from collections import OrderedDict
 
 import collect_agent
-import syslog
+
+
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
+
 
 def run_command(cmd):
     p = subprocess.run(cmd, stderr=subprocess.PIPE)
@@ -168,22 +192,23 @@ def remove_scheduler(interface):
 
 
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument('interface', type=str, help='Interface to apply or delete scheduler')
-
-    subparsers = parser.add_subparsers(title='Subcommand mode', help='Choose between adding or removing scheduler')
-    subparsers.required=True
-
-    parser_remove = subparsers.add_parser('remove', help='Remove all rules')
-    parser_add    = subparsers.add_parser('add', help='Add a new scheduler')
-
-    parser_add.add_argument('file', type=str, help='Path (on the agent) to the configuration file describing the scheduler')
-
-    parser_remove.set_defaults(function=remove_scheduler)
-    parser_add.set_defaults(function=add_scheduler)
-
-    args = vars(parser.parse_args())
-    main = args.pop('function')
-    main(**args)
+    with use_configuration('/opt/openbach/agent/jobs/ip_scheduler/ip_scheduler_rstats_filter.conf'):
+    
+        parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    
+        parser.add_argument('interface', type=str, help='Interface to apply or delete scheduler')
+    
+        subparsers = parser.add_subparsers(title='Subcommand mode', help='Choose between adding or removing scheduler')
+        subparsers.required=True
+    
+        parser_remove = subparsers.add_parser('remove', help='Remove all rules')
+        parser_add    = subparsers.add_parser('add', help='Add a new scheduler')
+    
+        parser_add.add_argument('file', type=str, help='Path (on the agent) to the configuration file describing the scheduler')
+    
+        parser_remove.set_defaults(function=remove_scheduler)
+        parser_add.set_defaults(function=add_scheduler)
+    
+        args = vars(parser.parse_args())
+        main = args.pop('function')
+        main(**args)

@@ -34,17 +34,35 @@ __credits__ = '''Contributors:
  * David PRADAS <david.pradas@toulouse.viveris.com>
 '''
 
-import subprocess
-import argparse
-import syslog
-import collect_agent
+import os
 import sys
+import syslog
+import argparse
+import traceback
+import subprocess
+import contextlib
+import collect_agent
+
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
 def main(command_line):
-    
-    conffile = "/opt/openbach/agent/jobs/command_shell/command_shell_rstats_filter.conf"
-    collect_agent.register_collect(conffile)
-
     try:
         p = subprocess.run(command_line, stderr=subprocess.PIPE, shell=True)
     except Exception as ex:
@@ -58,15 +76,16 @@ def main(command_line):
             
 
 if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(description='',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('command_line', metavar='param', type=str,
-                        help='The command line to execute in shell')
-
-    # get args
-    args = parser.parse_args()
-    command_line = args.command_line
+    with use_configuration('/opt/openbach/agent/jobs/command_shell/command_shell_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(description='',
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('command_line', metavar='param', type=str,
+                            help='The command line to execute in shell')
     
-    main(command_line)
-
+        # get args
+        args = parser.parse_args()
+        command_line = args.command_line
+        
+        main(command_line)
+    
