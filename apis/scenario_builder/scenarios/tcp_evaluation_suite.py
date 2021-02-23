@@ -205,19 +205,41 @@ def build(
 
 ##### TODO #####
 
-#    ########################################
-#    ######## network_configure_link ########
-#    ########################################
-#
-#    # network_configure_link L -> A
-#    scenario_network_conf_link_LA = network_configure_link.build(routerL, endpointA)
-#    start_network_conf_link_LA = scenario.add_function('start_scenario_instance')
-#    start_network_conf_link_LA.configure(scenario_network_conf_link_LA)
+    ########################################
+    ######## network_configure_link ########
+    ########################################
+
+    # network_configure_link L -> A & L -> B
+    scenario_network_conf_link_LAB = network_configure_link.build(
+            entity=routerL,
+            ifaces='interface_LA, interface_LB' #'ens3, ens6'
+            mode='all',
+            opearation='apply',
+            bandwidth='100M',
+            delay=10) #latency
+    start_network_conf_link_LAB = scenario.add_function('start_scenario_instance')
+    start_network_conf_link_LAB.configure(scenario_network_conf_link_LAB)
 #    # network_configure_link L -> B
-#    scenario_network_conf_link_LB = network_configure_link.build(routerL, endpointB)
+#    scenario_network_conf_link_LB = network_configure_link.build(
+#            entity=routerL,
+#            ifaces='ens6',
+#            mode='all',
+#            opearation='apply',
+#            bandwidth='100M',
+#            delay=10) #latency
 #    start_network_conf_link_LB = scenario.add_function('start_scenario_instance')
 #    start_network_conf_link_LB.configure(scenario_network_conf_link_LB)
 #
+
+    # network_configure_link R -> C & R -> D
+    scenario_network_conf_link_RCD = network_configure_link.build(
+            entity=routerR,
+            ifaces='interface_RC, interface_RD' #'ens6, ens3'
+            mode='all',
+            opearation='apply',
+            bandwidth='100M',
+            delay=10)
+
 #    # network_configure_link R -> C
 #    scenario_network_conf_link_RC = network_configure_link.build(routerR, endpointC)
 #    start_network_conf_link_RC = scenario.add_function('start_scenario_instance')
