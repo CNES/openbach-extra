@@ -39,14 +39,16 @@ Scenario that permit us to evaluate tcp links.
 """
 
 def build(
-        endpointA, endpointB, endpointC, 
-        endpointD, routerL, routerR, 
-        endpointA_network_ip, endpointB_network_ip, 
-        endpointC_network_ip, endpointD_network_ip, 
-        routerL_ens3_ip, routerL_ens6_ip, 
-        routerR_ens6_ip, routerR_ens3_ip, 
-        routerL_ens4_ip, routerR_ens5_ip,
-        congestion_control,
+        endpointA, endpointB, endpointC,
+        endpointD, routerL, routerR,
+        endpointA_network_ip, endpointB_network_ip,
+        endpointC_network_ip, endpointD_network_ip,
+        routerL_to_endpointA_ip, routerL_to_endpointB_ip,
+        routerR_to_endpointC_ip, routerR_to_endpointD_ip,
+        routerL_to_routerR_ip, routerR_to_routerL_ip,
+        interface_AL, interface_BL, interface_CR,
+        interface_DR, interface_RA, interface_RB,
+        interface_LC, interface_LD, congestion_control,
         scenario_name=SCENARIO_NAME):
 
 
@@ -67,103 +69,137 @@ def build(
 
     route_AL = {
             "destination_ip": endpointC_network_ip, #192.168.3.0/24
-            "gateway_ip": routerL_ens3_ip, #192.168.0.14
+            "gateway_ip": routerL_to_endpointA_ip, #192.168.0.14
             "operation": 'change', 
             "initcwnd": 10
             }
-    interface_A = 'ens3'
 
     route_BL = {
             "destination_ip": endpointD_network_ip, #192.168.4.0/24
-            "gateway_ip": routerL_ens6_ip, #192.168.1.5
+            "gateway_ip": routerL_to_endpointB_ip, #192.168.1.5
             "operation": 'change',
             "initcwnd": 10
             }
-    interface_B = 'ens4'
 
     route_CR = {
             "destination_ip": endpointA_network_ip, #192.168.0.0/24
-            "gateway_ip": routerR_ens6_ip, #192.168.3.3
+            "gateway_ip": routerR_to_endpointC_ip, #192.168.3.3
             "operation": 'change',
             "initcwnd": 10
             }
-    interface_C = 'ens3'
 
     route_DR = {
             "destination_ip": endpointB_network_ip, #192.168.1.0/24
-            "gateway_ip": routerR_ens3_ip, #192.168.4.8
+            "gateway_ip": routerR_to_endpointD_ip, #192.168.4.8
             "operation": 'change',
             "initcwnd": 10
             }
-    interface_D = 'ens3'
 
     route_RA = {
             "destination_ip": endpointA_network_ip, #192.168.0.0/24
-            "gateway_ip": routerL_ens4_ip, #192.168.2.15
+            "gateway_ip": routerL_to_routerR_ip, #192.168.2.15
             "operation": 'change',
             "initcwnd": 10
             }
-    interface_R = 'ens5'
 
     route_RB = {
             "destination_ip": endpointB_network_ip, #192.168.1.0/24
-            "gateway_ip": routerL_ens4_ip, #192.168.2.15
+            "gateway_ip": routerL_to_routerR_ip, #192.168.2.15
             "operation": 'change',
             "initcwnd": 10
             }
 
     route_LC = {
             "destination_ip": endpointC_network_ip, #192.168.3.0/24
-            "gateway_ip": routerR_ens5_ip, #192.168.2.25
+            "gateway_ip": routerR_to_routerL_ip, #192.168.2.25
             "operation": 'change',
             "initcwnd": 10
             }
-    interface_L = 'ens4'
 
     route_LD = {
             "destination_ip": endpointD_network_ip, #192.168.4.0/24
-            "gateway_ip": routerR_ens5_ip, #192.168.2.25
+            "gateway_ip": routerR_to_routerL_ip, #192.168.2.25
             "operation": 'change',
             "initcwnd": 10
             }
 
     # transport_tcp_stack_conf on endpointA to L
-    scenario_tcp_conf_A = transport_tcp_stack_conf.build(endpointA, congestion_control, interface=interface_A, route=route_AL, scenario_name='transport_tcp_stack_conf_A')
+    scenario_tcp_conf_A = transport_tcp_stack_conf.build(
+            endpointA,
+            congestion_control,
+            interface=interface_AL, #ens3
+            route=route_AL,
+            scenario_name='transport_tcp_stack_conf_A')
     start_tcp_conf_A = scenario.add_function('start_scenario_instance')
     start_tcp_conf_A.configure(scenario_tcp_conf_A)
 
     # transport_tcp_stack_conf on endpointB to L
-    scenario_tcp_conf_B = transport_tcp_stack_conf.build(endpointB, congestion_control, interface=interface_B, route=route_BL, scenario_name='transport_tcp_stack_conf_B')
+    scenario_tcp_conf_B = transport_tcp_stack_conf.build(
+            endpointB,
+            congestion_control,
+            interface=interface_BL, #ens4
+            route=route_BL,
+            scenario_name='transport_tcp_stack_conf_B')
     start_tcp_conf_B = scenario.add_function('start_scenario_instance')
     start_tcp_conf_B.configure(scenario_tcp_conf_B)
 
     # transport_tcp_stack_conf on endpointC to R
-    scenario_tcp_conf_C = transport_tcp_stack_conf.build(endpointC, congestion_control, interface=interface_C, route=route_CR, scenario_name='transport_tcp_stack_conf_C')
+    scenario_tcp_conf_C = transport_tcp_stack_conf.build(
+            endpointC,
+            congestion_control,
+            interface=interface_CR, #ens3
+            route=route_CR,
+            scenario_name='transport_tcp_stack_conf_C')
     start_tcp_conf_C = scenario.add_function('start_scenario_instance')
     start_tcp_conf_C.configure(scenario_tcp_conf_C)
 
     # transport_tcp_stack_conf on endpointD to R
-    scenario_tcp_conf_D = transport_tcp_stack_conf.build(endpointD, congestion_control, interface=interface_D, route=route_DR, scenario_name='transport_tcp_stack_conf_D')
+    scenario_tcp_conf_D = transport_tcp_stack_conf.build(
+            endpointD,
+            congestion_control,
+            interface=interface_DR, #ens3
+            route=route_DR,
+            scenario_name='transport_tcp_stack_conf_D')
     start_tcp_conf_D = scenario.add_function('start_scenario_instance')
     start_tcp_conf_D.configure(scenario_tcp_conf_D)
 
     # transport_tcp_stack_conf on routerR to A
-    scenario_tcp_conf_RA = transport_tcp_stack_conf.build(routerR, congestion_control, interface=interface_R, route=route_RA, scenario_name='transport_tcp_stack_conf_RA')
+    scenario_tcp_conf_RA = transport_tcp_stack_conf.build(
+            routerR,
+            congestion_control,
+            interface=interface_RA, #ens5
+            route=route_RA,
+            scenario_name='transport_tcp_stack_conf_RA')
     start_tcp_conf_RA = scenario.add_function('start_scenario_instance')
     start_tcp_conf_RA.configure(scenario_tcp_conf_RA)
 
     # transport_tcp_stack_conf on routerR to B
-    scenario_tcp_conf_RB = transport_tcp_stack_conf.build(routerR, congestion_control, interface=interface_R, route=route_RB, scenario_name='transport_tcp_stack_conf_RB')
+    scenario_tcp_conf_RB = transport_tcp_stack_conf.build(
+            routerR,
+            congestion_control,
+            interface=interface_RB, #ens5
+            route=route_RB,
+            scenario_name='transport_tcp_stack_conf_RB')
     start_tcp_conf_RB = scenario.add_function('start_scenario_instance')
     start_tcp_conf_RB.configure(scenario_tcp_conf_RB)
 
     # transport_tcp_stack_conf on routerL to C
-    scenario_tcp_conf_LC = transport_tcp_stack_conf.build(routerL, congestion_control, interface=interface_L, route=route_LC, scenario_name='transport_tcp_stack_conf_LC')
+    scenario_tcp_conf_LC = transport_tcp_stack_conf.build(
+            routerL,
+            congestion_control,
+            interface=interface_LC, #ens4
+            route=route_LC,
+            scenario_name='transport_tcp_stack_conf_LC')
     start_tcp_conf_LC = scenario.add_function('start_scenario_instance')
     start_tcp_conf_LC.configure(scenario_tcp_conf_LC)
 
     # transport_tcp_stack_conf on routerL to D
-    scenario_tcp_conf_LD = transport_tcp_stack_conf.build(routerL, congestion_control, interface=interface_L, route=route_LD, scenario_name='transport_tcp_stack_conf_LD')
+    scenario_tcp_conf_LD = transport_tcp_stack_conf.build(
+            routerL,
+            congestion_control,
+            interface=interface_LD, #ens4
+            route=route_LD,
+            scenario_name='transport_tcp_stack_conf_LD')
     start_tcp_conf_LD = scenario.add_function('start_scenario_instance')
     start_tcp_conf_LD.configure(scenario_tcp_conf_LD)
 

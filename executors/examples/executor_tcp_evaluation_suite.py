@@ -142,22 +142,46 @@ def main(argv=None):
             '--endpointD_network_ip', required=True,
             help='')
     observer.add_scenario_argument(
-            '--routerL_ens3_ip', required=True,
+            '--routerL_to_endpointA_ip', required=True,
             help='')
     observer.add_scenario_argument(
-            '--routerL_ens6_ip', required=True,
+            '--routerL_to_endpointB_ip', required=True,
             help='')
     observer.add_scenario_argument(
-            '--routerR_ens6_ip', required=True,
+            '--routerR_to_endpointC_ip', required=True,
             help='')
     observer.add_scenario_argument(
-            '--routerR_ens3_ip', required=True,
+            '--routerR_to_endpointD_ip', required=True,
             help='')
     observer.add_scenario_argument(
-            '--routerL_ens4_ip', required=True,
+            '--routerL_to_routerR_ip', required=True,
             help='')
     observer.add_scenario_argument(
-            '--routerR_ens5_ip', required=True,
+            '--routerR_to_routerL_ip', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--interface_AL', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--interface_BL', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--interface_CR', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--interface_DR', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--interface_RA', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--interface_RB', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--interface_LC', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--interface_LD', required=True,
             help='')
 
     observer.add_scenario_argument(
@@ -177,12 +201,20 @@ def main(argv=None):
             args.endpointB_network_ip,
             args.endpointC_network_ip,
             args.endpointD_network_ip,
-            args.routerL_ens3_ip,
-            args.routerL_ens6_ip,
-            args.routerR_ens6_ip,
-            args.routerR_ens3_ip,
-            args.routerL_ens4_ip,
-            args.routerR_ens5_ip,
+            args.routerL_to_endpointA_ip,
+            args.routerL_to_endpointB_ip,
+            args.routerR_to_endpointC_ip,
+            args.routerR_to_endpointD_ip,
+            args.routerL_to_routerR_ip,
+            args.routerR_to_routerL_ip,
+            args.interface_AL,
+            args.interface_BL,
+            args.interface_CR,
+            args.interface_DR,
+            args.interface_RA,
+            args.interface_RB,
+            args.interface_LC,
+            args.interface_LD,
             congestion_control=args.congestion_control,
             scenario_name=args.scenario_name)
 
