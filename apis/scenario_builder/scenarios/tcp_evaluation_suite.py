@@ -35,7 +35,8 @@ SCENARIO_DESCRIPTION = """This scenario is a wrapper for the following scenarios
  - transport_tcp_stack_conf
  - network_configure_link
  - service_data_transfer
-Scenario that permit us to evaluate tcp links.
+It provides a scenario that enables the evaluation of TCP
+congestion controls.
 """
 
 def build(
@@ -53,7 +54,6 @@ def build(
         interface_LB, interface_RC, interface_RD,
         interface_LR, interface_RL, congestion_control,
         scenario_name=SCENARIO_NAME):
-
 
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
@@ -406,6 +406,7 @@ def build(
             wait_delay=5)
     start_service_data_transfer_AC_1.configure(scenario_service_data_transfer_AC)
 
+    # service_data_transfer A -> C, 2 to 10
     start_service_data_transfer_AC_2 = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_service_data_transfer_AC_1],
