@@ -41,6 +41,7 @@ Scenario that permit us to evaluate tcp links.
 def build(
         endpointA, endpointB, endpointC,
         endpointD, routerL, routerR,
+        endpointC_ip, endpointD_ip, server_port,
         endpointA_network_ip, endpointB_network_ip,
         endpointC_network_ip, endpointD_network_ip,
         routerL_to_endpointA_ip, routerL_to_endpointB_ip,
@@ -358,28 +359,109 @@ def build(
 
 ##### TODO #####
 
-#    ########################################
-#    ######## service_data_transfer #########
-#    ########################################
-#
-#    # service_data_transfer A -> C
-#    scenario_service_data_transfer_AC = service_data_transfer.build(endpointA, endpointC)
-#    start_service_data_transfer_AC = scenario.add_function('start_scenario_instance')
-#    start_service_data_transfer_AC.configure(scenario_service_data_transfer_AC, wait_finished=['start_tcp_conf_A', 'start_tcp_conf_C','start_network_conf_link_AC'])
-#
-#    # service_data_transfer B -> D
-#    scenario_service_data_transfer_BD = service_data_transfer.build(endpointB, endpointD)
-#    start_service_data_transfer_BD = scenario.add_function('start_scenario_instance')
-#    start_service_data_transfer_BD.configure(scenario_service_data_transfer_BD,
-#            wait_finished=['start_tcp_conf_B', 'start_tcp_conf_D','start_network_conf_link_BD', 'start_service_data_transfer_AC'])
-#
-#    # service_data_transfer A -> C
-#    scenario_service_data_transfer_AC = service_data_transfer.build(endpointA, endpointC)
-#    start_service_data_transfer_AC = scenario.add_function('start_scenario_instance')
-#    start_service_data_transfer_AC.configure(scenario_service_data_transfer_AC,
-#            wait_finished=['start_service_data_transfer_BD'], wait_delay=5)
-#    # 10 fois.
+    ########################################
+    ######## service_data_transfer #########
+    ########################################
 
+
+    # service_data_transfer B -> D
+    scenario_service_data_transfer_BD = service_data_transfer.build(
+            server_entity=endpointD,
+            client_entity=endpointB,
+            server_ip=endpointD_ip,
+            server_port=server_port,
+            duration=None,
+            file_size='500M',
+            tos=0,
+            mtu=1400,
+            scenario_name='service_data_transfer_BD')
+    start_service_data_transfer_BD = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[
+                start_network_conf_link_LAB,
+                start_network_conf_link_RCD,
+                start_network_conf_link_LR,
+                start_network_conf_link_RL
+            ])
+    start_service_data_transfer_BD.configure(scenario_service_data_transfer_BD)
+
+    # service_data_transfer A -> C, first
+    scenario_service_data_transfer_AC = service_data_transfer.build(
+            server_entity=endpointC,
+            client_entity=endpointA,
+            server_ip=endpointC_ip,
+            server_port=server_port,
+            duration=None,
+            file_size='10M',
+            tos=0,
+            mtu=1400,
+            scenario_name='service_data_transfer_AC')
+
+    start_service_data_transfer_AC_1 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[
+                start_network_conf_link_LAB,
+                start_network_conf_link_RCD,
+                start_network_conf_link_LR,
+                start_network_conf_link_RL,
+                start_service_data_transfer_BD
+            ],
+            wait_delay=5)
+    start_service_data_transfer_AC_1.configure(scenario_service_data_transfer_AC)
+
+    start_service_data_transfer_AC_2 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_1],
+            wait_delay=5)
+    start_service_data_transfer_AC_2.configure(scenario_service_data_transfer_AC)
+
+    start_service_data_transfer_AC_3 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_2],
+            wait_delay=5)
+    start_service_data_transfer_AC_3.configure(scenario_service_data_transfer_AC)
+
+    start_service_data_transfer_AC_4 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_3],
+            wait_delay=5)
+    start_service_data_transfer_AC_4.configure(scenario_service_data_transfer_AC)
+
+    start_service_data_transfer_AC_5 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_4],
+            wait_delay=5)
+    start_service_data_transfer_AC_5.configure(scenario_service_data_transfer_AC)
+
+    start_service_data_transfer_AC_6 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_5],
+            wait_delay=5)
+    start_service_data_transfer_AC_6.configure(scenario_service_data_transfer_AC)
+
+    start_service_data_transfer_AC_7 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_6],
+            wait_delay=5)
+    start_service_data_transfer_AC_7.configure(scenario_service_data_transfer_AC)
+
+    start_service_data_transfer_AC_8 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_7],
+            wait_delay=5)
+    start_service_data_transfer_AC_8.configure(scenario_service_data_transfer_AC)
+
+    start_service_data_transfer_AC_9 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_8],
+            wait_delay=5)
+    start_service_data_transfer_AC_9.configure(scenario_service_data_transfer_AC)
+
+    start_service_data_transfer_AC_10 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_9],
+            wait_delay=5)
+    start_service_data_transfer_AC_10.configure(scenario_service_data_transfer_AC)
 
     return scenario
 

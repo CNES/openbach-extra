@@ -2,6 +2,8 @@
 --endpointB endpointB 
 --endpointC endpointC 
 --endpointD endpointD 
+--endpointC_ip 10.10.0.79
+--endpointD_ip 10.10.0.64
 --routerL routerL 
 --routerR routerR  
 --endpointA_network_ip 192.168.0.0/24

@@ -130,6 +130,12 @@ def main(argv=None):
             '--routerR', required=True,
             help='')
     observer.add_scenario_argument(
+            '--endpointC_ip', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--endpointD_ip', required=True,
+            help='')
+    observer.add_scenario_argument(
             '--endpointA_network_ip', required=True,
             help='')
     observer.add_scenario_argument(
@@ -206,6 +212,10 @@ def main(argv=None):
             '--congestion-control', required=True,
             help='Congestion control name')
 
+    observer.add_scenario_argument(
+            '--server-port', required=False, default=7001,
+            help='destination port for the iperf3 traffic (default : 7001)')
+
     args = observer.parse(argv, tcp_evaluation_suite.SCENARIO_NAME)
 
     scenario = tcp_evaluation_suite.build(
@@ -215,6 +225,9 @@ def main(argv=None):
             args.endpointD,
             args.routerL,
             args.routerR,
+            args.endpointC_ip,
+            args.endpointD_ip,
+            args.server_port,
             args.endpointA_network_ip,
             args.endpointB_network_ip,
             args.endpointC_network_ip,
