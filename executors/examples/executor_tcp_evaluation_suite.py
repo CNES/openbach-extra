@@ -183,6 +183,24 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--interface_LD', required=True,
             help='')
+    observer.add_scenario_argument(
+            '--interface_LA', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--interface_LB', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--interface_RC', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--interface_RD', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--interface_LR', required=True,
+            help='')
+    observer.add_scenario_argument(
+            '--interface_RL', required=True,
+            help='')
 
     observer.add_scenario_argument(
             '--congestion-control', required=True,
@@ -215,6 +233,12 @@ def main(argv=None):
             args.interface_RB,
             args.interface_LC,
             args.interface_LD,
+            args.interface_LA,
+            args.interface_LB,
+            args.interface_RC,
+            args.interface_RD,
+            args.interface_LR,
+            args.interface_RL,
             congestion_control=args.congestion_control,
             scenario_name=args.scenario_name)
 

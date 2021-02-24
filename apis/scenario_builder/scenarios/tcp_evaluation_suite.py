@@ -48,7 +48,9 @@ def build(
         routerL_to_routerR_ip, routerR_to_routerL_ip,
         interface_AL, interface_BL, interface_CR,
         interface_DR, interface_RA, interface_RB,
-        interface_LC, interface_LD, congestion_control,
+        interface_LC, interface_LD, interface_LA,
+        interface_LB, interface_RC, interface_RD,
+        interface_LR, interface_RL, congestion_control,
         scenario_name=SCENARIO_NAME):
 
 
@@ -58,14 +60,6 @@ def build(
     ########################################
     ####### transport_tcp_stack_conf #######
     ########################################
-    """
-    endpointA and endpointC parameters:
-      - Congestion control : CUBIC
-      - IW : 10
-    endpointB and endpointD parameters:
-      - Congestion control : CUBIC
-      - IW : 10
-    """
 
     route_AL = {
             "destination_ip": endpointC_network_ip, #192.168.3.0/24
@@ -203,7 +197,6 @@ def build(
     start_tcp_conf_LD = scenario.add_function('start_scenario_instance')
     start_tcp_conf_LD.configure(scenario_tcp_conf_LD)
 
-##### TODO #####
 
     ########################################
     ######## network_configure_link ########
@@ -212,76 +205,158 @@ def build(
     # network_configure_link L -> A & L -> B
     scenario_network_conf_link_LAB = network_configure_link.build(
             entity=routerL,
-            ifaces='interface_LA, interface_LB' #'ens3, ens6'
+            ifaces='{},{}'.format(interface_LA, interface_LB), #'ens3, ens6'
             mode='all',
-            opearation='apply',
+            operation='apply',
             bandwidth='100M',
-            delay=10) #latency
-    start_network_conf_link_LAB = scenario.add_function('start_scenario_instance')
+            delay=10, #latency
+            scenario_name='network_configure_link_LAB')
+    start_network_conf_link_LAB = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[
+                start_tcp_conf_A,
+                start_tcp_conf_B,
+                start_tcp_conf_C,
+                start_tcp_conf_D,
+                start_tcp_conf_RA,
+                start_tcp_conf_RB,
+                start_tcp_conf_LC,
+                start_tcp_conf_LD
+            ])
     start_network_conf_link_LAB.configure(scenario_network_conf_link_LAB)
-#    # network_configure_link L -> B
-#    scenario_network_conf_link_LB = network_configure_link.build(
-#            entity=routerL,
-#            ifaces='ens6',
-#            mode='all',
-#            opearation='apply',
-#            bandwidth='100M',
-#            delay=10) #latency
-#    start_network_conf_link_LB = scenario.add_function('start_scenario_instance')
-#    start_network_conf_link_LB.configure(scenario_network_conf_link_LB)
-#
 
     # network_configure_link R -> C & R -> D
     scenario_network_conf_link_RCD = network_configure_link.build(
             entity=routerR,
-            ifaces='interface_RC, interface_RD' #'ens6, ens3'
+            ifaces='{},{}'.format(interface_RC, interface_RD), #'ens6, ens3'
             mode='all',
-            opearation='apply',
+            operation='apply',
             bandwidth='100M',
-            delay=10)
+            delay=10,
+            scenario_name='network_configure_link_RCD')
+    start_network_conf_link_RCD = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[
+                start_tcp_conf_A,
+                start_tcp_conf_B,
+                start_tcp_conf_C,
+                start_tcp_conf_D,
+                start_tcp_conf_RA,
+                start_tcp_conf_RB,
+                start_tcp_conf_LC,
+                start_tcp_conf_LD
+            ])
+    start_network_conf_link_RCD.configure(scenario_network_conf_link_RCD)
 
-#    # network_configure_link R -> C
-#    scenario_network_conf_link_RC = network_configure_link.build(routerR, endpointC)
-#    start_network_conf_link_RC = scenario.add_function('start_scenario_instance')
-#    start_network_conf_link_RC.configure(scenario_network_conf_link_RC)
-#    # network_configure_link R -> D
-#    scenario_network_conf_link_RD = network_configure_link.build(routerR, endpointD)
-#    start_network_conf_link_RD = scenario.add_function('start_scenario_instance')
-#    start_network_conf_link_RD.configure(scenario_network_conf_link_RD)
-#
-##    # network_configure_link A -> L
-##    scenario_network_conf_link_AL = network_configure_link.build(endpointA, routerL)
-##    start_network_conf_link_AL = scenario.add_function('start_scenario_instance')
-##    start_network_conf_link_AL.configure(scenario_network_conf_link_AL)
-##
-##    # network_configure_link B -> L
-##    scenario_network_conf_link_BL = network_configure_link.build(endpointB, routerL)
-##    start_network_conf_link_BL = scenario.add_function('start_scenario_instance')
-##    start_network_conf_link_BL.configure(scenario_network_conf_link_BL)
-##
-##    # network_configure_link C -> R
-##    scenario_network_conf_link_CR = network_configure_link.build(endpointC, routerR)
-##    start_network_conf_link_CR = scenario.add_function('start_scenario_instance')
-##    start_network_conf_link_CR.configure(scenario_network_conf_link_CR)
-##
-##    # network_configure_link D -> R
-##    scenario_network_conf_link_DR = network_configure_link.build(endpointd, routerR)
-##    start_network_conf_link_DR = scenario.add_function('start_scenario_instance')
-##    start_network_conf_link_DR.configure(scenario_network_conf_link_DR)
+    # network_configure_link L -> R
+    scenario_network_conf_link_LR = network_configure_link.build(
+            entity=routerR,
+            ifaces=interface_LR, #'ens4'
+            mode='egress',
+            operation='apply',
+            bandwidth='20M',
+            delay=10,
+            scenario_name='network_configure_link_LR')
+    start_network_conf_link_LR = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[
+                start_tcp_conf_A,
+                start_tcp_conf_B,
+                start_tcp_conf_C,
+                start_tcp_conf_D,
+                start_tcp_conf_RA,
+                start_tcp_conf_RB,
+                start_tcp_conf_LC,
+                start_tcp_conf_LD
+            ])
+    start_network_conf_link_LR.configure(scenario_network_conf_link_LR)
 
-#    # network_configure_link L -> R
-#    scenario_network_conf_link_LR = network_configure_link.build(routerL, routerR)
-#    start_network_conf_link_LR = scenario.add_function('start_scenario_instance')
-#    start_network_conf_link_LR.configure(scenario_network_conf_link_LR)
-#    # network_configure_link L -> R t+10
-#    scenario_network_conf_link_LR10 = network_configure_link.build(routerL, routerR)
-#    start_network_conf_link_LR10 = scenario.add_function('start_scenario_instance', wait_finished=['start_network_conf_link_LR'], wait_delay=10)
-#    start_network_conf_link_LR10.configure(scenario_network_conf_link_LR10)
-#    # network_configure_link L -> R t10+10
-#    scenario_network_conf_link_LR1010 = network_configure_link.build(routerL, routerR)
-#    start_network_conf_link_LR1010 = scenario.add_function('start_scenario_instance', wait_finished=['start_network_conf_link_LR10'], wait_delay=10)
-#    start_network_conf_link_LR1010.configure(scenario_network_conf_link_LR1010)
-#
+    # network_configure_link R -> L
+    scenario_network_conf_link_RL = network_configure_link.build(
+            entity=routerL,
+            ifaces=interface_RL, #'ens5'
+            mode='egress',
+            operation='apply',
+            bandwidth='20M',
+            delay=10,
+            scenario_name='network_configure_link_RL')
+    start_network_conf_link_RL = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[
+                start_tcp_conf_A,
+                start_tcp_conf_B,
+                start_tcp_conf_C,
+                start_tcp_conf_D,
+                start_tcp_conf_RA,
+                start_tcp_conf_RB,
+                start_tcp_conf_LC,
+                start_tcp_conf_LD
+            ])
+    start_network_conf_link_RL.configure(scenario_network_conf_link_RL)
+
+    # network_configure_link L -> R t=0+10s
+    scenario_network_conf_link_LR_10 = network_configure_link.build(
+            entity=routerR,
+            ifaces=interface_LR, #'ens4'
+            mode='egress',
+            operation='apply',
+            bandwidth='10M',
+            delay=10,
+            scenario_name='network_configure_link_LR_10')
+    start_network_conf_link_LR_10 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_network_conf_link_LR, start_network_conf_link_RL],
+            wait_delay=10)
+    start_network_conf_link_LR_10.configure(scenario_network_conf_link_LR_10)
+
+    # network_configure_link R -> L t=0+10s
+    scenario_network_conf_link_RL_10 = network_configure_link.build(
+            entity=routerL,
+            ifaces=interface_RL, #'ens5'
+            mode='egress',
+            operation='apply',
+            bandwidth='10M',
+            delay=10,
+            scenario_name='network_configure_link_RL_10')
+    start_network_conf_link_RL_10 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_network_conf_link_LR, start_network_conf_link_RL],
+            wait_delay=10)
+    start_network_conf_link_RL_10.configure(scenario_network_conf_link_RL_10)
+
+
+    # network_configure_link L -> R t=10+10s
+    scenario_network_conf_link_LR_1010 = network_configure_link.build(
+            entity=routerR,
+            ifaces=interface_LR, #'ens4'
+            mode='egress',
+            operation='apply',
+            bandwidth='20M',
+            delay=10,
+            scenario_name='network_configure_link_LR_1010')
+    start_network_conf_link_LR_1010 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_network_conf_link_LR_10, start_network_conf_link_RL_10],
+            wait_delay=10)
+    start_network_conf_link_LR_1010.configure(scenario_network_conf_link_LR_1010)
+
+    # network_configure_link R -> L t=10+10s
+    scenario_network_conf_link_RL_1010 = network_configure_link.build(
+            entity=routerL,
+            ifaces=interface_RL, #'ens5'
+            mode='egress',
+            operation='apply',
+            bandwidth='20M',
+            delay=10,
+            scenario_name='network_configure_link_RL_1010')
+    start_network_conf_link_RL_1010 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_network_conf_link_LR_10, start_network_conf_link_RL_10],
+            wait_delay=10)
+    start_network_conf_link_RL_1010.configure(scenario_network_conf_link_RL_1010)
+
+
+##### TODO #####
 
 #    ########################################
 #    ######## service_data_transfer #########

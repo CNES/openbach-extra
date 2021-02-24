@@ -22,4 +22,10 @@
 --interface_RB ens5
 --interface_LC ens4
 --interface_LD ens4
+--interface_LA ens3
+--interface_LB ens6
+--interface_RC ens6
+--interface_RD ens3
+--interface_LR ens4
+--interface_RL ens5
 --congestion-control CUBIC
