@@ -357,12 +357,9 @@ def build(
     start_network_conf_link_RL_1010.configure(scenario_network_conf_link_RL_1010)
 
 
-##### TODO #####
-
     ########################################
     ######## service_data_transfer #########
     ########################################
-
 
     # service_data_transfer B -> D
     scenario_service_data_transfer_BD = service_data_transfer.build(
@@ -464,5 +461,3 @@ def build(
     start_service_data_transfer_AC_10.configure(scenario_service_data_transfer_AC)
 
     return scenario
-
-
