@@ -40,7 +40,7 @@
   set_fact:
     opensand_repository_url: "{{ opensand_repository_url | default('http://packages.net4sat.org/opensand/') }}"
     opensand_repository_distribution: "{{ opensand_repository_distribution | default('xenial') }}"
-    opensand_repository_component: "{{ opensand_repository_component | default('dev') }}"
+    opensand_repository_component: "{{ opensand_repository_component | default('main') }}"
 
 - name: Create OpenSAND Job directory
   file:
