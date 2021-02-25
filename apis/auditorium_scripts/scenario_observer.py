@@ -188,23 +188,7 @@ class ScenarioObserver(FrontendBase):
         if not hasattr(self, 'args'):
             self.parse()
 
-        begin_date = _now()
-        try:
-            scenario_response = self.args._action(builder)
-        finally:
-            end_date = _now()
-            sleep_duration = 1
-            elasticsearch = ElasticSearchConnection(self.args.collector_address, self.args.elasticsearch_port)
-            with suppress(requests.exceptions.BaseHTTPError, LookupError, ValueError):
-                settings = elasticsearch.settings_query("index.refresh_interval")
-                intervals = (settings[index]["settings"]["index"]["refresh_interval"] for index in settings)
-                sleep_duration = max(map(_convert_time, intervals), default=1)
-                print("Retrieving logs if any, wait during logstash refreshing ({}s) ...".format(sleep_duration))
-            time.sleep(sleep_duration)
-            response = elasticsearch.all_logs(timestamps=(int(int(begin_date)/1000)*1000, end_date))
-            for log in response:
-                pprint.pprint(log, stream=stderr, width=300)
-        return scenario_response
+        return self.args._action(builder)
 
     def _send_scenario_to_controller(self, builder=None):
         scenario_getter = self.share_state(GetScenario)
@@ -277,8 +261,23 @@ class ScenarioObserver(FrontendBase):
                 for name, value in self._default_arguments.items()
             }
 
-        self._send_scenario_to_controller(builder)
-        self._last_instance = self._run_scenario_to_completion()
+        begin_date = _now()
+        try:
+            self._send_scenario_to_controller(builder)
+            self._last_instance = self._run_scenario_to_completion()
+        finally:
+            end_date = _now()
+            sleep_duration = 1
+            elasticsearch = ElasticSearchConnection(self.args.collector_address, self.args.elasticsearch_port)
+            with suppress(requests.exceptions.BaseHTTPError, LookupError, ValueError):
+                settings = elasticsearch.settings_query("index.refresh_interval")
+                intervals = (settings[index]["settings"]["index"]["refresh_interval"] for index in settings)
+                sleep_duration = max(map(_convert_time, intervals), default=1)
+                print("Retrieving logs if any, wait during logstash refreshing ({}s) ...".format(sleep_duration))
+            time.sleep(sleep_duration)
+            response = elasticsearch.all_logs(timestamps=(int(int(begin_date)/1000)*1000, end_date))
+            for log in response:
+                pprint.pprint(log, stream=stderr, width=300)
         return self._last_instance
 
     def _write_json(self, builder=None):
