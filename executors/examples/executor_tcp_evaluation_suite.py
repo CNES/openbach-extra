@@ -113,108 +113,108 @@ def main(argv=None):
 
     observer.add_scenario_argument(
             '--endpointA', required=True,
-            help='')
+            help='Machine name representing endpointA')
     observer.add_scenario_argument(
             '--endpointB', required=True,
-            help='')
+            help='Machine name representing endpointB')
     observer.add_scenario_argument(
             '--endpointC', required=True,
-            help='')
+            help='Machine name representing endpointC')
     observer.add_scenario_argument(
             '--endpointD', required=True,
-            help='')
+            help='Machine name representing endpointD')
     observer.add_scenario_argument(
             '--routerL', required=True,
-            help='')
+            help='Machine name representing routerL')
     observer.add_scenario_argument(
             '--routerR', required=True,
-            help='')
+            help='Machine name representing routerR')
     observer.add_scenario_argument(
             '--endpointC_ip', required=True,
-            help='')
+            help='Private endpointC ip')
     observer.add_scenario_argument(
             '--endpointD_ip', required=True,
-            help='')
+            help='Private endpointD ip')
     observer.add_scenario_argument(
             '--endpointA_network_ip', required=True,
-            help='')
+            help='endpointA network ip with subnet mask')
     observer.add_scenario_argument(
             '--endpointB_network_ip', required=True,
-            help='')
+            help='endpointB network ip with subnet mask')
     observer.add_scenario_argument(
             '--endpointC_network_ip', required=True,
-            help='')
+            help='endpointC network ip with subnet mask')
     observer.add_scenario_argument(
             '--endpointD_network_ip', required=True,
-            help='')
+            help='endpointD network ip with subnet mask')
     observer.add_scenario_argument(
             '--routerL_to_endpointA_ip', required=True,
-            help='')
+            help='routerL to endpointA interface ip')
     observer.add_scenario_argument(
             '--routerL_to_endpointB_ip', required=True,
-            help='')
+            help='routerL to endpointB interface ip')
     observer.add_scenario_argument(
             '--routerR_to_endpointC_ip', required=True,
-            help='')
+            help='routerR to endpointC interface ip')
     observer.add_scenario_argument(
             '--routerR_to_endpointD_ip', required=True,
-            help='')
+            help='routerR to endpointD interface ip')
     observer.add_scenario_argument(
             '--routerL_to_routerR_ip', required=True,
-            help='')
+            help='routerL to routerR interface ip')
     observer.add_scenario_argument(
             '--routerR_to_routerL_ip', required=True,
-            help='')
+            help='routerR to routerL interface ip')
     observer.add_scenario_argument(
             '--interface_AL', required=True,
-            help='')
+            help='Interface name from endpointA to routerL')
     observer.add_scenario_argument(
             '--interface_BL', required=True,
-            help='')
+            help='Interface name from endpointB to routerL')
     observer.add_scenario_argument(
             '--interface_CR', required=True,
-            help='')
+            help='Interface name from endpointC to routerR')
     observer.add_scenario_argument(
             '--interface_DR', required=True,
-            help='')
+            help='Interface name from endpointD to routerR')
     observer.add_scenario_argument(
             '--interface_RA', required=True,
-            help='')
+            help='Interface name from routerR to endpointA')
     observer.add_scenario_argument(
             '--interface_RB', required=True,
-            help='')
+            help='Interface name from routerR to endpointB')
     observer.add_scenario_argument(
             '--interface_LC', required=True,
-            help='')
+            help='Interface name from routerL to endpointC')
     observer.add_scenario_argument(
             '--interface_LD', required=True,
-            help='')
+            help='Interface name from routerL to endpointD')
     observer.add_scenario_argument(
             '--interface_LA', required=True,
-            help='')
+            help='Interface name from routerL to endpointA')
     observer.add_scenario_argument(
             '--interface_LB', required=True,
-            help='')
+            help='Interface name from routerL to endpointB')
     observer.add_scenario_argument(
             '--interface_RC', required=True,
-            help='')
+            help='Interface name from routerR to endpointC')
     observer.add_scenario_argument(
             '--interface_RD', required=True,
-            help='')
+            help='Interface name from routerR to endpointD')
     observer.add_scenario_argument(
             '--interface_LR', required=True,
-            help='')
+            help='Interface name from routerL to routerR')
     observer.add_scenario_argument(
             '--interface_RL', required=True,
-            help='')
+            help='Interface name from routerR to routerL')
 
     observer.add_scenario_argument(
             '--congestion-control', required=True,
-            help='Congestion control name')
+            help='Congestion control name. Ex: CUBIC')
 
     observer.add_scenario_argument(
             '--server-port', required=False, default=7001,
-            help='destination port for the iperf3 traffic (default : 7001)')
+            help='Destination port for the iperf3 traffic')
 
     args = observer.parse(argv, tcp_evaluation_suite.SCENARIO_NAME)
 
