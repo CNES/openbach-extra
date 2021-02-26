@@ -295,6 +295,37 @@ def build(
             ])
     start_network_conf_link_RL.configure(scenario_network_conf_link_RL)
 
+
+    ########################################
+    ######## service_data_transfer #########
+    ########################################
+
+    # service_data_transfer B -> D
+    scenario_service_data_transfer_BD = service_data_transfer.build(
+            server_entity=endpointD,
+            client_entity=endpointB,
+            server_ip=endpointD_ip,
+            server_port=server_port,
+            duration=None,
+            file_size='500M',
+            tos=0,
+            mtu=1400,
+            scenario_name='service_data_transfer_BD')
+    start_service_data_transfer_BD = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[
+                start_network_conf_link_LAB,
+                start_network_conf_link_RCD,
+                start_network_conf_link_LR,
+                start_network_conf_link_RL
+            ])
+    start_service_data_transfer_BD.configure(scenario_service_data_transfer_BD)
+
+
+    ########################################
+    ######## network_configure_link ########
+    ########################################
+
     # network_configure_link L -> R t=0+10s
     scenario_network_conf_link_LR_10 = network_configure_link.build(
             entity=routerR,
@@ -306,7 +337,7 @@ def build(
             scenario_name='network_configure_link_LR_10')
     start_network_conf_link_LR_10 = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[start_network_conf_link_LR, start_network_conf_link_RL],
+            wait_finished=[start_service_data_transfer_BD],
             wait_delay=10)
     start_network_conf_link_LR_10.configure(scenario_network_conf_link_LR_10)
 
@@ -321,7 +352,7 @@ def build(
             scenario_name='network_configure_link_RL_10')
     start_network_conf_link_RL_10 = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[start_network_conf_link_LR, start_network_conf_link_RL],
+            wait_finished=[start_service_data_transfer_BD],
             wait_delay=10)
     start_network_conf_link_RL_10.configure(scenario_network_conf_link_RL_10)
 
@@ -356,31 +387,9 @@ def build(
             wait_delay=10)
     start_network_conf_link_RL_1010.configure(scenario_network_conf_link_RL_1010)
 
-
     ########################################
-    ######## service_data_transfer #########
+    ######## network_configure_link ########
     ########################################
-
-    # service_data_transfer B -> D
-    scenario_service_data_transfer_BD = service_data_transfer.build(
-            server_entity=endpointD,
-            client_entity=endpointB,
-            server_ip=endpointD_ip,
-            server_port=server_port,
-            duration=None,
-            file_size='500M',
-            tos=0,
-            mtu=1400,
-            scenario_name='service_data_transfer_BD')
-    start_service_data_transfer_BD = scenario.add_function(
-            'start_scenario_instance',
-            wait_finished=[
-                start_network_conf_link_LAB,
-                start_network_conf_link_RCD,
-                start_network_conf_link_LR,
-                start_network_conf_link_RL
-            ])
-    start_service_data_transfer_BD.configure(scenario_service_data_transfer_BD)
 
     # service_data_transfer A -> C, first
     scenario_service_data_transfer_AC = service_data_transfer.build(
@@ -396,13 +405,7 @@ def build(
 
     start_service_data_transfer_AC_1 = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[
-                start_network_conf_link_LAB,
-                start_network_conf_link_RCD,
-                start_network_conf_link_LR,
-                start_network_conf_link_RL,
-                start_service_data_transfer_BD
-            ],
+            wait_finished=[start_service_data_transfer_BD],
             wait_delay=5)
     start_service_data_transfer_AC_1.configure(scenario_service_data_transfer_AC)
 
