@@ -52,7 +52,8 @@ def build(
         interface_DR, interface_RA, interface_RB,
         interface_LC, interface_LD, interface_LA,
         interface_LB, interface_RC, interface_RD,
-        interface_LR, interface_RL, congestion_control,
+        interface_LR, interface_RL, BD_file_size,
+        AC_file_size, congestion_control,
         scenario_name=SCENARIO_NAME):
 
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
@@ -307,7 +308,7 @@ def build(
             server_ip=endpointD_ip,
             server_port=server_port,
             duration=None,
-            file_size='500M',
+            file_size=BD_file_size, #500M
             tos=0,
             mtu=1400,
             scenario_name='service_data_transfer_BD')
@@ -398,7 +399,7 @@ def build(
             server_ip=endpointC_ip,
             server_port=server_port,
             duration=None,
-            file_size='10M',
+            file_size=AC_file_size, #10M
             tos=0,
             mtu=1400,
             scenario_name='service_data_transfer_AC')

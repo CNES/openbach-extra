@@ -30,4 +30,6 @@
 --interface_RD ens3
 --interface_LR ens4
 --interface_RL ens5
+--BD-file-size 500M
+--AC-file-size 200M
 --congestion-control CUBIC

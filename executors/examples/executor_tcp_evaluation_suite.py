@@ -216,6 +216,15 @@ def main(argv=None):
             '--server-port', required=False, default=7001,
             help='Destination port for the iperf3 traffic')
 
+    observer.add_scenario_argument(
+            '--BD-file-size', required=False, default='500M',
+            help='size of the file to transmit (in bytes) for B -> D transfer. '
+            'The value must be stricly higher than 1 MB')
+    observer.add_scenario_argument(
+            '--AC-file-size', required=False, default='10M',
+            help='size of the file to transmit (in bytes) for B -> D transfer. '
+            'The value must be stricly higher than 1 MB')
+
     args = observer.parse(argv, tcp_evaluation_suite.SCENARIO_NAME)
 
     scenario = tcp_evaluation_suite.build(
@@ -252,6 +261,8 @@ def main(argv=None):
             args.interface_RD,
             args.interface_LR,
             args.interface_RL,
+            args.BD_file_size,
+            args.AC_file_size,
             congestion_control=args.congestion_control,
             scenario_name=args.scenario_name)
 
