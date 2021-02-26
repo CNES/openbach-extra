@@ -130,82 +130,82 @@ def main(argv=None):
             '--routerR', required=True,
             help='Machine name representing routerR')
     observer.add_scenario_argument(
-            '--endpointC_ip', required=True,
+            '--endpointC-ip', required=True,
             help='Private endpointC ip')
     observer.add_scenario_argument(
-            '--endpointD_ip', required=True,
+            '--endpointD-ip', required=True,
             help='Private endpointD ip')
     observer.add_scenario_argument(
-            '--endpointA_network_ip', required=True,
+            '--endpointA-network-ip', required=True,
             help='endpointA network ip with subnet mask')
     observer.add_scenario_argument(
-            '--endpointB_network_ip', required=True,
+            '--endpointB-network-ip', required=True,
             help='endpointB network ip with subnet mask')
     observer.add_scenario_argument(
-            '--endpointC_network_ip', required=True,
+            '--endpointC-network-ip', required=True,
             help='endpointC network ip with subnet mask')
     observer.add_scenario_argument(
-            '--endpointD_network_ip', required=True,
+            '--endpointD-network-ip', required=True,
             help='endpointD network ip with subnet mask')
     observer.add_scenario_argument(
-            '--routerL_to_endpointA_ip', required=True,
+            '--routerL-to-endpointA-ip', required=True,
             help='routerL to endpointA interface ip')
     observer.add_scenario_argument(
-            '--routerL_to_endpointB_ip', required=True,
+            '--routerL-to-endpointB-ip', required=True,
             help='routerL to endpointB interface ip')
     observer.add_scenario_argument(
-            '--routerR_to_endpointC_ip', required=True,
+            '--routerR-to-endpointC-ip', required=True,
             help='routerR to endpointC interface ip')
     observer.add_scenario_argument(
-            '--routerR_to_endpointD_ip', required=True,
+            '--routerR-to-endpointD-ip', required=True,
             help='routerR to endpointD interface ip')
     observer.add_scenario_argument(
-            '--routerL_to_routerR_ip', required=True,
+            '--routerL-to-routerR-ip', required=True,
             help='routerL to routerR interface ip')
     observer.add_scenario_argument(
-            '--routerR_to_routerL_ip', required=True,
+            '--routerR-to-routerL-ip', required=True,
             help='routerR to routerL interface ip')
     observer.add_scenario_argument(
-            '--interface_AL', required=True,
+            '--interface-AL', required=True,
             help='Interface name from endpointA to routerL')
     observer.add_scenario_argument(
-            '--interface_BL', required=True,
+            '--interface-BL', required=True,
             help='Interface name from endpointB to routerL')
     observer.add_scenario_argument(
-            '--interface_CR', required=True,
+            '--interface-CR', required=True,
             help='Interface name from endpointC to routerR')
     observer.add_scenario_argument(
-            '--interface_DR', required=True,
+            '--interface-DR', required=True,
             help='Interface name from endpointD to routerR')
     observer.add_scenario_argument(
-            '--interface_RA', required=True,
+            '--interface-RA', required=True,
             help='Interface name from routerR to endpointA')
     observer.add_scenario_argument(
-            '--interface_RB', required=True,
+            '--interface-RB', required=True,
             help='Interface name from routerR to endpointB')
     observer.add_scenario_argument(
-            '--interface_LC', required=True,
+            '--interface-LC', required=True,
             help='Interface name from routerL to endpointC')
     observer.add_scenario_argument(
-            '--interface_LD', required=True,
+            '--interface-LD', required=True,
             help='Interface name from routerL to endpointD')
     observer.add_scenario_argument(
-            '--interface_LA', required=True,
+            '--interface-LA', required=True,
             help='Interface name from routerL to endpointA')
     observer.add_scenario_argument(
-            '--interface_LB', required=True,
+            '--interface-LB', required=True,
             help='Interface name from routerL to endpointB')
     observer.add_scenario_argument(
-            '--interface_RC', required=True,
+            '--interface-RC', required=True,
             help='Interface name from routerR to endpointC')
     observer.add_scenario_argument(
-            '--interface_RD', required=True,
+            '--interface-RD', required=True,
             help='Interface name from routerR to endpointD')
     observer.add_scenario_argument(
-            '--interface_LR', required=True,
+            '--interface-LR', required=True,
             help='Interface name from routerL to routerR')
     observer.add_scenario_argument(
-            '--interface_RL', required=True,
+            '--interface-RL', required=True,
             help='Interface name from routerR to routerL')
 
     observer.add_scenario_argument(
