@@ -64,7 +64,7 @@ def tcp_rate_monitoring(
             interval=interval, chain_name=chain_name,
             source_ip=source_ip, destination_ip=destination_ip)
     tcp_parameters = filter_none(dport=destination_port, sport=source_port)
-    function.configure('rate_monitoring', entity, **parameters, tcp=tcp_params) 
+    function.configure('rate_monitoring', entity, **parameters, tcp=tcp_parameters) 
 
     return [function]
 
@@ -84,7 +84,7 @@ def udp_rate_monitoring(
             interval=interval, chain_name=chain_name,
             source_ip=source_ip, destination_ip=destination_ip)
     udp_parameters = filter_none(dport=destination_port, sport=source_port)
-    function.configure('rate_monitoring', entity, **parameters, udp=udp_params) 
+    function.configure('rate_monitoring', entity, **parameters, udp=udp_parameters) 
 
     return [function]
 
