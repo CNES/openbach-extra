@@ -222,7 +222,7 @@ def main(argv=None):
             'The value must be stricly higher than 1 MB')
     observer.add_scenario_argument(
             '--AC-file-size', required=False, default='10M',
-            help='size of the file to transmit (in bytes) for B -> D transfer. '
+            help='size of the file to transmit (in bytes) for A -> C transfer. '
             'The value must be stricly higher than 1 MB')
 
     args = observer.parse(argv, tcp_evaluation_suite.SCENARIO_NAME)
