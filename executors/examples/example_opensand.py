@@ -178,7 +178,7 @@ def example_opensand(satellite, gateways, gateways_phy, terminals, duration=0, c
             cdf_on_same_graph(
                     scenario,
                     post_processing_entity,
-                    post_processed_st + post_processed_gw,
+                    post_processed,
                     100,
                     [['throughputs.l2_from_sat.total']],
                     [['Throughput from satellite (kbps)']],
