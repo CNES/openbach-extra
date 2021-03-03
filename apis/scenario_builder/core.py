@@ -28,6 +28,7 @@
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
 import json
+from types import SimpleNamespace
 
 from . import openbach_functions
 
@@ -176,15 +177,14 @@ class Scenario:
                 scenario = openbach_function.scenario_name
                 if isinstance(scenario, Scenario):
                     for ids in scenario.extract_function_id(*job_names, include_subscenarios=include_subscenarios, **filtered_jobs):
-                        yield [openbach_function] + ids
+                        yield [function_id] + ids
 
     def find_openbach_function(self, path):
-        scenario = self
-        for function in path:
-            if isinstance(function, openbach_functions.StartScenarioInstance):
-                scenario = function.scenario_name
-            else:
-                return scenario.openbach_functions[function]
+        function = SimpleNamespace(scenario_name=self)
+        for function_id in path:
+            scenario = function.scenario_name
+            function = scenario.openbach_functions[function_id]
+        return function
 
 
 def check_and_build_waiting_list(wait_on=None):
