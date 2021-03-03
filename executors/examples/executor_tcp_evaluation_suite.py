@@ -225,6 +225,21 @@ def main(argv=None):
             help='size of the file to transmit (in bytes) for A -> C transfer. '
             'The value must be stricly higher than 1 MB')
 
+    observer.add_scenario_argument(
+            '--delay', required=False, nargs='*', type=int, default=[10,10,10],
+            help='delay/latency for network_configure_link job')
+    observer.add_scenario_argument(
+            '--loss', required=False, nargs='*', type=int, default=[0,0,0],
+            help='parameters of the loss model for tc_configure_link job')
+    observer.add_scenario_argument(
+            '--bandwidth', required=False, nargs='*', type=str, default=['20M','10M','20M'],
+            help='bandwidth for tc_configure_link job')
+
+    observer.add_scenario_argument(
+            '--post-processing-entity', help='The entity where the post-processing will be performed '
+            '(histogram/time-series jobs must be installed) if defined')
+
+
     args = observer.parse(argv, tcp_evaluation_suite.SCENARIO_NAME)
 
     scenario = tcp_evaluation_suite.build(
@@ -263,7 +278,11 @@ def main(argv=None):
             args.interface_RL,
             args.BD_file_size,
             args.AC_file_size,
+            args.delay,
+            args.loss,
+            args.bandwidth,
             congestion_control=args.congestion_control,
+            post_processing_entity=args.post_processing_entity,
             scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)

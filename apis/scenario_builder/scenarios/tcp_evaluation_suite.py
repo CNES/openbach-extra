@@ -27,7 +27,12 @@
 #   this program. If not, see http://www.gnu.org/licenses/.
 
 from scenario_builder import Scenario
+from scenario_builder.openbach_functions import StartJobInstance
+from scenario_builder.openbach_functions import StartScenarioInstance
 from scenario_builder.scenarios import transport_tcp_stack_conf, network_configure_link, service_data_transfer
+from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
+from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
+from scenario_builder.helpers.transport.iperf3 import iperf3_find_server
 
 
 SCENARIO_NAME = 'tcp_evaluation_suite'
@@ -38,6 +43,24 @@ SCENARIO_DESCRIPTION = """This scenario is a wrapper for the following scenarios
 It provides a scenario that enables the evaluation of TCP
 congestion controls.
 """
+
+
+def _iperf3_legend(openbach_function):
+    iperf3 = openbach_function.start_job_instance['iperf3']
+    destination = openbach_function.start_job_instance['entity_name']
+    if 'server' in iperf3:
+        legend = {'endpoint': 'server', 'address': iperf3['server']['bind'], 'destination': destination, 'transmitted_size': ''}
+    elif 'client' in iperf3:
+        legend = {'endpoint': 'client', 'address': iperf3['client']['server_ip'], 'destination': destination, 'transmitted_size': iperf3['client']['transmitted_size']}
+    return 'Data Transfer - {endpoint} {address} {destination} {transmitted_size}'.format_map(legend)
+
+#def _iperf3_legend(openbach_function):
+#    iperf3 = openbach_function.start_job_instance['iperf3']
+#    port = iperf3['port']
+#    address = iperf3['server']['bind']
+#    destination = openbach_function.start_job_instance['entity_name']
+#    return 'Data Transfer - {} {} {}'.format(destination, address, port)
+
 
 def build(
         endpointA, endpointB, endpointC,
@@ -53,7 +76,8 @@ def build(
         interface_LC, interface_LD, interface_LA,
         interface_LB, interface_RC, interface_RD,
         interface_LR, interface_RL, BD_file_size,
-        AC_file_size, congestion_control,
+        AC_file_size, delay, loss, bandwidth,
+        congestion_control, post_processing_entity,
         scenario_name=SCENARIO_NAME):
 
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
@@ -256,8 +280,9 @@ def build(
             ifaces=interface_LR, #'ens4'
             mode='egress',
             operation='apply',
-            bandwidth='20M',
-            delay=10,
+            bandwidth=bandwidth[0], #20M
+            loss_model_params=loss[0], #0
+            delay=delay[0], #10
             scenario_name='network_configure_link_LR')
     start_network_conf_link_LR = scenario.add_function(
             'start_scenario_instance',
@@ -279,8 +304,9 @@ def build(
             ifaces=interface_RL, #'ens5'
             mode='egress',
             operation='apply',
-            bandwidth='20M',
-            delay=10,
+            bandwidth=bandwidth[0], #20M
+            loss_model_params=loss[0], #0
+            delay=delay[0], #10
             scenario_name='network_configure_link_RL')
     start_network_conf_link_RL = scenario.add_function(
             'start_scenario_instance',
@@ -333,8 +359,9 @@ def build(
             ifaces=interface_LR, #'ens4'
             mode='egress',
             operation='apply',
-            bandwidth='10M',
-            delay=10,
+            bandwidth=bandwidth[1], #10M
+            delay=delay[1], #10
+            loss_model_params=loss[1], #0
             scenario_name='network_configure_link_LR_10')
     start_network_conf_link_LR_10 = scenario.add_function(
             'start_scenario_instance',
@@ -348,8 +375,9 @@ def build(
             ifaces=interface_RL, #'ens5'
             mode='egress',
             operation='apply',
-            bandwidth='10M',
-            delay=10,
+            bandwidth=bandwidth[1], #10M
+            delay=delay[1], #10
+            loss_model_params=loss[1], #0
             scenario_name='network_configure_link_RL_10')
     start_network_conf_link_RL_10 = scenario.add_function(
             'start_scenario_instance',
@@ -364,8 +392,9 @@ def build(
             ifaces=interface_LR, #'ens4'
             mode='egress',
             operation='apply',
-            bandwidth='20M',
-            delay=10,
+            bandwidth=bandwidth[2], #20M
+            delay=delay[2], #10
+            loss_model_params=loss[2], #0
             scenario_name='network_configure_link_LR_1010')
     start_network_conf_link_LR_1010 = scenario.add_function(
             'start_scenario_instance',
@@ -379,8 +408,9 @@ def build(
             ifaces=interface_RL, #'ens5'
             mode='egress',
             operation='apply',
-            bandwidth='20M',
-            delay=10,
+            bandwidth=bandwidth[2], #20M
+            delay=delay[2], #10
+            loss_model_params=loss[2], #0
             scenario_name='network_configure_link_RL_1010')
     start_network_conf_link_RL_1010 = scenario.add_function(
             'start_scenario_instance',
@@ -464,5 +494,54 @@ def build(
             wait_finished=[start_service_data_transfer_AC_9],
             wait_delay=5)
     start_service_data_transfer_AC_10.configure(scenario_service_data_transfer_AC)
+
+
+    ########################################
+    ########### post_processing ############
+    ########################################
+
+    if post_processing_entity is not None:
+        wait_finished = [
+                function
+                for function in scenario.openbach_functions
+                if isinstance(function, (StartJobInstance, StartScenarioInstance))
+        ]
+
+        for jobs, filters, legend, statistic, axis in [
+                (['iperf3'], {}, _iperf3_legend, 'cwnd', 'cwnd'),
+                ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'throughput'),
+                ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'download_time', 'download_time'),
+                #(['iperf3'], {}, _iperf3_legend, 'cwnd', 'cwnd'),
+                #(['iperf3'], {}, _iperf3_legend, 'throughput', 'throughput'),
+                #(['iperf3'], {}, _iperf3_legend, 'download_time', 'download_time'),
+        ]:
+            post_processed = list(scenario.extract_function_id(*jobs, include_subscenarios=True, **filters))
+            if post_processed:
+                legends = [[legend(scenario.find_openbach_function(f))] for f in post_processed]
+                title = axis.split(maxsplit=1)[0]
+
+                time_series_on_same_graph(
+                        scenario,
+                        post_processing_entity,
+                        post_processed,
+                        [[statistic]],
+                        [[axis]],
+                        [['{} time series'.format(title)]],
+                        legends,
+                        wait_finished=wait_finished,
+                        wait_delay=2)
+                cdf_on_same_graph(
+                        scenario,
+                        post_processing_entity,
+                        post_processed,
+                        100,
+                        [[statistic]],
+                        [[axis]],
+                        [['{} CDF'.format(title)]],
+                        legends,
+                        wait_finished=wait_finished,
+                        wait_delay=2)
+
+
 
     return scenario

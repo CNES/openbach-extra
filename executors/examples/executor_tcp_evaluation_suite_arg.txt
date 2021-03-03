@@ -32,4 +32,7 @@
 --interface-RL ens5
 --BD-file-size 500M
 --AC-file-size 200M
+--delay 10 10 10
+--loss 10 10 10
+--bandwidth 20M 10M 20M
 --congestion-control CUBIC
