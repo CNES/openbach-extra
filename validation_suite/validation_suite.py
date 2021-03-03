@@ -163,7 +163,7 @@ class DummyResponse:
         logger.debug('Trying to get the {} key from a bad response'.format(key))
         return self
 
-    def __str__(self, key):
+    def __str__(self):
         logger = logging.getLogger(__name__)
         logger.warning('Using a bad response from an earlier call, request may fail from unexpected argument')
         return super().__str__()
@@ -248,9 +248,9 @@ def _verify_response(response):
         response.raise_for_status()
     except:
         logger.error('Something went wrong', exc_info=True)
+        return DummyResponse()
     else:
         logger.info('Done')
-    finally:
         try:
             return response.json()
         except (AttributeError, json.JSONDecodeError):
@@ -757,7 +757,7 @@ def main(argv=None):
         '--entity', 'Entity',
         '--server', 'Server',
         '--client', 'Client',
-        '--file-size', '100',
+        '--file-size', '10M',
         '--bandwidth-server-to-client', '10M',
         '--bandwidth-client-to-server', '10M',
         '--delay-server-to-client', '10',
