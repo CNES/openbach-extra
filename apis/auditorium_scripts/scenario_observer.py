@@ -356,19 +356,15 @@ class DataProcessor:
         operate on. This is meant to accept an entry from a call to the scenario
         builder's `Scenario.extract_function_id` call.
         """
-        ids = tuple(
-                str(function.scenario_name) if hasattr(function, 'scenario_name') else function
-                for function in openbach_functions)
-        self._post_processing[(self._instance['scenario_name'],) + ids] = (label, callback)
+        self._post_processing[tuple(openbach_functions)] = (label, callback)
 
     def _extract_callback(self, scenario_instance, parent_scenarios=()):
-        parents = parent_scenarios + (scenario_instance['scenario_name'],)
         for function in scenario_instance['openbach_functions']:
+            parents = parent_scenarios + (function['id'],)
             with suppress(KeyError):
                 yield from self._extract_callback(function['scenario'], parents)
             with suppress(KeyError):
-                callback = self._post_processing[parents + (function['id'],)]
-                yield function['job']['id'], callback
+                yield function['job']['id'], self._post_processing[parents]
 
     def post_processing(self):
         """Actually fetches the raw data from the collector and run callbacks on them"""
