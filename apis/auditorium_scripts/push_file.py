@@ -87,22 +87,15 @@ class PushFile(FrontendBase):
             form_data['agent_ip'] = self.args.agent_address
 
         local_file = self.args.local_file
-        if local_file is not None:
-            with local_file:
-                response = self.session.post(
-                        self.base_url + 'file',
-                        data=form_data,
-                        files={'file': local_file})
-        else:
+        if local_file is None:
             path = self.args.path
             if len(self.args.remote_path) != len(path):
                 self.parser.error('local and remote paths length mismatch')
             form_data['local_path'] = path
-            response = self.session.post(self.base_url + 'file', json=form_data)
+        else:
+            form_data['files'] = {'file': local_file}
 
-        if show_response_content:
-            pretty_print(response)
-        return response
+        return self.request('POST', 'file', show_response_content, **form_data)
 
 
 if __name__ == '__main__':

@@ -36,6 +36,16 @@ from functools import partial, wraps
 from .collector import CollectorConnection
 
 
+def _make_coroutine(function):
+    @wraps(function)
+    async def wrapper(self, *args, **kwargs):
+        function_call = partial(function, self, *args, **kwargs)
+        future = self.loop.run_in_executor(None, function_call)
+        value = await future
+        return value
+    return wrapper
+
+
 class MakeAsync(type):
     """Helper metaclass used to wrap public methods of base classes
     into coroutines.
@@ -45,18 +55,9 @@ class MakeAsync(type):
         for base in bases:
             for name, function in vars(base).items():
                 if not name.startswith('_') and callable(function):
-                    dct[name] = mcls._make_coroutine(function)
+                    dct[name] = _make_coroutine(function)
 
         return type.__new__(mcls, name, bases, dct)
-
-    def _make_coroutine(function):
-        @wraps(function)
-        async def wrapper(self, *args, **kwargs):
-            function_call = partial(function, self, *args, **kwargs)
-            future = self.loop.run_in_executor(None, function_call)
-            value = await future
-            return value
-        return wrapper
 
 
 class AsyncCollectorConnection(CollectorConnection, metaclass=MakeAsync):

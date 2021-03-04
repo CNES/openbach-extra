@@ -163,8 +163,8 @@ def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resou
           _, server_ip = _command_build_helper(None, server_ip)
           cmd.extend(_command_build_helper('-o', download_dir))
           cmd.extend(_command_build_helper('-l', log_file))
-          cmd.extend([server_ip, server_port])
           if extra_args: cmd.extend(shlex.split(extra_args))
+          cmd.extend([server_ip, server_port])
           cmd.extend([';'.join(['/{}'.format(res) for res in resources])])
        if mode == 'server':
           cmd.extend(_command_build_helper('-c', CERT))

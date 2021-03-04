@@ -107,7 +107,8 @@ Metrics:
 from auditorium_scripts.scenario_observer import ScenarioObserver, DataProcessor
 from scenario_builder.scenarios import tcp_evaluation_suite
 from scenario_builder.helpers.transport.iperf3 import iperf3_find_server
-import time
+
+import matplotlib.pyplot as plt
 
 
 def extract_iperf_statistic(job):
@@ -315,33 +316,28 @@ def main(argv=None):
 
     #Post process download_time of iperf3 scenarios
     results = DataProcessor(observer)
-    #iperf3 = scenario.extract_function_id(iperf3=iperf3_find_server, include_subscenarios=True)
-    #iperf3 = scenario.extract_function_id(iperf3=True, include_subscenarios=True)
-    #for i in iperf3:
-    #    print(i)
-    iperf3 = list(scenario.extract_function_id(iperf3=iperf3_find_server, include_subscenarios=True))
-    print("iperf3 : ",iperf3)
+    iperf3_scenarios = list(scenario.extract_function_id(iperf3=iperf3_find_server, include_subscenarios=True))
 
-#    j = 0
-#
-#    for i in iperf3:
-#        print('transfer_'+str(j))
-#        print(i)
-#        results.add_callback('transfer_'+str(j), extract_iperf_statistic, i)
-#        j = j + 1
+
+    #for i, stat in (range(len(iperf3_scenarios)), iperf3_scenarios):
+    #    results.add_callback('download_time_'+str(i), extract_iperf_statistic, stat)
+
+    i = 0
+    for stat in iperf3_scenarios:
+        i = i + 1
+        results.add_callback('download_time_'+str(i), extract_iperf_statistic, stat)
+
+    plots = results.post_processing()
+
+    print("Results :", plots)
+
+    plt.plot([1, 2, 3, 4], [4, 8, 5, 4], linestyle = ':', marker = 'o', color = 'red', markersize = 10)
 
     
 
-    results.add_callback('download_time_0', extract_iperf_statistic, iperf3[0])
-#    results.add_callback('download_time', extract_iperf_statistic, iperf3[1])
-    results.add_callback('download_time_1', extract_iperf_statistic, iperf3[1])
-    results.add_callback('download_time_2', extract_iperf_statistic, iperf3[2])
-    results.add_callback('download_time_3', extract_iperf_statistic, iperf3[3])
 
 
-    data = results.post_processing()
 
-    print("Results :", data)
 
     #print(results)
 

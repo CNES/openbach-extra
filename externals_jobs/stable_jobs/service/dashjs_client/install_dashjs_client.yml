@@ -53,18 +53,27 @@
   environment: "{{ openbach_proxies }}"
 
 - name: Install tornado
-  pip: name=tornado executable=pip3
+  pip:
+    name: tornado
+    executable: pip3
   become: yes
   environment: "{{ openbach_proxies }}"
 
-- name: Install Firefox
+- name: Gather the package facts
+  package_facts:
+    manager: apt
+
+- name: Download and install Firefox
   apt:
-    deb: https://sourceforge.net/projects/ubuntuzilla/files/mozilla/apt/pool/main/f/firefox-mozilla-build/firefox-mozilla-build_62.0.3-0ubuntu1_{{ 'amd64' if cpu_arch.stdout == "x86_64" else 'i386' }}.deb
+    deb: https://sourceforge.net/projects/ubuntuzilla/files/mozilla/apt/pool/main/f/firefox-mozilla-build/firefox-mozilla-build_62.0.3-0ubuntu1_{{ "amd64" if cpu_arch.stdout == "x86_64" else "i386" }}.deb
   become: yes
   environment: "{{ openbach_proxies }}"
+  when: "'firefox-mozilla-build' not in ansible_facts.packages or ansible_facts.packages['firefox-mozilla-build'][0].version != '62.0.3-0ubuntu1'"
 
 - name: Install codecs video
-  apt: pkg=x264 state=present
+  apt:
+    pkg: x264
+    state: present
   become: yes
   environment: "{{ openbach_proxies }}"
 
@@ -77,27 +86,36 @@
   become: yes
   environment: "{{ openbach_proxies }}"
 
-- name: Install some dependencies
+- name: Install mod_http2's  dependencies
   apt:
     name:
-    - software-properties-common
-    - libdbus-glib-1-2
+      - software-properties-common
+      - libdbus-glib-1-2
     state: present
   become: yes
   environment: "{{ openbach_proxies }}"
 
 - name: Install Selenium for python3
-  pip: name=selenium executable=pip3 state=present
+  pip:
+    name: selenium
+    executable: pip3
+    state: present
   become: yes
   environment: "{{ openbach_proxies }}"
 
-- name: Create dash client repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+- name: Create dashjs_client repository
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: "0755"
   
-- name: Install dash client
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+- name: Install dashjs_client
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
-    - { file: 'dashjs_client.help', mode: '0644' }
-    - { file: 'dashjs_client.py', mode: '0755' }
-    - { file: 'tornado_server.py', mode: '0755' }
-    - { file: 'dashjs_client_rstats_filter.conf', mode: '0644' }
+    - { file: "dashjs_client.help", mode: "0644" }
+    - { file: "dashjs_client.py", mode: "0755" }
+    - { file: "tornado_server.py", mode: "0755" }
+    - { file: "dashjs_client_rstats_filter.conf", mode: "0644" }

@@ -9,7 +9,7 @@ general:
       you need to modify global variables related to the implementation to change. 
       These variables are located at the begining of the install file of the job. 
       So you have to change the address of the git repository as well as the version to install.
-  job_version:     '1.0'
+  job_version:     '1.1'
   keywords:        [quic, web, ngtcp2, picoquic, quicly]
   persistent:      True
   need_privileges: yes

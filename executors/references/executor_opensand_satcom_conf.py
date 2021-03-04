@@ -80,7 +80,7 @@ def main(argv=None):
         observer.parser.error('one of the arguments --configuration-folder --extra-configuration-folder is required')
 
     #Store files on the controller
-    pusher = observer._share_state(PushFile)
+    pusher = observer.share_state(PushFile)
     pusher.args.keep = True
     config_files = {
             entity: send_files_to_controller(pusher, Path(folder), 'opensand_' + entity)
