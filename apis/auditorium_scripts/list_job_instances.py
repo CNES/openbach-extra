@@ -57,16 +57,9 @@ class ListJobInstances(FrontendBase):
         agents = self.args.agent_address
         update = self.args.update
 
-        query_string = [('address', ip) for ip in agents]
-        if update:
-            query_string.append(('update', ''))
-
-        response = self.session.get(
-                self.base_url + 'job_instance',
-                params=urlencode(query_string))
-        if show_response_content:
-            pretty_print(response)
-        return response
+        return self.request(
+                'GET', 'job_instance', show_response_content,
+                address=agents, update=update or None)
 
 
 if __name__ == '__main__':

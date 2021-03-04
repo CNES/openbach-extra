@@ -32,7 +32,7 @@ from ..utils import filter_none
 
 
 def rate_monitoring(
-        scenario, entity, interval, chain_name, source_ip=None,
+        scenario, entity, sampling_interval, chain_name, source_ip=None,
         destination_ip=None, in_iface=None, out_iface=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     function = scenario.add_function(
@@ -42,7 +42,7 @@ def rate_monitoring(
             wait_delay=wait_delay)
     parameters = filter_none(
             {'in-interface': in_iface, 'out-interface': out_iface},
-            interval=interval, chain_name=chain_name,
+            sampling_interval=sampling_interval, chain_name=chain_name,
             source_ip=source_ip, destination_ip=destination_ip)
     function.configure('rate_monitoring', entity, **parameters) 
 
@@ -50,7 +50,7 @@ def rate_monitoring(
 
 
 def tcp_rate_monitoring(
-        scenario, entity, interval, chain_name, source_ip=None,
+        scenario, entity, sampling_interval, chain_name, source_ip=None,
         destination_ip=None, in_iface=None, out_iface=None,
         destination_port=None, source_port=None, 
         wait_finished=None, wait_launched=None, wait_delay=0):
@@ -61,16 +61,16 @@ def tcp_rate_monitoring(
             wait_delay=wait_delay)
     parameters = filter_none(
             {'in-interface': in_iface, 'out-interface': out_iface},
-            interval=interval, chain_name=chain_name,
+            sampling_interval=sampling_interval, chain_name=chain_name,
             source_ip=source_ip, destination_ip=destination_ip)
     tcp_parameters = filter_none(dport=destination_port, sport=source_port)
-    function.configure('rate_monitoring', entity, **parameters, tcp=tcp_params) 
+    function.configure('rate_monitoring', entity, **parameters, tcp=tcp_parameters) 
 
     return [function]
 
  
 def udp_rate_monitoring(
-        scenario, entity, interval, chain_name, source_ip=None,
+        scenario, entity, sampling_interval, chain_name, source_ip=None,
         destination_ip=None, in_iface=None, out_iface=None,
         destination_port=None, source_port=None, 
         wait_finished=None, wait_launched=None, wait_delay=0):
@@ -81,16 +81,16 @@ def udp_rate_monitoring(
             wait_delay=wait_delay)
     parameters = filter_none(
             {'in-interface': in_iface, 'out-interface': out_iface},
-            interval=interval, chain_name=chain_name,
+            sampling_interval=sampling_interval, chain_name=chain_name,
             source_ip=source_ip, destination_ip=destination_ip)
     udp_parameters = filter_none(dport=destination_port, sport=source_port)
-    function.configure('rate_monitoring', entity, **parameters, udp=udp_params) 
+    function.configure('rate_monitoring', entity, **parameters, udp=udp_parameters) 
 
     return [function]
 
 
 def icmp_rate_monitoring(
-        scenario, entity, interval, chain_name, source_ip=None,
+        scenario, entity, sampling_interval, chain_name, source_ip=None,
         destination_ip=None, in_iface=None, out_iface=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     function = scenario.add_function(
@@ -100,7 +100,7 @@ def icmp_rate_monitoring(
             wait_delay=wait_delay)
     parameters = filter_none(
             {'in-interface': in_iface, 'out-interface': out_iface},
-            interval=interval, chain_name=chain_name,
+            sampling_interval=sampling_interval, chain_name=chain_name,
             source_ip=source_ip, destination_ip=destination_ip)
     function.configure('rate_monitoring', entity, **parameters, icmp={}) 
 

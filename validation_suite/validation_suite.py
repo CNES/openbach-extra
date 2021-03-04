@@ -63,7 +63,7 @@ from collections import Counter
 CWD = Path(__file__).resolve().parent
 sys.path.insert(0, Path(CWD.parent, 'apis').as_posix())
 
-from auditorium_scripts.frontend import FrontendBase
+from auditorium_scripts.frontend import FrontendBase, ActionFailedError
 from auditorium_scripts.list_agents import ListAgents
 from auditorium_scripts.list_collectors import ListCollectors
 from auditorium_scripts.list_installed_jobs import ListInstalledJobs
@@ -99,7 +99,6 @@ from auditorium_scripts.status_scenario_instance import StatusScenarioInstance
 from auditorium_scripts.stop_scenario_instance import StopScenarioInstance
 from auditorium_scripts.delete_scenario import DeleteScenario
 from auditorium_scripts.get_scenario_instance_data import GetScenarioInstanceData
-
 
 
 class ValidationSuite(FrontendBase):
@@ -156,6 +155,18 @@ class ValidationSuite(FrontendBase):
 
     def execute(self, show_response_content=True):
         raise NotImplementedError
+
+
+class DummyResponse:
+    def __getitem__(self, key):
+        logger = logging.getLogger(__name__)
+        logger.debug('Trying to get the {} key from a bad response'.format(key))
+        return self
+
+    def __str__(self):
+        logger = logging.getLogger(__name__)
+        logger.warning('Using a bad response from an earlier call, request may fail from unexpected argument')
+        return super().__str__()
 
 
 def load_module_from_path(path):
@@ -237,13 +248,13 @@ def _verify_response(response):
         response.raise_for_status()
     except:
         logger.error('Something went wrong', exc_info=True)
+        return DummyResponse()
     else:
         logger.info('Done')
-    finally:
         try:
             return response.json()
         except (AttributeError, json.JSONDecodeError):
-            return None
+            return DummyResponse()
 
 
 def execute(openbach_function):
@@ -258,7 +269,11 @@ def execute(openbach_function):
         for name, value in openbach_function_args.items():
             logger.debug('\t%s: %s', name, '*****' if name == 'password' else value)
 
-    response = openbach_function.execute(False)
+    try:
+        response = openbach_function.execute(False)
+    except ActionFailedError:
+        logger.critical('Something went wrong', exc_info=True)
+        return DummyResponse()
 
     if isinstance(response, list):
         return [_verify_response(r) for r in response]
@@ -561,6 +576,9 @@ def main(argv=None):
             response = execute(state_job)
             logger.debug('Last installation date: %s', response['install']['last_operation_date'])
 
+    import time
+    time.sleep(20)
+
     # Remove jobs from agents
     uninstall_jobs = validator.share_state(UninstallJobs)
     uninstall_jobs.args.launch = False
@@ -661,14 +679,6 @@ def main(argv=None):
         if response['status'] != 'Running':
             break
 
-    # Remove scenarios
-    remove_scenario = validator.share_state(DeleteScenario)
-    remove_scenario.args.project_name = project_name
-    remove_scenario.args.scenario_name = scenario_name
-    execute(remove_scenario)
-    remove_scenario.args.scenario_name = add_scenario.args.scenario['name']
-    execute(remove_scenario)
-
     # Get scenario instance data
     scenario_data = validator.share_state(GetScenarioInstanceData)
     scenario_data.args.file = []
@@ -676,6 +686,14 @@ def main(argv=None):
     with tempfile.TemporaryDirectory() as tempdir:
         scenario_data.args.path = Path(tempdir)
         execute(scenario_data)
+
+    # Remove scenarios
+    remove_scenario = validator.share_state(DeleteScenario)
+    remove_scenario.args.project_name = project_name
+    remove_scenario.args.scenario_name = scenario_name
+    execute(remove_scenario)
+    remove_scenario.args.scenario_name = add_scenario.args.scenario['name']
+    execute(remove_scenario)
 
     # Start job instance times X
     job_name = 'fping'
@@ -739,7 +757,7 @@ def main(argv=None):
         '--entity', 'Entity',
         '--server', 'Server',
         '--client', 'Client',
-        '--file-size', '100',
+        '--file-size', '10M',
         '--bandwidth-server-to-client', '10M',
         '--bandwidth-client-to-server', '10M',
         '--delay-server-to-client', '10',
