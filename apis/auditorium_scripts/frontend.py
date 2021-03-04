@@ -263,6 +263,7 @@ class FrontendBase:
     def request(self, verb, route, show_response_content=True, check_status=True, files=None, **kwargs):
         verb = verb.upper()
         url = self.base_url + route
+        LOG.debug('%s %s %s', verb, url, kwargs)
         for _ in range(3):  # Retry 3 times in case we get disconnected
             try:
                 if verb == 'GET':
