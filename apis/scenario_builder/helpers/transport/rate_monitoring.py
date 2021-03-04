@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+
 #   OpenBACH is a generic testbed able to control/configure multiple
 #   network/physical entities (under test) and collect data from them. It is
 #   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
@@ -26,82 +27,28 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of rate_monitoring job """
+"""Helpers of rate_monitoring job"""
 
 from ..utils import filter_none
 
-
 def rate_monitoring(
-        scenario, entity, interval, chain_name, source_ip=None,
-        destination_ip=None, in_iface=None, out_iface=None,
+        scenario, entity, sampling_interval, chain_name, source_ip=None,
+        destination_ip=None, in_interface=None, out_interface=None, 
+        ### other_parser
         wait_finished=None, wait_launched=None, wait_delay=0):
+
     function = scenario.add_function(
-            'start_job_instance',
+           'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
+
     parameters = filter_none(
-            {'in-interface': in_iface, 'out-interface': out_iface},
-            interval=interval, chain_name=chain_name,
-            source_ip=source_ip, destination_ip=destination_ip)
-    function.configure('rate_monitoring', entity, **parameters) 
+            source_ip=source_ip,
+            destination_ip=destination_ip,
+            in_interface=in_interface,
+            out_interface=out_interface)
 
-    return [function]
-
-
-def tcp_rate_monitoring(
-        scenario, entity, interval, chain_name, source_ip=None,
-        destination_ip=None, in_iface=None, out_iface=None,
-        destination_port=None, source_port=None, 
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    function = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    parameters = filter_none(
-            {'in-interface': in_iface, 'out-interface': out_iface},
-            interval=interval, chain_name=chain_name,
-            source_ip=source_ip, destination_ip=destination_ip)
-    tcp_parameters = filter_none(dport=destination_port, sport=source_port)
-    function.configure('rate_monitoring', entity, **parameters, tcp=tcp_params) 
-
-    return [function]
-
- 
-def udp_rate_monitoring(
-        scenario, entity, interval, chain_name, source_ip=None,
-        destination_ip=None, in_iface=None, out_iface=None,
-        destination_port=None, source_port=None, 
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    function = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    parameters = filter_none(
-            {'in-interface': in_iface, 'out-interface': out_iface},
-            interval=interval, chain_name=chain_name,
-            source_ip=source_ip, destination_ip=destination_ip)
-    udp_parameters = filter_none(dport=destination_port, sport=source_port)
-    function.configure('rate_monitoring', entity, **parameters, udp=udp_params) 
-
-    return [function]
-
-
-def icmp_rate_monitoring(
-        scenario, entity, interval, chain_name, source_ip=None,
-        destination_ip=None, in_iface=None, out_iface=None,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    function = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    parameters = filter_none(
-            {'in-interface': in_iface, 'out-interface': out_iface},
-            interval=interval, chain_name=chain_name,
-            source_ip=source_ip, destination_ip=destination_ip)
-    function.configure('rate_monitoring', entity, **parameters, icmp={}) 
+    function.configure('rate_monitoring', entity, **parameters)
 
     return [function]
