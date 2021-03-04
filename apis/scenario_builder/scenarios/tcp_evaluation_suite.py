@@ -29,7 +29,7 @@
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.openbach_functions import StartScenarioInstance
-from scenario_builder.scenarios import transport_tcp_stack_conf, network_configure_link, service_data_transfer
+from scenario_builder.scenarios import transport_tcp_stack_conf, network_configure_link, service_data_transfer, rate_monitoring
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 from scenario_builder.helpers.transport.iperf3 import iperf3_find_server
@@ -61,10 +61,18 @@ def _iperf3_legend(openbach_function):
 #    destination = openbach_function.start_job_instance['entity_name']
 #    return 'Data Transfer - {} {} {}'.format(destination, address, port)
 
+def _rate_monitoring_legend(openbach_function):
+    rate_monitoring = openbach_function.start_job_instance['rate_monitoring']
+    destination = openbach_function.start_job_instance['entity_name']
+    {'in_interface': 'ens3', 'sampling_interval': 1, 'chain_name': 'INPUT'}
+
+    legend = {'destination': destination}
+    return 'Rate Monitoring - {destination}'.format_map(legend)
 
 def build(
         endpointA, endpointB, endpointC,
         endpointD, routerL, routerR,
+        endpointA_ip, endpointB_ip,
         endpointC_ip, endpointD_ip, server_port,
         endpointA_network_ip, endpointB_network_ip,
         endpointC_network_ip, endpointD_network_ip,
@@ -322,6 +330,62 @@ def build(
             ])
     start_network_conf_link_RL.configure(scenario_network_conf_link_RL)
 
+    ########################################
+    ########### rate_monitoring ############
+    ########################################
+    # We launch rate_monitoring jobs before launching
+    # traffic to retreive interesting statistics.
+
+    # rate_monitoring on C (for link C-R)
+    scenario_rate_monitoring_C = rate_monitoring.build(
+            entity=endpointC,
+            sampling_interval=1,
+            chain_name='INPUT',
+            in_interface=interface_CR,
+            scenario_name='rate_monitoring_C')
+    start_rate_monitoring_C = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[
+                start_network_conf_link_LAB,
+                start_network_conf_link_RCD,
+                start_network_conf_link_LR,
+                start_network_conf_link_RL
+            ])
+    start_rate_monitoring_C.configure(scenario_rate_monitoring_C)
+
+    # rate_monitoring on D (for link D-R)
+    scenario_rate_monitoring_D = rate_monitoring.build(
+            entity=endpointD,
+            sampling_interval=1,
+            chain_name='INPUT',
+            in_interface=interface_DR,
+            scenario_name='rate_monitoring_D')
+    start_rate_monitoring_D = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[
+                start_network_conf_link_LAB,
+                start_network_conf_link_RCD,
+                start_network_conf_link_LR,
+                start_network_conf_link_RL
+            ])
+    start_rate_monitoring_D.configure(scenario_rate_monitoring_D)
+
+    # rate_monitoring on R (for link R-L)
+    scenario_rate_monitoring_R = rate_monitoring.build(
+            entity=routerR,
+            sampling_interval=1,
+            chain_name='INPUT',
+            in_interface=interface_RL,
+            scenario_name='rate_monitoring_R')
+    start_rate_monitoring_R = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[
+                start_network_conf_link_LAB,
+                start_network_conf_link_RCD,
+                start_network_conf_link_LR,
+                start_network_conf_link_RL
+            ])
+    start_rate_monitoring_R.configure(scenario_rate_monitoring_R)
 
     ########################################
     ######## service_data_transfer #########
@@ -345,7 +409,12 @@ def build(
                 start_network_conf_link_RCD,
                 start_network_conf_link_LR,
                 start_network_conf_link_RL
-            ])
+            ],
+            wait_launched=[
+                start_rate_monitoring_C,
+                start_rate_monitoring_D
+            ],
+            wait_delay=1)
     start_service_data_transfer_BD.configure(scenario_service_data_transfer_BD)
 
 
@@ -437,6 +506,10 @@ def build(
     start_service_data_transfer_AC_1 = scenario.add_function(
             'start_scenario_instance',
             wait_finished=[start_service_data_transfer_BD],
+            wait_launched=[
+                start_rate_monitoring_C,
+                start_rate_monitoring_D
+            ],
             wait_delay=5)
     start_service_data_transfer_AC_1.configure(scenario_service_data_transfer_AC)
 
@@ -497,6 +570,29 @@ def build(
 
 
     ########################################
+    ########### rate_monitoring ############
+    ########################################
+    # We stop the rate_monitoring jobs
+
+    # stop rate_monitoring job on C
+    stop_rate_monitoring_C = scenario.add_function(
+            'stop_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_10])
+    stop_rate_monitoring_C.configure(start_rate_monitoring_C)
+
+    # stop rate_monitoring job on D
+    stop_rate_monitoring_D = scenario.add_function(
+            'stop_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_10])
+    stop_rate_monitoring_D.configure(start_rate_monitoring_D)
+
+    # stop rate_monitoring job on R
+    stop_rate_monitoring_R = scenario.add_function(
+            'stop_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_10])
+    stop_rate_monitoring_R.configure(start_rate_monitoring_R)
+
+    ########################################
     ########### post_processing ############
     ########################################
 
@@ -509,6 +605,7 @@ def build(
 
         for jobs, filters, legend, statistic, axis in [
                 (['iperf3'], {}, _iperf3_legend, 'cwnd', 'cwnd'),
+                (['rate_monitoring'], {}, _rate_monitoring_legend, 'rate', 'rate'),
                 #([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'throughput'),
                 ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'download_time', 'download_time'),
                 #(['iperf3'], {}, _iperf3_legend, 'cwnd', 'cwnd'),

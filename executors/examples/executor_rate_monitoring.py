@@ -36,6 +36,7 @@ def main(argv=None):
 
     args = observer.parse(argv, rate_monitoring.SCENARIO_NAME)
     scenario = rate_monitoring.build(
+            entity='endpointC',
             sampling_interval=1,
             chain_name='INPUT',
             in_interface='ens3',

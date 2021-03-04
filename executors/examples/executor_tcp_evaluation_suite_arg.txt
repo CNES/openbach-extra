@@ -32,8 +32,10 @@
 --endpointB endpointB 
 --endpointC endpointC 
 --endpointD endpointD 
---endpointC-ip 10.10.0.79
---endpointD-ip 10.10.0.64
+--endpointA-ip 192.168.0.5
+--endpointB-ip 192.168.1.6
+--endpointC-ip 192.168.3.4
+--endpointD-ip 192.168.4.14
 --routerL routerL 
 --routerR routerR  
 --endpointA-network-ip 192.168.0.0/24
@@ -61,7 +63,7 @@
 --interface-LR ens4
 --interface-RL ens5
 --BD-file-size 500M
---AC-file-size 200M
+--AC-file-size 10M
 --delay 10 10 10
 --loss 10 10 10
 --bandwidth 20M 10M 20M

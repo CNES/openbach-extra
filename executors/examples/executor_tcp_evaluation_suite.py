@@ -157,6 +157,12 @@ def main(argv=None):
             '--routerR', required=True,
             help='Machine name representing routerR')
     observer.add_scenario_argument(
+            '--endpointA-ip', required=True,
+            help='Private endpointA ip')
+    observer.add_scenario_argument(
+            '--endpointB-ip', required=True,
+            help='Private endpointB ip')
+    observer.add_scenario_argument(
             '--endpointC-ip', required=True,
             help='Private endpointC ip')
     observer.add_scenario_argument(
@@ -276,6 +282,8 @@ def main(argv=None):
             args.endpointD,
             args.routerL,
             args.routerR,
+            args.endpointA_ip,
+            args.endpointB_ip,
             args.endpointC_ip,
             args.endpointD_ip,
             args.server_port,
@@ -318,7 +326,6 @@ def main(argv=None):
     results = DataProcessor(observer)
     iperf3_scenarios = list(scenario.extract_function_id(iperf3=iperf3_find_server, include_subscenarios=True))
 
-
     #for i, stat in (range(len(iperf3_scenarios)), iperf3_scenarios):
     #    results.add_callback('download_time_'+str(i), extract_iperf_statistic, stat)
 
@@ -331,15 +338,7 @@ def main(argv=None):
 
     print("Results :", plots)
 
-    plt.plot([1, 2, 3, 4], [4, 8, 5, 4], linestyle = ':', marker = 'o', color = 'red', markersize = 10)
-
-    
-
-
-
-
-
-    #print(results)
+    #plt.plot([1, 2, 3, 4], [4, 8, 5, 4], linestyle = ':', marker = 'o', color = 'red', markersize = 10)
 
 if __name__ == '__main__':
     main()

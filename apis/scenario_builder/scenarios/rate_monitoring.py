@@ -39,12 +39,12 @@ SCENARIO_DESCRIPTION = """This rate_monitoring scenario allows to
 """
 
 
-def build(sampling_interval, chain_name, source_ip=None,
+def build(sampling_interval, entity, chain_name, source_ip=None,
         destination_ip=None, in_interface=None, out_interface=None,
         scenario_name=SCENARIO_NAME):
 
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    rate_monitoring(scenario, sampling_interval, chain_name, source_ip,
+    rate_monitoring(scenario, entity, sampling_interval, chain_name, source_ip,
         destination_ip, in_interface, out_interface)
 
     return scenario
