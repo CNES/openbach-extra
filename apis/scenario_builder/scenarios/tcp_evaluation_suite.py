@@ -509,7 +509,7 @@ def build(
 
         for jobs, filters, legend, statistic, axis in [
                 (['iperf3'], {}, _iperf3_legend, 'cwnd', 'cwnd'),
-                ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'throughput'),
+                #([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'throughput'),
                 ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'download_time', 'download_time'),
                 #(['iperf3'], {}, _iperf3_legend, 'cwnd', 'cwnd'),
                 #(['iperf3'], {}, _iperf3_legend, 'throughput', 'throughput'),
