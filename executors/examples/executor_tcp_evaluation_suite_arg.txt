@@ -32,8 +32,6 @@
 --endpointB endpointB 
 --endpointC endpointC 
 --endpointD endpointD 
---endpointA-ip 192.168.0.5
---endpointB-ip 192.168.1.6
 --endpointC-ip 192.168.3.4
 --endpointD-ip 192.168.4.14
 --routerL routerL 

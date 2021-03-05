@@ -54,25 +54,15 @@ def _iperf3_legend(openbach_function):
         legend = {'endpoint': 'client', 'address': iperf3['client']['server_ip'], 'destination': destination, 'transmitted_size': iperf3['client']['transmitted_size']}
     return 'Data Transfer - {endpoint} {address} {destination} {transmitted_size}'.format_map(legend)
 
-#def _iperf3_legend(openbach_function):
-#    iperf3 = openbach_function.start_job_instance['iperf3']
-#    port = iperf3['port']
-#    address = iperf3['server']['bind']
-#    destination = openbach_function.start_job_instance['entity_name']
-#    return 'Data Transfer - {} {} {}'.format(destination, address, port)
-
 def _rate_monitoring_legend(openbach_function):
     rate_monitoring = openbach_function.start_job_instance['rate_monitoring']
     destination = openbach_function.start_job_instance['entity_name']
-    {'in_interface': 'ens3', 'sampling_interval': 1, 'chain_name': 'INPUT'}
-
     legend = {'destination': destination}
     return 'Rate Monitoring - {destination}'.format_map(legend)
 
 def build(
         endpointA, endpointB, endpointC,
         endpointD, routerL, routerR,
-        endpointA_ip, endpointB_ip,
         endpointC_ip, endpointD_ip, server_port,
         endpointA_network_ip, endpointB_network_ip,
         endpointC_network_ip, endpointD_network_ip,
@@ -606,11 +596,6 @@ def build(
         for jobs, filters, legend, statistic, axis in [
                 (['iperf3'], {}, _iperf3_legend, 'cwnd', 'cwnd'),
                 (['rate_monitoring'], {}, _rate_monitoring_legend, 'rate', 'rate'),
-                #([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'throughput', 'throughput'),
-                ([], {'iperf3': iperf3_find_server}, _iperf3_legend, 'download_time', 'download_time'),
-                #(['iperf3'], {}, _iperf3_legend, 'cwnd', 'cwnd'),
-                #(['iperf3'], {}, _iperf3_legend, 'throughput', 'throughput'),
-                #(['iperf3'], {}, _iperf3_legend, 'download_time', 'download_time'),
         ]:
             post_processed = list(scenario.extract_function_id(*jobs, include_subscenarios=True, **filters))
             if post_processed:
