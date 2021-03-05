@@ -274,7 +274,7 @@ class FrontendBase:
                     else:
                         response = self.session.request(verb, url, data=kwargs, files=files)
             except requests.exceptions.ConnectionError as e:
-                LOG.error('Connection error while trying request. Retrying.')
+                LOG.warning('Connection error while trying request. Retrying.')
             else:
                 break
         else:

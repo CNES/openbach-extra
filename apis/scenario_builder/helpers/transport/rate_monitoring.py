@@ -41,7 +41,7 @@ def rate_monitoring(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     parameters = filter_none(
-            {'in-interface': in_iface, 'out-interface': out_iface},
+            in_interface=in_iface, out_interface=out_iface,
             sampling_interval=sampling_interval, chain_name=chain_name,
             source_ip=source_ip, destination_ip=destination_ip)
     function.configure('rate_monitoring', entity, **parameters) 
@@ -60,7 +60,7 @@ def tcp_rate_monitoring(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     parameters = filter_none(
-            {'in-interface': in_iface, 'out-interface': out_iface},
+            in_interface=in_iface, out_interface=out_iface,
             sampling_interval=sampling_interval, chain_name=chain_name,
             source_ip=source_ip, destination_ip=destination_ip)
     tcp_parameters = filter_none(dport=destination_port, sport=source_port)
@@ -80,7 +80,7 @@ def udp_rate_monitoring(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     parameters = filter_none(
-            {'in-interface': in_iface, 'out-interface': out_iface},
+            in_interface=in_iface, out_interface=out_iface,
             sampling_interval=sampling_interval, chain_name=chain_name,
             source_ip=source_ip, destination_ip=destination_ip)
     udp_parameters = filter_none(dport=destination_port, sport=source_port)
@@ -99,7 +99,7 @@ def icmp_rate_monitoring(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     parameters = filter_none(
-            {'in-interface': in_iface, 'out-interface': out_iface},
+            in_interface=in_iface, out_interface=out_iface,
             sampling_interval=sampling_interval, chain_name=chain_name,
             source_ip=source_ip, destination_ip=destination_ip)
     function.configure('rate_monitoring', entity, **parameters, icmp={}) 

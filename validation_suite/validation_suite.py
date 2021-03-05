@@ -877,7 +877,6 @@ def main(argv=None):
         '--server-entity', 'Server',
         '--client-entity', 'Client',
         '--server-ip', server_ip,
-        '--client-ip', client_ip,
         '--mode', 'download',
         '--post-processing-entity', 'Entity',
         project_name, 'run',
@@ -939,12 +938,12 @@ def main(argv=None):
         '--dash', '2', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, 'http/2', '5301',
         # To avoid proxy issues using config.yml, disable web-browsing
         # '--web-browsing', '3', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, '10', '2',
-        '--voip', '4', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, '8011', 'G.711.1',
+        '--voip', '4', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, '8011', 'G.711.1', '100.0', '120.0',
         '--data-transfer', '5', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '5201', '10M', '0', '1500',
         '--dash', '6', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, 'http/2', '5301',
         # To avoid proxy issues using config.yml, disable web-browsing
         # '--web-browsing', '7', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '10', '2',
-        '--voip', '8', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '8012', 'G.711.1',
+        '--voip', '8', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '8012', 'G.711.1', 'None', 'None',
         '--post-processing-entity', 'Entity',
         project_name, 'run',
     ])

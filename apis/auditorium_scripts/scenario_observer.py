@@ -39,8 +39,8 @@ import re
 import time
 import json
 import pprint
+import logging
 import datetime
-import warnings
 from pathlib import Path
 from sys import exit, stderr
 from contextlib import suppress
@@ -185,6 +185,10 @@ class ScenarioObserver(FrontendBase):
         self._default_arguments[action.dest] = action.default
 
     def parse(self, args=None, default_scenario_name=' *** Generated Scenario *** '):
+        if args is not None:
+            logging.getLogger(__name__).debug(
+                    'Scenario observer parsing from script-provided arguments: %s',
+                    args)
         args = super().parse(args)
         if args.scenario_name is None:
             args.scenario_name = default_scenario_name
@@ -219,6 +223,7 @@ class ScenarioObserver(FrontendBase):
                     scenario_modifier.args.scenario = scenario.build()
                     scenario = scenario_modifier.execute(False)
                 else:
+                    scenarios.add(scenario_name)
                     scenario_setter.args.scenario = scenario.build()
                     scenario = scenario_setter.execute(False)
                 scenario.raise_for_status()
@@ -243,8 +248,9 @@ class ScenarioObserver(FrontendBase):
                 retries_left -= 1
                 if not retries_left:
                     self.parser.error('scenario instance status could not be fetched')
-                warnings.warn('Error while fetching scenario status:\n{}\n\n{} retries left'.format(
-                    pprint.pformat(response, width=250), retries_left))
+                logging.getLogger(__name__).warning(
+                        'Error while fetching scenario status:\n%s\n\n%d retries left',
+                        PprintFormatter(response), retries_left)
             elif status in ('Finished KO',):
                 self.parser.error('scenario instance failed (status is \'{}\')'.format(status))
             elif status in ('Finished', 'Finished OK', 'Stopped'):
@@ -283,11 +289,13 @@ class ScenarioObserver(FrontendBase):
                     settings = elasticsearch.settings_query("index.refresh_interval")
                     intervals = (settings[index]["settings"]["index"]["refresh_interval"] for index in settings)
                     sleep_duration = max(map(_convert_time, intervals), default=sleep_duration)
-                print("Retrieving logs if any, wait during logstash refreshing ({}s) ...".format(sleep_duration))
+
+                logger = logging.getLogger(__name__)
+                logger.info('Retrieving logs if any, wait during logstash refreshing (%ds) ...', sleep_duration)
                 time.sleep(sleep_duration)
                 response = elasticsearch.all_logs(timestamps=(begin_date, end_date))
                 for log in response:
-                    pprint.pprint(log, stream=stderr, width=300)
+                    logger.error('%s', PprintFormatter(log))
         return self._last_instance
 
     def _write_json(self, builder=None):
@@ -390,6 +398,15 @@ class DataProcessor:
                 callbacks[job.instance_id][0]: callbacks[job.instance_id][1](job)
                 for job in scenario.jobs if job.instance_id in callbacks
         }
+
+
+class PprintFormatter:
+    def __init__(self, obj, width=300):
+        self.obj = obj
+        self.width = width
+
+    def __str__(self):
+        return pprint.pformat(self.obj, width=self.width)
 
 
 def _convert_time(duration):
