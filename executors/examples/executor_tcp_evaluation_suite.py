@@ -141,9 +141,9 @@ def register_figure(path, observer, figure_type):
     else:
         scenario_id = observer.launch_and_wait()['scenario_instance_id']
         figure_name = '{}_{}_{}.png'.format(scenario_id, 'download_time', figure_type)
-        if path.split('.',1)[1] == "csv":
+        if path.suffix == ".csv":
             plt.savefig(os.path.join(os.path.split(path)[0],figure_name))
-        elif path.split('.',1)[1] == "tar.gz":
+        elif path.suffix == "tar.gz":
             # We save the figure as a tmp file
             with tempfile.NamedTemporaryFile() as tmp_figure:
                 plt.savefig(tmp_figure)
