@@ -111,6 +111,7 @@ from scenario_builder.helpers.transport.iperf3 import iperf3_find_server
 import matplotlib.pyplot as plt
 import pandas as pd
 import tempfile
+import tarfile
 import os
 
 def extract_iperf_statistic(job):
@@ -133,6 +134,31 @@ def extract_iperf_statistic(job):
 #            (timestamp, stats['download_time'])
 #            for timestamp, stats in data.items() if 'download_time' in stats
 #    ]
+
+def register_figure(path, observer, figure_type):
+    if path is None:
+        plt.show()
+    else:
+        scenario_id = observer.launch_and_wait()['scenario_instance_id']
+        figure_name = '{}_{}_{}.png'.format(scenario_id, 'download_time', figure_type)
+        if path.split('.',1)[1] == "csv":
+            plt.savefig(os.path.join(os.path.split(path)[0],figure_name))
+        elif path.split('.',1)[1] == "tar.gz":
+            # We save the figure as a tmp file
+            with tempfile.NamedTemporaryFile() as tmp_figure:
+                plt.savefig(tmp_figure)
+                # We will unzip the tarfile in a tmp directory
+                with tempfile.TemporaryDirectory() as tempdir:
+                    # tmp_path is the path where we will unzip the tarfile
+                    tmp_path = os.path.join(tempdir, os.path.split(path)[1])
+                    #We open the tarfile for reading
+                    with tarfile.open(path, "r:gz") as reading_tar:
+                        # We open the tmp tar file for writing
+                        with tarfile.open(tmp_path, "w:gz") as output_tar:
+                            for member in reading_tar:
+                                output_tar.addfile(member, reading_tar.extractfile(member.name)) # We add the file already in the tarfile
+                            output_tar.add(tmp_figure.name, arcname=figure_name) # We add the figure
+                    os.rename(tmp_path, path) # We mv the tmp_file where we added the figure to the previous tarfile.
 
 
 def main(argv=None):
@@ -334,19 +360,19 @@ def main(argv=None):
         results.add_callback('download_time_'+str(i), extract_iperf_statistic, stat)
     values = results.post_processing()
 
-    print("Results :", values) # should work
+    #print("Results :", values) # should work
 
     #########################
-    ###### Do the plot ###### #TODO
+    ###### Do the plot ######
     #########################
-
 
     timestamps, pts = ([v[0][0] for f,v in values.items()], [v[0][1] for k,v in values.items()])
 
     path = observer.args.path
-    print(observer.args)
-    print(path)
-    path = "/home/ubuntu/tcp_eval_suite_files/tcp_eval_suite_test.csv"
+    #print(observer.args)
+    #print(path)
+    ##path = "/home/ubuntu/tcp_eval_suite_files/tcp_eval_suite_test.csv"
+    #path = "/home/ubuntu/tcp_eval_suite_files/test_tarfile.tar.gz"
 
     # Do plot and one of the following:
     ## - display 
@@ -357,37 +383,26 @@ def main(argv=None):
 
     for stat_name, ts_xlabel, ts_ylabel, ts_title, cdf_xlabel, cdf_ylabel, cdf_title in (
         ('download_time', 'Time (ms)', 'Download Time (ms)', 'Download Time TS', 'Download Time (ms)', 'CDF', 'Download Time CDF'),):
+
+        #########################
+        ######## ts plot ########
+        #########################
+
         figure, axis = plt.subplots()
         plt.xlabel(ts_xlabel)
         plt.ylabel(ts_ylabel)
         df.plot(y=stat_name, ax=axis, title=ts_title, grid=True, legend=False, linewidth=2)
-        if path is None:
-            plt.show()
-        else:
-            scenario_id = observer.launch_and_wait()['scenario_instance_id']
-            figure_name = '{}_{}_ts.png'.format(scenario_id, 'download_time')
-            if path.split('.',1)[1] == "csv":
-                plt.savefig(os.path.join(os.path.split(path)[0],figure_name))
-            elif path.split('.',1)[1] == "tar.gz":
-                with tempfile.TemporaryFile(suffix='.png') as tmp_figure:
-                    with tarfile.open(fileobj=path, mode='w:gz') as tar:
-                        tar.add(tmp_figure)
+        register_figure(path, observer, 'ts')
+
+        #########################
+        ######## cdf plot ########
+        #########################
 
         figure, axis = plt.subplots()
         plt.xlabel(cdf_xlabel)
         plt.ylabel(cdf_ylabel)
         df.plot(kind='hist', y=stat_name, ax=axis, title=cdf_title, grid=True, legend=False, histtype='step', bins=100, cumulative=1, density=True)
-        if path is None:
-            plt.show()
-        else:
-            scenario_id = observer.launch_and_wait()['scenario_instance_id']
-            figure_name = '{}_{}_cdf.png'.format(scenario_id, 'download_time')
-            if path.split('.',1)[1] == "csv":
-                plt.savefig(os.path.join(os.path.split(path)[0],figure_name))
-            elif path.split('.',1)[1] == "tar.gz":
-                with tempfile.TemporaryFile(suffix='.png') as tmp_figure:
-                    with tarfile.open(fileobj=path, mode='w:gz') as tar:
-                        tar.add(tmp_figure)
+        register_figure(path, observer, 'cdf')
 
 if __name__ == '__main__':
     main()
