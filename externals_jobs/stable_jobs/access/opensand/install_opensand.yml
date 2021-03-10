@@ -78,7 +78,6 @@
       - libopensand-gse-encap-plugin
       - libopensand-rle-encap-plugin
     state: present
-    force: yes
     update_cache: yes
   register: install
   become: yes
