@@ -34,62 +34,61 @@ from pathlib import Path
 
 from auditorium_scripts.push_file import PushFile
 from auditorium_scripts.scenario_observer import ScenarioObserver
+from scenario_builder.helpers.utils import Validate
 from scenario_builder.scenarios import opensand_satcom_conf
 
 
-def send_files_to_controller(pusher, folder, prefix='opensand'):
-    config_files = [
-            p.relative_to(folder)
-            for extension in ('conf', 'txt', 'csv', 'input')
-            for p in folder.rglob('*.' + extension)
-    ]
+class ValidateSatellite(argparse.Action):
+    def __call__(self, parser, args, values, option_string=None): 
+        satellite = opensand_satcom_conf.SAT(*values)
+        setattr(args, self.dest, satellite)
 
-    for config_file in config_files:
-        with folder.joinpath(config_file).open() as local_file:
+
+class ValidateGroundEntity(Validate):
+    ENTITY_TYPE = opensand_satcom_conf.GROUND
+
+
+def send_files_to_controller(pusher, entity, prefix='opensand'):
+    name, *files = entity
+    destination = Path(prefix, name)
+
+    for config_file in map(Path, files):
+        with config_file.open() as local_file:
             pusher.args.local_file = local_file
-            pusher.args.remote_path = (prefix / config_file).as_posix()
+            pusher.args.remote_path = (destination / config_file.name).as_posix()
             pusher.execute(False)
         # If we don't use this, the controller has a tendency to close the
         # connection after some files, so slowing things down the dirty way.
         time.sleep(0.1)
 
-    return config_files
+    return entity.__class__(name, *(Path(f).name for f in files))
 
 
 def main(argv=None):
     observer = ScenarioObserver()
-    observer.add_scenario_argument('satellite', help='The entity running the satellite of the platform.')
     observer.add_scenario_argument(
-            '--configuration-folder', '-c', type=Path, metavar='FOLDER',
-            help='Path to the configuration folder that should '
-            'be dispatched on agents before the simulation.')
+            '--satellite', '--sat', '-s',
+            required=True, action=ValidateSatellite, nargs=3,
+            metavar=('ENTITY', 'INFRASTRUCTURE_PATH', 'TOPOLOGY_PATH'),
+            help='The entity running the satellite of the platform.')
     observer.add_scenario_argument(
-            '--extra-configuration-folder', '-e', nargs=2, action='append', default=[],
-            metavar=('FOLDER', 'ENTITY'), help='Path to an extra configuration folder '
-            'that should be dispatched to the specified entity before the simulation.')
-    observer.add_scenario_argument(
-            '--gateway', '-gw', action='append', default=[],
-            help='The entity running a gateway in the platform. Can be supplied several times.')
-    observer.add_scenario_argument(
-            '--terminal', '--satellite-terminal', '-st', action='append', default=[],
-            help='The entity running a satellite terminal in the platform. Can be supplied several times.')
+            '--ground-entity', '--ground', '--entity', '-g', '-e',
+            action=ValidateGroundEntity, nargs=4,
+            metavar=('ENTITY', 'INFRASTRUCTURE_PATH', 'TOPOLOGY_PATH', 'PROFILE_PATH'),
+            help='The entity running a ground entity in the platform. Can be supplied several times.')
 
     args = observer.parse(argv, opensand_satcom_conf.SCENARIO_NAME)
-
-    if not args.configuration_folder and not args.extra_configuration_folder:
-        observer.parser.error('one of the arguments --configuration-folder --extra-configuration-folder is required')
 
     #Store files on the controller
     pusher = observer.share_state(PushFile)
     pusher.args.keep = True
-    config_files = {
-            entity: send_files_to_controller(pusher, Path(folder), 'opensand_' + entity)
-            for folder, entity in args.extra_configuration_folder
-    }
-    if args.configuration_folder:
-        config_files[None] = send_files_to_controller(pusher, args.configuration_folder)
+    satellite = send_files_to_controller(pusher, args.satellite)
+    ground = [
+            send_files_to_controller(pusher, ground_entity)
+            for ground_entity in args.ground_entity
+    ]
 
-    scenario = opensand_satcom_conf.build(args.satellite, args.gateway, args.terminal, config_files)
+    scenario = opensand_satcom_conf.build(satellite, ground)
     observer.launch_and_wait(scenario)
 
 

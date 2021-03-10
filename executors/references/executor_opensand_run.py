@@ -35,29 +35,14 @@ from scenario_builder.helpers.utils import Validate
 from scenario_builder.scenarios import opensand_run
 
 
-class Entity:
-    def __init__(self, entity, infrastructure, topology, profile):
-        self.entity = entity
-        self.infrastructure = infrastructure
-        self.topology = topology
-        self.profile = profile
-
-
-class Satellite:
-    def __init__(self, entity, infrastructure, topology):
-        self.entity = entity
-        self.infrastructure = infrastructure
-        self.topology = topology
-
-
 class ValidateSatellite(argparse.Action):
     def __call__(self, parser, args, values, option_string=None): 
-        satellite = Satellite(*values)
+        satellite = opensand_run.SAT(*values)
         setattr(args, self.dest, satellite)
 
 
 class ValidateGroundEntity(Validate):
-    ENTITY_TYPE = Entity
+    ENTITY_TYPE = opensand_run.GROUND
 
 
 def main(argv=None):
