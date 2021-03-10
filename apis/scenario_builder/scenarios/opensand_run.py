@@ -26,7 +26,7 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-from collections import namedtuple
+from dataclasses import dataclass
 
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
@@ -39,8 +39,16 @@ SCENARIO_DESCRIPTION = """This opensand scenario allows to:
 """
 
 
-SAT = namedtuple('SAT', ('entity', 'infrastructure', 'topology'))
-GROUND = namedtuple('GROUND', ('entity', 'infrastructure', 'topology', 'profile'))
+@dataclass(frozen=True)
+class Satellite:
+    entity: str
+    infrastructure: str
+    topology: str
+
+
+@dataclass(frozen=True)
+class GroundEntity(Satellite):
+    profile: str
 
 
 def run(satellite, entities, scenario_name=SCENARIO_NAME):

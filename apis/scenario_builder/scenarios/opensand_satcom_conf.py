@@ -26,9 +26,8 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-import os.path
-from itertools import chain
-from collections import namedtuple
+from pathlib import Path
+from dataclasses import dataclass
 
 from scenario_builder import Scenario
 from scenario_builder.helpers.admin.push_file import push_file
@@ -41,31 +40,36 @@ SCENARIO_DESCRIPTION = """This opensand scenario allows to:
 """
 
 
-SAT = namedtuple('SAT', ('entity', 'infrastructure', 'topology'))
-GROUND = namedtuple('GROUND', ('entity', 'infrastructure', 'topology', 'profile'))
+@dataclass(frozen=True)
+class OpensandEntity:
+    entity: str
+    infrastructure: Path = None
+    topology: Path = None
+    profile: Path = None
 
 
-def _configure_push_file(scenario, entity, dest_dir='/etc/opensand/'):
+def _configure_push_file(scenario, entity, dest_dir=Path('/etc/opensand/')):
     entity_name = entity.entity
+    source_dir = Path('opensand', entity_name)
 
     files = [
-            getattr(entity, name)
+            filepath
             for name in ('infrastructure', 'topology', 'profile')
-            if hasattr(entity, name)
+            if filepath := getattr(entity, name, None) is not None
     ]
-    local_files = [os.path.join('opensand', entity_name, f) for f in files]
-    remote_files = [os.path.join(dest_dir, f) for f in files]
+    local_files = [(source_dir / f).as_posix() for f in files]
+    remote_files = [(dest_dir / f.name).as_posix() for f in files]
 
-    push_file(
-            scenario, entity_name, remote_files, local_files,
-            ['root'] * len(files), ['root'] * len(files))
+    if files_length := len(files):
+        push_file(
+                scenario, entity_name, remote_files, local_files,
+                ['root'] * files_length, ['root'] * files_length)
 
 
-def opensand_satcom_conf(satellite, ground_entities, scenario_name=SCENARIO_NAME):
+def opensand_satcom_conf(opensand_entities, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name + '_files', SCENARIO_DESCRIPTION)
 
-    _configure_push_file(scenario, satellite)
-    for entity in ground_entities:
+    for entity in opensand_entities:
         _configure_push_file(scenario, entity)
 
     return scenario

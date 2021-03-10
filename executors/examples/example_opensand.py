@@ -26,11 +26,11 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
+import time
 import argparse 
 import ipaddress
-import time
 from pathlib import Path
-from itertools import chain
+from dataclasses import dataclass
 
 from auditorium_scripts.push_file import PushFile
 from auditorium_scripts.scenario_observer import ScenarioObserver
@@ -45,29 +45,58 @@ from scenario_builder.scenarios import opensand_run, opensand_net_conf, opensand
 SCENARIO_NAME = 'Opensand'
 
 
-class Entity:
-    def __init__(
-            self, entity, infrastructure, topology,
-            profile, bridge_to_lan, tap_name='opensand_tap',
-            bridge_name='opensand_br', tap_mac_address=None):
-        self.entity = entity
-        self.infrastructure = infrastructure
-        self.topology = topology
-        self.profile = profile
-        self.bridge_to_lan = bridge_to_lan
-        self.tap_name = tap_name
-        self.bridge_name = bridge_name
-        self.tap_mac = tap_mac_address
+@dataclass(frozen=True)
+class OpensandEntity(opensand_net_conf.OpensandEntity, opensand_satcom_conf.OpensandEntity):
+    pass
 
 
+@dataclass(frozen=True)
 class Satellite:
-    def __init__(self, entity, infrastructure, topology):
-        self.entity = entity
-        self.infrastructure = infrastructure
-        self.topology = topology
+    entity: str
+    infrastructure: str = None
 
 
-class ValidateSatellite(argparse.Action):
+@dataclass(frozen=True)
+class Entity:
+    entity: str
+    infrastructure: str
+    profile: str
+    bridge_to_lan: str
+    tap_name: str = 'opensand_tap'
+    bridge_name: str = 'opensand_br'
+    tap_mac_address: str = None
+
+
+@dataclass(frozen=True)
+class EntityNoProfile:
+    entity: str
+    infrastructure: str
+    bridge_to_lan: str
+    tap_name: str = 'opensand_tap'
+    bridge_name: str = 'opensand_br'
+    tap_mac_address: str = None
+
+
+@dataclass(frozen=True)
+class EntityNoInfrastructure:
+    entity: str
+    profile: str
+    bridge_to_lan: str
+    tap_name: str = 'opensand_tap'
+    bridge_name: str = 'opensand_br'
+    tap_mac_address: str = None
+
+
+@dataclass(frozen=True)
+class EntityNoConfiguration:
+    entity: str
+    bridge_to_lan: str
+    tap_name: str = 'opensand_tap'
+    bridge_name: str = 'opensand_br'
+    tap_mac_address: str = None
+
+
+class ValidateSatellite(ValidateOptional, argparse.Action):
     def __call__(self, parser, args, values, option_string=None): 
         satellite = Satellite(*values)
         setattr(args, self.dest, satellite)
@@ -77,44 +106,49 @@ class ValidateGroundEntity(ValidateOptional, Validate):
     ENTITY_TYPE = Entity
 
 
+class ValidateGroundEntityNP(ValidateOptional, Validate):
+    ENTITY_TYPE = EntityNoProfile
+
+
+class ValidateGroundEntityNI(ValidateOptional, Validate):
+    ENTITY_TYPE = EntityNoInfrastructure
+
+
+class ValidateGroundEntityNC(ValidateOptional, Validate):
+    ENTITY_TYPE = EntityNoConfiguration
+
+
 def _extract_config_filepath(entity, file_type):
     path = getattr(entity, file_type, None)
-    if path is None:
-        name = file_type + '.xml'
-    else:
-        name = Path(path).name
-
+    name = (file_type + '.xml') if path is None else Path(path).name
     return Path('/etc/opensand', name).as_posix()
 
 
 def example_opensand(satellite, ground_entities, duration=0, post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, '')
 
-    network_entities = [
-            opensand_net_conf.OPENSAND_ENTITY(
-                terrestrial.entity,
-                terrestrial.tap_mac_address,
-                terrestrial.tap_name,
-                terrestrial.bridge_name,
-                terrestrial.bridge_to_lan,
-            )
-            for terrestrial in ground_entities
-    ]
     network_configure = scenario.add_function('start_scenario_instance')
-    network_configure.configure(opensand_net_conf.build(network_entities, 'configure'))
-
+    network_configure.configure(opensand_net_conf.build(ground_entities, 'configure'))
     wait = [network_configure]
-    # TODO: handle having files already pushed on agents
-    push_files = scenario.add_function('start_scenario_instance', wait_finished=[network_configure])
-    push_files.configure(opensand_satcom_conf.build(satellite, ground_entities)
-    wait.append(push_files)
 
-    run_satellite = opensand_run.SAT(
+    files_to_push = [
+            entity for entity in ground_entities
+            if entity.infrastructure is not None or entity.topology is not None or entity.profile is not None
+    ]
+    if satellite.infrastructure is not None or satellite.topology is not None:
+        files_to_push.append(satellite)
+
+    if files_to_push:
+        push_files = scenario.add_function('start_scenario_instance', wait_finished=[network_configure])
+        push_files.configure(opensand_satcom_conf.build(files_to_push)
+        wait = [push_files]
+
+    run_satellite = opensand_run.Satellite(
         satellite.entity,
         _extract_config_filepath(satellite, 'infrastructure'),
         _extract_config_filepath(satellite, 'topology'))
     run_entities = [
-        opensand_run.GROUND(
+        opensand_run.GroundEntity(
             entity.entity,
             _extract_config_filepath(entity, 'infrastructure'),
             _extract_config_filepath(entity, 'topology'),
@@ -125,7 +159,7 @@ def example_opensand(satellite, ground_entities, duration=0, post_processing_ent
     run.configure(opensand_run.build(run_satellite, run_entities, duration))
 
     network_delete = scenario.add_function('start_scenario_instance', wait_finished=[run])
-    network_delete.configure(opensand_net_conf.build(network_entities, 'delete', opensand_net_conf.SCENARIO_NAME + '_delete'))
+    network_delete.configure(opensand_net_conf.build(ground_entities, 'delete', opensand_net_conf.SCENARIO_NAME + '_delete'))
 
     if post_processing_entity:
         post_processed = list(scenario.extract_function_id(opensand=opensand.opensand_find_ground, include_subscenarios=True))
@@ -163,41 +197,64 @@ def example_opensand(satellite, ground_entities, duration=0, post_processing_ent
     return scenario
 
 
-def send_files_to_controller(pusher, entity, prefix='opensand'):
-    name = entity.entity
-    destination = Path(prefix, name)
-    files = [
-            getattr(entity, f)
-            for f in ('infrastructure', 'topology', 'profile')
-            if hasattr(entity, f)
-    ]
+def send_files_to_controller(pusher, entity, filepath, prefix=Path('opensand')):
+    if filepath is None:
+        return
 
-    for config_file in map(Path, files):
-        with folder.joinpath(config_file).open() as local_file:
-            pusher.args.local_file = local_file
-            pusher.args.remote_path = (destination / config_file.name).as_posix()
-            pusher.execute(False)
-        # If we don't use this, the controller has a tendency to close the
-        # connection after some files, so slowing things down the dirty way.
-        time.sleep(0.1)
+    config_file = Path(filepath)
+    destination = prefix / entity / config_file.name
+    with config_file.open() as local_file:
+        pusher.args.local_file = local_file
+        pusher.args.remote_path = destination.as_posix()
+        pusher.execute(False)
+    # If we don't use this, the controller has a tendency to close the
+    # connection after some files, so slowing things down the dirty way.
+    time.sleep(0.1)
 
-    for f in ('infrastructure', 'topology', 'profile'):
-        if hasattr(entity, f):
-            setattr(entity, f, Path(getattr(entity, f)).name)
+    return destination
 
 
 def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--satellite', '--sat', '-s',
-            required=True, action=ValidateSatellite, nargs=3,
-            metavar=('ENTITY', 'INFRASTRUCTURE_PATH', 'TOPOLOGY_PATH'),
+            required=True, action=ValidateSatellite, nargs='*',
+            metavar='ENTITY [INFRASTRUCTURE_PATH]',
             help='The satellite of the platform. Must be supplied only once.')
     observer.add_scenario_argument(
+            '--topology', '-t',
+            help='The common topology file to push to all entities. Optional '
+            'in case /etc/opensand/topology.xml is already present on the agents.')
+    observer.add_scenario_argument(
             '--ground-entity', '--ground', '--entity', '-g', '-e',
-            required=True, action=ValidateGroundEntity, nargs=4,
-            metavar=('ENTITY', 'INFRASTRUCTURE_PATH', 'TOPOLOGY_PATH', 'PROFILE_PATH'),
+            dest='ground_entities', action=ValidateGroundEntity, nargs='*',
+            metavar='ENTITY INFRASTRUCTURE_PATH PROFILE_PATH (BRIDGE_ADDRESS_MASK | '
+            'BRIDGE_INTERFACE) [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
             help='A ground entity in the platform. Must be supplied at least once.')
+    observer.add_scenario_argument(
+            '--ground-entity-no-profile', '-P',
+            dest='ground_entities', action=ValidateGroundEntityNP, nargs='*',
+            metavar='ENTITY INFRASTRUCTURE_PATH (BRIDGE_ADDRESS_MASK | '
+            'BRIDGE_INTERFACE) [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
+            help='A ground entity in the platform. Use this option instead of '
+            '--ground-entity if you wish to reuse an /etc/opensand/profile.xml '
+            'file already present on the agent.')
+    observer.add_scenario_argument(
+            '--ground-entity-no-infrastructure', '-I',
+            dest='ground_entities', action=ValidateGroundEntityNI, nargs='*',
+            metavar='ENTITY PROFILE_PATH (BRIDGE_ADDRESS_MASK | '
+            'BRIDGE_INTERFACE) [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
+            help='A ground entity in the platform. Use this option instead of '
+            '--ground-entity if you wish to reuse an /etc/opensand/infrastructure.xml '
+            'file already present on the agent.')
+    observer.add_scenario_argument(
+            '--ground-entity-no-configuration', '-E',
+            dest='ground_entities', action=ValidateGroundEntityNC, nargs='*',
+            metavar='ENTITY (BRIDGE_ADDRESS_MASK | BRIDGE_INTERFACE) '
+            '[TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
+            help='A ground entity in the platform. Use this option instead of '
+            '--ground-entity if you wish to reuse both /etc/opensand/'
+            '{infrastructure,profile}.xml files already present on the agent.')
     observer.add_scenario_argument(
             '--duration', '-d', required=False, default=0, type=int,
             help='Duration of the opensand run test, leave blank for endless emulation.')
@@ -205,17 +262,36 @@ def main(argv=None):
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
+    patch_print_help(observer.parser)
     args = observer.parse(argv, SCENARIO_NAME)
 
     pusher = observer._share_state(PushFile)
     pusher.args.keep = True
-    send_files_to_controller(pusher, args.satellite)
-    for entity in args.ground_entity:
-        send_files_to_controller(pusher, entity)
+
+    satellite = [
+            opensand_satcom_conf.OpensandEntity(
+                args.satellite.entity,
+                send_files_to_controller(pusher, args.satellite.entity, args.satellite.infrastructure),
+                send_files_to_controller(pusher, args.satellite.entity, args.topology))
+    ]
+
+    ground_entities = [
+            OpensandEntity(
+                entity.entity,
+                send_files_to_controller(pusher, entity.entity, getattr(entity, 'infrastructure', None)),
+                send_files_to_controller(pusher, entity.entity, args.topology),
+                send_files_to_controller(pusher, entity.entity, getattr(entity, 'profile', None)),
+                entity.entity,
+                entity.tap_mac_address,
+                entity.tap_name,
+                entity.bridge_name,
+                entity.bridge_to_lan)
+            for entity in args.ground_entities
+    ]
 
     scenario = example_opensand(
-            args.satellite,
-            args.ground_entity,
+            satellite,
+            ground_entities,
             args.duration,
             args.post_processing_entity,
             scenario_name=args.scenario_name)

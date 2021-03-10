@@ -28,67 +28,121 @@
 
 
 import time
-import argparse 
-import tempfile
 from pathlib import Path
 
 from auditorium_scripts.push_file import PushFile
 from auditorium_scripts.scenario_observer import ScenarioObserver
-from scenario_builder.helpers.utils import Validate
 from scenario_builder.scenarios import opensand_satcom_conf
 
 
-class ValidateSatellite(argparse.Action):
-    def __call__(self, parser, args, values, option_string=None): 
-        satellite = opensand_satcom_conf.SAT(*values)
-        setattr(args, self.dest, satellite)
+def send_files_to_controller(pusher, entity, filepath, prefix=Path('opensand')):
+    if filepath is None:
+        return
 
+    config_file = Path(filepath)
+    destination = prefix / entity / config_file.name
+    with config_file.open() as local_file:
+        pusher.args.local_file = local_file
+        pusher.args.remote_path = destination.as_posix()
+        pusher.execute(False)
+    # If we don't use this, the controller has a tendency to close the
+    # connection after some files, so slowing things down the dirty way.
+    time.sleep(0.1)
 
-class ValidateGroundEntity(Validate):
-    ENTITY_TYPE = opensand_satcom_conf.GROUND
-
-
-def send_files_to_controller(pusher, entity, prefix='opensand'):
-    name, *files = entity
-    destination = Path(prefix, name)
-
-    for config_file in map(Path, files):
-        with config_file.open() as local_file:
-            pusher.args.local_file = local_file
-            pusher.args.remote_path = (destination / config_file.name).as_posix()
-            pusher.execute(False)
-        # If we don't use this, the controller has a tendency to close the
-        # connection after some files, so slowing things down the dirty way.
-        time.sleep(0.1)
-
-    return entity.__class__(name, *(Path(f).name for f in files))
+    return destination
 
 
 def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
+            '--topology', '-t',
+            help='The common topology file to push to all entities.')
+    observer.add_scenario_argument(
             '--satellite', '--sat', '-s',
-            required=True, action=ValidateSatellite, nargs=3,
-            metavar=('ENTITY', 'INFRASTRUCTURE_PATH', 'TOPOLOGY_PATH'),
+            nargs=2, metavar=('ENTITY', 'INFRASTRUCTURE_PATH'),
             help='The entity running the satellite of the platform.')
     observer.add_scenario_argument(
+            '--satellite-no-conf', '-S', metavar='ENTITY',
+            help='The entity running the satellite of the platform. '
+            'Use this option if the infrastructure configuration file is '
+            'already present and you do not wish to push a new one.')
+    observer.add_scenario_argument(
             '--ground-entity', '--ground', '--entity', '-g', '-e',
-            action=ValidateGroundEntity, nargs=4,
-            metavar=('ENTITY', 'INFRASTRUCTURE_PATH', 'TOPOLOGY_PATH', 'PROFILE_PATH'),
-            help='The entity running a ground entity in the platform. Can be supplied several times.')
+            nargs=3, action='append', default=[],
+            metavar=('ENTITY', 'INFRASTRUCTURE_PATH', 'PROFILE_PATH'),
+            help='An entity running a GW or ST in the platform. '
+            'Can be supplied several times.')
+    observer.add_scenario_argument(
+            '--ground-entity-no-conf', '--entity-no-conf', '-E',
+            action='append', metavar='ENTITY', default=[],
+            help='An entity running a GW or ST in the platform. Use this '
+            'option if the infrastructure and profile configuration files '
+            'are already present and you do not wish to push new ones. Can '
+            'be supplied several times.')
+    observer.add_scenario_argument(
+            '--ground-entity-no-infra', '--entity-no-infra', '-I',
+            action='append', nargs=2, default=[],
+            metavar=('ENTITY', 'PROFILE_PATH'),
+            help='An entity running a GW or ST in the platform. Use this '
+            'option if the infrastructure configuration file is '
+            'already present and you do not wish to push a new one. Can '
+            'be supplied several times.')
+    observer.add_scenario_argument(
+            '--ground-entity-no-profile', '--entity-no-profile', '-P',
+            action='append', nargs=2, default=[],
+            metavar=('ENTITY', 'INFRASTRUCTURE_PATH'),
+            help='An entity running a GW or ST in the platform. Use this '
+            'option if the profile configuration file is '
+            'already present and you do not wish to push a new one. Can '
+            'be supplied several times.')
 
     args = observer.parse(argv, opensand_satcom_conf.SCENARIO_NAME)
+    if args.satellite is not None and args.satellite_no_conf is not None:
+        observer.parser.error('argument --satellite-no-conf: not allowed with argument --satellite')
 
+    opensand_entities = []
     #Store files on the controller
     pusher = observer.share_state(PushFile)
     pusher.args.keep = True
-    satellite = send_files_to_controller(pusher, args.satellite)
-    ground = [
-            send_files_to_controller(pusher, ground_entity)
-            for ground_entity in args.ground_entity
-    ]
+    if args.satellite:
+        name, infrastructure = args.satellite
+        opensand_entities.append(opensand_satcom_conf.OpensandEntity(
+            name,
+            send_files_to_controller(pusher, name, infrastructure),
+            send_files_to_controller(pusher, name, args.topology)))
+    if args.satellite_no_conf:
+        name = args.satellite_no_conf
+        opensand_entities.append(opensand_satcom_conf.OpensandEntity(
+            name,
+            None,
+            send_files_to_controller(pusher, name, args.topology)))
+    for name, infrastructure, profile in args.ground_entity:
+        opensand_entities.append(opensand_satcom_conf.OpensandEntity(
+            name,
+            send_files_to_controller(pusher, name, infrastructure),
+            send_files_to_controller(pusher, name, args.topology),
+            send_files_to_controller(pusher, name, profile)))
+    for name in args.ground_entity_no_conf:
+        opensand_entities.append(opensand_satcom_conf.OpensandEntity(
+            name,
+            None,
+            send_files_to_controller(pusher, name, args.topology),
+            None))
+    for name, profile in args.ground_entity_no_infrastructure:
+        opensand_entities.append(opensand_satcom_conf.OpensandEntity(
+            name,
+            None,
+            send_files_to_controller(pusher, name, args.topology),
+            send_files_to_controller(pusher, name, profile)))
+    for name, infrastructure in args.ground_entity_no_profile:
+        opensand_entities.append(opensand_satcom_conf.OpensandEntity(
+            name,
+            send_files_to_controller(pusher, name, infrastructure),
+            send_files_to_controller(pusher, name, args.topology),
+            None))
 
-    scenario = opensand_satcom_conf.build(satellite, ground)
+
+    scenario = opensand_satcom_conf.build(opensand_entities)
     observer.launch_and_wait(scenario)
 
 
