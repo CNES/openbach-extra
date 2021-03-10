@@ -65,4 +65,5 @@
 --delay 10 10 10
 --loss 10 10 10
 --bandwidth 20M 10M 20M
+--wait-delay-LR 10 10
 --congestion-control CUBIC

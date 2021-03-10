@@ -74,7 +74,7 @@ def build(
         interface_LC, interface_LD, interface_LA,
         interface_LB, interface_RC, interface_RD,
         interface_LR, interface_RL, BD_file_size,
-        AC_file_size, delay, loss, bandwidth,
+        AC_file_size, delay, loss, bandwidth, wait_delay_LR,
         congestion_control, post_processing_entity,
         scenario_name=SCENARIO_NAME):
 
@@ -364,7 +364,7 @@ def build(
     scenario_rate_monitoring_R = rate_monitoring.build(
             entity=routerR,
             sampling_interval=1,
-            chain_name='INPUT',
+            chain_name='FORWARD',
             in_interface=interface_RL,
             scenario_name='rate_monitoring_R')
     start_rate_monitoring_R = scenario.add_function(
@@ -402,84 +402,11 @@ def build(
             ],
             wait_launched=[
                 start_rate_monitoring_C,
-                start_rate_monitoring_D
+                start_rate_monitoring_D,
+                start_rate_monitoring_R
             ],
             wait_delay=1)
     start_service_data_transfer_BD.configure(scenario_service_data_transfer_BD)
-
-
-    ########################################
-    ######## network_configure_link ########
-    ########################################
-
-    # network_configure_link L -> R t=0+10s
-    scenario_network_conf_link_LR_10 = network_configure_link.build(
-            entity=routerR,
-            ifaces=interface_LR, #'ens4'
-            mode='egress',
-            operation='apply',
-            bandwidth=bandwidth[1], #10M
-            delay=delay[1], #10
-            loss_model_params=loss[1], #0
-            scenario_name='network_configure_link_LR_10')
-    start_network_conf_link_LR_10 = scenario.add_function(
-            'start_scenario_instance',
-            wait_finished=[start_service_data_transfer_BD],
-            wait_delay=10)
-    start_network_conf_link_LR_10.configure(scenario_network_conf_link_LR_10)
-
-    # network_configure_link R -> L t=0+10s
-    scenario_network_conf_link_RL_10 = network_configure_link.build(
-            entity=routerL,
-            ifaces=interface_RL, #'ens5'
-            mode='egress',
-            operation='apply',
-            bandwidth=bandwidth[1], #10M
-            delay=delay[1], #10
-            loss_model_params=loss[1], #0
-            scenario_name='network_configure_link_RL_10')
-    start_network_conf_link_RL_10 = scenario.add_function(
-            'start_scenario_instance',
-            wait_finished=[start_service_data_transfer_BD],
-            wait_delay=10)
-    start_network_conf_link_RL_10.configure(scenario_network_conf_link_RL_10)
-
-
-    # network_configure_link L -> R t=10+10s
-    scenario_network_conf_link_LR_1010 = network_configure_link.build(
-            entity=routerR,
-            ifaces=interface_LR, #'ens4'
-            mode='egress',
-            operation='apply',
-            bandwidth=bandwidth[2], #20M
-            delay=delay[2], #10
-            loss_model_params=loss[2], #0
-            scenario_name='network_configure_link_LR_1010')
-    start_network_conf_link_LR_1010 = scenario.add_function(
-            'start_scenario_instance',
-            wait_finished=[start_network_conf_link_LR_10, start_network_conf_link_RL_10],
-            wait_delay=10)
-    start_network_conf_link_LR_1010.configure(scenario_network_conf_link_LR_1010)
-
-    # network_configure_link R -> L t=10+10s
-    scenario_network_conf_link_RL_1010 = network_configure_link.build(
-            entity=routerL,
-            ifaces=interface_RL, #'ens5'
-            mode='egress',
-            operation='apply',
-            bandwidth=bandwidth[2], #20M
-            delay=delay[2], #10
-            loss_model_params=loss[2], #0
-            scenario_name='network_configure_link_RL_1010')
-    start_network_conf_link_RL_1010 = scenario.add_function(
-            'start_scenario_instance',
-            wait_finished=[start_network_conf_link_LR_10, start_network_conf_link_RL_10],
-            wait_delay=10)
-    start_network_conf_link_RL_1010.configure(scenario_network_conf_link_RL_1010)
-
-    ########################################
-    ######## network_configure_link ########
-    ########################################
 
     # service_data_transfer A -> C, first
     scenario_service_data_transfer_AC = service_data_transfer.build(
@@ -498,7 +425,8 @@ def build(
             wait_finished=[start_service_data_transfer_BD],
             wait_launched=[
                 start_rate_monitoring_C,
-                start_rate_monitoring_D
+                start_rate_monitoring_D,
+                start_rate_monitoring_R
             ],
             wait_delay=5)
     start_service_data_transfer_AC_1.configure(scenario_service_data_transfer_AC)
@@ -506,58 +434,117 @@ def build(
     # service_data_transfer A -> C, 2 to 10
     start_service_data_transfer_AC_2 = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[start_service_data_transfer_AC_1],
-            wait_delay=5)
+            wait_finished=[start_service_data_transfer_AC_1])
     start_service_data_transfer_AC_2.configure(scenario_service_data_transfer_AC)
 
     start_service_data_transfer_AC_3 = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[start_service_data_transfer_AC_2],
-            wait_delay=5)
+            wait_finished=[start_service_data_transfer_AC_2])
     start_service_data_transfer_AC_3.configure(scenario_service_data_transfer_AC)
 
     start_service_data_transfer_AC_4 = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[start_service_data_transfer_AC_3],
-            wait_delay=5)
+            wait_finished=[start_service_data_transfer_AC_3])
     start_service_data_transfer_AC_4.configure(scenario_service_data_transfer_AC)
 
     start_service_data_transfer_AC_5 = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[start_service_data_transfer_AC_4],
-            wait_delay=5)
+            wait_finished=[start_service_data_transfer_AC_4])
     start_service_data_transfer_AC_5.configure(scenario_service_data_transfer_AC)
 
     start_service_data_transfer_AC_6 = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[start_service_data_transfer_AC_5],
-            wait_delay=5)
+            wait_finished=[start_service_data_transfer_AC_5])
     start_service_data_transfer_AC_6.configure(scenario_service_data_transfer_AC)
 
     start_service_data_transfer_AC_7 = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[start_service_data_transfer_AC_6],
-            wait_delay=5)
+            wait_finished=[start_service_data_transfer_AC_6])
     start_service_data_transfer_AC_7.configure(scenario_service_data_transfer_AC)
 
     start_service_data_transfer_AC_8 = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[start_service_data_transfer_AC_7],
-            wait_delay=5)
+            wait_finished=[start_service_data_transfer_AC_7])
     start_service_data_transfer_AC_8.configure(scenario_service_data_transfer_AC)
 
     start_service_data_transfer_AC_9 = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[start_service_data_transfer_AC_8],
-            wait_delay=5)
+            wait_finished=[start_service_data_transfer_AC_8])
     start_service_data_transfer_AC_9.configure(scenario_service_data_transfer_AC)
 
     start_service_data_transfer_AC_10 = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[start_service_data_transfer_AC_9],
-            wait_delay=5)
+            wait_finished=[start_service_data_transfer_AC_9])
     start_service_data_transfer_AC_10.configure(scenario_service_data_transfer_AC)
 
+    ########################################
+    ######## network_configure_link ########
+    ########################################
+
+    # network_configure_link L -> R t=0+10s
+    scenario_network_conf_link_LR_10 = network_configure_link.build(
+            entity=routerR,
+            ifaces=interface_LR, #'ens4'
+            mode='egress',
+            operation='apply',
+            bandwidth=bandwidth[1], #10M
+            delay=delay[1], #10
+            loss_model_params=loss[1], #0
+            scenario_name='network_configure_link_LR_10')
+    start_network_conf_link_LR_10 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_1],
+            wait_delay=wait_delay_LR[0]) #10
+    start_network_conf_link_LR_10.configure(scenario_network_conf_link_LR_10)
+
+    # network_configure_link R -> L t=0+10s
+    scenario_network_conf_link_RL_10 = network_configure_link.build(
+            entity=routerL,
+            ifaces=interface_RL, #'ens5'
+            mode='egress',
+            operation='apply',
+            bandwidth=bandwidth[1], #10M
+            delay=delay[1], #10
+            loss_model_params=loss[1], #0
+            scenario_name='network_configure_link_RL_10')
+    start_network_conf_link_RL_10 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_1],
+            wait_delay=wait_delay_LR[0]) #10
+    start_network_conf_link_RL_10.configure(scenario_network_conf_link_RL_10)
+
+
+    # network_configure_link L -> R t=10+10s
+    scenario_network_conf_link_LR_1010 = network_configure_link.build(
+            entity=routerR,
+            ifaces=interface_LR, #'ens4'
+            mode='egress',
+            operation='apply',
+            bandwidth=bandwidth[2], #20M
+            delay=delay[2], #10
+            loss_model_params=loss[2], #0
+            scenario_name='network_configure_link_LR_1010')
+    start_network_conf_link_LR_1010 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_network_conf_link_LR_10, start_network_conf_link_RL_10],
+            wait_delay=wait_delay_LR[1]) #10
+    start_network_conf_link_LR_1010.configure(scenario_network_conf_link_LR_1010)
+
+    # network_configure_link R -> L t=10+10s
+    scenario_network_conf_link_RL_1010 = network_configure_link.build(
+            entity=routerL,
+            ifaces=interface_RL, #'ens5'
+            mode='egress',
+            operation='apply',
+            bandwidth=bandwidth[2], #20M
+            delay=delay[2], #10
+            loss_model_params=loss[2], #0
+            scenario_name='network_configure_link_RL_1010')
+    start_network_conf_link_RL_1010 = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[start_network_conf_link_LR_10, start_network_conf_link_RL_10],
+            wait_delay=wait_delay_LR[1]) #10
+    start_network_conf_link_RL_1010.configure(scenario_network_conf_link_RL_1010)
 
     ########################################
     ########### rate_monitoring ############
