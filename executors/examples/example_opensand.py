@@ -26,11 +26,11 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
+import time
 import argparse 
 import ipaddress
-import time
 from pathlib import Path
-from itertools import chain
+from dataclasses import dataclass
 
 from auditorium_scripts.push_file import PushFile
 from auditorium_scripts.scenario_observer import ScenarioObserver
@@ -43,107 +43,130 @@ from scenario_builder.scenarios import opensand_run, opensand_net_conf, opensand
 
 
 SCENARIO_NAME = 'Opensand'
+SCENARIO_DESCRIPTION = """This scenarios enables to run a full OpenSAND experiment.
+- The opensand_net_conf scenario is used to configure the network 
+- The opensand_satcom_conf scenario is used to deploy an OpenSAND configuration
+- The opensand_run scenario is used to start the entities and start the service
+"""
+
+@dataclass(frozen=True)
+class OpensandEntity(opensand_satcom_conf.OpensandEntity, opensand_net_conf.OpensandEntity):
+    pass
 
 
-class Entity:
-    def __init__(self, entity, emulation_ip, bridge_to_lan, opensand_id, tap_name='opensand_tap', bridge_name='opensand_br', tap_mac_address=None):
-        self.entity = entity
-        self.opensand_id = int(opensand_id)
-        self.emulation_ip = validate_ip(emulation_ip)
-        self.bridge_to_lan = bridge_to_lan
-        self.tap_name = tap_name
-        self.bridge_name = bridge_name
-        self.tap_mac_address = tap_mac_address
-
-
-class GatewayPhy:
-    def __init__(self, entity, net_access_entity, interco_phy, interco_net_access):
-        self.entity = entity
-        self.net_access_entity = net_access_entity
-        self.interconnect_net_access = validate_ip(interco_net_access)
-        self.interconnect_phy = validate_ip(interco_phy)
-
-
+@dataclass(frozen=True)
 class Satellite:
-    def __init__(self, entity, ip):
-        self.entity = entity
-        self.emulation_ip = validate_ip(ip)
+    entity: str
+    infrastructure: str = None
 
 
-class ValidateSatellite(argparse.Action):
+@dataclass(frozen=True)
+class Entity:
+    entity: str
+    infrastructure: str
+    profile: str
+    bridge_to_lan: str
+    tap_name: str = 'opensand_tap'
+    bridge_name: str = 'opensand_br'
+    tap_mac_address: str = None
+
+
+@dataclass(frozen=True)
+class EntityNoProfile:
+    entity: str
+    infrastructure: str
+    bridge_to_lan: str
+    tap_name: str = 'opensand_tap'
+    bridge_name: str = 'opensand_br'
+    tap_mac_address: str = None
+
+
+@dataclass(frozen=True)
+class EntityNoInfrastructure:
+    entity: str
+    profile: str
+    bridge_to_lan: str
+    tap_name: str = 'opensand_tap'
+    bridge_name: str = 'opensand_br'
+    tap_mac_address: str = None
+
+
+@dataclass(frozen=True)
+class EntityNoConfiguration:
+    entity: str
+    bridge_to_lan: str
+    tap_name: str = 'opensand_tap'
+    bridge_name: str = 'opensand_br'
+    tap_mac_address: str = None
+
+
+class ValidateSatellite(ValidateOptional, argparse.Action):
     def __call__(self, parser, args, values, option_string=None): 
         satellite = Satellite(*values)
         setattr(args, self.dest, satellite)
 
 
-class ValidateGateway(ValidateOptional, Validate):
+class ValidateGroundEntity(ValidateOptional, Validate):
     ENTITY_TYPE = Entity
 
 
-class ValidateGatewayPhy(Validate):
-    ENTITY_TYPE = GatewayPhy
+class ValidateGroundEntityNP(ValidateOptional, Validate):
+    ENTITY_TYPE = EntityNoProfile
 
 
-class ValidateSatelliteTerminal(ValidateOptional, Validate):
-    ENTITY_TYPE = Entity
+class ValidateGroundEntityNI(ValidateOptional, Validate):
+    ENTITY_TYPE = EntityNoInfrastructure
 
 
-def validate_ip(ip):
-    return ipaddress.ip_address(ip).compressed
+class ValidateGroundEntityNC(ValidateOptional, Validate):
+    ENTITY_TYPE = EntityNoConfiguration
 
 
-def example_opensand(satellite, gateways, gateways_phy, terminals, duration=0, configuration_files=None, post_processing_entity=None, scenario_name=SCENARIO_NAME):
+def _extract_config_filepath(entity, file_type):
+    path = getattr(entity, file_type, None)
+    name = (file_type + '.xml') if path is None else Path(path).name
+    return Path('/etc/opensand', name).as_posix()
+
+
+def example_opensand(satellite, ground_entities, duration=0, post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, '')
 
-    network_entities = [
-            opensand_net_conf.OPENSAND_ENTITY(
-                terrestrial.entity,
-                terrestrial.tap_mac_address,
-                terrestrial.tap_name,
-                terrestrial.bridge_name,
-                terrestrial.bridge_to_lan,
-            )
-            for terrestrial in chain(gateways, terminals)
-    ]
     network_configure = scenario.add_function('start_scenario_instance')
-    network_configure.configure(opensand_net_conf.build(network_entities, 'configure'))
-
+    network_configure.configure(opensand_net_conf.build(ground_entities, 'configure'))
     wait = [network_configure]
-    if configuration_files:
-        terminal_entities = [terminal.entity for terminal in terminals]
-        gateway_entities = [gateway.entity for gateway in chain(gateways, gateways_phy)]
+
+    files_to_push = [
+            entity for entity in ground_entities
+            if entity.infrastructure is not None or entity.topology is not None or entity.profile is not None
+    ]
+    if satellite.infrastructure is not None or satellite.topology is not None:
+        files_to_push.append(satellite)
+
+    if files_to_push:
         push_files = scenario.add_function('start_scenario_instance', wait_finished=[network_configure])
-        push_files.configure(opensand_satcom_conf.build(satellite.entity, gateway_entities, terminal_entities, configuration_files))
-        wait.append(push_files)
+        push_files.configure(opensand_satcom_conf.build(files_to_push))
+        wait = [push_files]
 
-    run_gateways = []
-    for gateway in gateways:
-        for gateway_phy in gateways_phy:
-            if gateway.entity == gateway_phy.net_access_entity:
-                run_gateways.append(opensand_run.SPLIT_GW(
-                        gateway.entity,
-                        gateway_phy.entity,
-                        gateway.opensand_id,
-                        gateway.emulation_ip,
-                        gateway_phy.interconnect_phy,
-                        gateway_phy.interconnect_net_access,
-                        gateway.tap_name))
-                break
-        else:
-            run_gateways.append(opensand_run.GW(
-                    gateway.entity,
-                    gateway.opensand_id,
-                    gateway.emulation_ip,
-                    gateway.tap_name))
-
+    run_satellite = opensand_run.Satellite(
+        satellite.entity,
+        _extract_config_filepath(satellite, 'infrastructure'),
+        _extract_config_filepath(satellite, 'topology'))
+    run_entities = [
+        opensand_run.GroundEntity(
+            entity.entity,
+            _extract_config_filepath(entity, 'infrastructure'),
+            _extract_config_filepath(entity, 'topology'),
+            _extract_config_filepath(entity, 'profile'))
+        for entity in ground_entities
+    ]
     run = scenario.add_function('start_scenario_instance', wait_finished=wait)
-    run.configure(opensand_run.build(satellite, run_gateways, terminals, duration))
+    run.configure(opensand_run.build(run_satellite, run_entities, duration))
 
     network_delete = scenario.add_function('start_scenario_instance', wait_finished=[run])
-    network_delete.configure(opensand_net_conf.build(network_entities, 'delete', opensand_net_conf.SCENARIO_NAME + '_delete'))
+    network_delete.configure(opensand_net_conf.build(ground_entities, 'delete', opensand_net_conf.SCENARIO_NAME + '_delete'))
 
     if post_processing_entity:
-        post_processed = list(scenario.extract_function_id(opensand=opensand.opensand_find_st, include_subscenarios=True))
+        post_processed = list(scenario.extract_function_id(opensand=opensand.opensand_find_ground, include_subscenarios=True))
         if post_processed:
             time_series_on_same_graph(
                     scenario,
@@ -152,20 +175,9 @@ def example_opensand(satellite, gateways, gateways_phy, terminals, duration=0, c
                     [['up_return_modcod.sent_modcod']],
                     [['Sent ModCod (id)']],
                     [['UP/Return ModCod']],
-                    [['Terminal {} - ModCod'.format(terminal.opensand_id) for terminal in terminals]],
+                    [['Entity {} - ModCod'.format(entity.entity) for entity in ground_entities]],
                     False, [network_delete], None, 2)
 
-        post_processed = post_processed.copy()
-        post_processed.extend(scenario.extract_function_id(opensand=opensand.opensand_find_gw, include_subscenarios=True))
-        post_processed.extend(scenario.extract_function_id(opensand=opensand.opensand_find_gw_phy, include_subscenarios=True))
-        post_processed.extend(scenario.extract_function_id(opensand=opensand.opensand_find_gw_net_acc, include_subscenarios=True))
-        if post_processed:
-            legends = [
-                    ['Terminal {} - Throughput from satellite'.format(st.opensand_id) for st in terminals]
-                    + ['Gateway {} - Throughput from satellite'.format(gw.opensand_id) for gw in run_gateways if isinstance(gw, opensand_run.GW)]
-                    + ['Gateway Phy {} - Throughput from satellite'.format(gw.opensand_id) for gw in run_gateways is isinstance(gw, opensand_run.SPLIT_GW)]
-                    + ['Gateway Net Access {} - Throughput from satellite'.format(gw.opensand_id) for gw in run_gateways is isinstance(gw, opensand_run.SPLIT_GW)]
-            ]
             time_series_on_same_graph(
                     scenario,
                     post_processing_entity,
@@ -173,7 +185,7 @@ def example_opensand(satellite, gateways, gateways_phy, terminals, duration=0, c
                     [['throughputs.l2_from_sat.total']],
                     [['Throughput from satellite (kbps)']],
                     [['Thoughput']],
-                    legends,
+                    [['Entity {} - Throughput from satellite'.format(e.entity) for e in ground_entities]],
                     False, [network_delete], None, 2)
             cdf_on_same_graph(
                     scenario,
@@ -183,64 +195,73 @@ def example_opensand(satellite, gateways, gateways_phy, terminals, duration=0, c
                     [['throughputs.l2_from_sat.total']],
                     [['Throughput from satellite (kbps)']],
                     [['Thoughput']],
-                    legends,
+                    [['Entity {} - Throughput from satellite'.format(e.entity) for e in ground_entities]],
                     False, [network_delete], None, 2)
 
     return scenario
 
 
-def send_files_to_controller(pusher, folder, prefix='opensand'):
-    config_files = [
-            p.relative_to(folder)
-            for extension in ('conf', 'txt', 'csv', 'input')
-            for p in folder.rglob('*.' + extension)
-    ]
+def send_files_to_controller(pusher, entity, filepath, prefix=Path('opensand')):
+    if filepath is None:
+        return
 
-    for config_file in config_files:
-        with folder.joinpath(config_file).open() as local_file:
-            pusher.args.local_file = local_file
-            pusher.args.remote_path = (prefix / config_file).as_posix()
-            pusher.execute(False)
-        # If we don't use this, the controller has a tendency to close the
-        # connection after some files, so slowing things down the dirty way.
-        time.sleep(0.1)
+    config_file = Path(filepath)
+    destination = prefix / entity / config_file.name
+    with config_file.open() as local_file:
+        pusher.args.local_file = local_file
+        pusher.args.remote_path = destination.as_posix()
+        pusher.execute(False)
+    # If we don't use this, the controller has a tendency to close the
+    # connection after some files, so slowing things down the dirty way.
+    time.sleep(0.1)
 
-    return config_files
+    return destination
 
 
 def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--sat', '-s', required=True, action=ValidateSatellite,
-            nargs=2, metavar=('ENTITY', 'EMULATION_ADDRESS'),
+            '--satellite', '--sat', '-s',
+            required=True, action=ValidateSatellite, nargs='*',
+            metavar='ENTITY [INFRASTRUCTURE_PATH]',
             help='The satellite of the platform. Must be supplied only once.')
     observer.add_scenario_argument(
-            '--gateway', '-gw', required=True, action=ValidateGateway, nargs='*',
-            metavar='ENTITY EMULATION_ADDRESS (BRIDGE_ADDRESS_MASK | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
-            help='A gateway in the platform. Must be supplied at least once.')
+            '--topology', '-t',
+            help='The common topology file to push to all entities. Optional '
+            'in case /etc/opensand/topology.xml is already present on the agents.')
     observer.add_scenario_argument(
-            '--gateway-phy', '-gwp', required=False, action=ValidateGatewayPhy,
-            nargs=4, metavar=('ENTITY_PHY', 'ENTITY_NET_ACC', 'INTERCONNECT_PHY_ADDRESS', 'INTERCONNECT_NET_ACC_ADDRESS'),
-            help='The physical part of a split gateway. Must reference the '
-            'net access part previously provided using the --gateway option. '
-            'Optional, can be supplied only once per gateway.')
+            '--ground-entity', '--ground', '--entity', '-g', '-e',
+            dest='ground_entities', action=ValidateGroundEntity, nargs='*',
+            metavar='ENTITY INFRASTRUCTURE_PATH PROFILE_PATH (BRIDGE_ADDRESS_MASK | '
+            'BRIDGE_INTERFACE) [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
+            help='A ground entity in the platform. Must be supplied at least once.')
     observer.add_scenario_argument(
-            '--satellite-terminal', '-st', required=True, action=ValidateSatelliteTerminal, nargs='*',
-            metavar='ENTITY EMULATION_ADDRESS (BRIDGE_ADDRESS_MASK | BRIDGE_INTERFACE) OPENSAND_ID [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
-            help='A satellite terminal in the platform. Must be supplied at least once.')
+            '--ground-entity-no-profile', '-P',
+            dest='ground_entities', action=ValidateGroundEntityNP, nargs='*',
+            metavar='ENTITY INFRASTRUCTURE_PATH (BRIDGE_ADDRESS_MASK | '
+            'BRIDGE_INTERFACE) [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
+            help='A ground entity in the platform. Use this option instead of '
+            '--ground-entity if you wish to reuse an /etc/opensand/profile.xml '
+            'file already present on the agent.')
+    observer.add_scenario_argument(
+            '--ground-entity-no-infrastructure', '-I',
+            dest='ground_entities', action=ValidateGroundEntityNI, nargs='*',
+            metavar='ENTITY PROFILE_PATH (BRIDGE_ADDRESS_MASK | '
+            'BRIDGE_INTERFACE) [TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
+            help='A ground entity in the platform. Use this option instead of '
+            '--ground-entity if you wish to reuse an /etc/opensand/infrastructure.xml '
+            'file already present on the agent.')
+    observer.add_scenario_argument(
+            '--ground-entity-no-configuration', '-E',
+            dest='ground_entities', action=ValidateGroundEntityNC, nargs='*',
+            metavar='ENTITY (BRIDGE_ADDRESS_MASK | BRIDGE_INTERFACE) '
+            '[TAP_NAME [BRIDGE_NAME [TAP_MAC]]]',
+            help='A ground entity in the platform. Use this option instead of '
+            '--ground-entity if you wish to reuse both /etc/opensand/'
+            '{infrastructure,profile}.xml files already present on the agent.')
     observer.add_scenario_argument(
             '--duration', '-d', required=False, default=0, type=int,
             help='Duration of the opensand run test, leave blank for endless emulation.')
-    observer.add_scenario_argument(
-            '--configuration-folder', '--configuration', '-c',
-            required=False, type=Path, metavar='PATH',
-            help='Path to a configuration folder that should be '
-            'dispatched on agents before the simulation.')
-    observer.add_scenario_argument(
-            '--extra-configuration-folder', '--extra-conf', '-e',
-            required=False, nargs=2, action='append', default=[], metavar=('PATH', 'ENTITY'),
-            help='Path to an extra configuration folder that should be dispatched '
-            'to the specified OpenBACH entity before the simulation.')
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
@@ -250,19 +271,32 @@ def main(argv=None):
 
     pusher = observer._share_state(PushFile)
     pusher.args.keep = True
-    config_files = {
-            entity: send_files_to_controller(pusher, Path(folder), 'opensand_' + entity)
-            for folder, entity in args.extra_configuration_folder
-    }
-    if args.configuration_folder:
-        config_files[None] = send_files_to_controller(pusher, args.configuration_folder)
+
+    satellite = [
+            opensand_satcom_conf.OpensandEntity(
+                args.satellite.entity,
+                send_files_to_controller(pusher, args.satellite.entity, args.satellite.infrastructure),
+                send_files_to_controller(pusher, args.satellite.entity, args.topology))
+    ]
+
+    ground_entities = [
+            OpensandEntity(
+                entity.entity,
+                entity.tap_mac_address,
+                entity.tap_name,
+                entity.bridge_name,
+                entity.bridge_to_lan,
+                entity.entity,
+                send_files_to_controller(pusher, entity.entity, getattr(entity, 'infrastructure', None)),
+                send_files_to_controller(pusher, entity.entity, args.topology),
+                send_files_to_controller(pusher, entity.entity, getattr(entity, 'profile', None)))
+            for entity in args.ground_entities
+    ]
 
     scenario = example_opensand(
-            args.sat,
-            args.gateway,
-            args.gateway_phy or [],
-            args.satellite_terminal,
-            args.duration, config_files,
+            satellite,
+            ground_entities,
+            args.duration,
             args.post_processing_entity,
             scenario_name=args.scenario_name)
     observer.launch_and_wait(scenario)

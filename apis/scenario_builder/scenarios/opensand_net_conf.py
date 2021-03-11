@@ -28,7 +28,8 @@
 
 import warnings
 import ipaddress
-from collections import namedtuple
+from dataclasses import dataclass
+from typing import Optional, Union
 
 from scenario_builder import Scenario
 from scenario_builder.helpers.network.ip_route import ip_route
@@ -46,7 +47,13 @@ SCENARIO_DESCRIPTION = """This opensand scenario allows to:
 """
 
 
-OPENSAND_ENTITY = namedtuple('ENTITY', ('name', 'tap_mac', 'tap_name', 'bridge_name', 'bridge_to_lan'))
+@dataclass(frozen=True)
+class OpensandEntity:
+    name: str
+    tap_mac: Optional[str]
+    tap_name: str
+    bridge_name: str
+    bridge_to_lan: Union[ipaddress._BaseAddress,str,None]
 
 
 def opensand_network_ip(

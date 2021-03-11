@@ -35,13 +35,6 @@
 
 ---
 
-
-- name: Set OpenSAND repository variables
-  set_fact:
-    opensand_repository_url: "{{ opensand_repository_url | default('http://packages.net4sat.org/opensand/') }}"
-    opensand_repository_distribution: "{{ opensand_repository_distribution | default('xenial') }}"
-    opensand_repository_component: "{{ opensand_repository_component | default('main') }}"
-
 - name: Create OpenSAND Job directory
   file:
     path: /opt/openbach/agent/jobs/{{ job_name }}
@@ -69,8 +62,11 @@
 
 - name: Add OpenSAND {{ opensand_repository_component }} repository for {{ opensand_repository_distribution }} distribution
   apt_repository:
-    repo: "deb {{ opensand_repository_url }} {{ opensand_repository_distribution }} {{ opensand_repository_component }}"
+    repo: deb http://packages.net4sat.org/opensand/ {{ item }} dev
     state: present
+  with_items:
+    - focal
+    - xenial
   become: yes
   environment: "{{ openbach_proxies }}"
 
@@ -82,7 +78,6 @@
       - libopensand-gse-encap-plugin
       - libopensand-rle-encap-plugin
     state: present
-    force: yes
     update_cache: yes
   register: install
   become: yes

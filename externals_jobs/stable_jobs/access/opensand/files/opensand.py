@@ -43,14 +43,15 @@ import socket
 import signal
 import syslog
 import argparse
+import tempfile
 import ipaddress
 import threading
 import traceback
 import contextlib
 import subprocess
-import os.path as path
 
 import collect_agent
+import py_opensand_conf
 
 
 DFLT_TAPNAME = 'opensand_tap'
@@ -87,18 +88,31 @@ def use_configuration(filepath):
             collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
         raise
 
-def run_entity(command, addr, logs_port, stats_port):
+def run_entity(temp_dir, bin_dir, infrastructure, topology,
+               profile=None, addr='127.0.0.1', logs_port=63000, stats_port=63001):
     global LOG_RCV
     global STAT_RCV
     global PROC
 
-    if command is None:
-        return
-    command.extend([
-        '-r', addr,
-        '-l', str(logs_port),
-        '-s', str(stats_port),
-    ])
+    opensand = os.path.join(bin_dir, 'opensand')
+
+    subprocess.run([opensand, '-g', temp_dir])
+    xsd = py_opensand_conf.fromXSD(os.path.join(temp_dir, 'infrastructure.xsd'))
+    xml = py_opensand_conf(xsd, infrastructure)
+
+    # Bypass collector settings to redirect traffic through this job
+    storage = xml.get_root().get_component('storage')
+    storage.get_parameter('enable_collector').get_data().set(True)
+    storage.get_parameter('collector_address').get_data().set(addr)
+    storage.get_parameter('collector_logs').get_data().set(logs_port)
+    storage.get_parameter('collector_probes').get_data().set(stats_port)
+
+    infrastructure = os.path.join(temp_dir, 'infrastructure.xml')
+    py_opensand_conf.toXML(xml, infrastructure)
+
+    command = [opensand, '-i', infrastructure, '-t', topology]
+    if profile is not None:
+        command.extend(['-p', profile])
 
     signal.signal(signal.SIGINT, stop_entity)
     signal.signal(signal.SIGTERM, stop_entity)
@@ -240,6 +254,29 @@ def udp_port(text):
     return value
 
 
+def build_command(temp_dir, bin_dir, infrastructure, topology, profile=None):
+    opensand = os.path.join(bin_dir, 'opensand')
+
+    subprocess.run([opensand, '-g', temp_dir])
+    xsd = py_opensand_conf.fromXSD(os.path.join(temp_dir, 'infrastructure.xsd'))
+    xml = py_opensand_conf(xsd, infrastructure)
+
+    storage = xml.get_root().get_component('storage')
+    storage.get_parameter('enable_collector').get_data().set(True)
+    storage.get_parameter('collector_address').get_data().set(???)
+    storage.get_parameter('collector_logs').get_data().set(???)
+    storage.get_parameter('collector_probes').get_data().set(???)
+
+    infrastructure = os.path.join(temp_dir, 'infrastructure.xml')
+    py_opensand_conf.toXML(xml, infrastructure)
+
+    command = [opensand, '-i', infrastructure, '-t', topology]
+    if profile is not None:
+        command.extend(['-p', profile])
+
+    return command
+
+
 if __name__ == '__main__':
     with use_configuration('/opt/openbach/agent/jobs/opensand/opensand_rstats_filter.conf'):
         parser = argparse.ArgumentParser(
@@ -248,11 +285,19 @@ if __name__ == '__main__':
         )
 
         parser.add_argument(
-            '--conf-dir',
-            type=str,
-            default='/etc/opensand/',
-            help='The directory of the OpenSAND entity configuration',
+            'infrastructure', type=str,
+            help='Path to the XML file of the infrastructure',
         )
+        parser.add_argument(
+            'topology', type=str,
+            help='Path to the XML file of the topology',
+        )
+        parser.add_argument(
+            '--profile', type=str,
+            help='Path to the XML file of the profile. Required '
+            'for all entities except the satellite.',
+        )
+
         parser.add_argument(
             '--output-addr',
             type=str,
@@ -278,98 +323,14 @@ if __name__ == '__main__':
             help='The directory of OpenSAND binaries',
         )
 
-        run_entity_cmd = parser.add_subparsers(
-            dest='entity',
-            metavar='entity',
-            help='the OpenSAND entity type',
-        )
-        run_entity_cmd.required = True
-
-        run_st_parser = run_entity_cmd.add_parser(
-            'st',
-            help='Satellite Terminal',
-        )
-        run_gw_parser = run_entity_cmd.add_parser(
-            'gw',
-            help='Gateway',
-        )
-        run_sat_parser = run_entity_cmd.add_parser(
-            'sat',
-            help='Satellite',
-        )
-        run_gw_net_acc_parser = run_entity_cmd.add_parser(
-            'gw-net-acc',
-            help='Gateway (network and access layers)',
-        )
-        run_gw_phy_parser = run_entity_cmd.add_parser(
-            'gw-phy',
-            help='Gateway (physical layer)',
-        )
-
-        for p in [ run_st_parser, run_gw_parser, run_gw_net_acc_parser, run_gw_phy_parser ]:
-            p.add_argument(
-                'id',
-                type=int,
-                help='the OpenSAND entity identifier',
-            )
-
-        for p in [ run_st_parser, run_gw_parser, run_gw_phy_parser, run_sat_parser ]:
-            p.add_argument(
-                'emu_addr',
-                type=ip_address,
-                help='the emulation address (format: "ADDRESS")',
-            )
-
-        for p in [ run_gw_net_acc_parser, run_gw_phy_parser ]:
-            p.add_argument(
-                'interco_addr',
-                type=ip_address,
-                help='the remote interconnection address (format: "ADDRESS")',
-            )
-
-        for p in [ run_st_parser, run_gw_parser, run_gw_net_acc_parser ]:
-            p.add_argument(
-                '-t',
-                '--tap-name',
-                type=str,
-                default=DFLT_TAPNAME,
-                help='the TAP interface name (default: {})'.format(DFLT_TAPNAME),
-            )
-
         args = parser.parse_args()
 
-        command = [path.join(args.bin_dir, 'opensand'), args.entity]
-        if args.entity == 'sat':
-            command += [
-                '-a', args.emu_addr,
-                '-c', args.conf_dir,
-            ]
-        elif args.entity in [ 'st', 'gw' ]:
-            command += [
-                '-i', str(args.id),
-                '-a', args.emu_addr,
-                '-t', args.tap_name,
-                '-c', args.conf_dir,
-            ]
-        elif args.entity == 'gw-net-acc':
-            command += [
-                '-i', str(args.id),
-                '-t', args.tap_name,
-                '-w', args.interco_addr,
-                '-c', args.conf_dir,
-            ]
-        elif args.entity == 'gw-phy':
-            command += [
-                '-i', str(args.id),
-                '-a', args.emu_addr,
-                '-w', args.interco_addr,
-                '-c', args.conf_dir,
-            ]
-        else:
-            collect_agent.send_message(
-                syslog.LOG_ERR,
-                'The OpenSAND entity "{}" is not handled by this script'.format(args.entity)
-            )
-            sys.exit(-1)
-
-        run_entity(command, args.output_addr, args.logs_port, args.stats_port)
+        with tempfile.TemporaryDirectory(prefix='openbach_opensand_') as tmp:
+            run_entity(
+                    tmp, args.bin_dir,
+                    args.infrastructure,
+                    args.topology,
+                    args.profile,
+                    args.output_addr,
+                    args.logs_port,
+                    args.stats_port)

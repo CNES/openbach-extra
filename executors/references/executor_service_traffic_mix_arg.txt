@@ -25,22 +25,30 @@
 # Author : Bastien Tauran, Vivéris Technologies
 #
 # file configuration arguments format (see below for example) :
-### id traffic_type src_entity dst_entity duration wait_launched wait_finished wait_delay src_ip dst_ip extra_args
+### id traffic_type src_entity dst_entity duration wait_launched wait_finished wait_delay src_ip dst_ip <extra_args>
 ### wait_launched and wait_finished can contain several elements -> they must be separated by a '-'. If no element, put None
 #
-# extra_args:
-### data_transfer	-> dst_port file_size tos mtu 	(if file_size is 0, the transfer will last duration seconds. Otherwise, it will transfer the whole specified file_size, regardless of the duration. The file size must be set to a value stricly higher than 1MB.)
-### dash  			-> protocol tornado_port
-### voip  			-> dst_port codecs				(Warning: it is impossible to launch several voip_src at same time... should be fixed later)
-### web_browsing	-> nb_runs nb_parallel_runs		(do not forget to edit the config file with correct address)
+# <extra_args>:
+### data_transfer -> dst_port file_size tos mtu
+###                  (If file_size is 0, the transfer will last duration seconds.
+###                  Otherwise, it will transfer the whole specified file_size,
+###                  regardless of the duration. The file size must be set to a
+###                  value stricly higher than 1MB.)
+### dash          -> protocol tornado_port
+### voip          -> dst_port codecs ntp_synchro_acceptable_offset ntp_synchro_timeout
+###                  (Warning: it is impossible to launch several voip_src at same time... should be fixed later)
+### web_browsing  -> nb_runs nb_parallel_runs
+###                  (Do not forget to edit the config file with correct addresses.)
 
-# Example launch command -> PYTHONPATH=~/Documents/OpenBACH/openbach-extra/apis/ python3 executor_service_traffic_mix.py my_project --extra-args-traffic executor_service_traffic_mix_arg.txt --post-processing-entity name_entity_post_processing -o run
+# Example launch command:
+# PYTHONPATH=~/openbach-extra/apis/ python3 executor_service_traffic_mix.py @executor_service_traffic_mix_arg.txt --post-processing-entity name_entity_post_processing my_project run
 
-# Example of trafic mix with data_transfer,dash, web_browsing and voip traffic
-#
+# Example of trafic mix with data_transfer,dash, web_browsing and voip traffic:
+
 --data-transfer 1 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 5201 10M 0 1500
 --dash 2 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2 5301
 --web-browsing 3 SRC ST1 60 None None 0 10.42.42.11 10.42.14.3 10 2
+# Perform NTP synchro check on this VoIP, but not on the others since the check should still be valid
 --voip 4 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 8011 G.711.1 75.0 120.0
 
 --data-transfer 5 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 5201 10M 0 1500
