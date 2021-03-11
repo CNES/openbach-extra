@@ -178,17 +178,17 @@ def main(argv=None):
             '--endpointD', required=True,
             help='Machine name representing endpointD')
     observer.add_scenario_argument(
-            '--routerL', required=True,
-            help='Machine name representing routerL')
-    observer.add_scenario_argument(
-            '--routerR', required=True,
-            help='Machine name representing routerR')
-    observer.add_scenario_argument(
             '--endpointC-ip', required=True,
             help='Private endpointC ip')
     observer.add_scenario_argument(
             '--endpointD-ip', required=True,
             help='Private endpointD ip')
+    observer.add_scenario_argument(
+            '--routerL', required=True,
+            help='Machine name representing routerL')
+    observer.add_scenario_argument(
+            '--routerR', required=True,
+            help='Machine name representing routerR')
     observer.add_scenario_argument(
             '--endpointA-network-ip', required=True,
             help='endpointA network ip with subnet mask')
@@ -263,14 +263,6 @@ def main(argv=None):
             help='Interface name from routerR to routerL')
 
     observer.add_scenario_argument(
-            '--congestion-control', required=True,
-            help='Congestion control name. Ex: CUBIC')
-
-    observer.add_scenario_argument(
-            '--server-port', required=False, default=7001,
-            help='Destination port for the iperf3 traffic')
-
-    observer.add_scenario_argument(
             '--BD-file-size', required=False, default='500M',
             help='size of the file to transmit (in bytes) for B -> D transfer. '
             'The value must be stricly higher than 1 MB')
@@ -295,6 +287,13 @@ def main(argv=None):
             'link bandwidth reduction and second LR link bandwidth reduction')
 
     observer.add_scenario_argument(
+            '--congestion-control', required=True,
+            help='Congestion control name. Ex: CUBIC')
+    observer.add_scenario_argument(
+            '--server-port', required=False, default=7001,
+            help='Destination port for the iperf3 traffic')
+
+    observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
@@ -306,11 +305,10 @@ def main(argv=None):
             args.endpointB,
             args.endpointC,
             args.endpointD,
-            args.routerL,
-            args.routerR,
             args.endpointC_ip,
             args.endpointD_ip,
-            args.server_port,
+            args.routerL,
+            args.routerR,
             args.endpointA_network_ip,
             args.endpointB_network_ip,
             args.endpointC_network_ip,
@@ -342,6 +340,7 @@ def main(argv=None):
             args.bandwidth,
             args.wait_delay_LR,
             congestion_control=args.congestion_control,
+            server_port=args.server_port,
             post_processing_entity=args.post_processing_entity,
             scenario_name=args.scenario_name)
 

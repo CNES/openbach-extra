@@ -61,9 +61,8 @@ def _rate_monitoring_legend(openbach_function):
     return 'Rate Monitoring - {destination}'.format_map(legend)
 
 def build(
-        endpointA, endpointB, endpointC,
-        endpointD, routerL, routerR,
-        endpointC_ip, endpointD_ip, server_port,
+        endpointA, endpointB, endpointC, endpointD,
+        endpointC_ip, endpointD_ip, routerL, routerR,
         endpointA_network_ip, endpointB_network_ip,
         endpointC_network_ip, endpointD_network_ip,
         routerL_to_endpointA_ip, routerL_to_endpointB_ip,
@@ -74,9 +73,9 @@ def build(
         interface_LC, interface_LD, interface_LA,
         interface_LB, interface_RC, interface_RD,
         interface_LR, interface_RL, BD_file_size,
-        AC_file_size, delay, loss, bandwidth, wait_delay_LR,
-        congestion_control, post_processing_entity,
-        scenario_name=SCENARIO_NAME):
+        AC_file_size, delay, loss, bandwidth,
+        wait_delay_LR, congestion_control, server_port,
+        post_processing_entity, scenario_name=SCENARIO_NAME):
 
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
