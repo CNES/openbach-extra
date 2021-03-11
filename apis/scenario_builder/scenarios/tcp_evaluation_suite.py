@@ -421,7 +421,6 @@ def build(
 
     start_service_data_transfer_AC_1 = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[start_service_data_transfer_BD],
             wait_launched=[
                 start_rate_monitoring_C,
                 start_rate_monitoring_D,
