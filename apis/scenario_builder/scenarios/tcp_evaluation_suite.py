@@ -32,7 +32,7 @@ from scenario_builder.openbach_functions import StartScenarioInstance
 from scenario_builder.scenarios import transport_tcp_stack_conf, network_configure_link, service_data_transfer, rate_monitoring
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
-from scenario_builder.helpers.transport.iperf3 import iperf3_find_server
+from scenario_builder.helpers.transport.iperf3 import iperf3_find_client
 
 
 SCENARIO_NAME = 'tcp_evaluation_suite'
@@ -569,7 +569,7 @@ def build(
         ]
 
         for jobs, filters, legend, statistic, axis in [
-                (['iperf3'], {}, _iperf3_legend, 'cwnd', 'cwnd'),
+                (['iperf3'], {'iperf3': iperf3_find_client}, _iperf3_legend, 'cwnd', 'cwnd'),
                 (['rate_monitoring'], {}, _rate_monitoring_legend, 'rate', 'rate'),
         ]:
             post_processed = list(scenario.extract_function_id(*jobs, include_subscenarios=True, **filters))

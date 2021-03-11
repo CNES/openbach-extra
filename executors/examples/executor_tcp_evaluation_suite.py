@@ -106,7 +106,7 @@ Metrics:
 
 from auditorium_scripts.scenario_observer import ScenarioObserver, DataProcessor
 from scenario_builder.scenarios import tcp_evaluation_suite
-from scenario_builder.helpers.transport.iperf3 import iperf3_find_server
+from scenario_builder.helpers.transport.iperf3 import iperf3_find_client
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -344,14 +344,13 @@ def main(argv=None):
     ##################################################
 
     results = DataProcessor(observer)
-    iperf3_scenarios = list(scenario.extract_function_id(iperf3=iperf3_find_server, include_subscenarios=True))
+    iperf3_scenarios = list(scenario.extract_function_id(iperf3=iperf3_find_client, include_subscenarios=True))
 
     i = 0
     for stat in iperf3_scenarios:
         i = i + 1
         results.add_callback('download_time_'+str(i), extract_iperf_statistic, stat)
     values = results.post_processing()
-
 
     #########################
     ###### Do the plot ######
@@ -364,7 +363,7 @@ def main(argv=None):
     df = pd.DataFrame({'download_time': pts}, index=timestamps)
 
     for stat_name, ts_xlabel, ts_ylabel, ts_title, cdf_xlabel, cdf_ylabel, cdf_title in (
-        ('download_time', 'Time (ms)', 'Download Time (ms)', 'Download Time TS', 'Download Time (ms)', 'CDF', 'Download Time CDF'),):
+        ('download_time', 'Time (ms)', 'Download Time (s)', 'Download Time time series', 'Download Time (s)', 'CDF', 'Download Time CDF'),):
 
         #########################
         ######## ts plot ########
