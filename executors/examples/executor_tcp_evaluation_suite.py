@@ -123,10 +123,6 @@ def extract_iperf_statistic(job):
     hence the use of the `Flow1` suffix for the desired statistic.
     """
     data = job.statistics_data[('Flow1',)].dated_data
-    res = [
-            (timestamp, stats['download_time'])
-            for timestamp, stats in data.items() if 'download_time' in stats
-    ]
     return [
             (timestamp, stats['download_time'])
             for timestamp, stats in data.items() if 'download_time' in stats
