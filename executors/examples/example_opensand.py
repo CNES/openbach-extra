@@ -140,7 +140,7 @@ def example_opensand(satellite, ground_entities, duration=0, post_processing_ent
 
     if files_to_push:
         push_files = scenario.add_function('start_scenario_instance', wait_finished=[network_configure])
-        push_files.configure(opensand_satcom_conf.build(files_to_push)
+        push_files.configure(opensand_satcom_conf.build(files_to_push))
         wait = [push_files]
 
     run_satellite = opensand_run.Satellite(
