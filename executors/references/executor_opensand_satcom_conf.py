@@ -26,6 +26,11 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
+"""This executor runs an OpenSAND scenario allowing to: 
+ - Push opensand configuration files from the controller to the agents /etc/opensand folder
+ - Filter the files sent depending on the type of the receiving entity
+This step is necessary to push the OpenSAND configuration of a platform.
+"""
 
 import time
 from pathlib import Path

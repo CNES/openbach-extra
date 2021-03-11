@@ -26,6 +26,12 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
+"""This executor runs an OpenSAND scenario allowing to:
+ - Configure bridge/tap interfaces on entities for OpenSAND to communicate with the real world
+ - Configure ip forwarding in case IP mode is requested
+ - Clear the configuration if requested
+ This step is necessary to set up an OpenSAND platform.
+"""
 
 import argparse 
 

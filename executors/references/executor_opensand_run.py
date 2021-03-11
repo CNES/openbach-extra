@@ -26,7 +26,9 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-
+"""This executor runs an OpenSAND scenario allowing to:
+  - Run OpenSAND in the satellite, the gateways and the STs for an OpenSAND test
+"""
 import argparse 
 import ipaddress
 
