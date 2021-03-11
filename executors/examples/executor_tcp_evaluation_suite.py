@@ -373,7 +373,7 @@ def main(argv=None):
         figure, axis = plt.subplots()
         plt.xlabel(ts_xlabel)
         plt.ylabel(ts_ylabel)
-        df.plot(y=stat_name, ax=axis, title=ts_title, grid=True, legend=True, linewidth=2)
+        df.plot(y=stat_name, ax=axis, title=ts_title, grid=True, legend=False, linewidth=2)
         register_figure(path, scenario_id, observer_file, 'ts')
 
         #########################
