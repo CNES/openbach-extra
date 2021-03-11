@@ -39,12 +39,12 @@ from scenario_builder.scenarios import opensand_run
 
 class ValidateSatellite(argparse.Action):
     def __call__(self, parser, args, values, option_string=None): 
-        satellite = opensand_run.SAT(*values)
+        satellite = opensand_run.Satellite(*values)
         setattr(args, self.dest, satellite)
 
 
 class ValidateGroundEntity(Validate):
-    ENTITY_TYPE = opensand_run.GROUND
+    ENTITY_TYPE = opensand_run.GroundEntity
 
 
 def main(argv=None):
