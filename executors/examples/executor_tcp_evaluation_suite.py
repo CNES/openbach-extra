@@ -128,16 +128,13 @@ def extract_iperf_statistic(job):
             for timestamp, stats in data.items() if 'download_time' in stats
     ]
 
-def register_figure(path, scenario_id, figure_type):
+def register_figure(path, scenario_id, observer_file, figure_type):
     if path is None:
         plt.show()
     else:
         figure_name = '{}_{}_{}.png'.format(scenario_id, 'download_time', figure_type)
-        #if path.suffix == ".csv":
-        if not observer.args.file:
-            #plt.savefig(os.path.join(path.parent,figure_name))
+        if not observer_file:
             plt.savefig(path.joinpath(figure_name).as_posix())
-        #elif '.tar' in path.suffixes and '.gz' in path.suffixes:
         else:
             archive =  path / f'scenario_instance_{scenario_id}.tar.gz'
             # We save the figure as a tmp file
@@ -155,8 +152,6 @@ def register_figure(path, scenario_id, figure_type):
                                 output_tar.addfile(member, reading_tar.extractfile(member.name)) # We add the file already in the tarfile
                             output_tar.add(tmp_figure.name, arcname=figure_name) # We add the figure
                     os.rename(tmp_path, archive) # We mv the tmp_file where we added the figure to the previous tarfile.
-        #else:
-        #    plt.savefig(os.path.join(path,figure_name))
 
 
 def main(argv=None):
@@ -342,8 +337,7 @@ def main(argv=None):
             post_processing_entity=args.post_processing_entity,
             scenario_name=args.scenario_name)
 
-    #observer.launch_and_wait(scenario)
-    scenario_id = observer.launch_and_wait()['scenario_instance_id']
+    scenario_id = observer.launch_and_wait(scenario)['scenario_instance_id']
 
     ##################################################
     # Post process download_time of iperf3 scenarios #
@@ -363,15 +357,10 @@ def main(argv=None):
     ###### Do the plot ######
     #########################
 
-    timestamps, pts = ([v[0][0] for f,v in values.items()], [v[0][1] for k,v in values.items()])
-
     path = observer.args.path
+    observer_file = observer.args.file
 
-    # Do plot and one of the following:
-    ## - display 
-    ## - save in the same directory as csv
-    ## - save in tar file
-
+    timestamps, pts = ([v[0][0] for f,v in values.items()], [v[0][1] for k,v in values.items()])
     df = pd.DataFrame({'download_time': pts}, index=timestamps)
 
     for stat_name, ts_xlabel, ts_ylabel, ts_title, cdf_xlabel, cdf_ylabel, cdf_title in (
@@ -384,8 +373,8 @@ def main(argv=None):
         figure, axis = plt.subplots()
         plt.xlabel(ts_xlabel)
         plt.ylabel(ts_ylabel)
-        df.plot(y=stat_name, ax=axis, title=ts_title, grid=True, legend=False, linewidth=2)
-        register_figure(path, scenario_id, 'ts')
+        df.plot(y=stat_name, ax=axis, title=ts_title, grid=True, legend=True, linewidth=2)
+        register_figure(path, scenario_id, observer_file, 'ts')
 
         #########################
         ######## cdf plot ########
@@ -395,7 +384,7 @@ def main(argv=None):
         plt.xlabel(cdf_xlabel)
         plt.ylabel(cdf_ylabel)
         df.plot(kind='hist', y=stat_name, ax=axis, title=cdf_title, grid=True, legend=False, histtype='step', bins=100, cumulative=1, density=True)
-        register_figure(path, scenario_id, 'cdf')
+        register_figure(path, scenario_id, observer_file, 'cdf')
 
 if __name__ == '__main__':
     main()
