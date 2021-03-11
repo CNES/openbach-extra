@@ -63,7 +63,7 @@
 --BD-file-size 500M
 --AC-file-size 10M
 --delay 10 10 10
---loss 10 10 10
+--loss 0 0 0
 --bandwidth 20M 10M 20M
 --wait-delay-LR 10 10
 --congestion-control CUBIC
