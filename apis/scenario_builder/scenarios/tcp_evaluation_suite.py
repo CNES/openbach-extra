@@ -393,12 +393,6 @@ def build(
             scenario_name='service_data_transfer_BD')
     start_service_data_transfer_BD = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[
-                start_network_conf_link_LAB,
-                start_network_conf_link_RCD,
-                start_network_conf_link_LR,
-                start_network_conf_link_RL
-            ],
             wait_launched=[
                 start_rate_monitoring_C,
                 start_rate_monitoring_D,

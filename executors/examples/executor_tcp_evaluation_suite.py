@@ -133,9 +133,13 @@ def register_figure(path, scenario_id, figure_type):
         plt.show()
     else:
         figure_name = '{}_{}_{}.png'.format(scenario_id, 'download_time', figure_type)
-        if path.suffix == ".csv":
-            plt.savefig(os.path.join(os.path.split(path)[0],figure_name))
-        elif '.tar' in path.suffixes and '.gz' in path.suffixes:
+        #if path.suffix == ".csv":
+        if not observer.args.file:
+            #plt.savefig(os.path.join(path.parent,figure_name))
+            plt.savefig(path.joinpath(figure_name).as_posix())
+        #elif '.tar' in path.suffixes and '.gz' in path.suffixes:
+        else:
+            archive =  path / f'scenario_instance_{scenario_id}.tar.gz'
             # We save the figure as a tmp file
             with tempfile.NamedTemporaryFile() as tmp_figure:
                 plt.savefig(tmp_figure)
@@ -144,15 +148,15 @@ def register_figure(path, scenario_id, figure_type):
                     # tmp_path is the path where we will unzip the tarfile
                     tmp_path = os.path.join(tempdir, os.path.split(path)[1])
                     #We open the tarfile for reading
-                    with tarfile.open(path, "r:gz") as reading_tar:
+                    with tarfile.open(archive.as_posix(), "r:gz") as reading_tar:
                         # We open the tmp tar file for writing
                         with tarfile.open(tmp_path, "w:gz") as output_tar:
                             for member in reading_tar:
                                 output_tar.addfile(member, reading_tar.extractfile(member.name)) # We add the file already in the tarfile
                             output_tar.add(tmp_figure.name, arcname=figure_name) # We add the figure
-                    os.rename(tmp_path, path) # We mv the tmp_file where we added the figure to the previous tarfile.
-        else:
-            plt.savefig(os.path.join(path,figure_name))
+                    os.rename(tmp_path, archive) # We mv the tmp_file where we added the figure to the previous tarfile.
+        #else:
+        #    plt.savefig(os.path.join(path,figure_name))
 
 
 def main(argv=None):
