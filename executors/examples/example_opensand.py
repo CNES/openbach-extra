@@ -46,7 +46,7 @@ SCENARIO_NAME = 'Opensand'
 
 
 @dataclass(frozen=True)
-class OpensandEntity(opensand_net_conf.OpensandEntity, opensand_satcom_conf.OpensandEntity):
+class OpensandEntity(opensand_satcom_conf.OpensandEntity, opensand_net_conf.OpensandEntity):
     pass
 
 
@@ -278,14 +278,14 @@ def main(argv=None):
     ground_entities = [
             OpensandEntity(
                 entity.entity,
-                send_files_to_controller(pusher, entity.entity, getattr(entity, 'infrastructure', None)),
-                send_files_to_controller(pusher, entity.entity, args.topology),
-                send_files_to_controller(pusher, entity.entity, getattr(entity, 'profile', None)),
-                entity.entity,
                 entity.tap_mac_address,
                 entity.tap_name,
                 entity.bridge_name,
-                entity.bridge_to_lan)
+                entity.bridge_to_lan,
+                entity.entity,
+                send_files_to_controller(pusher, entity.entity, getattr(entity, 'infrastructure', None)),
+                send_files_to_controller(pusher, entity.entity, args.topology),
+                send_files_to_controller(pusher, entity.entity, getattr(entity, 'profile', None)))
             for entity in args.ground_entities
     ]
 
