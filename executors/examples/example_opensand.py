@@ -43,7 +43,11 @@ from scenario_builder.scenarios import opensand_run, opensand_net_conf, opensand
 
 
 SCENARIO_NAME = 'Opensand'
-
+SCENARIO_DESCRIPTION = """This scenarios enables to run a full OpenSAND experiment.
+- The opensand_net_conf scenario is used to configure the network 
+- The opensand_satcom_conf scenario is used to deploy an OpenSAND configuration
+- The opensand_run scenario is used to start the entities and start the service
+"""
 
 @dataclass(frozen=True)
 class OpensandEntity(opensand_satcom_conf.OpensandEntity, opensand_net_conf.OpensandEntity):
