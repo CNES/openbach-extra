@@ -51,21 +51,23 @@ parametrisation by the user.
 For a better understanding regarding the parameters example, the following
 architecture include ips and interface name examples.
 
-+---------+                                                       +---------+
-|endpointA|ensA(192.168.0.1)                     ensC(192.168.3.1)|endpointC|
-+---------+------+                                +---------------+---------+
-                 |                                |
-                 |                                |
-                 |ensL1(192.168.0.14)             |ensR1(192.168.3.3)
-               +-+-------+                       +-+------+
-               |Router L |    ensR3(192.168.2.25)|Router R|
-               +-+-------+-----------------------+-+------+
-ensL2(192.168.1.5)|    ensL3(192.168.2.15)        |ensR2(192.168.4.8)
-                 |                                |
-                 |                                | 
-+---------+------+                                +---------------+---------+
-|endpointB|ensB(192.168.1.1)                     ensD(192.168.4.1)|endpointD|
-+---------+                                                       +---------+
++---------+ensA: 192.168.0.5                       ensC: 192.168.3.4+---------+
+|endpointA|(N 192.168.0.0/24)                     (N 192.168.3.0/24)|endpointC|
++---------+-------+                                        +--------+---------+
+                  |                                        |
+                  |                                        |
+                  |ensL1: 192.168.0.14                     |ensR1: 192.168.3.3 
+                  |(network 192.168.0.0/24)                |(N 192.168.3.0/24)
+                +-+-----+        ensR3: 192.168.2.25 +-----+-+
+                |RouterL|          (N 192.168.2.0/24)|RouterR|
+                +-+-----+----------------------------+-----+-+
+ensL2: 192.168.1.5|   ensL3: 192.168.2.15                  |ensR2: 192.168.4.8 
+(N 192.168.1.0/24)|   (N 192.168.2.0/24)                   |(N 192.168.4.0/24)
+                  |                                        |
+                  |                                        | 
++---------+-------+                                        +--------+---------+
+|endpointB|ensB: 192.168.1.6                      ensD: 192.168.4.14|endpointD|
++---------+(N 192.168.1.0/24)                     (N 192.168.4.0/24)+---------+
 
 +-------------------------------------+
 endpointA and endpointC parameters:
@@ -188,10 +190,10 @@ def main(argv=None):
             help='Name of the entity hosting endpointD (e.g. ""endpointD")')
     observer.add_scenario_argument(
             '--endpointC-ip', required=True,
-            help='IP of endpointC on the network shared with routerR (e.g. "192.168.3.1")')
+            help='IP of endpointC on the network shared with routerR (e.g. "192.168.3.4")')
     observer.add_scenario_argument(
             '--endpointD-ip', required=True,
-            help='IP of endpointD on the network shared with routerR (e.g. "192.168.4.1")')
+            help='IP of endpointD on the network shared with routerR (e.g. "192.168.4.14")')
     observer.add_scenario_argument(
             '--routerL', required=True,
             help='Name of the entity hosting routerL (e.g. "routerL")')
