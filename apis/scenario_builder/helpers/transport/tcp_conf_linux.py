@@ -83,16 +83,3 @@ def tcp_conf_linux(
 
     return [function]
 
-
-def tcp_conf_linux_repetitive_tests(
-        scenario, entity, congestion_control,
-        hystart=None, tcp_slow_start_after_idle=1,
-        tcp_no_metrics_save=1, tcp_sack=0, tcp_recovery=1, tcp_fastopen=1,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-
-    return tcp_conf_linux(
-            scenario, entity, congestion_control, hystart,
-            tcp_slow_start_after_idle, tcp_no_metrics_save,
-            tcp_sack, tcp_recovery, tcp_fastopen,
-            wait_finished, wait_launched, wait_delay)
-
