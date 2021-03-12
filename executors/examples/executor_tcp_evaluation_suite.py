@@ -291,7 +291,7 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--bandwidth', required=False, nargs='*', type=str, default=['20M','10M','20M'],
             help='bandwidth of each LR link (in bytes)'
-            'Take three int as the job is configured three times')
+            'Take three string as the job is configured three times')
     observer.add_scenario_argument(
             '--wait-delay-LR', required=False, nargs='*', type=int, default=[10,10],
             help='First param: wait_delay between BD trafic start and first LR '
