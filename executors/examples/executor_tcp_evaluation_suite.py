@@ -107,6 +107,7 @@ from auditorium_scripts.scenario_observer import ScenarioObserver, DataProcessor
 from scenario_builder.scenarios import tcp_evaluation_suite
 from scenario_builder.helpers.transport.iperf3 import iperf3_find_client
 
+from io import BytesIO
 import matplotlib.pyplot as plt
 import pandas as pd
 import tempfile
@@ -138,21 +139,18 @@ def register_figure(path, scenario_id, observer_file, figure_type):
             plt.savefig(path.joinpath(figure_name).as_posix())
         else:
             archive =  path / f'scenario_instance_{scenario_id}.tar.gz'
-            # We save the figure as a tmp file
-            with tempfile.NamedTemporaryFile() as tmp_figure:
-                plt.savefig(tmp_figure)
-                # We will unzip the tarfile in a tmp directory
-                with tempfile.TemporaryDirectory() as tempdir:
-                    # tmp_path is the path where we will unzip the tarfile
-                    tmp_path = os.path.join(tempdir, os.path.split(path)[1])
-                    #We open the tarfile for reading
-                    with tarfile.open(archive.as_posix(), "r:gz") as reading_tar:
-                        # We open the tmp tar file for writing
-                        with tarfile.open(tmp_path, "w:gz") as output_tar:
-                            for member in reading_tar:
-                                output_tar.addfile(member, reading_tar.extractfile(member.name)) # We add the file already in the tarfile
-                            output_tar.add(tmp_figure.name, arcname=figure_name) # We add the figure
-                    os.rename(tmp_path, archive) # We mv the tmp_file where we added the figure to the previous tarfile.
+            in_memory_figure = BytesIO()
+            plt.savefig(in_memory_figure, format='png')
+            infos_figure = tarfile.TarInfo(figure_name)
+            infos_figure.size = in_memory_figure.tell()
+            in_memory_figure.seek(0)
+
+            with tempfile.NamedTemporaryFile(mode='wb', delete=False) as tmp_tar:
+                with tarfile.open(archive.as_posix(), 'r:gz') as reading_tar, tarfile.open(fileobj=tmp_tar, mode='w:gz') as output_tar:
+                    for member in reading_tar:
+                        output_tar.addfile(member, reading_tar.extractfile(member.name))
+                    output_tar.addfile(infos_figure, in_memory_figure)
+            os.rename(tmp_tar.name, archive)
 
 
 def main(argv=None):
@@ -255,7 +253,7 @@ def main(argv=None):
             help='Interface name from routerR to routerL')
 
     observer.add_scenario_argument(
-            '--BD-file-size', required=False, default='500M',
+            '--BD-file-size', required=False, default='5000M',
             help='size of the file to transmit (in bytes) for B -> D transfer. '
             'The value must be stricly higher than 1 MB')
     observer.add_scenario_argument(
