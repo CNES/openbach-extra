@@ -45,6 +45,7 @@ import subprocess
 import contextlib
 import collect_agent
 
+from glob import glob
 from subprocess import check_output
 
 @contextlib.contextmanager
@@ -322,6 +323,12 @@ def cubic(reset,
             core_rmem_default,
             core_rmem_max)
 
+    # Get current name of "hystart_ack_delta" parameter since it can be different
+    # according to the Linux kernel
+    hystart_ack_delta_name = list(map(
+            os.path.basename,
+            glob("/sys/module/tcp_cubic/parameters/hystart_ack_delta*")))[0]
+
     # getting changes to CUBIC parameters in /etc/module/tcp_cubic/parameters and
     # writing changes in /etc/sysctl.d/60-openbach-job-cubic.conf
     changes = {}
@@ -343,11 +350,11 @@ def cubic(reset,
         conf_file.write("fast_convergence="+src.readline())
         src.close()
     if hystart_ack_delta is not None:
-        conf_file.write("hystart_ack_delta="+str(hystart_ack_delta)+"\n")
-        changes["hystart_ack_delta"] = hystart_ack_delta
+        conf_file.write(hystart_ack_delta_name+"="+str(hystart_ack_delta)+"\n")
+        changes[hystart_ack_delta_name] = hystart_ack_delta
     else:
-        src = open("/sys/module/tcp_cubic/parameters/hystart_ack_delta","r")
-        conf_file.write("hystart_ack_delta="+src.readline())
+        src = open("/sys/module/tcp_cubic/parameters/"+hystart_ack_delta_name,"r")
+        conf_file.write(hystart_ack_delta_name+"="+src.readline())
         src.close()
     if hystart_low_window is not None:
         conf_file.write("hystart_low_window="+str(hystart_low_window)+"\n")
@@ -394,7 +401,7 @@ def cubic(reset,
 
     #retrieving new values for tcp_cubic parameters
     statistics = {}
-    for param in ["beta", "fast_convergence", "hystart_ack_delta",
+    for param in ["beta", "fast_convergence", hystart_ack_delta_name,
     "hystart_low_window", "tcp_friendliness", "hystart", "hystart_detect",
     "initial_ssthresh"]:
         file = open("/sys/module/tcp_cubic/parameters/"+param)
