@@ -48,6 +48,25 @@ The architecture should be the following
 Here are the values that should be specified by default but available for
 parametrisation by the user.
 
+For a better understanding regarding the parameters example, the following
+architecture include ips and interface name examples.
+
++---------+                                                       +---------+
+|endpointA|ensA(192.168.0.1)                     ensC(192.168.3.1)|endpointC|
++---------+------+                                +---------------+---------+
+                 |                                |
+                 |                                |
+                 |ensL1(192.168.0.14)             |ensR1(192.168.3.3)
+               +-+-------+                       +-+------+
+               |Router L |    ensR3(192.168.2.25)|Router R|
+               +-+-------+-----------------------+-+------+
+ensL2(192.168.1.5)|    ensL3(192.168.2.15)        |ensR2(192.168.4.8)
+                 |                                |
+                 |                                | 
++---------+------+                                +---------------+---------+
+|endpointB|ensB(192.168.1.1)                     ensD(192.168.4.1)|endpointD|
++---------+                                                       +---------+
+
 +-------------------------------------+
 endpointA and endpointC parameters:
   - Congestion control : CUBIC
@@ -157,101 +176,100 @@ def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--endpointA', required=True,
-            help='Machine name representing endpointA')
+            help='Name of the entity hosting endpointA (e.g. "endpointA")')
     observer.add_scenario_argument(
             '--endpointB', required=True,
-            help='Machine name representing endpointB')
+            help='Name of the entity hosting endpointB (e.g. "endpointB")') 
     observer.add_scenario_argument(
             '--endpointC', required=True,
-            help='Machine name representing endpointC')
+            help='Name of the entity hosting endpointC (e.g. "endpointC")') 
     observer.add_scenario_argument(
             '--endpointD', required=True,
-            help='Machine name representing endpointD')
+            help='Name of the entity hosting endpointD (e.g. ""endpointD")')
     observer.add_scenario_argument(
             '--endpointC-ip', required=True,
-            help='Private endpointC ip')
+            help='IP of endpointC on the network shared with routerR (e.g. "192.168.3.1")')
     observer.add_scenario_argument(
             '--endpointD-ip', required=True,
-            help='Private endpointD ip')
+            help='IP of endpointD on the network shared with routerR (e.g. "192.168.4.1")')
     observer.add_scenario_argument(
             '--routerL', required=True,
-            help='Machine name representing routerL')
+            help='Name of the entity hosting routerL (e.g. "routerL")')
     observer.add_scenario_argument(
             '--routerR', required=True,
-            help='Machine name representing routerR')
+            help='Name of the entity hosting routerR (e.g. "routerR")')
     observer.add_scenario_argument(
             '--endpointA-network-ip', required=True,
-            help='endpointA network ip with subnet mask')
+            help='IP address of endpointA with network mask (e.g. "192.168.0.1/24")')
     observer.add_scenario_argument(
             '--endpointB-network-ip', required=True,
-            help='endpointB network ip with subnet mask')
+            help='IP address of endpointB with network mask (e.g. "192.168.1.1/24")')
     observer.add_scenario_argument(
             '--endpointC-network-ip', required=True,
-            help='endpointC network ip with subnet mask')
+            help='IP address of endpointC with network mask (e.g. "192.168.3.1/24")')
     observer.add_scenario_argument(
             '--endpointD-network-ip', required=True,
-            help='endpointD network ip with subnet mask')
+            help='IP address of endpointD with network mask (e.g. "192.168.4.1/24")')
     observer.add_scenario_argument(
             '--routerL-to-endpointA-ip', required=True,
-            help='routerL to endpointA interface ip')
+            help='IP address of routerL on the network shared with endpointA (e.g. "192.168.0.14")')
     observer.add_scenario_argument(
             '--routerL-to-endpointB-ip', required=True,
-            help='routerL to endpointB interface ip')
+            help='IP address of routerL on the network shared with endpointB (e.g. "192.168.1.5")')
     observer.add_scenario_argument(
             '--routerR-to-endpointC-ip', required=True,
-            help='routerR to endpointC interface ip')
+            help='IP address of routerR on the network shared with endpointC (e.g. "192.168.3.3")')
     observer.add_scenario_argument(
             '--routerR-to-endpointD-ip', required=True,
-            help='routerR to endpointD interface ip')
+            help='IP address of routerR on the network shared with endpointD (e.g. "192.168.4.8")')
     observer.add_scenario_argument(
             '--routerL-to-routerR-ip', required=True,
-            help='routerL to routerR interface ip')
+            help='IP address of routerL on the network shared with routerR (e.g. "192.168.2.15")')
     observer.add_scenario_argument(
             '--routerR-to-routerL-ip', required=True,
-            help='routerR to routerL interface ip')
+            help='IP address of routerR on the network shared with routerL (e.g. "192.168.2.25")')
     observer.add_scenario_argument(
             '--interface-AL', required=True,
-            help='Interface name from endpointA to routerL')
+            help='Name of the interface on endpointA towards routerL (e.g. "ensA")')
     observer.add_scenario_argument(
             '--interface-BL', required=True,
-            help='Interface name from endpointB to routerL')
+            help='Name of the interface on endpointB towards routerL (e.g. "ensB")')
     observer.add_scenario_argument(
             '--interface-CR', required=True,
-            help='Interface name from endpointC to routerR')
+            help='Name of the interface on endpointC towards routerR (e.g. "ensC")')
     observer.add_scenario_argument(
             '--interface-DR', required=True,
-            help='Interface name from endpointD to routerR')
+            help='Name of the interface on endpointD towards routerR (e.g. "ensD")')
     observer.add_scenario_argument(
             '--interface-RA', required=True,
-            help='Interface name from routerR to endpointA')
+            help='Name of the interface on routerR towards endpointA (e.g. "ensR3")')
     observer.add_scenario_argument(
             '--interface-RB', required=True,
-            help='Interface name from routerR to endpointB')
+            help='Name of the interface on routerR towards endpointB (e.g. "ensR3")')
     observer.add_scenario_argument(
             '--interface-LC', required=True,
-            help='Interface name from routerL to endpointC')
+            help='Name of the interface on routerL towards endpointC (e.g. "ensL3")')
     observer.add_scenario_argument(
             '--interface-LD', required=True,
-            help='Interface name from routerL to endpointD')
+            help='Name of the Interface on routerL towards endpointD (e.g. "ensL3")')
     observer.add_scenario_argument(
             '--interface-LA', required=True,
-            help='Interface name from routerL to endpointA')
+            help='Name of the interface on routerL towards endpointA (e.g. "ensL1")')
     observer.add_scenario_argument(
             '--interface-LB', required=True,
-            help='Interface name from routerL to endpointB')
+            help='Name of the interface on routerL towards endpointB (e.g. "ensL2")')
     observer.add_scenario_argument(
             '--interface-RC', required=True,
-            help='Interface name from routerR to endpointC')
+            help='Name of the interface on routerR towards endpointC (e.g. "ensR1")')
     observer.add_scenario_argument(
             '--interface-RD', required=True,
-            help='Interface name from routerR to endpointD')
+            help='Name of the interface on routerR towards endpointD (e.g. "ensR2")') 
     observer.add_scenario_argument(
             '--interface-LR', required=True,
-            help='Interface name from routerL to routerR')
+            help='Name of the interface on routerL towards routerR (e.g. "ensL3")')
     observer.add_scenario_argument(
             '--interface-RL', required=True,
-            help='Interface name from routerR to routerL')
-
+            help='Name of the interface on routerR towards routerL (e.g. "ensR3")')
     observer.add_scenario_argument(
             '--BD-file-size', required=False, default='5000M',
             help='size of the file to transmit (in bytes) for B -> D transfer. '
@@ -262,26 +280,27 @@ def main(argv=None):
             'The value must be stricly higher than 1 MB')
     observer.add_scenario_argument(
             '--delay', required=False, nargs='*', type=int, default=[10,10,10],
-            help='delay/latency for network_configure_link job')
+            help='one way delay of each link (in ms)'
+            'MISSING DESCRIPTION ON HOW TO USE')
     observer.add_scenario_argument(
             '--loss', required=False, nargs='*', type=int, default=[0,0,0],
-            help='parameters of the loss model for tc_configure_link job')
+            help='parameters of the loss model'
+            'MISSING DESCRIPTION ON HOW TO USE')
     observer.add_scenario_argument(
             '--bandwidth', required=False, nargs='*', type=str, default=['20M','10M','20M'],
-            help='bandwidth for tc_configure_link job')
+            help='bandwidth of each of link (in bytes)'
+            'MISSING DESCRIPTION ON HOW TO USE')
     observer.add_scenario_argument(
             '--wait-delay-LR', required=False, nargs='*', type=int, default=[10,10],
             help='First param: wait_delay between BD trafic start and first LR '
             'link bandwidth reduction. Second param: wait_delay between first LR '
             'link bandwidth reduction and second LR link bandwidth reduction')
-
     observer.add_scenario_argument(
             '--congestion-control', required=True,
-            help='Congestion control name. Ex: CUBIC')
+            help='Congestion control name (e.g. "cubic"')
     observer.add_scenario_argument(
             '--server-port', required=False, default=7001,
             help='Destination port for the iperf3 traffic')
-
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
