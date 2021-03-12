@@ -282,16 +282,16 @@ def main(argv=None):
             'The value must be stricly higher than 1 MB')
     observer.add_scenario_argument(
             '--delay', required=False, nargs='*', type=int, default=[10,10,10],
-            help='one way delay of each link (in ms)'
-            'MISSING DESCRIPTION ON HOW TO USE')
+            help='one way delay of each LR link (in ms)'
+            'Take three int as the job is configured three times')
     observer.add_scenario_argument(
             '--loss', required=False, nargs='*', type=int, default=[0,0,0],
             help='parameters of the loss model'
-            'MISSING DESCRIPTION ON HOW TO USE')
+            'Take three int as the job is configured three times')
     observer.add_scenario_argument(
             '--bandwidth', required=False, nargs='*', type=str, default=['20M','10M','20M'],
-            help='bandwidth of each of link (in bytes)'
-            'MISSING DESCRIPTION ON HOW TO USE')
+            help='bandwidth of each LR link (in bytes)'
+            'Take three int as the job is configured three times')
     observer.add_scenario_argument(
             '--wait-delay-LR', required=False, nargs='*', type=int, default=[10,10],
             help='First param: wait_delay between BD trafic start and first LR '
