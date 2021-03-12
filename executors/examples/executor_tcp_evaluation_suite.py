@@ -200,16 +200,16 @@ def main(argv=None):
             help='Name of the entity hosting routerR (e.g. "routerR")')
     observer.add_scenario_argument(
             '--endpointA-network-ip', required=True,
-            help='IP address of endpointA with network mask (e.g. "192.168.0.1/24")')
+            help='Network mask of the IP network shared by endpointA and routerL (e.g. "192.168.0.0/24")')
     observer.add_scenario_argument(
             '--endpointB-network-ip', required=True,
-            help='IP address of endpointB with network mask (e.g. "192.168.1.1/24")')
+            help='Network mask of the IP network shared by endpointB and routerL (e.g. "192.168.1.0/24")')
     observer.add_scenario_argument(
             '--endpointC-network-ip', required=True,
-            help='IP address of endpointC with network mask (e.g. "192.168.3.1/24")')
+            help='Network mask of the IP network shared by endpointC and routerR(e.g. "192.168.3.0/24")')
     observer.add_scenario_argument(
             '--endpointD-network-ip', required=True,
-            help='IP address of endpointD with network mask (e.g. "192.168.4.1/24")')
+            help='Network mask of the IP network shared by endpointD and routerR (e.g. "192.168.4.0/24")')
     observer.add_scenario_argument(
             '--routerL-to-endpointA-ip', required=True,
             help='IP address of routerL on the network shared with endpointA (e.g. "192.168.0.14")')
