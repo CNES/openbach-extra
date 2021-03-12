@@ -1,0 +1,69 @@
+# OpenBACH is a generic testbed able to control/configure multiple
+# network/physical entities (under test) and collect data from them.
+# It is composed of an Auditorium (HMIs), a Controller, a Collector
+# and multiple Agents (one for each network entity that wants to be
+# tested).
+#
+# Copyright © 2016-2020 CNES
+# This file is part of the OpenBACH testbed.
+#
+# OpenBACH is a free software : you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY, without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see http://www.gnu.org/licenses/.
+
+
+# File configuration example for executor_tcp_evaluation_suite scenario.
+# Author : Léa Thibout, Viveris Technologies
+
+# Example launch command:
+# PYTHONPATH=~/openbach-extra/apis/ python3 executor_tcp_evaluation_suite.py @executor_tcp_evaluation_suite_arg.txt my_project run
+
+# Example of ips, interface names, file size and congestion control
+--endpointA endpointA 
+--endpointB endpointB 
+--endpointC endpointC 
+--endpointD endpointD 
+--endpointC-ip 192.168.3.4
+--endpointD-ip 192.168.4.14
+--routerL routerL 
+--routerR routerR  
+--endpointA-network-ip 192.168.0.0/24
+--endpointB-network-ip 192.168.1.0/24
+--endpointC-network-ip 192.168.3.0/24
+--endpointD-network-ip 192.168.4.0/24
+--routerL-to-endpointA-ip 192.168.0.14
+--routerL-to-endpointB-ip 192.168.1.5
+--routerR-to-endpointC-ip 192.168.3.3
+--routerR-to-endpointD-ip 192.168.4.8
+--routerL-to-routerR-ip 192.168.2.15
+--routerR-to-routerL-ip 192.168.2.25
+--interface-AL ens3
+--interface-BL ens4
+--interface-CR ens3
+--interface-DR ens3
+--interface-RA ens5
+--interface-RB ens5
+--interface-LC ens4
+--interface-LD ens4
+--interface-LA ens3
+--interface-LB ens6
+--interface-RC ens6
+--interface-RD ens3
+--interface-LR ens4
+--interface-RL ens5
+--BD-file-size 500M
+--AC-file-size 10M
+--delay 10 10 10
+--loss 0 0 0
+--bandwidth 20M 10M 20M
+--wait-delay-LR 10 10
+--congestion-control CUBIC
