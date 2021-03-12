@@ -347,7 +347,8 @@ def main(argv=None):
     iperf3_scenarios = list(scenario.extract_function_id(iperf3=iperf3_find_client, include_subscenarios=True))
 
     i = 0
-    for stat in iperf3_scenarios:
+    #The first element is BD link as it is launched first. We don't need his metric.
+    for stat in iperf3_scenarios[1:]:
         i = i + 1
         results.add_callback('download_time_'+str(i), extract_iperf_statistic, stat)
     values = results.post_processing()

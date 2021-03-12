@@ -569,8 +569,8 @@ def build(
         ]
 
         for jobs, filters, legend, statistic, axis in [
-                (['iperf3'], {'iperf3': iperf3_find_client}, _iperf3_legend, 'cwnd', 'cwnd'),
-                (['rate_monitoring'], {}, _rate_monitoring_legend, 'rate', 'rate'),
+                (['iperf3'], {'iperf3': iperf3_find_client}, _iperf3_legend, 'cwnd', 'cwnd (bytes)'),
+                (['rate_monitoring'], {}, _rate_monitoring_legend, 'rate', 'rate (b/s)'),
         ]:
             post_processed = list(scenario.extract_function_id(*jobs, include_subscenarios=True, **filters))
             if post_processed:
