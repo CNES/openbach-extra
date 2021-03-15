@@ -199,3 +199,6 @@ def iperf3_client(
 
 def iperf3_find_server(openbach_function):
     return 'server' in openbach_function.start_job_instance['iperf3']
+
+def iperf3_find_client(openbach_function):
+    return 'client' in openbach_function.start_job_instance['iperf3']
