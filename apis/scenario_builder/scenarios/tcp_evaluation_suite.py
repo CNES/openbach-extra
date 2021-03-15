@@ -29,11 +29,10 @@
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.openbach_functions import StartScenarioInstance
-from scenario_builder.scenarios import transport_tcp_stack_conf, network_configure_link, service_data_transfer, rate_monitoring
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 from scenario_builder.helpers.transport.iperf3 import iperf3_find_client
-
+from scenario_builder.scenarios import transport_tcp_stack_conf, network_configure_link, service_data_transfer, rate_monitoring
 
 SCENARIO_NAME = 'tcp_evaluation_suite'
 SCENARIO_DESCRIPTION = """This scenario is a wrapper for the following scenarios:
@@ -48,17 +47,16 @@ congestion controls.
 def _iperf3_legend(openbach_function):
     iperf3 = openbach_function.start_job_instance['iperf3']
     destination = openbach_function.start_job_instance['entity_name']
-    if 'server' in iperf3:
-        legend = {'endpoint': 'server', 'address': iperf3['server']['bind'], 'destination': destination, 'transmitted_size': ''}
-    elif 'client' in iperf3:
-        legend = {'endpoint': 'client', 'address': iperf3['client']['server_ip'], 'destination': destination, 'transmitted_size': iperf3['client']['transmitted_size']}
+    legend = {'endpoint': 'client', 'address': iperf3['client']['server_ip'], 'destination': destination, 'transmitted_size': iperf3['client']['transmitted_size']}
     return 'Data Transfer - {endpoint} {address} {destination} {transmitted_size}'.format_map(legend)
+
 
 def _rate_monitoring_legend(openbach_function):
     rate_monitoring = openbach_function.start_job_instance['rate_monitoring']
     destination = openbach_function.start_job_instance['entity_name']
     legend = {'destination': destination}
     return 'Rate Monitoring - {destination}'.format_map(legend)
+
 
 def build(
         endpointA, endpointB, endpointC, endpointD,
@@ -78,7 +76,6 @@ def build(
         post_processing_entity, scenario_name=SCENARIO_NAME):
 
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-
 
     ########################################
     ####### transport_tcp_stack_conf #######
@@ -146,6 +143,8 @@ def build(
             congestion_control,
             interface=interface_AL, #ens3
             route=route_AL,
+            tcp_slow_start_after_idle=1,
+            tcp_no_metrics_save=1,
             scenario_name='transport_tcp_stack_conf_A')
     start_tcp_conf_A = scenario.add_function('start_scenario_instance')
     start_tcp_conf_A.configure(scenario_tcp_conf_A)
@@ -156,6 +155,8 @@ def build(
             congestion_control,
             interface=interface_BL, #ens4
             route=route_BL,
+            tcp_slow_start_after_idle=1,
+            tcp_no_metrics_save=1,
             scenario_name='transport_tcp_stack_conf_B')
     start_tcp_conf_B = scenario.add_function('start_scenario_instance')
     start_tcp_conf_B.configure(scenario_tcp_conf_B)
@@ -166,6 +167,8 @@ def build(
             congestion_control,
             interface=interface_CR, #ens3
             route=route_CR,
+            tcp_slow_start_after_idle=1,
+            tcp_no_metrics_save=1,
             scenario_name='transport_tcp_stack_conf_C')
     start_tcp_conf_C = scenario.add_function('start_scenario_instance')
     start_tcp_conf_C.configure(scenario_tcp_conf_C)
@@ -176,6 +179,8 @@ def build(
             congestion_control,
             interface=interface_DR, #ens3
             route=route_DR,
+            tcp_slow_start_after_idle=1,
+            tcp_no_metrics_save=1,
             scenario_name='transport_tcp_stack_conf_D')
     start_tcp_conf_D = scenario.add_function('start_scenario_instance')
     start_tcp_conf_D.configure(scenario_tcp_conf_D)
@@ -186,6 +191,8 @@ def build(
             congestion_control,
             interface=interface_RA, #ens5
             route=route_RA,
+            tcp_slow_start_after_idle=1,
+            tcp_no_metrics_save=1,
             scenario_name='transport_tcp_stack_conf_RA')
     start_tcp_conf_RA = scenario.add_function('start_scenario_instance')
     start_tcp_conf_RA.configure(scenario_tcp_conf_RA)
@@ -196,6 +203,8 @@ def build(
             congestion_control,
             interface=interface_RB, #ens5
             route=route_RB,
+            tcp_slow_start_after_idle=1,
+            tcp_no_metrics_save=1,
             scenario_name='transport_tcp_stack_conf_RB')
     start_tcp_conf_RB = scenario.add_function('start_scenario_instance')
     start_tcp_conf_RB.configure(scenario_tcp_conf_RB)
@@ -206,6 +215,8 @@ def build(
             congestion_control,
             interface=interface_LC, #ens4
             route=route_LC,
+            tcp_slow_start_after_idle=1,
+            tcp_no_metrics_save=1,
             scenario_name='transport_tcp_stack_conf_LC')
     start_tcp_conf_LC = scenario.add_function('start_scenario_instance')
     start_tcp_conf_LC.configure(scenario_tcp_conf_LC)
@@ -216,10 +227,11 @@ def build(
             congestion_control,
             interface=interface_LD, #ens4
             route=route_LD,
+            tcp_slow_start_after_idle=1,
+            tcp_no_metrics_save=1,
             scenario_name='transport_tcp_stack_conf_LD')
     start_tcp_conf_LD = scenario.add_function('start_scenario_instance')
     start_tcp_conf_LD.configure(scenario_tcp_conf_LD)
-
 
     ########################################
     ######## network_configure_link ########
@@ -387,7 +399,7 @@ def build(
             server_ip=endpointD_ip,
             server_port=server_port,
             duration=None,
-            file_size=BD_file_size, #500M
+            file_size=BD_file_size, #5000M
             tos=0,
             mtu=1400,
             scenario_name='service_data_transfer_BD')
@@ -412,7 +424,6 @@ def build(
             tos=0,
             mtu=1400,
             scenario_name='service_data_transfer_AC')
-
     start_service_data_transfer_AC_1 = scenario.add_function(
             'start_scenario_instance',
             wait_launched=[start_service_data_transfer_BD],
@@ -465,13 +476,19 @@ def build(
             wait_finished=[start_service_data_transfer_AC_9])
     start_service_data_transfer_AC_10.configure(scenario_service_data_transfer_AC)
 
+    # stop service_data_transfer B -> D
+    stop_service_data_transfer_BD = scenario.add_function(
+            'stop_scenario_instance',
+            wait_finished=[start_service_data_transfer_AC_10])
+    stop_service_data_transfer_BD.configure(start_service_data_transfer_BD)
+
     ########################################
     ######## network_configure_link ########
     ########################################
 
     # network_configure_link L -> R t=0+10s
     scenario_network_conf_link_LR_10 = network_configure_link.build(
-            entity=routerR,
+            entity=routerL,
             ifaces=interface_LR, #'ens4'
             mode='egress',
             operation='apply',
@@ -487,7 +504,7 @@ def build(
 
     # network_configure_link R -> L t=0+10s
     scenario_network_conf_link_RL_10 = network_configure_link.build(
-            entity=routerL,
+            entity=routerR,
             ifaces=interface_RL, #'ens5'
             mode='egress',
             operation='apply',
@@ -501,10 +518,9 @@ def build(
             wait_delay=wait_delay_LR[0]) #10
     start_network_conf_link_RL_10.configure(scenario_network_conf_link_RL_10)
 
-
     # network_configure_link L -> R t=10+10s
     scenario_network_conf_link_LR_1010 = network_configure_link.build(
-            entity=routerR,
+            entity=routerL,
             ifaces=interface_LR, #'ens4'
             mode='egress',
             operation='apply',
@@ -520,7 +536,7 @@ def build(
 
     # network_configure_link R -> L t=10+10s
     scenario_network_conf_link_RL_1010 = network_configure_link.build(
-            entity=routerL,
+            entity=routerR,
             ifaces=interface_RL, #'ens5'
             mode='egress',
             operation='apply',
@@ -542,19 +558,19 @@ def build(
     # stop rate_monitoring job on C
     stop_rate_monitoring_C = scenario.add_function(
             'stop_scenario_instance',
-            wait_finished=[start_service_data_transfer_AC_10])
+            wait_launched=[stop_service_data_transfer_BD])
     stop_rate_monitoring_C.configure(start_rate_monitoring_C)
 
     # stop rate_monitoring job on D
     stop_rate_monitoring_D = scenario.add_function(
             'stop_scenario_instance',
-            wait_finished=[start_service_data_transfer_AC_10])
+            wait_launched=[stop_service_data_transfer_BD])
     stop_rate_monitoring_D.configure(start_rate_monitoring_D)
 
     # stop rate_monitoring job on R
     stop_rate_monitoring_R = scenario.add_function(
             'stop_scenario_instance',
-            wait_finished=[start_service_data_transfer_AC_10])
+            wait_launched=[stop_service_data_transfer_BD])
     stop_rate_monitoring_R.configure(start_rate_monitoring_R)
 
     ########################################
@@ -569,8 +585,8 @@ def build(
         ]
 
         for jobs, filters, legend, statistic, axis in [
-                (['iperf3'], {'iperf3': iperf3_find_client}, _iperf3_legend, 'cwnd', 'cwnd'),
-                (['rate_monitoring'], {}, _rate_monitoring_legend, 'rate', 'rate'),
+                (['iperf3'], {'iperf3': iperf3_find_client}, _iperf3_legend, 'cwnd', 'cwnd (bytes)'),
+                (['rate_monitoring'], {}, _rate_monitoring_legend, 'rate', 'rate (b/s)'),
         ]:
             post_processed = list(scenario.extract_function_id(*jobs, include_subscenarios=True, **filters))
             if post_processed:
@@ -598,7 +614,5 @@ def build(
                         legends,
                         wait_finished=wait_finished,
                         wait_delay=2)
-
-
 
     return scenario

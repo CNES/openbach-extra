@@ -60,7 +60,7 @@
 --interface-RD ens3
 --interface-LR ens4
 --interface-RL ens5
---BD-file-size 500M
+--BD-file-size 5000M
 --AC-file-size 10M
 --delay 10 10 10
 --loss 0 0 0
