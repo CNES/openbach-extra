@@ -62,7 +62,7 @@ def run(satellite, entities, scenario_name=SCENARIO_NAME):
 
 
 def build(satellite, ground_entities, duration=0, scenario_name=SCENARIO_NAME):
-    scenario = run(satellite, gateways, terminals, scenario_name)
+    scenario = run(satellite, ground_entities, scenario_name)
 
     if duration:
         jobs = [f for f in scenario.openbach_functions if isinstance(f, StartJobInstance)]
