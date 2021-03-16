@@ -26,6 +26,41 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
+"""Detailed description of the scenario.
+
+This scenarios enables to configure the entities and run a full OpenSAND test.
+It is based on the scenarios opensand_net_conf, opensand_satcom_conf and opensand_run.
+Check the following link for further information about those scenarios : https://wiki.net4sat.org/doku.php?id=openbach:exploitation:reference_scenarios:index
+
+
+# Step-by-step description of the scenario :
+    1. Parse the paths of the configuration files entered in the parameters
+    2. Send those files to the OpenBACH Controller
+    3. Launch opensand_net_conf to create and set the necessary bridges and TAP interfaces inside the ground entities (GWs and STs)
+    4. Launch opensand_satcom_conf to push all the configuration files from the controller to each corresponding entity
+    5. Launch opensand_run to run an OpenSAND test (start the entities and start the OpenSAND services)
+    6. Launch opensand_net_conf to clean the network configuration 
+
+
+# Some words about the helper functions used in this example :
+    - The function 'send_files_to_controller' is used to send the configuration files from the local machine to the controller (step 2)
+    - The function '_extract_config_filepath' allows to get the configuration file inside the entity (step 5)
+
+
+# Parameters description :
+  A detailed description of the parameters with examples is available in the following link:
+  https://wiki.net4sat.org/doku.php?id=openbach:exploitation:reference_scenarios:access:opensand_satcom_conf:index
+
+  Note : if a configuration files is not set, the entity will load the one saved at :
+  /etc/opensand/{infrastructure,topology,profile}.xml to run OpenSAND
+
+
+# Generated test reports:
+    - The evolution of the the MODCOD used by the GW(s) and the ST(s)
+    - The evolution of the throughput from the Satellite (kbps)
+    - The CDF of the throughput from the Satellite (kbps)
+"""
+
 import time
 import argparse 
 import ipaddress
@@ -43,7 +78,7 @@ from scenario_builder.scenarios import opensand_run, opensand_net_conf, opensand
 
 
 SCENARIO_NAME = 'Opensand'
-SCENARIO_DESCRIPTION = """This scenarios enables to run a full OpenSAND experiment.
+SCENARIO_DESCRIPTION = """This scenarios enables to run a full OpenSAND experiment. It runs the following sub-scenarios :
 - The opensand_net_conf scenario is used to configure the network 
 - The opensand_satcom_conf scenario is used to deploy an OpenSAND configuration
 - The opensand_run scenario is used to start the entities and start the service
