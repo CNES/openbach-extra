@@ -49,20 +49,17 @@ class OpensandEntity:
 
 
 def _configure_push_file(scenario, entity, dest_dir=Path('/etc/opensand/')):
-    entity_name = entity.entity
-    source_dir = Path('')
-
     files = [
             filepath
             for name in ('infrastructure', 'topology', 'profile')
             if (filepath := getattr(entity, name, None)) is not None
     ]
-    local_files = [(source_dir / f).as_posix() for f in files]
-    remote_files = [(dest_dir / f.name).as_posix() for f in files]
+    local_files = [f.as_posix() for f in files]
+    remote_files = [dest_dir.joinpath(f.name).as_posix() for f in files]
 
     if files_length := len(files):
         push_file(
-                scenario, entity_name, remote_files, local_files,
+                scenario, entity.entity, remote_files, local_files,
                 ['root'] * files_length, ['root'] * files_length)
 
 
