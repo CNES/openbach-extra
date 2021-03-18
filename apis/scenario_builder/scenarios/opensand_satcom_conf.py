@@ -55,7 +55,7 @@ def _configure_push_file(scenario, entity, dest_dir=Path('/etc/opensand/')):
     files = [
             filepath
             for name in ('infrastructure', 'topology', 'profile')
-            if (filepath := getattr(entity, name, None) is not None)
+            if (filepath := getattr(entity, name, None)) is not None
     ]
     local_files = [(source_dir / f).as_posix() for f in files]
     remote_files = [(dest_dir / f.name).as_posix() for f in files]
