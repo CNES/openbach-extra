@@ -50,7 +50,7 @@ class OpensandEntity:
 
 def _configure_push_file(scenario, entity, dest_dir=Path('/etc/opensand/')):
     entity_name = entity.entity
-    source_dir = Path('opensand', entity_name)
+    source_dir = Path('')
 
     files = [
             filepath
