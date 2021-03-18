@@ -133,7 +133,7 @@ def main(argv=None):
             None,
             send_files_to_controller(pusher, name, args.topology),
             None))
-    for name, profile in args.ground_entity_no_infrastructure:
+    for name, profile in args.ground_entity_no_infra:
         opensand_entities.append(opensand_satcom_conf.OpensandEntity(
             name,
             None,
