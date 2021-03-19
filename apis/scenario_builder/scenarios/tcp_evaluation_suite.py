@@ -574,6 +574,42 @@ def build(
     stop_rate_monitoring_R.configure(start_rate_monitoring_R)
 
     ########################################
+    ##### network_configure_link clear #####
+    ########################################
+
+    # network_configure_link L clear
+    scenario_network_conf_link_L_clear = network_configure_link.build(
+            entity=routerL,
+            ifaces='{},{},{}'.format(interface_LA, interface_LB, interface_LR), #'ens3, ens6, ens4'
+            mode='all',
+            operation='clear',
+            scenario_name='network_configure_link_L_clear')
+    start_network_conf_link_L_clear = scenario.add_function(
+            'start_scenario_instance',
+            wait_launched=[
+                stop_rate_monitoring_C,
+                stop_rate_monitoring_D,
+                stop_rate_monitoring_R
+            ])
+    start_network_conf_link_L_clear.configure(scenario_network_conf_link_L_clear)
+
+    # network_configure_link R clear
+    scenario_network_conf_link_R_clear = network_configure_link.build(
+            entity=routerR,
+            ifaces='{},{},{}'.format(interface_RC, interface_RD, interface_RL), #'ens6, ens3, ens5'
+            mode='all',
+            operation='clear',
+            scenario_name='network_configure_link_R_clear')
+    start_network_conf_link_R_clear = scenario.add_function(
+            'start_scenario_instance',
+            wait_launched=[
+                stop_rate_monitoring_C,
+                stop_rate_monitoring_D,
+                stop_rate_monitoring_R
+            ])
+    start_network_conf_link_R_clear.configure(scenario_network_conf_link_R_clear)
+
+    ########################################
     ########### post_processing ############
     ########################################
 
