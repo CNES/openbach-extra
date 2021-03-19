@@ -133,7 +133,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import tempfile
 import tarfile
-import os
+import shutil
 
 
 def extract_iperf_statistic(job):
@@ -171,7 +171,7 @@ def register_figure(path, scenario_id, observer_file, figure_type):
                     for member in reading_tar:
                         output_tar.addfile(member, reading_tar.extractfile(member.name))
                     output_tar.addfile(infos_figure, in_memory_figure)
-            os.rename(tmp_tar.name, archive)
+            shutil.move(tmp_tar.name, archive)
 
 
 def main(argv=None):
@@ -273,27 +273,27 @@ def main(argv=None):
             '--interface-RL', required=True,
             help='Name of the interface on routerR towards routerL (e.g. "ensR3")')
     observer.add_scenario_argument(
-            '--BD-file-size', required=False, default='5000M',
+            '--BD-file-size', required=False, type=str, default='5000M',
             help='size of the file to transmit (in bytes) for B -> D transfer. '
             'The value must be stricly higher than 1 MB')
     observer.add_scenario_argument(
-            '--AC-file-size', required=False, default='10M',
+            '--AC-file-size', required=False, type=str, default='10M',
             help='size of the file to transmit (in bytes) for A -> C transfer. '
             'The value must be stricly higher than 1 MB')
     observer.add_scenario_argument(
-            '--delay', required=False, nargs='*', type=int, default=[10,10,10],
+            '--delay', required=False, nargs='+', default=['10','10','10'],
             help='one way delay of each LR link (in ms)'
             'Take three int as the job is configured three times')
     observer.add_scenario_argument(
-            '--loss', required=False, nargs='*', type=int, default=[0,0,0],
+            '--loss', required=False, nargs='+', default=['0','0','0'],
             help='parameters of the loss model'
             'Take three int as the job is configured three times')
     observer.add_scenario_argument(
-            '--bandwidth', required=False, nargs='*', type=str, default=['20M','10M','20M'],
+            '--bandwidth', required=False, nargs='+', default=['20M','10M','20M'],
             help='bandwidth of each LR link (in bytes)'
             'Take three string as the job is configured three times')
     observer.add_scenario_argument(
-            '--wait-delay-LR', required=False, nargs='*', type=int, default=[10,10],
+            '--wait-delay-LR', required=False, nargs='+', default=['10','10'],
             help='First param: wait_delay between BD trafic start and first LR '
             'link bandwidth reduction. Second param: wait_delay between first LR '
             'link bandwidth reduction and second LR link bandwidth reduction')
