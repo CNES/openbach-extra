@@ -273,13 +273,14 @@ class FrontendBase:
                         response = self.session.request(verb, url, json=kwargs)
                     else:
                         response = self.session.request(verb, url, data=kwargs, files=files)
-            except requests.exceptions.ConnectionError as e:
+            except requests.exceptions.ConnectionError as error:
+                last_error = error
                 LOG.warning('Connection error while trying request. Retrying.')
             else:
                 break
         else:
             LOG.error('Retry counter ran out, bailing out.')
-            raise e
+            raise last_error
         if show_response_content:
             pretty_print(response, check_status=check_status)
         return response

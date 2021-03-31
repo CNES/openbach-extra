@@ -48,7 +48,6 @@ __credits__ = '''Contributors:
 
 import os
 import sys
-import json
 import time
 import getpass
 import logging
@@ -59,6 +58,8 @@ import logging.config
 from pathlib import Path
 from random import sample
 from collections import Counter
+
+from requests.compat import json
 
 CWD = Path(__file__).resolve().parent
 sys.path.insert(0, Path(CWD.parent, 'apis').as_posix())
@@ -744,6 +745,24 @@ def main(argv=None):
         if response['status'] != 'Running':
             break
 
+    # Setup routes between client and server to use the middlebox
+    start_job.args.job_name = 'ip_route'
+    start_job.args.interval = None
+    start_job.args.agent_address = server
+    start_job.args.argument = {
+            'operation': 'add',
+            'gateway_ip': middlebox_ip,
+            'destination_ip': {'network_ip': '{}/32'.format(client_ip)}
+    }
+    execute(start_job)
+    start_job.args.agent_address = client
+    start_job.args.argument = {
+            'operation': 'add',
+            'gateway_ip': middlebox_ip,
+            'destination_ip': {'network_ip': '{}/32'.format(server_ip)}
+    }
+    execute(start_job)
+
     # Run example executors
     logger.info('Running example executors:')
 
@@ -766,24 +785,6 @@ def main(argv=None):
         '--middlebox-interfaces', middlebox_interfaces,
         project_name, 'run',
     ])
-
-    # Setup routes between client and server to use the middlebox
-    start_job.args.job_name = 'ip_route'
-    start_job.args.interval = None
-    start_job.args.agent_address = server
-    start_job.args.argument = {
-            'operation': 'add',
-            'gateway_ip': middlebox_ip,
-            'destination_ip': {'network_ip': '{}/32'.format(client_ip)}
-    }
-    execute(start_job)
-    start_job.args.agent_address = client
-    start_job.args.argument = {
-            'operation': 'add',
-            'gateway_ip': middlebox_ip,
-            'destination_ip': {'network_ip': '{}/32'.format(server_ip)}
-    }
-    execute(start_job)
 
     # Run reference executors
     logger.info('Running reference executors:')
