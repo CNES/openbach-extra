@@ -170,14 +170,25 @@ class DummyResponse:
         return super().__str__()
 
 
-def load_module_from_path(path):
+def load_executor_from_path(path):
     import importlib
+    import functools
     path = Path(path).resolve()
     module_name = path.stem.replace('-', '_')
     spec = importlib.util.spec_from_file_location(module_name, path.as_posix())
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module
+
+    executor = module.main
+
+    @functools.wraps(executor)
+    def wrapper(argv=None):
+        try:
+            return executor(argv)
+        except SystemExit:
+            pass
+
+    return wrapper
 
 
 def setup_logging(
@@ -591,8 +602,8 @@ def main(argv=None):
     required_jobs = [
             ['fping', 'ip_route'],
             ['tc_configure_link', 'time_series', 'histogram'],
-            ['iperf3', 'd-itg_send', 'owamp-client', 'nuttcp', 'ftp_clt', 'dashjs_client', 'voip_qoe_src', 'web_browsing_qoe'],
-            ['iperf3', 'd-itg_recv', 'owamp-server', 'nuttcp', 'ftp_srv', 'apache2', 'voip_qoe_dest'],
+            ['iperf3', 'd-itg_send', 'synchronization', 'owamp-client', 'nuttcp', 'ftp_clt', 'dashjs_client', 'voip_qoe_src', 'web_browsing_qoe'],
+            ['iperf3', 'd-itg_recv', 'synchronization', 'owamp-server', 'nuttcp', 'ftp_srv', 'apache2', 'voip_qoe_dest'],
     ]
     required_jobs_set = {j for jobs in required_jobs for j in jobs}
     remove_job = validator.share_state(DeleteJob)
@@ -768,7 +779,7 @@ def main(argv=None):
 
     logger.info('  Data transfer configure link')
     data_transfer_path = Path(CWD.parent, 'executors', 'examples', 'data_transfer_configure_link.py')
-    data_transfer_configure_link = load_module_from_path(data_transfer_path).main
+    data_transfer_configure_link = load_executor_from_path(data_transfer_path)
     data_transfer_configure_link([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -791,7 +802,7 @@ def main(argv=None):
     executors_path = Path(CWD.parent, 'executors', 'references')
 
     logger.info('  Network Delay')
-    network_delay = load_module_from_path(executors_path.joinpath('executor_network_delay.py')).main
+    network_delay = load_executor_from_path(executors_path.joinpath('executor_network_delay.py'))
     network_delay([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -805,7 +816,7 @@ def main(argv=None):
     ])
 
     logger.info('  Network Jitter')
-    network_jitter = load_module_from_path(executors_path.joinpath('executor_network_jitter.py')).main
+    network_jitter = load_executor_from_path(executors_path.joinpath('executor_network_jitter.py'))
     network_jitter([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -818,7 +829,7 @@ def main(argv=None):
     ])
 
     logger.info('  Network Rate')
-    network_rate = load_module_from_path(executors_path.joinpath('executor_network_rate.py')).main
+    network_rate = load_executor_from_path(executors_path.joinpath('executor_network_rate.py'))
     network_rate([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -832,7 +843,7 @@ def main(argv=None):
     ])
 
     #~logger.info('  Network QOS')
-    #~network_qos = load_module_from_path(executors_path.joinpath('executor_network_qos.py')).main
+    #~network_qos = load_executor_from_path(executors_path.joinpath('executor_network_qos.py'))
     #~network_qos([
     #~    '--controller', controller,
     #~    '--login', validator.credentials.get('login', ''),
@@ -841,7 +852,7 @@ def main(argv=None):
     #~])
 
     logger.info('  Network One Way Delay')
-    network_owd = load_module_from_path(executors_path.joinpath('executor_network_one_way_delay.py')).main
+    network_owd = load_executor_from_path(executors_path.joinpath('executor_network_one_way_delay.py'))
     network_owd([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -855,7 +866,7 @@ def main(argv=None):
     ])
 
     logger.info('  Network Global')
-    network_global = load_module_from_path(executors_path.joinpath('executor_network_global.py')).main
+    network_global = load_executor_from_path(executors_path.joinpath('executor_network_global.py'))
     network_global([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -870,7 +881,7 @@ def main(argv=None):
     ])
 
     logger.info('  Service FTP')
-    service_ftp = load_module_from_path(executors_path.joinpath('executor_service_ftp.py')).main
+    service_ftp = load_executor_from_path(executors_path.joinpath('executor_service_ftp.py'))
     service_ftp([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -884,7 +895,7 @@ def main(argv=None):
     ])
 
     logger.info('  Service Video Dash')
-    service_dash = load_module_from_path(executors_path.joinpath('executor_service_video_dash.py')).main
+    service_dash = load_executor_from_path(executors_path.joinpath('executor_service_video_dash.py'))
     service_dash([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -899,7 +910,7 @@ def main(argv=None):
     ])
 
     logger.info('  Service VoIP')
-    service_voip = load_module_from_path(executors_path.joinpath('executor_service_voip.py')).main
+    service_voip = load_executor_from_path(executors_path.joinpath('executor_service_voip.py'))
     service_voip([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -915,7 +926,7 @@ def main(argv=None):
     ])
 
     logger.info('  Service Web Browsing')
-    service_web = load_module_from_path(executors_path.joinpath('executor_service_web_browsing.py')).main
+    service_web = load_executor_from_path(executors_path.joinpath('executor_service_web_browsing.py'))
     service_web([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -930,7 +941,7 @@ def main(argv=None):
     ])
 
     logger.info('  Service Traffic Mix')
-    service_mix = load_module_from_path(executors_path.joinpath('executor_service_traffic_mix.py')).main
+    service_mix = load_executor_from_path(executors_path.joinpath('executor_service_traffic_mix.py'))
     service_mix([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -950,7 +961,7 @@ def main(argv=None):
     ])
 
     logger.info('  Transport TCP One Flow')
-    transport_oneflow = load_module_from_path(executors_path.joinpath('executor_transport_tcp_one_flow.py')).main
+    transport_oneflow = load_executor_from_path(executors_path.joinpath('executor_transport_tcp_one_flow.py'))
     transport_oneflow([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -964,7 +975,7 @@ def main(argv=None):
     ])
 
     #~logger.info('  Transport TCP Stack Conf')
-    #~transport_stack = load_module_from_path(executors_path.joinpath('executor_transport_tcp_stack_conf.py')).main
+    #~transport_stack = load_executor_from_path(executors_path.joinpath('executor_transport_tcp_stack_conf.py'))
     #~transport_stack([
     #~    '--controller', controller,
     #~    '--login', validator.credentials.get('login', ''),
