@@ -34,37 +34,59 @@
 ---
 
 - name: Install package dependencies
-  apt: name={{ item }} state=present
-  with_items:
-    - twinkle
-    - alsa-utils
+  apt:
+    name:
+      - twinkle
+      - alsa-utils
+    state: present
+  become: yes
+  environment: "{{ openbach_proxies }}"
+
+- name: Install extra kernel module
+  apt:
+    name: linux-modules-extra-{{ ansible_kernel }}
+    state: latest
   become: yes
   environment: "{{ openbach_proxies }}"
     
 - name: Create twinkle_voip repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
   
 - name: Create twinkle conf dir
-  file: path=/root/.twinkle state=directory
+  file:
+    path: /root/.twinkle
+    state: directory
   become: yes
 
 - name: Install twinkle conf files
-  copy: src={{ item.file }} dest=/root/.twinkle/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /root/.twinkle/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'twinkle.sys', mode: '0644' }
     - { file: 'openbach.cfg', mode: '0664' }
   become: yes
   
 - name: Install alsa conf file
-  copy: src={{ item.file }} dest=/root/{{ item.dest }} mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /root/{{ item.dest }}
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'asoundrc', dest: '.asoundrc', mode: '0644' }
   become: yes
   
 - name: Install twinkle_voip
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/twinkle_voip/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/twinkle_voip/
+    mode: "{{ item.mode }}"
   with_items:
-    - { file: 'twinkle_voip.help', mode: '0644' }
-    - { file: 'twinkle_voip.py', mode: '0755' }
-    - { file: 'twinkle_voip_rstats_filter.conf', mode: '0644' }
-    - { file: 'audio.wav', mode: '0644' }
+    - { file: "twinkle_voip.help", mode: "0644" }
+    - { file: "twinkle_voip.py", mode: "0755" }
+    - { file: "twinkle_voip_rstats_filter.conf", mode: "0644" }
+    - { file: "audio.wav", mode: "0644" }

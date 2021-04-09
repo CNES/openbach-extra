@@ -305,7 +305,7 @@ def parse_influx(response):
     for result in response.get('results', []):
         for serie in result.get('series', []):
             with suppress(KeyError):
-                name = serie['name']
+                name = serie.get('name')
                 fields = serie['columns']
                 for values in serie['values']:
                     yield name, {f: v for f, v in zip(fields, values) if v is not None}
@@ -395,6 +395,8 @@ def line_protocol(job_name, scenario_id, owner_id, agent_name, job_id, suffix, s
 class InfluxDBCommunicator:
     """Manage network access to an InfluxDB server"""
 
+    TIMEOUT = (2, 3600)  # Requests (connection, data) timeouts in second
+
     def __init__(self, ip, port=8086, db_name='openbach', precision='ms'):
         """Configure the routes to send/get data to/from InfluxDB"""
 
@@ -410,11 +412,11 @@ class InfluxDBCommunicator:
 
     def sql_query(self, query):
         """Send a query to InfluxDB and gather the results"""
-        return requests.get(self.querying_URL, params={'q': query}).json()
+        return requests.get(self.querying_URL, params={'q': query}, timeout=self.TIMEOUT).json()
 
     def data_write(self, data):
         """Send data to InfluxDB so they are stored"""
-        return requests.post(self.writing_URL, data.encode())
+        return requests.post(self.writing_URL, data.encode(), timeout=self.TIMEOUT)
 
 
 class InfluxDBConnection(InfluxDBCommunicator):

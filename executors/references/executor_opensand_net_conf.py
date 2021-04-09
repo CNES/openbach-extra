@@ -26,21 +26,28 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
+"""This executor runs an OpenSAND scenario allowing to:
+ - Configure bridge/tap interfaces on entities for OpenSAND to communicate with the real world
+ - Configure ip forwarding in case IP mode is requested
+ - Clear the configuration if requested
+ This step is necessary to set up an OpenSAND platform.
+"""
 
 import argparse 
+from dataclasses import dataclass
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.helpers.utils import Validate, ValidateOptional, patch_print_help
 from scenario_builder.scenarios import opensand_net_conf
 
 
+@dataclass(frozen=True)
 class Entity:
-    def __init__(self, entity, bridge_to_lan, tap_name='opensand_tap', bridge_name='opensand_br', tap_mac_address=None):
-        self.name = entity
-        self.bridge_to_lan = bridge_to_lan
-        self.tap_name = tap_name
-        self.bridge_name = bridge_name
-        self.tap_mac = tap_mac_address
+    name: str
+    bridge_to_lan: str
+    tap_name: str = 'opensand_tap'
+    bridge_name: str = 'opensand_br'
+    tap_mac: str = None
 
 
 class ValidateEntity(ValidateOptional, Validate):

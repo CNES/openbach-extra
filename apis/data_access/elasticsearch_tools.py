@@ -228,6 +228,8 @@ def rest_protocol(job_name, scenario_id, owner_id, agent_name, job_id, logs):
 class ElasticSearchCommunicator:
     """Manage network access to an ElasticSearch server"""
 
+    TIMEOUT = (2, 3600)  # Requests (connection, data) timeouts in second
+
     def __init__(self, ip, port=9200, credentials=None):
         """Configure the routes to send/get data to/from ElasticSearch"""
 
@@ -244,7 +246,7 @@ class ElasticSearchCommunicator:
 
     def settings_query(self, *settings):
         filters = ','.join(settings)
-        response = requests.get(self.settings_URL + filters, headers=self.auth_header)
+        response = requests.get(self.settings_URL + filters, headers=self.auth_header, timeout=self.TIMEOUT)
         return response.json()
 
     def search_query(self, body=None, **query):
@@ -252,7 +254,7 @@ class ElasticSearchCommunicator:
 
         query['scroll'] = '1m'
         session = requests.Session()
-        response = session.post(self.querying_URL, params=query, json=body, headers=self.auth_header).json()
+        response = session.post(self.querying_URL, params=query, json=body, headers=self.auth_header, timeout=self.TIMEOUT).json()
         while True:
             hits = response.get('hits', {}).get('hits', [])
             if not hits:
@@ -267,14 +269,14 @@ class ElasticSearchCommunicator:
 
     def delete_query(self, query):
         """Send query to ElasticSearch so that matching logs are removed"""
-        response = requests.post(self.deleting_URL, json=query, headers=self.auth_header)
+        response = requests.post(self.deleting_URL, json=query, headers=self.auth_header, timeout=self.TIMEOUT)
         return response.json()
 
     def data_write(self, body, first_time_request=False):
         """Send data to ElasticSearch so they are stored"""
         if first_time_request:
             self.data_write(body)
-        return requests.post(self.writing_URL, data=body.encode(), headers=self.auth_header)
+        return requests.post(self.writing_URL, data=body.encode(), headers=self.auth_header, timeout=self.TIMEOUT)
 
 
 class ElasticSearchConnection(ElasticSearchCommunicator):

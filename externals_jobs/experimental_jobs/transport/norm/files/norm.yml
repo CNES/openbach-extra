@@ -1,0 +1,81 @@
+---
+
+general:
+  name:            'norm'
+  description: >
+      This Job launches and configures a NORM server/client
+  job_version:     '1.0'
+  keywords:        [norm]
+  persistent:      True
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/norm/norm.py'
+    command_stop:
+
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/norm/norm.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        interface
+      type:        'str'
+      count:       1
+      description: >
+          The interface to use
+    - name:        directory
+      type:        'str'
+      count:       1
+      description: >
+          The directory to save the files, if moderx;
+          or to fetch the files, if mode tx.
+    - name:        mode
+      type:        'str'
+      count:       1
+      description: >
+          The mode to work on (tx or rx)
+  optional:
+    - name:        address
+      type:        'ip'
+      count:       1
+      flag:        '-a'
+      description: >
+          The IP address to bind to (default: 224.1.2.3)
+    - name:        port
+      type:        'int'
+      count:       1
+      flag:        '-p'
+      description: >
+          The port to listen on (default: 6003)
+    - name:        name
+      type:        'str'
+      count:       1
+      flag:        '-n'
+      description: >
+          If mode tx, the name of the content to send
+          (ex. BigBuckBunny)
+    - name:        max_rate
+      type:        'int'
+      count:       1
+      flag:        '-m'
+      description: >
+          The max rate, in bytes per second
+    - name:        first_segment
+      type:        'int'
+      count:       1
+      flag:        '-f'
+      description: >
+          If mode tx, the first segment number to send
+    - name:        last_segment
+      type:        'int'
+      count:       1
+      flag:        '-l'
+      description: >
+          If mode tx, the last segment number to send
+
+statistics:

@@ -4,14 +4,14 @@ general:
   name:            random_web_browsing_qoe
   description: >
       This jobs emulates an real user that is browsing on the web. It also provides performances timing of HTTP Service. 
-  job_version:     '1.0'
+  job_version:     '1.1'
   keywords:        [web, performance, HTTP, QoE]
   persistent:      False
 
 platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution:  'Ubuntu'
-    ansible_distribution_version: '16.04'
+    ansible_distribution_version: '20.04'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/random_web_browsing_qoe/random_web_browsing_qoe.py'
     command_stop:
 

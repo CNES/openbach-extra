@@ -34,20 +34,36 @@ __credits__ = '''Contributors:
  * Bastien TAURAN <bastien.tauran@viveris.com>
 '''
 
+import os
 import sys
+import time
 import syslog
 import argparse
+import traceback
+import contextlib
 import subprocess
 import collect_agent
-import time
+
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
 def main(interface, gso, tso):
-    collect_agent.register_collect(
-        '/opt/openbach/agent/jobs/ethtool/'
-        'ethtool_rstats_filter.conf'
-    )
-    collect_agent.send_log(syslog.LOG_DEBUG, "Starting job ethool")
-
     # loading new configuration
     rc = subprocess.call("ethtool -K " + interface +
             " gso " + ("on" if gso.lower()=="true" else "off"), shell=True)
@@ -74,16 +90,17 @@ def main(interface, gso, tso):
     collect_agent.send_stat(int(time.time() * 1000), **statistics)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument('interface', type=str,
-            help='The interface to modify')
-    parser.add_argument('gso', type=str,
-            help='Activate GSO, can be True or False')
-    parser.add_argument('tso', type=str,
-            help='Activate TSO, can be True or False')
-
-    args = vars(parser.parse_args())
-    main(**args)
+    with use_configuration('/opt/openbach/agent/jobs/ethtool/ethtool_rstats_filter.conf'):
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    
+        parser.add_argument('interface', type=str,
+                help='The interface to modify')
+        parser.add_argument('gso', type=str,
+                help='Activate GSO, can be True or False')
+        parser.add_argument('tso', type=str,
+                help='Activate TSO, can be True or False')
+    
+        args = vars(parser.parse_args())
+        main(**args)

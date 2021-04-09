@@ -1,0 +1,52 @@
+---
+
+general:
+  name:            netflix
+  description: >
+      This Job uses a web browser to sign in to a netflix user account and finds netflix videos by a randomly 
+      selected keyword  then plays first proposed videos during a given time. 
+  job_version:     '1.0'
+  keywords:        [netflix, streaming, vod, multimedia]
+  persistent:      False
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '20.04'
+    command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/netflix/netflix.py'
+    command_stop:
+
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/netflix/netflix.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        email_address
+      type:        'str'
+      count:        1
+      description: >
+          The email address to use to sign in
+    - name:        password
+      type:        'str'
+      count:       1
+      password: yes
+      description: >
+          The password associated to the email address
+    - name:        duration
+      type:        'int'
+      count:        1
+      description: >
+          The duration for playing the video, in seconds
+  optional:
+    - name:        timeout
+      type:        'int'
+      count:        1
+      flag:         '-t'
+      description: >
+          The waiting period until an expected event occurs, in seconds. 
+          It is set depending of network congestion (Default: 10)
+                       
+statistics:

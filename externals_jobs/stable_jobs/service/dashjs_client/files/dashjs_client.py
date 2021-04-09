@@ -33,12 +33,15 @@ __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 '''
 
+import os
 import sys
-import syslog
 import signal
-import argparse
-import subprocess
 import socket
+import syslog
+import argparse
+import traceback
+import contextlib
+import subprocess
 from functools import partial
 
 import collect_agent
@@ -63,6 +66,25 @@ DEFAULT_PATH='/dash_content/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.
 HTTP1_PORT = 8081
 HTTP2_PORT = 8082
 
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
+
 def isPortUsed(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         used = (s.connect_ex(('localhost', port)) == 0)
@@ -75,12 +97,6 @@ def close_all(driver, p_tornado, signum, frame):
     p_tornado.wait()
 
 def main(dst_ip, proto, tornado_port, path, time):
-    # Connect to collect agent
-    conffile = '/opt/openbach/agent/jobs/dashjs_client/dashjs_client.conf'
-    collect_agent.register_collect(conffile)
- 
-    collect_agent.send_log(syslog.LOG_DEBUG, "About to launch Dash client")
-
     if isPortUsed(tornado_port):
         message = "Port {} already used, cannot launch Tornado server. Aborting...".format(tornado_port)
         collect_agent.send_log(syslog.LOG_ERR, message)
@@ -126,33 +142,34 @@ def main(dst_ip, proto, tornado_port, path, time):
 
 
 if __name__ == "__main__":
-    # Define usage
-    parser = argparse.ArgumentParser(
-            description='',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument(
-            "dst_ip", type=str,
-            help='The destination IP address')
-    parser.add_argument(
-            "protocol",  choices=[HTTP1, HTTP2],
-             help='The protocol to use by server to stream video')
-    parser.add_argument(
-            '-p', '--tornado_port', type=int, default=5301,
-            help='Port used by the Tornado Server to get statistics from the DASH client (Default: 5301)')
-    parser.add_argument(
-            '-d', '--dir', type=str, default=DEFAULT_PATH,
-            help='The path of the dir containing the video to stream')
-    parser.add_argument(
-            '-t', '--time', type=int, default=0,
-            help='The duration (Default: 0 infinite')
+    with use_configuration('/opt/openbach/agent/jobs/dashjs_client/dashjs_client.conf'):
+        # Define usage
+        parser = argparse.ArgumentParser(
+                description='',
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
-    # Get arguments
-    args = parser.parse_args()
-    dst_ip = args.dst_ip
-    proto = args.protocol
-    tornado_port = args.tornado_port
-    path = args.dir
-    time = args.time
-    
-    main(dst_ip, proto, tornado_port, path, time)
+        parser.add_argument(
+                "dst_ip", type=str,
+                help='The destination IP address')
+        parser.add_argument(
+                "protocol",  choices=[HTTP1, HTTP2],
+                 help='The protocol to use by server to stream video')
+        parser.add_argument(
+                '-p', '--tornado_port', type=int, default=5301,
+                help='Port used by the Tornado Server to get statistics from the DASH client (Default: 5301)')
+        parser.add_argument(
+                '-d', '--dir', type=str, default=DEFAULT_PATH,
+                help='The path of the dir containing the video to stream')
+        parser.add_argument(
+                '-t', '--time', type=int, default=0,
+                help='The duration (Default: 0 infinite')
+        
+        # Get arguments
+        args = parser.parse_args()
+        dst_ip = args.dst_ip
+        proto = args.protocol
+        tornado_port = args.tornado_port
+        path = args.dir
+        time = args.time
+        
+        main(dst_ip, proto, tornado_port, path, time)

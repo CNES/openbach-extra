@@ -50,10 +50,7 @@
   environment: 
    DEBIAN_FRONTEND : noninteractive
   apt:
-    name: "{{ item }}"
-    state: absent
-    purge: yes
-  with_items:
+    name:
     - libopensand-gse-encap-plugin
     - libopensand-rle-encap-plugin
     - opensand-core
@@ -63,6 +60,8 @@
     - libopensand-output
     - libgse
     - librle
+    state: absent
+    purge: yes
   become: yes
 
 - name: Remove OpenSAND {{ opensand_repository_component }} repository for {{ opensand_repository_distribution }} distribution

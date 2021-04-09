@@ -35,14 +35,37 @@ __credits__ = '''Contributors:
  * Francklin SIMO <francklin.simo@viveris.com>
 '''
 
+import os
 import sys
+import time
 import syslog
 import argparse
+import traceback
 import subprocess
-from subprocess import check_output
+import contextlib
 import collect_agent
-import time
 
+from glob import glob
+from subprocess import check_output
+
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
 def run_command(command, debug_log, exit=False):
     try:
@@ -85,11 +108,6 @@ def set_main_args(reset,
         core_wmem_max,
         core_rmem_default,
         core_rmem_max):
-    collect_agent.register_collect(
-        '/opt/openbach/agent/jobs/tcp_conf_linux/'
-        'tcp_conf_linux_rstats_filter.conf'
-    )
-    collect_agent.send_log(syslog.LOG_DEBUG, "Starting job tcp_conf_linux")
 
     # reset to defaults config if asked
     if reset:
@@ -305,6 +323,12 @@ def cubic(reset,
             core_rmem_default,
             core_rmem_max)
 
+    # Get current name of "hystart_ack_delta" parameter since it can be different
+    # according to the Linux kernel
+    hystart_ack_delta_name = list(map(
+            os.path.basename,
+            glob("/sys/module/tcp_cubic/parameters/hystart_ack_delta*")))[0]
+
     # getting changes to CUBIC parameters in /etc/module/tcp_cubic/parameters and
     # writing changes in /etc/sysctl.d/60-openbach-job-cubic.conf
     changes = {}
@@ -326,11 +350,11 @@ def cubic(reset,
         conf_file.write("fast_convergence="+src.readline())
         src.close()
     if hystart_ack_delta is not None:
-        conf_file.write("hystart_ack_delta="+str(hystart_ack_delta)+"\n")
-        changes["hystart_ack_delta"] = hystart_ack_delta
+        conf_file.write(hystart_ack_delta_name+"="+str(hystart_ack_delta)+"\n")
+        changes[hystart_ack_delta_name] = hystart_ack_delta
     else:
-        src = open("/sys/module/tcp_cubic/parameters/hystart_ack_delta","r")
-        conf_file.write("hystart_ack_delta="+src.readline())
+        src = open("/sys/module/tcp_cubic/parameters/"+hystart_ack_delta_name,"r")
+        conf_file.write(hystart_ack_delta_name+"="+src.readline())
         src.close()
     if hystart_low_window is not None:
         conf_file.write("hystart_low_window="+str(hystart_low_window)+"\n")
@@ -377,7 +401,7 @@ def cubic(reset,
 
     #retrieving new values for tcp_cubic parameters
     statistics = {}
-    for param in ["beta", "fast_convergence", "hystart_ack_delta",
+    for param in ["beta", "fast_convergence", hystart_ack_delta_name,
     "hystart_low_window", "tcp_friendliness", "hystart", "hystart_detect",
     "initial_ssthresh"]:
         file = open("/sys/module/tcp_cubic/parameters/"+param)
@@ -424,48 +448,49 @@ def other_CC(reset,
             core_rmem_max)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument('--reset', action='store_true', help='Resets the parameters to default configuration before applying changes')
-    parser.add_argument('--tcp_slow_start_after_idle', type=int)
-    parser.add_argument('--tcp_no_metrics_save', type=int)
-    parser.add_argument('--tcp_sack', type=int)
-    parser.add_argument('--tcp_recovery', type=int)
-    parser.add_argument('--tcp_wmem_min', type=int)
-    parser.add_argument('--tcp_wmem_default', type=int)
-    parser.add_argument('--tcp_wmem_max', type=int)
-    parser.add_argument('--tcp_rmem_min', type=int)
-    parser.add_argument('--tcp_rmem_default', type=int)
-    parser.add_argument('--tcp_rmem_max', type=int)
-    parser.add_argument('--tcp_fastopen', type=int)
-    parser.add_argument('--core_wmem_default', type=int)
-    parser.add_argument('--core_wmem_max', type=int)
-    parser.add_argument('--core_rmem_default', type=int)
-    parser.add_argument('--core_rmem_max', type=int)
-
-    subparsers = parser.add_subparsers(
-            title='Subcommand mode',
-            help='Choose the congestion control')
-    subparsers.required=True
-    parser_cubic = subparsers.add_parser('CUBIC', help='CUBIC chosen')
-    parser_cubic.add_argument('--beta', type=int)
-    parser_cubic.add_argument('--fast_convergence', type=int)
-    parser_cubic.add_argument('--hystart_ack_delta', type=int)
-    parser_cubic.add_argument('--hystart_low_window', type=int)
-    parser_cubic.add_argument('--tcp_friendliness', type=int)
-    parser_cubic.add_argument('--hystart', type=int)
-    parser_cubic.add_argument('--hystart_detect', type=int)
-    parser_cubic.add_argument('--initial_ssthresh', type=int)
-
-    parser_other = subparsers.add_parser('other', help='other CC chosen')
-    parser_other.add_argument('congestion_control_name', type=str)
-
-    parser_cubic.set_defaults(function=cubic)
-    parser_other.set_defaults(function=other_CC)
-
-    args = vars(parser.parse_args())
-
-    main = args.pop('function')
-    main(**args)
+    with use_configuration('/opt/openbach/agent/jobs/tcp_conf_linux/tcp_conf_linux_rstats_filter.conf'):
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    
+        parser.add_argument('--reset', action='store_true', help='Resets the parameters to default configuration before applying changes')
+        parser.add_argument('--tcp_slow_start_after_idle', type=int)
+        parser.add_argument('--tcp_no_metrics_save', type=int)
+        parser.add_argument('--tcp_sack', type=int)
+        parser.add_argument('--tcp_recovery', type=int)
+        parser.add_argument('--tcp_wmem_min', type=int)
+        parser.add_argument('--tcp_wmem_default', type=int)
+        parser.add_argument('--tcp_wmem_max', type=int)
+        parser.add_argument('--tcp_rmem_min', type=int)
+        parser.add_argument('--tcp_rmem_default', type=int)
+        parser.add_argument('--tcp_rmem_max', type=int)
+        parser.add_argument('--tcp_fastopen', type=int)
+        parser.add_argument('--core_wmem_default', type=int)
+        parser.add_argument('--core_wmem_max', type=int)
+        parser.add_argument('--core_rmem_default', type=int)
+        parser.add_argument('--core_rmem_max', type=int)
+    
+        subparsers = parser.add_subparsers(
+                title='Subcommand mode',
+                help='Choose the congestion control')
+        subparsers.required=True
+        parser_cubic = subparsers.add_parser('CUBIC', help='CUBIC chosen')
+        parser_cubic.add_argument('--beta', type=int)
+        parser_cubic.add_argument('--fast_convergence', type=int)
+        parser_cubic.add_argument('--hystart_ack_delta', type=int)
+        parser_cubic.add_argument('--hystart_low_window', type=int)
+        parser_cubic.add_argument('--tcp_friendliness', type=int)
+        parser_cubic.add_argument('--hystart', type=int)
+        parser_cubic.add_argument('--hystart_detect', type=int)
+        parser_cubic.add_argument('--initial_ssthresh', type=int)
+    
+        parser_other = subparsers.add_parser('other', help='other CC chosen')
+        parser_other.add_argument('congestion_control_name', type=str)
+    
+        parser_cubic.set_defaults(function=cubic)
+        parser_other.set_defaults(function=other_CC)
+    
+        args = vars(parser.parse_args())
+    
+        main = args.pop('function')
+        main(**args)

@@ -56,9 +56,7 @@
   environment: "{{ openbach_proxies }}"
 
 - name: Install Python Dependencies
-  pip: name={{ item }} executable=pip3
-  with_items:
-    - numpy
+  pip: name=numpy executable=pip3
   become: yes
   environment: "{{ openbach_proxies }}"
 

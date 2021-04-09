@@ -28,12 +28,13 @@
 
 """ Helpers of opensand job """
 
+from ..utils import filter_none
+
 
 def opensand_run(
-        scenario, agent_entity, entity, configuration=None,
-        output_address=None, logs_port=None, stats_port=None,
-        binaries_directory=None, entity_id=None, tap_name=None,
-        emulation_address=None, interconnection_address=None, 
+        scenario, agent_entity, infrastructure,
+        topology, profile=None, output_address=None,
+        logs_port=None, stats_port=None, binaries_directory=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
 
     opensand = scenario.add_function(
@@ -42,50 +43,24 @@ def opensand_run(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
 
-    run = {
-            entity: {'id': entity_id, 'emulation_address': emulation_address},
-    }
-
-    if configuration:
-        run['configuration'] = configuration
-    if output_address:
-        run['output_address'] = output_address
-    if logs_port:
-        run['logs_port'] = logs_port
-    if stats_port:
-        run['stats_port'] = stats_port
-    if binaries_directory:
-        run['binaries_directory'] = binaries_directory
-
-    if entity == 'sat': 
-        del run[entity]['id']
-    elif entity == 'gw-phy':
-        run[entity]['interconnection_address'] = interconnection_address
-    elif entity == 'gw-net-acc':
-        del run[entity]['emulation_address']
-        run[entity]['interconnection address'] = interconnection_address
-    if entity in ['gw', 'gw-net-acc', 'st']:
-        run[entity]['tap_name'] = tap_name
-    opensand.configure('opensand', agent_entity, **run)
+    parameters = filter_none(
+            infrastructure=infrastructure,
+            topology=topology,
+            profile=profile,
+            output_address=output_address,
+            logs_port=logs_port,
+            stats_port=stats_port,
+            binaries_directory=binaries_directory,
+    )
+    opensand.configure('opensand', agent_entity, **parameters)
 
     return [opensand]
 
 
 def opensand_find_sat(openbach_function):
-    return 'sat' in openbach_function.start_job_instance['opensand']
+    return 'profile' not in openbach_function.start_job_instance['opensand']
 
 
-def opensand_find_st(openbach_function):
-    return 'st' in openbach_function.start_job_instance['opensand']
+def opensand_find_ground(openbach_function):
+    return 'profile' in openbach_function.start_job_instance['opensand']
 
-
-def opensand_find_gw(openbach_function):
-    return 'gw' in openbach_function.start_job_instance['opensand']
-
-
-def opensand_find_gw_net_acc(openbach_function):
-    return 'gw-net-acc' in openbach_function.start_job_instance['opensand']
-
-
-def opensand_find_gw_phy(openbach_function):
-    return 'gw-phy' in openbach_function.start_job_instance['opensand']

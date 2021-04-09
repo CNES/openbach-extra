@@ -11,7 +11,7 @@ general:
 platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '16.04'
+    ansible_distribution_version: '20.04'
     command: 'python3 /opt/openbach/agent/jobs/command_shell/command_shell.py'
     command_stop:
 

@@ -70,7 +70,7 @@ class InstallAgent(FrontendBase):
         username = self.args.user
         password = None
         if username is not None:
-            address = self.args.agent
+            address = self.args.agent_address
             prompt = 'Password for {} on {}: '.format(username, address)
             password = getpass.getpass(prompt)
         self.args.password = password

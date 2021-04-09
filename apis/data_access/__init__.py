@@ -35,9 +35,10 @@ Statistics and logs are available through various methods as
 well as means to filter them at will.
 """
 
+
 __author__ = 'Adrien THIBAUD <adrien.thibaud@toulouse.viveris.com>'
 __credits__ = 'Maintainer: Mathias ETTINGER <mettinger@toulouse.viveris.com>'
-__version__ = 'v1.9.5'
+__version__ = 'v1.9.7'
 __all__ = [
     'read_scenario',
     'CollectorConnection',
@@ -48,7 +49,11 @@ __all__ = [
     'ConditionTag',
     'ConditionField',
     'ConditionTimestamp',
+    'Timeout',
 ]
+
+
+from requests.exceptions import Timeout
 
 from .result_data import read_scenario
 from .async_collector import AsyncCollectorConnection, CollectorConnection

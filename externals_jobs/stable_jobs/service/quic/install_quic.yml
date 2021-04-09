@@ -1,40 +1,39 @@
-# 
+#
 #   OpenBACH is a generic testbed able to control/configure multiple
 #   network/physical entities (under test) and collect data from them. It is
 #   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
 #   Agents (one for each network entity that wants to be tested).
-#   
-#   
+#
+#
 #   Copyright © 2016-2020 CNES
-#   
-#   
+#
+#
 #   This file is part of the OpenBACH testbed.
-#   
-#   
+#
+#
 #   OpenBACH is a free software : you can redistribute it and/or modify it under the
 #   terms of the GNU General Public License as published by the Free Software
 #   Foundation, either version 3 of the License, or (at your option) any later
 #   version.
-#   
+#
 #   This program is distributed in the hope that it will be useful, but WITHOUT
 #   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
 #   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 #   details.
-#   
+#
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
-#   
-#   
-#   
+#
+#
+#
 #   @file     install_quic.yml
 #   @brief    Playbook that install the Job quic
 #   @author   Francklin SIMO <armelfrancklin.simotegueu@viveris.fr>
 
 
-
 ---
 
-- name: Init global variables  
+- name: Init global variables
   set_fact:
     domain: quic.openbach.com
     ngtcp2:
@@ -46,67 +45,109 @@
     quicly:
       git_repo: https://github.com/h2o/quicly
       version: HEAD
-    cacheable: yes 
+    cacheable: yes
 
 - name: Install software properties common
-  apt: 
-    pkg: ['software-properties-common', 'python-software-properties'] 
-    state: present 
-    update_cache: false
+  apt:
+    pkg:
+      - software-properties-common
+    state: present
+    update_cache: no
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Add repositories into sources list
-  apt_repository: repo={{ item }} state=present update_cache=true
-  with_items:
-      - ppa:ubuntu-toolchain-r/test
+  apt_repository:
+    repo: ppa:ubuntu-toolchain-r/test
+    state: present
+    update_cache: yes
   become: yes
+  environment: "{{ openbach_proxies }}"
+
+# Create job repository and deploy files
+- name: Create the quic job repository
+  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
 
 # Install ngtcp2
 - name: Install ngtcp2 requirements
   apt: 
-    pkg: ['g++-8', 'gcc-8', 'pkg-config', 'make', 'autoconf', 'automake', 'autotools-dev', 'libtool', 'libcunit1-dev',
-          'zlib1g-dev', 'libssl-dev', 'libxml2-dev', 'libev-dev', 'libevent-dev', 'libjansson-dev', 'libjemalloc-dev', 
-          'libsystemd-dev', 'libc-ares-dev', 'cython', 'python3-dev', 'python-setuptools', 'checkinstall', 'git'] 
+    pkg:
+      - g++-8
+      - gcc-8
+      - pkg-config
+      - make
+      - autoconf
+      - automake
+      - autotools-dev
+      - libtool
+      - libcunit1-dev
+      - zlib1g-dev
+      - libssl-dev
+      - libxml2-dev
+      - libev-dev
+      - libevent-dev
+      - libjansson-dev
+      - libjemalloc-dev
+      - libsystemd-dev
+      - libc-ares-dev
+      - cython
+      - python3-dev
+      - python-setuptools
+      - checkinstall
+      - git
     state: present 
-    update_cache: false
+    update_cache: no
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Clone OpenSSL for QUIC from github
-  git: repo=https://github.com/tatsuhiro-t/openssl depth=1 version=OpenSSL_1_1_1g-quic-draft-29 dest=/tmp/OpenSSL_1_1_1g-quic-draft-29 force=yes 
+  git:
+    repo: https://github.com/tatsuhiro-t/openssl
+    depth: 1
+    version: OpenSSL_1_1_1g-quic-draft-29
+    dest: /tmp/OpenSSL_1_1_1g-quic-draft-29
+    force: yes
+  environment: "{{ openbach_proxies }}"
 
-- name: Compile and install lib OpenSSL for QUIC 
+- name: Compile and install lib OpenSSL for QUIC
   shell: "{{ item }} chdir=/tmp/OpenSSL_1_1_1g-quic-draft-29"
   with_items:
-    - "./config enable-tls1_3 CC=gcc-8 CXX=g++-8"
+    - "./config enable-tls1_3 CC=gcc-8 CXX=g++-8 --prefix=/opt/openbach/agent/jobs/quic"
     - "make -j$(nproc)"
     - "make install_sw"
-  become: yes
 
 - name: Clone ghttp3 from github
-  git: repo=https://github.com/ngtcp2/nghttp3 dest=/tmp/nghttp3 force=yes version=HEAD
+  git:
+    repo: https://github.com/ngtcp2/nghttp3
+    dest: /tmp/nghttp3
+    force: yes
+    version: HEAD
+  environment: "{{ openbach_proxies }}"
 
 - name: Compile and install lib nghttp3
   shell: "{{ item }} chdir=/tmp/nghttp3/"
   with_items:
     - "autoreconf -i"
-    - "./configure --enable-lib-only CC=gcc-8 CXX=g++-8"
+    - "./configure --enable-lib-only CC=gcc-8 CXX=g++-8 CXXFLAGS=\"-I/opt/openbach/agent/jobs/quic/include\" LDFLAGS=\"-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib\" --prefix=/opt/openbach/agent/jobs/quic"
     - "make -j$(nproc) check"
     - "make install"
-  become: yes
 
 - name: Clone ngtcp2 from github
-  git: "repo={{ ngtcp2.git_repo }}  dest=/tmp/ngtcp2 force=yes version={{ ngtcp2.version }}"
+  git:
+    repo: "{{ ngtcp2.git_repo }}"
+    dest: /tmp/ngtcp2
+    force: yes
+    version: "{{ ngtcp2.version }}"
+  environment: "{{ openbach_proxies }}"
 
 - name: Compile and install ngtcp2
   shell: "{{ item }} chdir=/tmp/ngtcp2/"
   with_items:
     - "autoreconf -i"
-    #- "./configure PKG_CONFIG_PATH=/tmp/OpenSSL_1_1_1g-quic-draft-29/build/lib/pkgconfig:/tmp/nghttp3/build/lib/pkgconfig LDFLAGS=\"-Wl,-rpath,/tmp/OpenSSL_1_1_1g-quic-draft-29/build/lib\" CC=gcc-8 CXX=g++-8"
-    - "./configure CC=gcc-8 CXX=g++-8"
-    - "ldconfig"
+    - "./configure CC=gcc-8 CXX=g++-8 PKG_CONFIG_PATH=/opt/openbach/agent/jobs/quic/lib/pkgconfig CXXFLAGS=\"-I/opt/openbach/agent/jobs/quic/include\" LDFLAGS=\"-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib\" --prefix=/opt/openbach/agent/jobs/quic"
+      # - "ldconfig"
     - "make -j$(nproc) check"
     - "make install"
-  become: yes
 
 - name: Install ngtcp2 binaries
   copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
@@ -118,42 +159,59 @@
 # Install picoquic
 - name: Install picoquic requirements
   apt: 
-    pkg: ['cmake', 'build-essential','pkg-config', 'libssl-dev', 'libbrotli-dev', 'libscope-guard-perl', 'libtest-tcp-perl', 'git'] 
+    pkg:
+      - cmake
+      - build-essential
+      - pkg-config
+      - libssl-dev
+      - libbrotli-dev
+      - libscope-guard-perl
+      - libtest-tcp-perl
+      - git
     state: present 
-    update_cache: false
+    update_cache: no
   become: yes
-
+  environment: "{{ openbach_proxies }}"
 
 - name: Clone Picotls for QUIC from github
-  git: repo=https://github.com/h2o/picotls version=HEAD dest=/tmp/picotls force=yes 
+  git:
+    repo: https://github.com/h2o/picotls
+    version: HEAD
+    dest: /tmp/picotls
+    force: yes 
+    recursive: yes
+  environment: "{{ openbach_proxies }}"
 
-- name: Initialize submodules
-  shell: "git submodule {{ item }} chdir=/tmp/picotls"
-  with_items:
-    - "init"
-    - "update"
- 
 - name: Set environment variables and Build picotls
   environment: 
     CC: gcc-8
     CXX: g++-8
+    CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
+    LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib"
   shell: "{{ item }} chdir=/tmp/picotls"
   with_items:
-    - "cmake ."
-    - "make"
-    - "make check" 
+    - "cmake . -DCMAKE_INSTALL_PREFIX=/opt/openbach/agent/jobs/quic"
+    - "make preinstall" 
+    - "make check"
 
 - name: Clone Picoquic from github
-  git: "repo={{ picoquic.git_repo }}  dest=/tmp/picoquic force=yes version={{ picoquic.version }}"
-    
+  git:
+    repo: "{{ picoquic.git_repo }}"
+    dest: /tmp/picoquic
+    force: yes
+    version: "{{ picoquic.version }}"
+  environment: "{{ openbach_proxies }}"
+
 - name: Build picoquic
   environment:
     CC: gcc-8
     CXX: g++-8 
+    CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
+    LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib"
   shell: "{{ item }} chdir=/tmp/picoquic"
   with_items:
-    - "cmake ."
-    - "make"
+    - "cmake . -DCMAKE_INSTALL_PREFIX=/opt/openbach/agent/jobs/quic"
+    - "make preinstall"
 
 - name: Install picoquic binaries
   copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
@@ -164,24 +222,35 @@
 # Install quicly
 - name: Install quicly requirements
   apt: 
-    pkg: ['cmake', 'build-essential','pkg-config', 'libssl-dev', 'git'] 
+    pkg:
+      - cmake
+      - build-essential
+      - pkg-config
+      - libssl-dev
+      - git
     state: present 
-    update_cache: false
+    update_cache: no
   become: yes
+  environment: "{{ openbach_proxies }}"
  
 - name: Clone quicly github
-  git: "repo={{ quicly.git_repo }}  dest=/tmp/quicly force=yes version={{ quicly.version }}"
+  git:
+    repo: "{{ quicly.git_repo }}"
+    dest: /tmp/quicly
+    force: yes
+    version: "{{ quicly.version }}"
+    recursive: yes
+  environment: "{{ openbach_proxies }}"
 
-- name: Initialize submodules
-  shell: "git submodule update --init --recursive chdir=/tmp/quicly"
- 
 - name: Set environment variables and Build quicly
-  environment: 
+  environment:
     CC: gcc-8
     CXX: g++-8
+    CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
+    LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib"
   shell: "{{ item }} chdir=/tmp/quicly"
   with_items:
-    - "cmake ."
+    - "cmake . -DCMAKE_INSTALL_PREFIX=/opt/openbach/agent/jobs/quic"
     - "make"
 
 - name: Install quicly binaries
@@ -189,10 +258,6 @@
   with_items:
     - { file: '/tmp/quicly/cli', mode: '0755', name: 'quicly' }
   become: yes
-
-# Create job repository and deploy files
-- name: Create the quic job repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
 
 - name: Copy files into job repository
   copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
@@ -216,8 +281,9 @@
 
 # Install keys
 - name: Install pyOpenSSL
-  pip: name=pyopenssl executable=pip2 state=latest
+  pip: name=pyopenssl executable=pip3 state=latest
   become: yes
+  environment: "{{ openbach_proxies }}"
 
 - name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
   openssl_privatekey:
@@ -237,9 +303,5 @@
     privatekey_path: /etc/ssl/private/{{ domain }}.pem
     csr_path: /etc/ssl/certs/{{ domain }}.csr
     provider: selfsigned
-  become: yes
-
-- name: Refresh dynamic linker
-  shell: ldconfig
   become: yes
 

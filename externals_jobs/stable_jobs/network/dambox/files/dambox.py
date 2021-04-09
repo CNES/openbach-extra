@@ -34,13 +34,17 @@ __credits__ = '''Contributors:
  * Corentin Ormiere  <cormiere@silicom.fr>
 '''
 
+import os
 import sys
 import shlex
 import syslog
 import pathlib
 import argparse
+import traceback
 import subprocess
+import contextlib
 
+os.environ['XTABLES_LIBDIR'] = '$XTABLES_LIBDIR:/usr/lib/x86_64-linux-gnu/xtables' # Required for Ubuntu 20.04
 import iptc
 
 import collect_agent
@@ -48,6 +52,24 @@ import collect_agent
 
 PATH_CONF = pathlib.Path.home()
 
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
 def command_line_flag_for_argument(argument, flag):
     if argument is not None:
@@ -66,16 +88,7 @@ def flush_iptables(rule='-F'):
         collect_agent.send_log(syslog.LOG_WARNING, message)
         sys.exit(message)
 
-
 def main(beamslot, mode, value_mode, iface, duration, simultaneous_verdict):
-    success = collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/dambox/dambox_rstats_filter.conf')
-    if not success:
-        message = "ERROR connecting to collect-agent"
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job dambox')
-
     flush_iptables()
     # equiavlent of "iptables -I FORWARD -o ensXXX -j NFQUEUE"
     rule = iptc.Rule()
@@ -89,7 +102,7 @@ def main(beamslot, mode, value_mode, iface, duration, simultaneous_verdict):
         collect_agent.send_log(syslog.LOG_WARNING, message)
 
     cmd = ["dambox"]
-    cmd.extend(command_line_flag_for_argument(damslot*1000, "-bs")) 
+    cmd.extend(command_line_flag_for_argument(damslot*1000, "-ds")) 
     # Check between frequency or timeline mode
     if mode == "timeline":
         # Create and put the timeline (ex 1000101) in a file for the BH binary
@@ -104,7 +117,7 @@ def main(beamslot, mode, value_mode, iface, duration, simultaneous_verdict):
 
     # Launch of the bh box
     with PATH_CONF.joinpath('logfile.txt').open('w+') as f:
-        process = subprocess.run(command, universal_newlines=True, stdout=f)
+        process = subprocess.run(cmd, universal_newlines=True, stdout=f)
     if process.returncode:
         message = "WARNING \'{}\' exited with non-zero code".format(' '.join(cmd))
         collect_agent.send_log(syslog.LOG_WARNING, message)
@@ -113,30 +126,32 @@ def main(beamslot, mode, value_mode, iface, duration, simultaneous_verdict):
 
 
 if __name__ == '__main__':
-    # Define Usage
-    parser = argparse.ArgumentParser(
-        description='', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('damslot', type=int, help='')
-    parser.add_argument('iface', help='')
-
-    # Optionnal argument
-    parser.add_argument('-d', '--duration', type=int)
-    parser.add_argument('-s', '--simultaneous_verdict', type=int)
-
-    # Mode selection
-    sub_parser = parser.add_subparsers(dest='mode')
-    sub_parser.required = True
-    frequency = sub_parser.add_parser('frequency')
-    frequency.add_argument('value_mode', type=int, help='')
-    timeline = sub_parser.add_parser('timeline')
-    timeline.add_argument('value_mode', help='')
+    with use_configuration('/opt/openbach/agent/jobs/dambox/dambox_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(
+            description='', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('damslot', type=int, help='')
+        parser.add_argument('iface', help='')
     
-    args = parser.parse_args()
-    damslot = args.damslot
-    mode = args.mode
-    value_mode = args.value_mode
-    duration = args.duration
-    simultaneous_verdict = args.simultaneous_verdict
-    iface = args.iface
+        # Optionnal argument
+        parser.add_argument('-d', '--duration', type=int)
+        parser.add_argument('-s', '--simultaneous_verdict', type=int)
+    
+        # Mode selection
+        sub_parser = parser.add_subparsers(dest='mode')
+        sub_parser.required = True
+        frequency = sub_parser.add_parser('frequency')
+        frequency.add_argument('value_mode', type=int, help='')
+        timeline = sub_parser.add_parser('timeline')
+        timeline.add_argument('value_mode', help='')
+        
+        args = parser.parse_args()
+        damslot = args.damslot
+        mode = args.mode
+        value_mode = args.value_mode
+        duration = args.duration
+        simultaneous_verdict = args.simultaneous_verdict
+        iface = args.iface
+    
+        main(damslot, mode, value_mode, iface,  duration, simultaneous_verdict)
 
-    main(damslot, mode, value_mode, iface,  duration, simultaneous_verdict)

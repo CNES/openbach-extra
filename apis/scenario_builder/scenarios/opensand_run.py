@@ -26,7 +26,7 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-from collections import namedtuple
+from dataclasses import dataclass
 
 from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
@@ -39,52 +39,30 @@ SCENARIO_DESCRIPTION = """This opensand scenario allows to:
 """
 
 
-SAT = namedtuple('SAT', ('entity', 'emulation_ip'))
-ST = namedtuple('ST', ('entity', 'opensand_id', 'emulation_ip', 'tap_name'))
-GW = namedtuple('GW', ('entity', 'opensand_id', 'emulation_ip', 'tap_name'))
-SPLIT_GW = namedtuple('SPLIT_GW', (
-    'entity_net_acc', 'entity_phy', 'opensand_id',
-    'emulation_ip', 'interconnect_ip_phy', 'interconnect_ip_net_acc',
-    'tap_name'))
+@dataclass(frozen=True)
+class Satellite:
+    entity: str
+    infrastructure: str
+    topology: str
 
 
-def run(satellite, gateways, terminals, scenario_name=SCENARIO_NAME):
+@dataclass(frozen=True)
+class GroundEntity(Satellite):
+    profile: str
+
+
+def run(satellite, entities, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    opensand.opensand_run(scenario, satellite.entity, 'sat', emulation_address=satellite.emulation_ip)
+    opensand.opensand_run(scenario, satellite.entity, satellite.infrastructure, satellite.topology)
 
-    for gateway in gateways:
-        if isinstance(gateway, GW):
-            opensand.opensand_run(
-                    scenario, gateway.entity, 'gw',
-                    entity_id=gateway.opensand_id,
-                    emulation_address=gateway.emulation_ip,
-                    tap_name=gateway.tap_name)
-        elif isinstance(gateway, SPLIT_GW):
-            opensand.opensand_run(
-                    scenario, gateway.entity_net_acc, 'gw-net-acc',
-                    entity_id=gateway.opensand_id,
-                    interconnection_address=gateway.interconnect_ip_net_acc,
-                    tap_name=gateway.tap_name)
-            opensand.opensand_run(
-                    scenario, gateway.entity_phy, 'gw-phy',
-                    entity_id=gateway.opensand_id,
-                    emulation_address=gateway.emulation_ip,
-                    interconnection_address=gateway.interconnect_ip_phy)
-        else:
-            continue  # TODO: fail?
-
-    for terminal in terminals:
-        opensand.opensand_run(
-                scenario, terminal.entity, 'st',
-                entity_id=terminal.opensand_id,
-                emulation_address=terminal.emulation_ip,
-                tap_name=terminal.tap_name)
+    for entity in entities:
+        opensand.opensand_run(scenario, entity.entity, entity.infrastructure, entity.topology, entity.profile)
 
     return scenario
 
 
-def build(satellite, gateways, terminals, duration=0, scenario_name=SCENARIO_NAME):
-    scenario = run(satellite, gateways, terminals, scenario_name)
+def build(satellite, ground_entities, duration=0, scenario_name=SCENARIO_NAME):
+    scenario = run(satellite, ground_entities, scenario_name)
 
     if duration:
         jobs = [f for f in scenario.openbach_functions if isinstance(f, StartJobInstance)]

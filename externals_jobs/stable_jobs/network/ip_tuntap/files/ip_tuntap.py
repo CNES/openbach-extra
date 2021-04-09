@@ -34,9 +34,12 @@ __credits__ = '''Contributors:
  * David FERNANDES <david.fernandes@viveris.fr>
 '''
 
+import os
 import sys
 import syslog
 import argparse
+import traceback
+import contextlib
 import subprocess
 
 import collect_agent
@@ -51,36 +54,43 @@ def run_command(cmd):
         sys.exit(message)
     return p.returncode, p.stdout.decode()
 
-
-def register_collector():
-    success = collect_agent.register_collect(
-        '/opt/openbach/agent/jobs/ip_tuntap/'
-        'ip_tuntap_rstats_filter.conf')
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
     if not success:
         message = 'ERROR connecting to collect-agent'
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ip_tuntap')
-
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
 def main(command, mode, name):
-    register_collector()
     cmd = ['ip', 'tuntap', command, 'mode', mode, name]
     run_command(cmd)
 
 
 if __name__ == '__main__':
-    #Define Usage
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('command', choices=['add', 'delete'],
-            help='the action to perform')
-    parser.add_argument('mode', choices=['tun','tap'],
-            help='the mode of the interface')
-    parser.add_argument('name', type=str,
-            help='the name of the interface')
-
-    args = parser.parse_args()
-    main(args.command, args.mode, args.name)
-
+    with use_configuration('/opt/openbach/agent/jobs/ip_tuntap/ip_tuntap_rstats_filter.conf'):
+        #Define Usage
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('command', choices=['add', 'delete'],
+                help='the action to perform')
+        parser.add_argument('mode', choices=['tun','tap'],
+                help='the mode of the interface')
+        parser.add_argument('name', type=str,
+                help='the name of the interface')
+    
+        args = parser.parse_args()
+        main(args.command, args.mode, args.name)
+    

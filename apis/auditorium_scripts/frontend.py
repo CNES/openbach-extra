@@ -51,6 +51,7 @@ import shlex
 import socket
 import struct
 import pprint
+import logging
 import getpass
 import datetime
 import argparse
@@ -63,6 +64,7 @@ from contextlib import suppress
 import requests
 
 
+LOG = logging.getLogger(__name__)
 DEFAULT_DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
 
@@ -261,13 +263,24 @@ class FrontendBase:
     def request(self, verb, route, show_response_content=True, check_status=True, files=None, **kwargs):
         verb = verb.upper()
         url = self.base_url + route
-        if verb == 'GET':
-            response = self.session.get(url, params=kwargs)
-        else:
-            if files is None:
-                response = self.session.request(verb, url, json=kwargs)
+        LOG.debug('%s %s %s', verb, url, kwargs)
+        for _ in range(3):  # Retry 3 times in case we get disconnected
+            try:
+                if verb == 'GET':
+                    response = self.session.get(url, params=kwargs)
+                else:
+                    if files is None:
+                        response = self.session.request(verb, url, json=kwargs)
+                    else:
+                        response = self.session.request(verb, url, data=kwargs, files=files)
+            except requests.exceptions.ConnectionError as error:
+                last_error = error
+                LOG.warning('Connection error while trying request. Retrying.')
             else:
-                response = self.session.request(verb, url, data=kwargs, files=files)
+                break
+        else:
+            LOG.error('Retry counter ran out, bailing out.')
+            raise last_error
         if show_response_content:
             pretty_print(response, check_status=check_status)
         return response

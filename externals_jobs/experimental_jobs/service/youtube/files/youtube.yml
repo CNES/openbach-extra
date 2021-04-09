@@ -1,0 +1,33 @@
+---
+
+general:
+  name:            youtube
+  description: >
+      This job finds youtube videos by a randomly selected keyword, then plays a randomly selected videos 
+      from the proposed videos list, using a web browser. 
+  job_version:     '1.0'
+  keywords:        [youtube, streaming, video, multimedia]
+  persistent:      False
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '20.04'
+    command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/youtube/youtube.py'
+    command_stop:
+
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/youtube/youtube.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        duration
+      type:        'int'
+      count:        1
+      description: >
+          The duration for playing the video, in seconds
+                       
+statistics:

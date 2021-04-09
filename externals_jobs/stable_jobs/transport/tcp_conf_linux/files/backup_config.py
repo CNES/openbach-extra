@@ -29,27 +29,42 @@
 """Copy the default configuration in /opt/openbach/agent/jobs/tcp_conf_linux/
 at job installation"""
 
+import os.path
+from glob import glob
+
+# Backup generic TCP stack parameters
 dst = open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux.conf","w")
-for param in ["tcp_congestion_control", "tcp_slow_start_after_idle", 
-		"tcp_no_metrics_save", "tcp_sack", "tcp_recovery", "tcp_wmem",
-		"tcp_rmem", "tcp_fastopen"]:
-	src = open("/proc/sys/net/ipv4/"+param,"r")
-	value = src.readline()
-	src.close()
-	dst.write("net.ipv4."+param+"="+value)
-for param in ["rmem_max", "rmem_default",
-		"wmem_max", "wmem_default"]:
-	src = open("/proc/sys/net/core/"+param,"r")
-	value = src.readline()
-	src.close()
-	dst.write("net.core."+param+"="+value)
+for param in [
+        "tcp_congestion_control", "tcp_slow_start_after_idle", 
+        "tcp_no_metrics_save", "tcp_sack", "tcp_recovery", "tcp_wmem",
+        "tcp_rmem", "tcp_fastopen"]:
+    src = open("/proc/sys/net/ipv4/"+param,"r")
+    value = src.readline()
+    src.close()
+    dst.write("net.ipv4."+param+"="+value)
+
+for param in ["rmem_max", "rmem_default", "wmem_max", "wmem_default"]:
+    src = open("/proc/sys/net/core/"+param,"r")
+    value = src.readline()
+    src.close()
+    dst.write("net.core."+param+"="+value)
+
 dst.close()
 
+# Get current name of "hystart_ack_delta" parameter since it can be different
+# according to the Linux kernel
+hystart_ack_delta = list(map(
+        os.path.basename,
+        glob("/sys/module/tcp_cubic/parameters/hystart_ack_delta*")))[0]
+
+# Backup parameters of TCP CUBIC protocol
 dst = open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux_cubic.conf","w")
-for param in ["beta", "fast_convergence", "hystart_ack_delta", "hystart_low_window",
-		"tcp_friendliness", "hystart", "hystart_detect", "initial_ssthresh"]:
-	src = open("/sys/module/tcp_cubic/parameters/"+param,"r")
-	value = src.readline()
-	src.close()
-	dst.write(param+"="+value)
+for param in [
+        "beta", "fast_convergence", hystart_ack_delta, "hystart_low_window",
+        "tcp_friendliness", "hystart", "hystart_detect", "initial_ssthresh"]:
+    src = open("/sys/module/tcp_cubic/parameters/"+param,"r")
+    value = src.readline()
+    src.close()
+    dst.write(param+"="+value)
+
 dst.close()

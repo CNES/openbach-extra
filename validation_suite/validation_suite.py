@@ -48,7 +48,6 @@ __credits__ = '''Contributors:
 
 import os
 import sys
-import json
 import time
 import getpass
 import logging
@@ -60,10 +59,12 @@ from pathlib import Path
 from random import sample
 from collections import Counter
 
+from requests.compat import json
+
 CWD = Path(__file__).resolve().parent
 sys.path.insert(0, Path(CWD.parent, 'apis').as_posix())
 
-from auditorium_scripts.frontend import FrontendBase
+from auditorium_scripts.frontend import FrontendBase, ActionFailedError
 from auditorium_scripts.list_agents import ListAgents
 from auditorium_scripts.list_collectors import ListCollectors
 from auditorium_scripts.list_installed_jobs import ListInstalledJobs
@@ -99,7 +100,6 @@ from auditorium_scripts.status_scenario_instance import StatusScenarioInstance
 from auditorium_scripts.stop_scenario_instance import StopScenarioInstance
 from auditorium_scripts.delete_scenario import DeleteScenario
 from auditorium_scripts.get_scenario_instance_data import GetScenarioInstanceData
-
 
 
 class ValidationSuite(FrontendBase):
@@ -158,14 +158,37 @@ class ValidationSuite(FrontendBase):
         raise NotImplementedError
 
 
-def load_module_from_path(path):
+class DummyResponse:
+    def __getitem__(self, key):
+        logger = logging.getLogger(__name__)
+        logger.debug('Trying to get the {} key from a bad response'.format(key))
+        return self
+
+    def __str__(self):
+        logger = logging.getLogger(__name__)
+        logger.warning('Using a bad response from an earlier call, request may fail from unexpected argument')
+        return super().__str__()
+
+
+def load_executor_from_path(path):
     import importlib
+    import functools
     path = Path(path).resolve()
     module_name = path.stem.replace('-', '_')
     spec = importlib.util.spec_from_file_location(module_name, path.as_posix())
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module
+
+    executor = module.main
+
+    @functools.wraps(executor)
+    def wrapper(argv=None):
+        try:
+            return executor(argv)
+        except SystemExit:
+            pass
+
+    return wrapper
 
 
 def setup_logging(
@@ -237,13 +260,13 @@ def _verify_response(response):
         response.raise_for_status()
     except:
         logger.error('Something went wrong', exc_info=True)
+        return DummyResponse()
     else:
         logger.info('Done')
-    finally:
         try:
             return response.json()
         except (AttributeError, json.JSONDecodeError):
-            return None
+            return DummyResponse()
 
 
 def execute(openbach_function):
@@ -258,7 +281,11 @@ def execute(openbach_function):
         for name, value in openbach_function_args.items():
             logger.debug('\t%s: %s', name, '*****' if name == 'password' else value)
 
-    response = openbach_function.execute(False)
+    try:
+        response = openbach_function.execute(False)
+    except ActionFailedError:
+        logger.critical('Something went wrong', exc_info=True)
+        return DummyResponse()
 
     if isinstance(response, list):
         return [_verify_response(r) for r in response]
@@ -561,6 +588,9 @@ def main(argv=None):
             response = execute(state_job)
             logger.debug('Last installation date: %s', response['install']['last_operation_date'])
 
+    import time
+    time.sleep(20)
+
     # Remove jobs from agents
     uninstall_jobs = validator.share_state(UninstallJobs)
     uninstall_jobs.args.launch = False
@@ -572,8 +602,8 @@ def main(argv=None):
     required_jobs = [
             ['fping', 'ip_route'],
             ['tc_configure_link', 'time_series', 'histogram'],
-            ['iperf3', 'd-itg_send', 'owamp-client', 'nuttcp', 'ftp_clt', 'dashjs_client', 'voip_qoe_src', 'web_browsing_qoe'],
-            ['iperf3', 'd-itg_recv', 'owamp-server', 'nuttcp', 'ftp_srv', 'apache2', 'voip_qoe_dest'],
+            ['iperf3', 'd-itg_send', 'synchronization', 'owamp-client', 'nuttcp', 'ftp_clt', 'dashjs_client', 'voip_qoe_src', 'web_browsing_qoe'],
+            ['iperf3', 'd-itg_recv', 'synchronization', 'owamp-server', 'nuttcp', 'ftp_srv', 'apache2', 'voip_qoe_dest'],
     ]
     required_jobs_set = {j for jobs in required_jobs for j in jobs}
     remove_job = validator.share_state(DeleteJob)
@@ -661,14 +691,6 @@ def main(argv=None):
         if response['status'] != 'Running':
             break
 
-    # Remove scenarios
-    remove_scenario = validator.share_state(DeleteScenario)
-    remove_scenario.args.project_name = project_name
-    remove_scenario.args.scenario_name = scenario_name
-    execute(remove_scenario)
-    remove_scenario.args.scenario_name = add_scenario.args.scenario['name']
-    execute(remove_scenario)
-
     # Get scenario instance data
     scenario_data = validator.share_state(GetScenarioInstanceData)
     scenario_data.args.file = []
@@ -676,6 +698,14 @@ def main(argv=None):
     with tempfile.TemporaryDirectory() as tempdir:
         scenario_data.args.path = Path(tempdir)
         execute(scenario_data)
+
+    # Remove scenarios
+    remove_scenario = validator.share_state(DeleteScenario)
+    remove_scenario.args.project_name = project_name
+    remove_scenario.args.scenario_name = scenario_name
+    execute(remove_scenario)
+    remove_scenario.args.scenario_name = add_scenario.args.scenario['name']
+    execute(remove_scenario)
 
     # Start job instance times X
     job_name = 'fping'
@@ -726,29 +756,6 @@ def main(argv=None):
         if response['status'] != 'Running':
             break
 
-    # Run example executors
-    logger.info('Running example executors:')
-
-    logger.info('  Data transfer configure link')
-    data_transfer_path = Path(CWD.parent, 'executors', 'examples', 'data_transfer_configure_link.py')
-    data_transfer_configure_link = load_module_from_path(data_transfer_path).main
-    data_transfer_configure_link([
-        '--controller', controller,
-        '--login', validator.credentials.get('login', ''),
-        '--password', validator.credentials.get('password', ''),
-        '--entity', 'Entity',
-        '--server', 'Server',
-        '--client', 'Client',
-        '--file-size', '100',
-        '--bandwidth-server-to-client', '10M',
-        '--bandwidth-client-to-server', '10M',
-        '--delay-server-to-client', '10',
-        '--delay-client-to-server', '10',
-        '--client-ip', client_ip,
-        '--middlebox-interfaces', middlebox_interfaces,
-        project_name, 'run',
-    ])
-
     # Setup routes between client and server to use the middlebox
     start_job.args.job_name = 'ip_route'
     start_job.args.interval = None
@@ -767,12 +774,35 @@ def main(argv=None):
     }
     execute(start_job)
 
+    # Run example executors
+    logger.info('Running example executors:')
+
+    logger.info('  Data transfer configure link')
+    data_transfer_path = Path(CWD.parent, 'executors', 'examples', 'data_transfer_configure_link.py')
+    data_transfer_configure_link = load_executor_from_path(data_transfer_path)
+    data_transfer_configure_link([
+        '--controller', controller,
+        '--login', validator.credentials.get('login', ''),
+        '--password', validator.credentials.get('password', ''),
+        '--entity', 'Entity',
+        '--server', 'Server',
+        '--client', 'Client',
+        '--file-size', '10M',
+        '--bandwidth-server-to-client', '10M',
+        '--bandwidth-client-to-server', '10M',
+        '--delay-server-to-client', '10',
+        '--delay-client-to-server', '10',
+        '--client-ip', client_ip,
+        '--middlebox-interfaces', middlebox_interfaces,
+        project_name, 'run',
+    ])
+
     # Run reference executors
     logger.info('Running reference executors:')
     executors_path = Path(CWD.parent, 'executors', 'references')
 
     logger.info('  Network Delay')
-    network_delay = load_module_from_path(executors_path.joinpath('executor_network_delay.py')).main
+    network_delay = load_executor_from_path(executors_path.joinpath('executor_network_delay.py'))
     network_delay([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -786,7 +816,7 @@ def main(argv=None):
     ])
 
     logger.info('  Network Jitter')
-    network_jitter = load_module_from_path(executors_path.joinpath('executor_network_jitter.py')).main
+    network_jitter = load_executor_from_path(executors_path.joinpath('executor_network_jitter.py'))
     network_jitter([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -799,7 +829,7 @@ def main(argv=None):
     ])
 
     logger.info('  Network Rate')
-    network_rate = load_module_from_path(executors_path.joinpath('executor_network_rate.py')).main
+    network_rate = load_executor_from_path(executors_path.joinpath('executor_network_rate.py'))
     network_rate([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -813,7 +843,7 @@ def main(argv=None):
     ])
 
     #~logger.info('  Network QOS')
-    #~network_qos = load_module_from_path(executors_path.joinpath('executor_network_qos.py')).main
+    #~network_qos = load_executor_from_path(executors_path.joinpath('executor_network_qos.py'))
     #~network_qos([
     #~    '--controller', controller,
     #~    '--login', validator.credentials.get('login', ''),
@@ -822,7 +852,7 @@ def main(argv=None):
     #~])
 
     logger.info('  Network One Way Delay')
-    network_owd = load_module_from_path(executors_path.joinpath('executor_network_one_way_delay.py')).main
+    network_owd = load_executor_from_path(executors_path.joinpath('executor_network_one_way_delay.py'))
     network_owd([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -836,7 +866,7 @@ def main(argv=None):
     ])
 
     logger.info('  Network Global')
-    network_global = load_module_from_path(executors_path.joinpath('executor_network_global.py')).main
+    network_global = load_executor_from_path(executors_path.joinpath('executor_network_global.py'))
     network_global([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -851,7 +881,7 @@ def main(argv=None):
     ])
 
     logger.info('  Service FTP')
-    service_ftp = load_module_from_path(executors_path.joinpath('executor_service_ftp.py')).main
+    service_ftp = load_executor_from_path(executors_path.joinpath('executor_service_ftp.py'))
     service_ftp([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -859,14 +889,13 @@ def main(argv=None):
         '--server-entity', 'Server',
         '--client-entity', 'Client',
         '--server-ip', server_ip,
-        '--client-ip', client_ip,
         '--mode', 'download',
         '--post-processing-entity', 'Entity',
         project_name, 'run',
     ])
 
     logger.info('  Service Video Dash')
-    service_dash = load_module_from_path(executors_path.joinpath('executor_service_video_dash.py')).main
+    service_dash = load_executor_from_path(executors_path.joinpath('executor_service_video_dash.py'))
     service_dash([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -881,7 +910,7 @@ def main(argv=None):
     ])
 
     logger.info('  Service VoIP')
-    service_voip = load_module_from_path(executors_path.joinpath('executor_service_voip.py')).main
+    service_voip = load_executor_from_path(executors_path.joinpath('executor_service_voip.py'))
     service_voip([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -897,7 +926,7 @@ def main(argv=None):
     ])
 
     logger.info('  Service Web Browsing')
-    service_web = load_module_from_path(executors_path.joinpath('executor_service_web_browsing.py')).main
+    service_web = load_executor_from_path(executors_path.joinpath('executor_service_web_browsing.py'))
     service_web([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -912,7 +941,7 @@ def main(argv=None):
     ])
 
     logger.info('  Service Traffic Mix')
-    service_mix = load_module_from_path(executors_path.joinpath('executor_service_traffic_mix.py')).main
+    service_mix = load_executor_from_path(executors_path.joinpath('executor_service_traffic_mix.py'))
     service_mix([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -921,18 +950,18 @@ def main(argv=None):
         '--dash', '2', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, 'http/2', '5301',
         # To avoid proxy issues using config.yml, disable web-browsing
         # '--web-browsing', '3', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, '10', '2',
-        '--voip', '4', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, '8011', 'G.711.1',
+        '--voip', '4', 'Server', 'Client', '60', 'None', 'None', '0', server_ip, client_ip, '8011', 'G.711.1', '100.0', '120.0',
         '--data-transfer', '5', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '5201', '10M', '0', '1500',
         '--dash', '6', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, 'http/2', '5301',
         # To avoid proxy issues using config.yml, disable web-browsing
         # '--web-browsing', '7', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '10', '2',
-        '--voip', '8', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '8012', 'G.711.1',
+        '--voip', '8', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '8012', 'G.711.1', 'None', 'None',
         '--post-processing-entity', 'Entity',
         project_name, 'run',
     ])
 
     logger.info('  Transport TCP One Flow')
-    transport_oneflow = load_module_from_path(executors_path.joinpath('executor_transport_tcp_one_flow.py')).main
+    transport_oneflow = load_executor_from_path(executors_path.joinpath('executor_transport_tcp_one_flow.py'))
     transport_oneflow([
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
@@ -946,7 +975,7 @@ def main(argv=None):
     ])
 
     #~logger.info('  Transport TCP Stack Conf')
-    #~transport_stack = load_module_from_path(executors_path.joinpath('executor_transport_tcp_stack_conf.py')).main
+    #~transport_stack = load_executor_from_path(executors_path.joinpath('executor_transport_tcp_stack_conf.py'))
     #~transport_stack([
     #~    '--controller', controller,
     #~    '--login', validator.credentials.get('login', ''),

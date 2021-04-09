@@ -33,14 +33,36 @@ __credits__ = '''Contributors:
  * Bastien TAURAN <bastien.tauran@toulouse.viveris.com>
 '''
 
-
+import os
 import re
 import sys
 import time
 import syslog
 import argparse
+import traceback
 import subprocess
+import contextlib
 import collect_agent
+
+
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
 def convert(value):
     try:
@@ -122,15 +144,6 @@ def send_stats(line, last_sent, current_node, collect_agent, interval_stats):
 
 
 def main(interface, qdisc_nodes, interval_stats):
-    # Connect to collect_agent
-    success = collect_agent.register_collect(
-            '/opt/openbach/agent/jobs/tc_qdisc_stats/'
-            'tc_qdisc_stats_rstats_filter.conf')
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-
     cmd = ['stdbuf', '-oL', 'tc', '-s', 'qdisc', 'show', 'dev', interface]
     last_sent = {qdisc_node:0 for qdisc_node in qdisc_nodes}
     read_this_line = False
@@ -160,23 +173,24 @@ def main(interface, qdisc_nodes, interval_stats):
 
 
 if __name__ == "__main__":
-    # Define Usage
-    parser = argparse.ArgumentParser(
-            description=__doc__,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-            'interface', type=str,
-            help='The interface to monitor')
-    parser.add_argument(
-            'qdisc_nodes', type=str, nargs='+',
-            help='The qdisc nodes to monitor')
-    parser.add_argument(
-            '-i', '--interval_stats', type=float, default=1,
-            help='Pause interval seconds between periodic reports. Can be a float (default=1s)')
-
-    # Get args and call the appropriate function
-    args = parser.parse_args()
-    interface = args.interface
-    qdisc_nodes = args.qdisc_nodes
-    interval_stats = args.interval_stats
-    main(interface, qdisc_nodes, interval_stats)
+    with use_configuration('/opt/openbach/agent/jobs/tc_qdisc_stats/tc_qdisc_stats_rstats_filter.conf'):
+        # Define Usage
+        parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument(
+                'interface', type=str,
+                help='The interface to monitor')
+        parser.add_argument(
+                'qdisc_nodes', type=str, nargs='+',
+                help='The qdisc nodes to monitor')
+        parser.add_argument(
+                '-i', '--interval_stats', type=float, default=1,
+                help='Pause interval seconds between periodic reports. Can be a float (default=1s)')
+    
+        # Get args and call the appropriate function
+        args = parser.parse_args()
+        interface = args.interface
+        qdisc_nodes = args.qdisc_nodes
+        interval_stats = args.interval_stats
+        main(interface, qdisc_nodes, interval_stats)

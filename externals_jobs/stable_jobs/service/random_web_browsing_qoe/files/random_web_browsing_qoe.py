@@ -34,13 +34,18 @@ __credits__ = '''Contributors:
  * Francklin SIMO <francklin.simo@toulouse.viveris.com>
 '''
 
-import collect_agent
-import syslog
 import os
 import sys
 import yaml
 import time
+import psutil
+import syslog
+import random
+import signal 
 import argparse
+import traceback
+import contextlib
+import collect_agent
 from selenium import webdriver
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
@@ -48,11 +53,27 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from selenium.common.exceptions import InvalidArgumentException
 from selenium.webdriver import FirefoxOptions
-import random
-import signal 
 from functools import partial
-import psutil
 
+
+@contextlib.contextmanager
+def use_configuration(filepath):
+    success = collect_agent.register_collect(filepath)
+    if not success:
+        message = 'ERROR connecting to collect-agent'
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
+    try:
+        yield
+    except Exception:
+        message = traceback.format_exc()
+        collect_agent.send_log(syslog.LOG_CRIT, message)
+        raise
+    except SystemExit as e:
+        if e.code != 0:
+            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
+        raise
 
 # TODO: Add support for other web browsers
 def init_driver(binary_path, binary_type):
@@ -152,15 +173,7 @@ def kill_all(parent_pid, signum, frame):
     parent = psutil.Process(parent_pid)
     parent.kill()
 
-
 def main(page_visit_duration):
-    # Connect to collect agent
-    conffile = '/opt/openbach/agent/jobs/random_web_browsing_qoe/random_web_browsing_qoe_rstats_filter.conf'
-    success = collect_agent.register_collect(conffile)
-    if not success:
-       message = 'ERROR connecting to collect-agent'
-       collect_agent.send_log(syslog.LOG_ERR, message)
-       exit(message)
     # Set signal handler
     signal_handler_partial = partial(kill_all, os.getpid())
     signal.signal(signal.SIGTERM, signal_handler_partial)
@@ -223,10 +236,10 @@ def main(page_visit_duration):
         exit(message)
 
 if __name__ == "__main__":
-    
-    # Argument parsing
-    parser = argparse.ArgumentParser()
-    parser.add_argument("page_visit_duration", help="The amount of time in second, spend on each web page once it is loaded", type=int)
-    args = parser.parse_args()
-    
-    main(args.page_visit_duration)
+    with use_configuration('/opt/openbach/agent/jobs/random_web_browsing_qoe/random_web_browsing_qoe_rstats_filter.conf'):
+        # Argument parsing
+        parser = argparse.ArgumentParser()
+        parser.add_argument("page_visit_duration", help="The amount of time in second, spend on each web page once it is loaded", type=int)
+        args = parser.parse_args()
+        
+        main(args.page_visit_duration)
