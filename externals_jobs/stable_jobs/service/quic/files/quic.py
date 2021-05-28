@@ -71,6 +71,7 @@ class Implementations(Enum):
     PICOQUIC='picoquic'
     QUICLY='quicly'
 
+
 @contextlib.contextmanager
 def use_configuration(filepath):
     success = collect_agent.register_collect(filepath)
@@ -90,6 +91,7 @@ def use_configuration(filepath):
             collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
         raise
 
+
 def now():
     return int(time.time() * 1000)
 
@@ -97,7 +99,7 @@ def now():
 def run_command(cmd, cwd=None):
     "Run cmd and wait for command to complete then return a CompletedProcessess instance"
     try:
-      p = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, cwd=cwd, check=False)
+        p = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, cwd=cwd, check=False)
     except Exception as ex:
         message = "Error running command '{}': '{}'".format(' '.join(cmd), ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
@@ -120,23 +122,18 @@ def remove_resources(resources, download_dir):
            os.remove(r_path)
 
 
-def check_resources(resources, donwload_dir, p, exit_ok=True):
+def check_resources(resources, donwload_dir, p):
     "Check if resources have been successfully downloaded"
-    status = True
     for r in resources.split(','):
         r_path = os.path.join(donwload_dir, r)
-        if os.path.exists(r_path) and os.path.getsize(r_path) > 0:
-           continue
-        else:
-           message = ("Error downloading resources. Resource '{}' may be does'nt exist on server or server unreachable. \n {} \n {}"
-                      .format(r, p.stdout.decode(), p.stderr.decode()))
-           collect_agent.send_log(syslog.LOG_ERR, message)
-           print(message)
-           if exit_ok:
-              sys.exit(message)
-           status = False
-    return status 
-  
+        if not os.path.exists(r_path) or os.path.getsize(r_path) <= 0:
+            message = (
+                   "Error downloading resources. Resource '{}' may be "
+                   "does'nt exist on server or server unreachable. "
+                   "\n {} \n {}".format(r, p.stdout.decode(), p.stderr.decode())
+            )
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            return message
 
 
 def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resources=None, download_dir=None, extra_args=None):
@@ -192,17 +189,30 @@ def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resou
 
 
 def client(implementation, server_port, log_dir, extra_args, server_ip, resources, download_dir, nb_runs):
+    errors = []
     for run_number in range(nb_runs):
-        with open(os.path.join(log_dir, 'log_client_{}.txt'.format(str(run_number+1))), 'w+') as log_file:
-             cmd = build_cmd(implementation, 'client', server_port, log_file.name, server_ip, [r for r in resources.split(',')], 
-                             download_dir, extra_args=extra_args)
-             remove_resources(resources, download_dir) 
-             start_time = now()
-             p = run_command(cmd, cwd=download_dir)
-             end_time = now()
-             elapsed_time = end_time - start_time
-             status = check_resources(resources, download_dir, p, exit_ok=True)
-             if status: collect_agent.send_stat(now(), **{'download_time':elapsed_time})
+        with open(os.path.join(log_dir, 'log_client_{}.txt'.format(run_number + 1)), 'w+') as log_file:
+            cmd = build_cmd(
+                    implementation,
+                    'client',
+                    server_port,
+                    log_file.name,
+                    server_ip,
+                    resources.split(','),
+                    download_dir,
+                    extra_args=extra_args)
+            remove_resources(resources, download_dir) 
+            start_time = now()
+            p = run_command(cmd, cwd=download_dir)
+            end_time = now()
+        elapsed_time = end_time - start_time
+        collect_agent.send_stat(now(), download_time=elapsed_time)
+        error = check_resources(resources, download_dir, p)
+        if error is not None:
+            errors.append((run_number + 1, error))
+
+    if errors:
+        sys.exit('\n'.join('Error on run #{}: {}'.format(run, error) for run, error in errors))
 
        
 def server(implementation, server_port, log_dir, extra_args):
@@ -304,6 +314,3 @@ if __name__ == "__main__":
         args = vars(parser.parse_args())
         main = args.pop('function')
         main(**args)
-
-
-
