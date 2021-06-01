@@ -98,7 +98,7 @@ def run_entity(temp_dir, bin_dir, infrastructure, topology,
 
     subprocess.run([opensand, '-g', temp_dir])
     xsd = py_opensand_conf.fromXSD(os.path.join(temp_dir, 'infrastructure.xsd'))
-    xml = py_opensand_conf(xsd, infrastructure)
+    xml = py_opensand_conf.fromXML(xsd, infrastructure)
 
     # Bypass collector settings to redirect traffic through this job
     storage = xml.get_root().get_component('storage')
@@ -161,10 +161,17 @@ def grouper(iterable, n):
     return zip(*args)
 
 
+def parse_probe(value):
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return value
+
+
 def forward_stat(payload, src_addr, src_port):
     data = iter(payload.decode().split())
     timestamp = int(next(data))
-    values = { name: json.loads(value) for name, value in grouper(data, 2) }
+    values = { name: parse_probe(value) for name, value in grouper(data, 2) }
     collect_agent.send_stat(timestamp, **values)
 
 
@@ -253,28 +260,6 @@ def udp_port(text):
         raise ValueError('UDP port must be strictly positive')
     return value
 
-
-def build_command(temp_dir, bin_dir, infrastructure, topology, profile=None):
-    opensand = os.path.join(bin_dir, 'opensand')
-
-    subprocess.run([opensand, '-g', temp_dir])
-    xsd = py_opensand_conf.fromXSD(os.path.join(temp_dir, 'infrastructure.xsd'))
-    xml = py_opensand_conf(xsd, infrastructure)
-
-    storage = xml.get_root().get_component('storage')
-    storage.get_parameter('enable_collector').get_data().set(True)
-    storage.get_parameter('collector_address').get_data().set(???)
-    storage.get_parameter('collector_logs').get_data().set(???)
-    storage.get_parameter('collector_probes').get_data().set(???)
-
-    infrastructure = os.path.join(temp_dir, 'infrastructure.xml')
-    py_opensand_conf.toXML(xml, infrastructure)
-
-    command = [opensand, '-i', infrastructure, '-t', topology]
-    if profile is not None:
-        command.extend(['-p', profile])
-
-    return command
 
 
 if __name__ == '__main__':
