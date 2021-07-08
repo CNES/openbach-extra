@@ -1,0 +1,153 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016−2019 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+---
+
+general:
+  name: rohc
+  description: >
+      This Job creates a ROHC compressor and decompressor.
+  job_version: '1.0'
+  keywords:
+    - ROHC
+    - header
+    - compression
+  persistent: yes
+  need_privileges: yes
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/rohc/rohc.py'
+    command_stop:
+
+arguments:
+  required:
+    - name: remote_ip
+      type: ip
+      count: 1
+      description: The remote IP address
+    - name: local_ip
+      type: ip
+      count: 1
+      description: The local IP address
+    - name: tunnel_ipv4
+      type: ip
+      count: 1
+      description: The IPv4 address of the tunnel
+    - name: tunnel_ipv6
+      type: str
+      count: 1
+      description: The IPv6 address of the tunnel
+  optional:
+    - name: port
+      type: int
+      flag: -p
+      count: 1
+      description: The port used for local and remote address (default = 5000)
+    - name: direction
+      type: str
+      flag: -d
+      count: 1
+      description: Choose bidirectional to add feedback from decompressor to compressor (default = bidirectional)
+      choices:
+        - bidirectional
+        - unidirectional
+    - name: behavior
+      type: str
+      flag: -b
+      count: 1
+      description: Choose which tasks to do in this job (default = both)
+      choices:
+        - send
+        - receive
+        - both
+        - nothing
+    - name: cid_type
+      type: str
+      flag: -c
+      count: 1
+      description: Handle small or large CIDs (default = largecid)
+      choices:
+        - smallcid
+        - largecid
+    - name: max_contexts
+      type: int
+      flag: -m
+      count: 1
+      description: Maximum number of contexts (default = 16)
+    - name: rohc_packet_size
+      type: int
+      flag: -s
+      count: 1
+      description: Maximum size of ROHC packets, not including the UDP tunnel offset (default = 1500)
+                
+statistics:
+  - name: "comp_segments"
+    description: Number of segments sent for one packet
+    frequency: 'every interval (default = 1s)'
+  - name: "comp_total_uncompressed"
+    description: Average size of packet before compression
+    frequency: 'every interval (default = 1s)'
+  - name: "comp_total_compressed"
+    description: Average size of packet after compression
+    frequency: 'every interval (default = 1s)'
+  - name: "comp_cumulative_total_uncompressed"
+    description: Total size received by compressor
+    frequency: 'every interval (default = 1s)'
+  - name: "comp_cumulative_total_compressed"
+    description: Total size sent by compressor
+    frequency: 'every interval (default = 1s)'
+  - name: "comp_total_ratio"
+    description: Average size gain for this packet
+    frequency: 'every interval (default = 1s)'
+  - name: "comp_cumulative_total_ratio"
+    description: Total size gain for all packets compressed
+    frequency: 'every interval (default = 1s)'
+  - name: "comp_header_uncompressed"
+    description: Average size of packet header before compression
+    frequency: 'every interval (default = 1s)'
+  - name: "comp_header_compressed"
+    description: Average size of packet header after compression
+    frequency: 'every interval (default = 1s)'
+  - name: "comp_cumulative_header_uncompressed"
+    description: Total header size received by compressor
+    frequency: 'every interval (default = 1s)'
+  - name: "comp_cumulative_header_compressed"
+    description: Total header size sent by compressor
+    frequency: 'every interval (default = 1s)'
+  - name: "comp_header_ratio"
+    description: Average header size gain for this packet
+    frequency: 'every interval (default = 1s)'
+  - name: "comp_cumulative_header_ratio"
+    description: Total header size gain for all packets compressed
+    frequency: 'every interval (default = 1s)'
+  - name: "decomp_lost"
+    description: Total number of packets lost on decompressor
+    frequency: 'every interval (default = 1s)'
+  - name: "decomp_failed"
+    description: Total number of packets where decompression failed
+    frequency: 'every interval (default = 1s)'

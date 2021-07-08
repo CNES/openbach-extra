@@ -1,0 +1,41 @@
+=== Job description ===
+
+This job allows to deploy a ROHC tunnel between two nodes.
+
+=== Example ===
+
+Add a ROHC tunnel between Agent 1 (IP is ''192.168.1.1'') and Agent 2 (IP is ''192.168.1.2''), which compresses only on forward link. The IPv4 tunnel address for ''Agent X'' is ''192.168.2.X'' and the IPv6 tunnel address is ''2001:eeee::X''. It will use large CIDs, 500 contexts, and feedbacks to optimize compression.
+
+== Agent 1 ==
+
+In the web interface, set parameters as follows:
+  * **remote_ip** = 192.168.1.2
+  * **local_ip** = 192.168.1.1
+  * **tunnel_ipv4** = 192.168.2.1
+  * **tunnel_ipv6** = 2001:eeee::1
+  * **direction** = bidirectional
+  * **behavior** = send
+  * **cid_type** = largecid
+  * **max_contexts** = 500
+
+Or launch the job manually from CLI on the agent as follows:
+<code>
+JOB_NAME=rohc sudo -E python3 /opt/openbach/agent/jobs/rohc/rohc.py add 192.168.1.2 192.168.1.1 192.168.2.1 2001:eeee::1 -d bidirectional -b send -c largecid -m 500
+</code>
+
+== Agent 2 ==
+
+In the web interface, set parameters as follows:
+  * **remote_ip** = 192.168.1.1
+  * **local_ip** = 192.168.1.2
+  * **tunnel_ipv4** = 192.168.2.2
+  * **tunnel_ipv6** = 2001:eeee::2
+  * **direction** = bidirectional
+  * **behavior** = receive
+  * **cid_type** = largecid
+  * **max_contexts** = 500
+                
+Or launch the job manually from CLI on the agent as follows:
+<code>
+JOB_NAME=rohc sudo -E python3 /opt/openbach/agent/jobs/rohc/rohc.py add 192.168.1.1 192.168.1.2 192.168.2.2 2001:eeee::2 -d bidirectional -b receive -c largecid -m 500
+</code>
