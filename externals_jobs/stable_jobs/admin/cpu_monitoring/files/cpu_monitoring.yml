@@ -1,0 +1,74 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016−2019 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+---
+
+general:
+  name: cpu_monitoring
+  description: >
+      This Job monitors CPU and RAM usage.
+  job_version: '1.0'
+  keywords:
+    - CPU
+    - RAM
+    - Swap
+    - Monitoring
+  persistent: yes
+  need_privileges: no
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/cpu_monitoring/cpu_monitoring.py'
+    command_stop:
+
+arguments:
+  optional:
+    - name: sampling_interval
+      type: int
+      flag: -i
+      count: 1
+      description: Interval between two measurements in seconds (default = 1)
+                
+statistics:
+  - name: "cpu_user"
+    description: Amont of CPU used at user level in percent
+    frequency: 'every interval (default = 1s)'
+  - name: "cpu_sys"
+    description: Amont of CPU used at system level in percent
+    frequency: 'every interval (default = 1s)'
+  - name: "cpu_iowait"
+    description: Amont of CPU used at for I/O disk requests in percent
+    frequency: 'every interval (default = 1s)'
+  - name: "cpu_idle"
+    description: Amont of CPU not used in percent
+    frequency: 'every interval (default = 1s)'
+  - name: "ram_used"
+    description: Amont of RAM used in bytes
+    frequency: 'every interval (default = 1s)'
+  - name: "swap_used"
+    description: Amont of Swap used in bytes
+    frequency: 'every interval (default = 1s)'
