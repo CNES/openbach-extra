@@ -55,7 +55,7 @@ arguments:
       count: 1
       description: The local IP address
     - name: tunnel_ipv4
-      type: ip
+      type: str
       count: 1
       description: The IPv4 address of the tunnel
     - name: tunnel_ipv6

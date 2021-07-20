@@ -143,8 +143,8 @@ def main(remote_ip, local_ip, tunnel_ipv4, tunnel_ipv6, port, direction, behavio
 
     time.sleep(1)
 
-    subprocess.run(['ip', 'a', 'add', '{}/24'.format(tunnel_ipv4), 'dev', 'rohc0'])
-    subprocess.run(['ip', '-6', 'a', 'add', '{}/64'.format(tunnel_ipv6), 'dev', 'rohc0'])
+    subprocess.run(['ip', 'a', 'add', tunnel_ipv4, 'dev', 'rohc0'])
+    subprocess.run(['ip', '-6', 'a', 'add', tunnel_ipv6, 'dev', 'rohc0'])
     subprocess.run(['ip', 'l', 'set', 'rohc0', 'up'])
 
     # Init local variables used to calculate statistics
