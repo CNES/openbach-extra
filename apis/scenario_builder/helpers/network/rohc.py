@@ -29,7 +29,7 @@
 """ Helpers of rohc job """
 
 
-def rohc(
+def rohc_add_pop(
         scenario, entity, remote_ip, local_ip,
         tunnel_ipv4, tunnel_ipv6,
         port=5400, direction="bidirectional", behavior="both",
@@ -48,4 +48,3 @@ def rohc(
             cid_type=cid_type, max_contexts=max_contexts, rohc_packet_size=rohc_packet_size)
 
     return [rohc]
-
