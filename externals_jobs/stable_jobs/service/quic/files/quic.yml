@@ -9,7 +9,7 @@ general:
       you need to modify global variables related to the implementation to change. 
       These variables are located at the begining of the install file of the job. 
       So you have to change the address of the git repository as well as the version to install.
-  job_version:     '1.1'
+  job_version:     '1.2'
   keywords:        [quic, web, ngtcp2, picoquic, quicly]
   persistent:      True
   need_privileges: yes
@@ -39,12 +39,18 @@ arguments:
       flag:        '-p'
       description: >
         The server port to connect to/ listen on (default 4433)
+    - name:        store_logs
+      type:        None
+      count:       0
+      flag:        '-s'
+      description: >
+        Enable this option to store logs in the specified directory (default disabled)
     - name:        log_dir
       type:        str
       count:       1
       flag:        '-l'
       description: >
-        The path to the directory to save log files
+        The path to the directory to save log files (default /tmp/)
     - name:        extra_args
       type:        str
       count:       1
@@ -70,22 +76,26 @@ arguments:
             type:        str
             count:       1
             description: >
-              Comma-separed list of resources to fetch in parallel over concurrent streams. 
-              These resources must be located at the root of the directory /var/www/quic.openbach.com
+              Comma-separed list of resources to fetch in parallel over concurrent streams. Specify only
+              the resource name, not the path. These resources must be located at the root of the directory
+              /var/www/quic.openbach.com
         optional:
           - name:        download_dir
             type:        'str'
             count:        1
             flag:         '-d'
             description: >
-              The path to the directory to save downloaded resources (default /tmp)
+              The path to the directory to save downloaded resources (default /tmp/)
           - name:        nb_runs
             type:        int
             count:       1
             flag:        '-n'
             description: >
-              The number of times resources will be fetched
+              The number of times resources will be fetched (default 1)
 statistics:
-  - name: "download_time"
+  - name: 'download_time'
     description: The time (in ms) needed to transfer resources from server to client
+    frequency: 'once each tranfert is completed'
+  - name: 'downloaded_bytes'
+    description: The amount of data received by the client
     frequency: 'once each tranfert is completed'
