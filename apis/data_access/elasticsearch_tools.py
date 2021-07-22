@@ -41,6 +41,7 @@ __all__ = ['ElasticSearchConnection']
 
 
 import json
+import locale
 import datetime
 from contextlib import suppress
 
@@ -52,6 +53,19 @@ from .result_data import Log, get_or_create_scenario
 ############################################
 # Helper functions for formatting purposes #
 ############################################
+
+class LocaleManager():
+    def __init__(self, loc):
+        self.lc_all = locale.setlocale(locale.LC_ALL)
+        self.locale = loc
+          
+    def __enter__(self):
+        locale.setlocale(locale.LC_ALL, self.locale)
+        return self
+      
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        locale.setlocale(locale.LC_ALL, self.lc_all)
+        
 
 def tags_to_query(scenario, job, agent, job_instance, timestamps):
     """Build an ElasticSearch query out of the given parameters"""
@@ -111,9 +125,10 @@ def parse_timestamp_with_index(date, index, number_of_year_digits=4):
     """Convert a date representation from ElasticSearch into
     a timestamp as used throughout OpenBACH.
     """
-    year = int(index.split('.')[0][-number_of_year_digits:])
-    timestamp = datetime.datetime.strptime(date, '%b %d %H:%M:%S')
-    return int(timestamp.replace(year).timestamp() * 1000)
+    with LocaleManager('en_US.utf8'):
+        year = int(index.split('.')[0][-number_of_year_digits:])
+        timestamp = datetime.datetime.strptime(date, '%b %d %H:%M:%S')
+        return int(timestamp.replace(year).timestamp() * 1000)
 
 
 def parse_logs(elasticsearch_result):
