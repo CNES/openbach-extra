@@ -62,6 +62,9 @@ class SetJobStatsPolicy(FrontendBase):
                 '-r', '--delete', '--remove', action='store_true',
                 help='revert to the default policy')
         self.parser.add_argument(
+                '-p', '--path',
+                help='path to the rstats default conf file on the controller. Needed with r/delete/remove parameter')
+        self.parser.add_argument(
                 '-f', '--filename',
                 help='name of or path to the configuration file on the '
                 'agent; defaults to /opt/openbach/agent/jobs/<job_name>/'
@@ -74,7 +77,12 @@ class SetJobStatsPolicy(FrontendBase):
         storage = self.args.storage
         broadcast = self.args.broadcast
         local = self.args.local
+        path = self.args.path
         if self.args.delete:
+            if not path and not statistic:
+                self.parser.error('-r/--delete/--remove requires path argument')
+            elif path and not statistic:
+                print('WARNING: Don\'t forget to also launch the -r with the stats name to restore the default policy for the previously modified stats if any.')
             storage = None
             broadcast = None
             local = None
@@ -88,7 +96,9 @@ class SetJobStatsPolicy(FrontendBase):
         if local is not None:
             action = partial(action, local=local)
         if filename is not None:
-            action = partial(action, filename=filename)
+            action = partial(action, config_file=filename)
+        if self.args.delete:
+            action = partial(action, path=path)
 
         return action(
                 'POST', 'job/{}'.format(job), action='stat_policy',
