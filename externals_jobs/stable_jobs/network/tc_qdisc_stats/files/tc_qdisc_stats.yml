@@ -29,7 +29,7 @@ general:
   name: tc_qdisc_stats
   description: >
       This Job get the evolution of tc qdisc parameters, for given nodes
-  job_version: '1.0'
+  job_version: '1.1'
   keywords:
     - tc
     - qdisc
