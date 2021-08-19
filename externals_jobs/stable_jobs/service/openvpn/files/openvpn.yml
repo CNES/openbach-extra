@@ -8,7 +8,7 @@ general:
       This job supports conventionnal encryption using a pre-shared secret key. 
       It also allows to setup non-encrypted TCP/UDP tunnels"
                )
-  job_version:     '1.0'
+  job_version:     '1.2'
   keywords:        [OpenVPN, VPN, SSL/TLS]
   persistent:      True
 
@@ -20,12 +20,12 @@ platform_configuration:
     command_stop:
 
 arguments:
-  required:
+  optional:
     - name:        local_ip
       type:        ip
       count:        1
+      flag:        '-local-ip'
       description: The IP address used to communicate with peer
-  optional:
     - name:        protocol
       type:        str
       count:       1
@@ -69,6 +69,30 @@ arguments:
       flag:         '-no_sec'
       description:  Disable authentification and encryption. 
                     (It must be same on server and client)
+    - name:         'tcp_nodelay'
+      type:         None
+      count:        0
+      flag:         '-tcp-nodelay'
+      description:  Disable Nagle algorithm
+
+    - name:        ping
+      type:        int
+      count:       1
+      flag:        '-ping'
+      description: Ping remote over the TCP/UDP control channel if no packets have been sent for at least n seconds
+
+    - name:        ping_restart
+      type:        int
+      count:       1
+      flag:        '-ping-restart'
+      description: Causes OpenVPN to restart after n seconds pass without reception of a ping or other packet from remote
+
+    - name:         route_through_vpn
+      type:         str
+      count:        1
+      flag:         '-route-through-vpn'
+      description:  "Add route with vpn interface as gateway (CIDR format: IP/Netmask)"
+      
   subcommand:
     - group_name:  mode
       optional: no
@@ -89,5 +113,10 @@ arguments:
                flag:        '-rport'
                description: The port number that the server is bound to
                             (default 1194)
+             - name:         nobind
+               type:         None
+               count:        0
+               flag:         '-nobind'
+               description:  Do not bind to local address and port
   
 statistics:
