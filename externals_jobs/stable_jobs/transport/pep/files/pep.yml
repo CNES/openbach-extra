@@ -23,19 +23,19 @@ arguments:
       count:       1
       flag:        '-i'
       description: >
-          Redirect all traffic from incoming interfaces to PEPsal (admits mulitple interfaces separated by ',' ' ')
+          Redirect all traffic from incoming interfaces to PEPsal (admits multiple interfaces separated by ',' ' ')
     - name:        redirect_src_ip
       type:        'str'
       count:       1
       flag:        '-s'
       description: >
-          Redirect all traffic with src IP to PEPsal (admits mulitple IPs separated by ',' ' ')
+          Redirect all traffic with src IP to PEPsal (admits multiple IPs separated by ',' ' ')
     - name:        redirect_dst_ip
       type:        'str'
       count:       1
       flag:        '-d'
       description: >
-          Redirect all traffic with dest IP to PEPsal (admits mulitple IPs separated by ',' ' ')
+          Redirect all traffic with dest IP to PEPsal (admits multiple IPs separated by ',' ' ')
     - name:        port
       type:        'int'
       count:       1

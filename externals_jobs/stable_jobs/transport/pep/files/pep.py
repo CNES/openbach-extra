@@ -189,24 +189,24 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser(description='',
                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         parser.add_argument('-p', '--port', type=int, default=5000,
-                            help='')
+                            help='The port PEPsal uses to listen for incoming connection')
         parser.add_argument('-a', '--address', type=str, default="0.0.0.0",
-                            help='')
-        parser.add_argument('-f', '--fastopen', action="store_true", help='')
-        parser.add_argument('-c', '--maxconns', type=int, default=2112, help='')
-        parser.add_argument('-g', '--gcc-interval', type=int, default=54000, help='')
+                            help='The address PEPsal uses to bind the listening socket')
+        parser.add_argument('-f', '--fastopen', action="store_true", help='Enable TCP FastOpen')
+        parser.add_argument('-c', '--maxconns', type=int, default=2112, help='The maximum number of simultaneous connections')
+        parser.add_argument('-g', '--gcc-interval', type=int, default=54000, help='The garbage collector interval')
         parser.add_argument('-l', '--log-file', type=str,
-                            default="/var/log/pepsal/connections.log", help='')
-        parser.add_argument('-t', '--pending-time', type=int, default=18000,
-                            help='')
-        parser.add_argument('-x', '--stop', action="store_true", help='')
-        parser.add_argument('-i', '--ifaces', type=str, default='', help='')
-        parser.add_argument('-s', '--src-ip', type=str, default='', help='')
-        parser.add_argument('-d', '--dst-ip', type=str, default='', help='')
+                            default="/var/log/pepsal/connections.log", help='The connections log path')
+        parser.add_argument('-t', '--pending-lifetime', type=int, default=18000,
+                            help='The pending connections lifetime')
+        parser.add_argument('-x', '--stop', action="store_true", help='If set, unset routing configuration')
+        parser.add_argument('-i', '--redirect-ifaces', type=str, default='', help="Redirect all traffic from incoming interfaces to PEPsal (admits multiple interfaces separated by ',' ' ')")
+        parser.add_argument('-s', '--redirect-src-ip', type=str, default='', help="Redirect all traffic with src IP to PEPsal (admits multiple IPs separated by ',' ' ')")
+        parser.add_argument('-d', '--redirect-dst-ip', type=str, default='', help="Redirect all traffic with dest IP to PEPsal (admits multiple IPs separated by ',' ' ')")
         parser.add_argument('-m', '--mark', type=int, default=1,
-                            help='')
+                            help='The mark used for routing packets to the PEP')
         parser.add_argument('-T', '--table-num', type=int, default=100,
-                            help='')
+                help='The routing table number used for routing packets to the PEP')
     
         # get args
         args = parser.parse_args()
@@ -216,10 +216,10 @@ if __name__ == "__main__":
         maxconns = args.maxconns
         gcc_interval = args.gcc_interval
         log_file = args.log_file
-        pending_time = args.pending_time
-        ifaces = re.findall(r'[^\,\ \t]+', args.ifaces)
-        src_ip = re.findall(r'[^\,\ \t]+', args.src_ip)
-        dst_ip = re.findall(r'[^\,\ \t]+', args.dst_ip)
+        pending_time = args.pending_lifetime
+        ifaces = re.findall(r'[^\,\ \t]+', args.redirect_ifaces)
+        src_ip = re.findall(r'[^\,\ \t]+', args.redirect_src_ip)
+        dst_ip = re.findall(r'[^\,\ \t]+', args.redirect_dst_ip)
         stop = args.stop
         mark = args.mark
         table_num = args.table_num
