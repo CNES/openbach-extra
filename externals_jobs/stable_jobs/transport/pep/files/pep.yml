@@ -91,6 +91,12 @@ arguments:
       flag:        '-T'
       description: >
           (Advanced) The routing table number used for routing packets to the PEP (default: 100)
+    - name:        stop
+      type:        'None'
+      count:       0
+      flag:        '-x'
+      description: >
+          If set, unset routing configuration
           
 statistics:
 

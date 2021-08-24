@@ -37,6 +37,8 @@ from scenario_builder.scenarios import transport_pep
 def main(argv=None):
     observer = ScenarioObserver()
 
+    observer.add_scenario_argument('--entity', '-e', required=True,
+            help='Name of the entity on which to run pepsal')
     observer.add_scenario_argument('-p', '--port', type=int, default=5000,
                         help='The port PEPsal uses to listen for incoming connection')
     observer.add_scenario_argument('-a', '--address', type=str, default="0.0.0.0",
@@ -57,11 +59,12 @@ def main(argv=None):
     observer.add_scenario_argument('-T', '--table-num', type=int, default=100,
             help='The routing table number used for routing packets to the PEP')
 
-    args = observer.parse(argv, pep.SCENARIO_NAME)
+    args = observer.parse(argv, transport_pep.SCENARIO_NAME)
 
-    scenario = opensand_run.build(
-            args.port,
+    scenario = transport_pep.build(
+            args.entity,
             args.address,
+            args.port,
             args.fastopen,
             args.maxconns,
             args.gcc_interval,

@@ -30,7 +30,7 @@
 """Helpers of pep job"""
 
 def pep(
-        scenario, port, address, fastopen,
+        scenario, entity, address, port, fastopen,
         maxconns, gcc_interval, log_file, pending_lifetime, 
         stop, redirect_ifaces, redirect_src_ip, 
         redirect_dst_ip, mark, table_num, 
@@ -41,9 +41,9 @@ def pep(
             wait_launched=wait_launched,
             wait_delay=wait_delay)
     function.configure(
-            'pep',
-            port=port,
+            'pep', entity,
             address=address,
+            port=port,
             fastopen=fastopen,
             maxconns=maxconns,
             gcc_interval=gcc_interval,
