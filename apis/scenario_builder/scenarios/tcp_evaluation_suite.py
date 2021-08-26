@@ -39,6 +39,7 @@ SCENARIO_DESCRIPTION = """This scenario is a wrapper for the following scenarios
  - transport_tcp_stack_conf
  - network_configure_link
  - service_data_transfer
+ - transport_pep
 It provides a scenario that enables the evaluation of TCP
 congestion controls.
 """
