@@ -35,23 +35,13 @@ SCENARIO_DESCRIPTION = """This transport_pep scenario launches
 PEPSal, and sets up the routes and iptables configurations necessary 
 to perform TCP splitting."""
 
-def transport_pep(entity, address, port, fastopen, maxconns, gcc_interval, log_file, pending_lifetime,
-        stop, redirect_ifaces, redirect_src_ip, redirect_dst_ip, mark, table_num, scenario_name=SCENARIO_NAME):
+def build(entity, address=None, port=None, fastopen=None, maxconns=None,
+        gcc_interval=None, log_file=None, pending_lifetime=None, stop=None,
+        redirect_ifaces=None, redirect_src_ip=None, redirect_dst_ip=None, mark=None,
+        table_num=None, scenario_name=SCENARIO_NAME):
+
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-
-    pep(scenario, entity, address, port, fastopen, maxconns, gcc_interval, log_file, pending_lifetime,
-            stop, redirect_ifaces, redirect_src_ip, redirect_dst_ip, mark, table_num)
-
-    return scenario
-
-def build(entity, address, port, fastopen, maxconns, gcc_interval, log_file, pending_lifetime,
-        stop, redirect_ifaces, redirect_src_ip, redirect_dst_ip, mark, table_num, scenario_name=SCENARIO_NAME):
-
-    scenario = transport_pep(entity, address, port, fastopen, maxconns, gcc_interval, log_file, pending_lifetime,
-            stop, redirect_ifaces, redirect_src_ip, redirect_dst_ip, mark, table_num)
-
-    if scenario_name is not None:
-        scenario.name = scenario_name
+    pep(scenario, entity, address, port, fastopen, maxconns, gcc_interval, log_file, pending_lifetime, stop, redirect_ifaces, redirect_src_ip, redirect_dst_ip, mark, table_num)
 
     return scenario
 

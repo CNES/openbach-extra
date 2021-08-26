@@ -29,19 +29,20 @@
 
 """Helpers of pep job"""
 
+from ..utils import filter_none
+
 def pep(
-        scenario, entity, address, port, fastopen,
-        maxconns, gcc_interval, log_file, pending_lifetime, 
-        stop, redirect_ifaces, redirect_src_ip, 
-        redirect_dst_ip, mark, table_num, 
+        scenario, entity, address=None, port=None, fastopen=None,
+        maxconns=None, gcc_interval=None, log_file=None, pending_lifetime=None,
+        stop=None, redirect_ifaces=None, redirect_src_ip=None,
+        redirect_dst_ip=None, mark=None, table_num=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     function = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    function.configure(
-            'pep', entity,
+    parameters = filter_none(
             address=address,
             port=port,
             fastopen=fastopen,
@@ -55,6 +56,8 @@ def pep(
             redirect_dst_ip=redirect_dst_ip,
             mark=mark,
             table_num=table_num)
+
+    function.configure('pep', entity, **parameters)
 
     return [function]
 

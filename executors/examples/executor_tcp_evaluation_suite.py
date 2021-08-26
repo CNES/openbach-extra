@@ -97,6 +97,13 @@ Router L <-> Router R:
   - loss : 0%
 +-------------------------------------+
 
+
++-------------------------------------+
+Pep redirect all interfaces for R and L:
+  - pep on link LR
+  - pep on link RL
++-------------------------------------+
+
 +-------------------------------------+
 Traffic:
   - direction_A-C : forward or return
@@ -293,6 +300,9 @@ def main(argv=None):
             help='bandwidth of each LR link (in bytes)'
             'Take three string as the job is configured three times')
     observer.add_scenario_argument(
+            '--initcwnd', required=False, type=int, default=30,
+            help='initial congestion window size for connections to this destination')
+    observer.add_scenario_argument(
             '--wait-delay-LR', required=False, nargs='+', default=['10','10'],
             help='First param: wait_delay between BD trafic start and first LR '
             'link bandwidth reduction. Second param: wait_delay between first LR '
@@ -347,6 +357,7 @@ def main(argv=None):
             args.delay,
             args.loss,
             args.bandwidth,
+            args.initcwnd,
             args.wait_delay_LR,
             congestion_control=args.congestion_control,
             server_port=args.server_port,

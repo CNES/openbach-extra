@@ -32,7 +32,7 @@ from scenario_builder.openbach_functions import StartScenarioInstance
 from scenario_builder.helpers.postprocessing.time_series import time_series_on_same_graph
 from scenario_builder.helpers.postprocessing.histogram import cdf_on_same_graph
 from scenario_builder.helpers.transport.iperf3 import iperf3_find_client
-from scenario_builder.scenarios import transport_tcp_stack_conf, network_configure_link, service_data_transfer, rate_monitoring
+from scenario_builder.scenarios import transport_tcp_stack_conf, network_configure_link, service_data_transfer, rate_monitoring, transport_pep
 
 SCENARIO_NAME = 'tcp_evaluation_suite'
 SCENARIO_DESCRIPTION = """This scenario is a wrapper for the following scenarios:
@@ -71,7 +71,7 @@ def build(
         interface_LC, interface_LD, interface_LA,
         interface_LB, interface_RC, interface_RD,
         interface_LR, interface_RL, BD_file_size,
-        AC_file_size, delay, loss, bandwidth,
+        AC_file_size, delay, loss, bandwidth, initcwnd,
         wait_delay_LR, congestion_control, server_port,
         post_processing_entity, scenario_name=SCENARIO_NAME):
 
@@ -85,56 +85,56 @@ def build(
             "destination_ip": endpointC_network_ip, #192.168.3.0/24
             "gateway_ip": routerL_to_endpointA_ip, #192.168.0.14
             "operation": 'change', 
-            "initcwnd": 10
+            "initcwnd": initcwnd
             }
 
     route_BL = {
             "destination_ip": endpointD_network_ip, #192.168.4.0/24
             "gateway_ip": routerL_to_endpointB_ip, #192.168.1.5
             "operation": 'change',
-            "initcwnd": 10
+            "initcwnd": initcwnd
             }
 
     route_CR = {
             "destination_ip": endpointA_network_ip, #192.168.0.0/24
             "gateway_ip": routerR_to_endpointC_ip, #192.168.3.3
             "operation": 'change',
-            "initcwnd": 10
+            "initcwnd": initcwnd
             }
 
     route_DR = {
             "destination_ip": endpointB_network_ip, #192.168.1.0/24
             "gateway_ip": routerR_to_endpointD_ip, #192.168.4.8
             "operation": 'change',
-            "initcwnd": 10
+            "initcwnd": initcwnd
             }
 
     route_RA = {
             "destination_ip": endpointA_network_ip, #192.168.0.0/24
             "gateway_ip": routerL_to_routerR_ip, #192.168.2.15
             "operation": 'change',
-            "initcwnd": 10
+            "initcwnd": initcwnd
             }
 
     route_RB = {
             "destination_ip": endpointB_network_ip, #192.168.1.0/24
             "gateway_ip": routerL_to_routerR_ip, #192.168.2.15
             "operation": 'change',
-            "initcwnd": 10
+            "initcwnd": initcwnd
             }
 
     route_LC = {
             "destination_ip": endpointC_network_ip, #192.168.3.0/24
             "gateway_ip": routerR_to_routerL_ip, #192.168.2.25
             "operation": 'change',
-            "initcwnd": 10
+            "initcwnd": initcwnd
             }
 
     route_LD = {
             "destination_ip": endpointD_network_ip, #192.168.4.0/24
             "gateway_ip": routerR_to_routerL_ip, #192.168.2.25
             "operation": 'change',
-            "initcwnd": 10
+            "initcwnd": initcwnd
             }
 
     # transport_tcp_stack_conf on endpointA to L
@@ -330,6 +330,36 @@ def build(
                 start_tcp_conf_LD
             ])
     start_network_conf_link_RL.configure(scenario_network_conf_link_RL)
+
+    ########################################
+    ################# pep ##################
+    ########################################
+
+    # pep on R: redirect traffic from A to C /// ou c'est de R à C ? Ou de L à R ?
+    scenario_pep_RL = transport_pep.build(
+            entity=routerR,
+            redirect_ifaces='{},{},{}'.format(interface_RC, interface_RD, interface_RL), #'ens3, ens6, ens4'
+            scenario_name='pep_RL')
+    start_pep_RL = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[
+                start_network_conf_link_LR,
+                start_network_conf_link_RL
+            ])
+    start_pep_RL.configure(scenario_pep_RL)
+            
+    # pep on L: redirect traffic from B to D
+    scenario_pep_LR = transport_pep.build(
+            entity=routerL,
+            redirect_ifaces='{},{},{}'.format(interface_LA, interface_LB, interface_LR), #'ens3, ens6, ens4'
+            scenario_name='pep_LR')
+    start_pep_LR = scenario.add_function(
+            'start_scenario_instance',
+            wait_finished=[
+                start_network_conf_link_LR,
+                start_network_conf_link_RL
+            ])
+    start_pep_LR.configure(scenario_pep_LR)
 
     ########################################
     ########### rate_monitoring ############
@@ -549,6 +579,23 @@ def build(
             wait_finished=[start_network_conf_link_LR_10, start_network_conf_link_RL_10],
             wait_delay=wait_delay_LR[1]) #10
     start_network_conf_link_RL_1010.configure(scenario_network_conf_link_RL_1010)
+
+    ########################################
+    ################# pep ##################
+    ########################################
+    # We stop the pep jobs
+
+    # stop pep job on RL
+    stop_pep_RL = scenario.add_function(
+            'stop_scenario_instance',
+            wait_launched=[stop_service_data_transfer_BD])
+    stop_pep_RL.configure(start_pep_RL)
+
+    # stop pep job on LR
+    stop_pep_LR = scenario.add_function(
+            'stop_scenario_instance',
+            wait_launched=[stop_service_data_transfer_BD])
+    stop_pep_LR.configure(start_pep_LR)
 
     ########################################
     ########### rate_monitoring ############
