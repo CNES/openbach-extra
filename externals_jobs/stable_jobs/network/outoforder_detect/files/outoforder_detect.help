@@ -1,8 +1,8 @@
 === Job Description ===
 
-This Job sends identified UDP packets from a Client to a Server in order to check if the link introduces packets deordering and/or packets duplication. The analysis is performed in one direction only (from Client to Server).
+This Job sends identified UDP packets from a Client to a Server to check if the link introduces packets deordering and/or packets duplication. The analysis is performed in one direction only (from Client to Server).
 
-Usage procedure : The user needs to launch the job in "server mode" in an agent, and after, he need to launch it in "client mode" in a different agent. 
+Usage procedure : The user needs to launch the job in "server mode" in an agent, and after, he needs to launch it in "client mode" in a different agent. 
 
 The server can be launched with the -e option in order to exit at the end of a Client-Server connection. If the -e option is not used, the Server can perform as many tests as he wants until manual ending.
 
@@ -10,6 +10,7 @@ The server can be launched with the -e option in order to exit at the end of a C
     * If you want to perform consecutive tests (with or without the server's -e option, and from 1 or several clients), there must be at least 2 seconds between each test to avoid packets mixing between 2 consecutive tests. Otherwise, it could generate wrong results.
     * Avoid too long tests (transmitted_packets < 1 MPackets and duration < 10s) as the server needs to parse all the receiving packets. The more packets are received, the more time it will need to perform analysis.
     * The parameters 'transmitted_packets' and 'duration' have the same priority. The parameter which finishes the test earlier, will be triggered.
+    * The Client will send the packets at its maximal throughput, so some packets could be lost during the test. So, if the Client uses the parameter 'transmitted_packets', the value of the statistic 'total_packets_received' at the end of the test could be lower than the value of the 'transmitted_packets' parameter. It doesn't impact at all the results of the test. 
 
 
 === Examples ===

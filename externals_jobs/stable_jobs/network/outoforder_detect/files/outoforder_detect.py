@@ -215,8 +215,8 @@ def server(address, server_port, signal_port, exit):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         server_socket.bind((address, server_port))
-    except OSError:
-        message = 'ERROR : Cannot bind socket. Address ({},{}) already in use.'.format(address, server_port)
+    except Exception as ex:
+        message = 'ERROR : Cannot bind socket at address {}:{}. {}.'.format(address, server_port, ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
 
