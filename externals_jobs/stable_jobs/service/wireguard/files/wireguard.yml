@@ -1,0 +1,78 @@
+---
+
+general:
+  name:            wireguard
+  description:     This job relies on Wireguard program
+  job_version:     '1.0'
+  keywords:        [Wireguard, VPN]
+  persistent:      False
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/wireguard/wireguard.py'
+    command_stop: '/usr/bin/env python3 /opt/openbach/agent/jobs/wireguard/wireguard_stop.py'
+
+arguments:
+  optional:
+    - name:        tun_dev
+      type:        str
+      count:       1
+      description: "Name of the WireGuard interface (default: wg0)"
+      flag:       '-tun-dev' 
+  subcommand:
+    - group_name: mode
+      optional: no
+      choices:
+        - name: create_interface
+          required: 
+            - name:        tun_ip
+              type:        str
+              count:        1
+              description: The IP address used to communicate with peer
+            - name:        private_key
+              type:        str
+              count:       1
+          optional:
+            - name:        listen_port
+              type:        int
+              count:       1
+              flag:        '-listen-port'
+            - name:        mtu
+              type:        int
+              count:       1
+              flag:        '-mtu'
+        - name: peer
+          required:
+            - name:        peer_pub_key
+              type:        str
+              count:       1
+              description: Public key of the peer we want to set or remove
+          optional:
+            - name:        allowed_ips
+              type:        str
+              count:       '+'
+              flag:        '-allowed-ips'
+              description: The IP/CIDR network allowed to communicate with this public key
+            - name:        endpoint
+              type:        str
+              count:       1
+              flag:        '-endpoint'
+              description: IP or hostname followed by a colon and the port number. This endpoint will be updated automatically to the most recent source IP address and port of correctly authenticated packets from the peer.
+            - name:        persistent_keepalive
+              type:        int
+              count:       1
+              flag:        '-persistent-keepalive'
+              description: Send a periodic keepalive with the period given
+            - name:         remove
+              type:         None
+              count:        0
+              flag:         '-remove'
+              description:  Remove the peer
+
+
+          
+    
+  
+statistics:
