@@ -68,10 +68,10 @@ def use_configuration(filepath):
 
 
 def send_and_parse_icmp(ip, payload_size):
-    cmd = ['ping', ip, '-c', '1', '-M', 'do', '-W', '3', '-s', str(payload_size)]
+    cmd = ['ping', ip, '-c', '100', '-i', '0.01', '-M', 'do', '-W', '2', '-s', str(payload_size)]
     cmd_result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    pattern = re.compile(r'.*{}\((\d+)\) bytes.*1 packets transmitted, (\d) received.*'.format(payload_size))
     output = cmd_result.stdout.decode().replace('\n','')
+    pattern = re.compile(r'.*{}\((\d+)\) bytes.*100 packets transmitted, (\d+) received.*'.format(payload_size))
     match = re.match(pattern, output)
     if match is None:
         message = 'Unrecognised ping output: {}'.format(output)
@@ -99,6 +99,7 @@ def main(destination_ip):
     mtu = r[0] + header_size
     timestamp = int(time.time() * 1000)
     collect_agent.send_stat(timestamp, mtu=mtu)
+    print('Path MTU : {} bytes'.format(mtu))
     
 
 if __name__ == "__main__":
