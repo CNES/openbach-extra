@@ -30,6 +30,7 @@
 """This executor builds or launches the *network_mtu* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
 It launches network tests to discover the path MTU between 2 distant machines.
+The analysis is performed in 1 single direction : from the client to the server.
 """
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
@@ -40,10 +41,10 @@ def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--client-entity', required=True,
-            help='name of the entity for the client of the MTU tests')
+            help='Name of the entity which launches the test (source of the tested path)')
     observer.add_scenario_argument(
             '--server-ip', required=True,
-            help='destination ip address (or domain) to calculate the pah MTU')
+            help='Destination ip address or domain (destination of the tested path)')
 
     args = observer.parse(argv, network_mtu.SCENARIO_NAME)
 
