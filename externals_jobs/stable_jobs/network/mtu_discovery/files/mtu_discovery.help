@@ -1,6 +1,7 @@
 === Job description ===
 
 This Job discovers the Path MTU (in bytes) from the agent runing the job to a distant machine.
+**Warning** : The job will not work if the RTT between the agent and the distant machine is higher than 2 seconds.
 
 === Examples ===
 
