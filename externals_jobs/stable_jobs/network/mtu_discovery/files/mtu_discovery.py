@@ -96,6 +96,11 @@ def main(destination_ip):
         else:
             r[0] = payload_size
 
+    if r[0] == 1:
+        message = 'Calculated MTU is too low. An error may occurred.'
+        collect_agent.send_log(syslog.LOG_WARNING, message)
+        print(message)
+
     mtu = r[0] + header_size
     timestamp = int(time.time() * 1000)
     collect_agent.send_stat(timestamp, mtu=mtu)
