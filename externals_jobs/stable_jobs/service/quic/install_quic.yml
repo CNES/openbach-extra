@@ -102,15 +102,15 @@
 
 - name: Clone OpenSSL for QUIC from github
   git:
-    repo: https://github.com/tatsuhiro-t/openssl
+    repo: https://github.com/quictls/openssl
     depth: 1
-    version: OpenSSL_1_1_1g-quic-draft-29
-    dest: /tmp/OpenSSL_1_1_1g-quic-draft-29
+    version: OpenSSL_1_1_1l+quic
+    dest: /tmp/OpenSSL_1_1_1l+quic
     force: yes
   environment: "{{ openbach_proxies }}"
 
 - name: Compile and install lib OpenSSL for QUIC
-  shell: "{{ item }} chdir=/tmp/OpenSSL_1_1_1g-quic-draft-29"
+  shell: "{{ item }} chdir=/tmp/OpenSSL_1_1_1l+quic"
   with_items:
     - "./config enable-tls1_3 CC=gcc-8 CXX=g++-8 --prefix=/opt/openbach/agent/jobs/quic"
     - "make -j$(nproc)"
