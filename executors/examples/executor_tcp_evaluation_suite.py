@@ -314,6 +314,9 @@ def main(argv=None):
             '--server-port', required=False, default=7001,
             help='Destination port for the iperf3 traffic')
     observer.add_scenario_argument(
+            '--pep', action='store_true',
+            help='Enable PEPsal on routerL and routerR')
+    observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
 
@@ -361,6 +364,7 @@ def main(argv=None):
             args.wait_delay_LR,
             congestion_control=args.congestion_control,
             server_port=args.server_port,
+            pep=args.pep,
             post_processing_entity=args.post_processing_entity,
             scenario_name=args.scenario_name)
 
