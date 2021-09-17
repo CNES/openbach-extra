@@ -1,0 +1,74 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016-2020 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+---
+
+general:
+  name: chat_simu_clt
+  description: >
+      This Job act like a chat messaging emulation and generate 
+      sporadic traffic to test the interactivity of a service.
+      Client side.
+  job_version: '0.2'
+  keywords:
+    - intractive
+    - traffic
+    - client
+  persistent: yes
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/chat_simu_clt/chat_simu_clt.py'
+    command_stop:
+
+arguments:
+  required:
+    - name: server_ip
+      type: str
+      count: 1
+      description: The host ip of the traffic
+    - name: server_port
+      type: int
+      count: 1
+      description: The host port of the traffic
+  optional:
+    - name: msg
+      type: str
+      count: 1
+      flag: '--msg'
+      description: The number of messsages sent
+
+statistics:
+    - name: bytes_sent
+      description: Amount of bytes sent in the previous message
+      frequency: At each message sent
+    - name: bytes_received
+      description: Amount of bytes received in the previous response
+      frequency: At each message sent (since server will echo it)
+    - name: duration
+      description: Job duration
+      frequency: 'once'
