@@ -28,14 +28,14 @@
 general:
   name: chat_simu_clt
   description: >
-      This Job act like a chat messaging emulation and generate 
-      sporadic traffic to test the interactivity of a service.
-      Client side.
+      This Job acts like the client of a client/server chat messaging emulation.
+      It generates sporadic traffic to test the interactivity of an emulated service.
   job_version: '0.2'
   keywords:
-    - intractive
+    - interactive
     - traffic
     - client
+    - chat
   persistent: yes
 
 platform_configuration:
@@ -50,17 +50,18 @@ arguments:
     - name: server_ip
       type: str
       count: 1
-      description: The host ip of the traffic
+      description: The IP address of the server
+  optional:
     - name: server_port
       type: int
       count: 1
-      description: The host port of the traffic
-  optional:
+      flag: '-p'
+      description: The port of the server
     - name: msg
       type: str
       count: 1
       flag: '--msg'
-      description: The number of messsages sent
+      description: The amount of messsages to send
 
 statistics:
     - name: bytes_sent

@@ -1,20 +1,36 @@
 === Job description ===
 
-This Job act like a chat messaging emulation and generate sporadic traffic to test the interactivity of a service. Client side.
-The Server side need to be launched first.
+This Job acts like the client of a client/server chat messaging emulation.
+It generates sporadic traffic to test the interactivity of an emulated service.
+The Server side (job chat_simu_srv) needs to be launched first in a distant machine.
+The messages exchanged between the Client and the Server have the same structure and cannot be modified.
+The interaction between the Client and the Server follows the next example :
 
-=== Examples ===
+  -  Client : send message 'I am the client -> server msg number 1'
+  -  Server : receive message 'I am the client -> server msg number 1'
+  -  Server : send message 'I am the server -> client msg number 1'
+  -  Client : receive message 'I am the server -> client msg number 1'
 
-== Example 1 ==
+  -  Client : send message 'I am the client -> server msg number 2'
+  -  Server : receive message 'I am the client -> server msg number 2'
+  -  Server : send message 'I am the server -> client msg number 2'
+  -  Client : receive message 'I am the server -> client msg number 2'
 
-Interaction between server - client during 3 messages
+  -  Client : send message 'I am the client -> server msg number 3'
+  ....
+  
+Several Clients can be launched to interact with 1 single Server.
 
-In the web interface, set the following parameters:
+=== Example ===
+
+Interaction of 5 messages (5 times forward + return) between Client and Server.
+We suppose the Server is ready to receive traffic.
+In the web interface of the Client, set the following parameters:
   * **server_ip** = 10.10.0.55
-  * **server_port** = 1234
-  * **msg** = 3
+  * **msg** = 5
 
 Or launch the job manually from the Agent as follows:
 <code>
-JOB_NAME=chat_simu_clt sudo -E python3 /opt/openbach/agent/jobs/chat_simu_clt/chat_simu_clt.py 10.10.0.55 1234 --msg 3
+JOB_NAME=chat_simu_clt sudo -E python3 /opt/openbach/agent/jobs/chat_simu_clt/chat_simu_clt.py 10.10.0.55 --msg 5
 </code>
+

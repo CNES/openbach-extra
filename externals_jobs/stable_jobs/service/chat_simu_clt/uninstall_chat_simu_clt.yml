@@ -26,4 +26,6 @@
 ---
 
 - name: Remove the chat_simu_clt Job Repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: absent

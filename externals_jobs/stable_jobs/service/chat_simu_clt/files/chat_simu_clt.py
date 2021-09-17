@@ -71,11 +71,14 @@ def now():
 
 
 def tcp_ping(sock, message_number):
-    message = f"I’m the client -> server msg number {message_number}".encode()
-    sock.send(messages)
+    message = f'I am the client -> server msg number {message_number}'.encode()
+    sock.send(message)
     collect_agent.send_stat(now(), bytes_sent=len(message))
+    print('Sent : {}'.format(message))
     response = sock.recv(1024)
     collect_agent.send_stat(now(), bytes_received=len(response))
+    print('Received : {}'.format(response))
+
 
 
 def main(server_ip, server_port, nb_msg):
@@ -84,12 +87,13 @@ def main(server_ip, server_port, nb_msg):
     s.connect((server_ip, server_port))
 
     with contextlib.closing(s):
-        for i in range(nb_messages):
+        for i in range(nb_msg):
             tcp_ping(s, i + 1)
         s.shutdown(socket.SHUT_RDWR)
     
     duration = time.perf_counter() - start
     collect_agent.send_stat(now(), duration=duration)
+    print('Duration of the test : {} s'.format(duration))
 
 
 if __name__ == "__main__":
@@ -97,11 +101,12 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser(
                 description=__doc__,
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument('server_ip', type=str, metavar='server_ip',
-                    help='The host address IP of the traffic')
-        parser.add_argument('server_port', type=int, metavar='server_port',
-                    help='The host port of the traffic')
-        parser.add_argument('-m', '--msg', type=int, metavar='msg', default=3, help='The number of messsages sent')
+        parser.add_argument('server_ip', type=str,
+                    help='The IP address of the server')
+        parser.add_argument('-p', '--server-port', type=int, default='55001',
+                    help='The port of the server')
+        parser.add_argument('-m', '--msg', type=int, default=3,
+                    help='The amount of messsages to send')
 
         # get args
         args = parser.parse_args()
