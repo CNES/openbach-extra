@@ -76,12 +76,14 @@ def now():
 def tcp_pong(sock, message_number):
     message = sock.recv(1024)
     collect_agent.send_stat(now(), bytes_received=len(message))
+    print('Received : {}'.format(message))
     if not message:
         return False
 
-    response = f"I’m the server -> client msg number {message_number}".encode()
+    response = f'I am the server -> client msg number {message_number}'.encode()
     sock.send(response)
     collect_agent.send_stat(now(), bytes_sent=len(response))
+    print('Sent : {}'.format(response))
     return True
 
 
@@ -92,11 +94,11 @@ def close_connections(clients, signum, frame):
     clients.clear()
 
 
-def main(server_ip, server_port, keep_alive):
+def main(address, port, keep_alive):
     start = time.perf_counter()
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    s.bind((server_ip, server_port))
+    s.bind((address, port))
 
     s.listen(5)
     clients = {}
@@ -129,6 +131,7 @@ def main(server_ip, server_port, keep_alive):
     
     duration = time.perf_counter() - start
     collect_agent.send_stat(int(time.time() * 1000), duration=duration)
+    print('Duration of the test : {} s'.format(duration))
 
 
 if __name__ == '__main__':
@@ -136,14 +139,13 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser(
                 description=__doc__,
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument('server_ip', type=str, metavar='server_ip',
-                    help='The host address IP of the traffic')
-        parser.add_argument('server_port', type=int, metavar='server_port',
-                    help='The host port of the traffic')
+        parser.add_argument('-a', '--address', type=str, default='0.0.0.0',
+                    help='The IP address to bind the server')
+        parser.add_argument('-p', '--port', type=int, default=55001,
+                    help='The port to listen on')
         parser.add_argument('-e', '--exit', action='store_true',
                     help='Exit as soon as there is no more clients connected'
                     ' instead of keeping the socket alive for further connections')
 
         args = parser.parse_args()
-
-        main(args.server_ip, args.server_port, not args.exit)
+        main(args.address, args.port, not args.exit)

@@ -26,11 +26,18 @@
 ---
 
 - name: Create the chat_simu_srv Job Repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: "0755"
 
 - name: Install the chat_simu_srv Job
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
-    - { file: 'chat_simu_srv.py', mode: '0755' }
-    - { file: 'chat_simu_srv.help', mode: '0644' }
-    - { file: 'chat_simu_srv_rstats_filter.conf', mode: '0644' }
+    - { file: "chat_simu_srv.py", mode: "0755" }
+    - { file: "chat_simu_srv.help", mode: "0644" }
+    - { file: "chat_simu_srv_rstats_filter.conf", mode: "0644" }
+

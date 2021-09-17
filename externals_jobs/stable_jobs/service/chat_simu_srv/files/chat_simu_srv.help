@@ -1,20 +1,48 @@
 === Job description ===
 
-This Job act like a chat messaging emulation and generate sporadic traffic to test the interactivity of a service. Server side 
-The Server side need to be launched first.
+This Job acts like the server of a client/server chat messaging emulation.
+It generates sporadic traffic to test the interactivity of an emulated service.
+The Server side needs to be launched before the Client.
+The Client is launched in a distant machine with the job chat_simu_clt
+The messages exchanged between the Client and the Server have the same structure and cannot be modified.
+The interaction between the Client and the Server follows the next example :
+
+  -  Client : send message 'I am the client -> server msg number 1'
+  -  Server : receive message 'I am the client -> server msg number 1'
+  -  Server : send message 'I am the server -> client msg number 1'
+  -  Client : receive message 'I am the server -> client msg number 1'
+
+  -  Client : send message 'I am the client -> server msg number 2'
+  -  Server : receive message 'I am the client -> server msg number 2'
+  -  Server : send message 'I am the server -> client msg number 2'
+  -  Client : receive message 'I am the server -> client msg number 2'
+
+  -  Client : send message 'I am the client -> server msg number 3'
+  ....
+
+Several Clients can be launched to interact with 1 single Server. In this case the server MUST NOT use the parameter "-e".
 
 === Examples ===
 
 == Example 1 ==
 
-Interaction between server - client during 3 messages
-
+The server shuts off when the client closes the connection :
 In the web interface, set the following parameters:
-  * **server_ip** = 10.10.0.55
-  * **server_port** = 1234
-  * **msg** = 3
+  * **exit** = True
 
 Or launch the job manually from the Agent as follows:
 <code>
-JOB_NAME=chat_simu_srv sudo -E python3 /opt/openbach/agent/jobs/chat_simu_srv/chat_simu_srv.py 10.10.0.55 1234 --msg 3 
+JOB_NAME=chat_simu_srv sudo -E python3 /opt/openbach/agent/jobs/chat_simu_srv/chat_simu_srv.py -e
 </code>
+
+== Example 2 ==
+
+The server remains running when the client closes the connection.
+It allows to perform tests with several Clients.
+In this case, no arguments are needed
+
+You can launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=chat_simu_srv sudo -E python3 /opt/openbach/agent/jobs/chat_simu_srv/chat_simu_srv.py
+</code>
+
