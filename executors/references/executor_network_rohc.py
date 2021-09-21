@@ -37,24 +37,24 @@ time-series and CDF.
 The platform running this scenario is supposed to have an architecture
 which looks likes the following :
 
-+-----------+                           +----------------------+      +--------------------+                         +-----------+
-|  Client   |                           |         ST           |<---->|        GW          |                         |  Server   |
-|           |                           |  (receiver_entity*)  |      |  (sender_entity*)  |                         |           |
-+-----------+                           +----------------------+      +--------------------+                         +-----------+
-|           |                           |                      |      |                    |                         |           |
-|           |<--(receiver_lan_ipv4/6)-->|     receiver_sat_ipv4|<---->|sender_sat_ipv4     |<--(sender_lan_ipv4/6)-->|           |
-+-----------+                           +----------------------+      +--------------------+                         +-----------+
++-----------+                         +----------------------+     +--------------------+                         +-----------+
+|  Client   |                         |         ST           |<--->|        GW          |                         |  Server   |
+|           |                         |  (client_entity*)    |     |  (server_entity*)  |                         |           |
++-----------+                         +----------------------+     +--------------------+                         +-----------+
+|           |                         |                      |     |                    |                         |           |
+|           |<--(client_ext_ipv4/6)-->|       client_int_ipv4|<--->|server_int_ipv4     |<--(server_ext_ipv4/6)-->|           |
++-----------+                         +----------------------+     +--------------------+                         +-----------+
 
 
-* 'receiver' and 'sender' stands for the direction of the traffic.
-That means that packets will be compressed by the sender and decompressed
-by the receiver when the user sets an unidirectional tunnel. The receiver-sender
+* 'client' and 'server' stands for the direction of the traffic (SERVER=SENDER & CLIENT=RECEIVER).
+This means packets will be compressed by the server and decompressed
+by the client when the user sets an unidirectional tunnel. The client-server
 assotiaion does'nt matter if the tunnel is bidirectional since the 
 compression/decompression will be performed by both entities.
 
-The ROHC tunnel will be created between the 'sender_entity' and the
-'receiver_entity' based on the parameters 'sender-tunnel-ipv4/6' and
-'receiver-tunnel-ipv4/6'.
+The ROHC tunnel will be created between the 'server_entity' and the
+'client_entity' based on the parameters 'server-tunnel-ipv4/6' and
+'client-tunnel-ipv4/6'.
 """
 
 from auditorium_scripts.scenario_observer import ScenarioObserver
@@ -64,44 +64,44 @@ from scenario_builder.scenarios import network_rohc
 def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
-            '--sender-entity', required=True,
+            '--server-entity', required=True,
             help='Entity which compresses traffic in the ROHC tunnel.')
     observer.add_scenario_argument(
-            '--receiver-entity', required=True,
+            '--client-entity', required=True,
             help='Entity which decompresses traffic in the ROHC tunnel.')
     observer.add_scenario_argument(
-            '--sender-sat-ipv4', required=True,
-            help='IPv4 address of the sender which communicates to the receiver (aka satellite side).')
+            '--server-int-ipv4', required=True,
+            help='IPv4 address of the server which communicates to the client (aka internal).')
     observer.add_scenario_argument(
-            '--receiver-sat-ipv4', required=True,
-            help='IPv4 address of the receiver which receives traffic from the sender (aka satellite side).')
+            '--client-int-ipv4', required=True,
+            help='IPv4 address of the client which receives traffic from the server (aka internal side).')
     observer.add_scenario_argument(
-            '--sender-lan-ipv4', required=True,
-            help="IPv4 network address of the sender's LAN (in CIDR format).")
+            '--server-ext-ipv4', required=True,
+            help="IPv4 network address (in CIDR format) of the server's LAN (aka external side).")
     observer.add_scenario_argument(
-            '--receiver-lan-ipv4', required=True,
-            help="IPv4 network address of the receiver's LAN (in CIDR format).")
+            '--client-ext-ipv4', required=True,
+            help="IPv4 network address (in CIDR format) of the client's LAN (aka external side).")
     observer.add_scenario_argument(
-            '--sender-lan-ipv6',
-            help="IPv6 network address of the sender's LAN (in CIDR format).") # Optional
+            '--server-ext-ipv6',
+            help="IPv6 network address (in CIDR format) of the server's LAN (aka external side).") # Optional
     observer.add_scenario_argument(
-            '--receiver-lan-ipv6',
-            help="IPv6 network address of the receiver's LAN (in CIDR format).") # Optional
+            '--client-ext-ipv6',
+            help="IPv6 network address (in CIDR format) of the client's LAN (aka external side).") # Optional
     observer.add_scenario_argument(
-            '--sender-tunnel-ipv4', default='10.10.10.1/24',
-            help='IPv4 address that will be attributed to the sender for the ROHC tunnel (in CIDR format).')
+            '--server-tunnel-ipv4', default='10.10.10.1/24',
+            help='IPv4 address that will be attributed to the server for the ROHC tunnel (in CIDR format).')
     observer.add_scenario_argument(
-            '--receiver-tunnel-ipv4', default='10.10.10.2/24',
-            help='IPv4 address that will be attributed to the receiver for the ROHC tunnel (in CIDR format).') 
+            '--client-tunnel-ipv4', default='10.10.10.2/24',
+            help='IPv4 address that will be attributed to the client for the ROHC tunnel (in CIDR format).') 
     observer.add_scenario_argument(
-            '--sender-tunnel-ipv6', default='fd4d:4991:3faf:2::1/64',
-            help='IPv6 address that will be attributed to the sender for the ROHC tunnel (in CIDR format).')
+            '--server-tunnel-ipv6', default='fd4d:4991:3faf:2::1/64',
+            help='IPv6 address that will be attributed to the server for the ROHC tunnel (in CIDR format).')
     observer.add_scenario_argument(
-            '--receiver-tunnel-ipv6', default='fd4d:4991:3faf:2::2/64',
-            help='IPv6 address that will be attributed to the receiver for the ROHC tunnel (in CIDR format).')
+            '--client-tunnel-ipv6', default='fd4d:4991:3faf:2::2/64',
+            help='IPv6 address that will be attributed to the client for the ROHC tunnel (in CIDR format).')
     observer.add_scenario_argument(
             '--direction', choices=['unidirectional', 'bidirectional'], default='bidirectional',
-            help='Choose bidirectional to compress and decompress on both sender and receiver')
+            help='Choose bidirectional to compress and decompress on both server and client')
     observer.add_scenario_argument(
             '--rohc-cid-type', choices=['largecid', 'smallcid'], default='largecid',
             help='Size of CID.')
@@ -121,18 +121,18 @@ def main(argv=None):
     args = observer.parse(argv, network_rohc.SCENARIO_NAME)
 
     scenario = network_rohc.build(
-            args.sender_entity,
-            args.receiver_entity,
-            args.sender_sat_ipv4,
-            args.receiver_sat_ipv4,
-            args.sender_lan_ipv4,
-            args.receiver_lan_ipv4,
-            args.sender_lan_ipv6,
-            args.receiver_lan_ipv6,
-            args.sender_tunnel_ipv4,
-            args.receiver_tunnel_ipv4,
-            args.sender_tunnel_ipv6,
-            args.receiver_tunnel_ipv6,
+            args.server_entity,
+            args.client_entity,
+            args.server_int_ipv4,
+            args.client_int_ipv4,
+            args.server_ext_ipv4,
+            args.client_ext_ipv4,
+            args.server_ext_ipv6,
+            args.client_ext_ipv6,
+            args.server_tunnel_ipv4,
+            args.client_tunnel_ipv4,
+            args.server_tunnel_ipv6,
+            args.client_tunnel_ipv6,
             args.direction,
             args.rohc_cid_type,
             args.rohc_max_contexts,

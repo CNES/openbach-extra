@@ -229,9 +229,9 @@ if __name__ == '__main__':
                             help='Choose bidirectional to add feedback from decompressor to compressor')
         parser.add_argument('--behavior', '-b', type=str, default='both', choices=['send', 'receive', 'both', 'nothing'],
                             help='Choose which tasks to do in this job')
-        parser.add_argument('--cid_type', '-c', type=str, default='largecid', choices=['smallcid', 'largecid'],
+        parser.add_argument('--cid-type', '-c', type=str, default='largecid', choices=['smallcid', 'largecid'],
                             help='Handle small or large CIDs')
-        parser.add_argument('--max_contexts', '-m', type=int, default=16,
+        parser.add_argument('--max-contexts', '-m', type=int, default=16,
                             help='Maximum number of contexts')
         parser.add_argument('--size', '-s', type=int, default=1500,
                             help='Maximum size of ROHC packets, not including the UDP tunnel offset')
