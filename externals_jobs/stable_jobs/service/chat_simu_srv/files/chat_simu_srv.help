@@ -22,6 +22,9 @@ The interaction between the Client and the Server follows the next example :
 
 Several Clients can be launched to interact with 1 single Server. In this case the server MUST NOT use the parameter "-e".
 
+While this job returns the duration, it may not be relevant for the performance evaluation.
+Indeed, the duration metric includes the time when the server was up but no client tried to interact with it.
+
 === Examples ===
 
 == Example 1 ==
@@ -35,6 +38,8 @@ Or launch the job manually from the Agent as follows:
 JOB_NAME=chat_simu_srv sudo -E python3 /opt/openbach/agent/jobs/chat_simu_srv/chat_simu_srv.py -e
 </code>
 
+We do not advise the exploit this feature when there are multiple clients.
+
 == Example 2 ==
 
 The server remains running when the client closes the connection.
@@ -46,3 +51,4 @@ You can launch the job manually from the Agent as follows:
 JOB_NAME=chat_simu_srv sudo -E python3 /opt/openbach/agent/jobs/chat_simu_srv/chat_simu_srv.py
 </code>
 
+This approach is prefered when there are multiple clients.
