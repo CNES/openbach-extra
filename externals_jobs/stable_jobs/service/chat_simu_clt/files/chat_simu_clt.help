@@ -21,6 +21,12 @@ The interaction between the Client and the Server follows the next example :
   
 Several Clients can be launched to interact with 1 single Server.
 
+The duration metric does not include the time needed to connect to the server for the first message. 
+
+The duration metric assume that the connection is established with the server and only reports the duration of the conversation between the client and the server. 
+
+
+
 === Example ===
 
 Interaction of 5 messages (5 times forward + return) between Client and Server.
