@@ -38,7 +38,7 @@ Or launch the job manually from the Agent as follows:
 JOB_NAME=chat_simu_srv sudo -E python3 /opt/openbach/agent/jobs/chat_simu_srv/chat_simu_srv.py -e
 </code>
 
-We do not advise the exploit this feature when there are multiple clients.
+We do not advise to exploit this feature when there are multiple clients.
 
 == Example 2 ==
 
