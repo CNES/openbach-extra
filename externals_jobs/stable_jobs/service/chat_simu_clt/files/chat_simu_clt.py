@@ -82,9 +82,10 @@ def tcp_ping(sock, message_number):
 
 
 def main(server_ip, server_port, nb_msg):
-    start = time.perf_counter()
+    
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((server_ip, server_port))
+    start = time.perf_counter()
 
     with contextlib.closing(s):
         for i in range(nb_msg):
