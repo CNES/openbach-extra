@@ -1,0 +1,70 @@
+=== Job Description ===
+
+This Job sends identified UDP packets from a Client to a Server to check if the link introduces packets deordering and/or packets duplication. The analysis is performed in one direction only (from Client to Server).
+
+Usage procedure : The user needs to launch the job in "server mode" in an agent, and after, he needs to launch it in "client mode" in a different agent. 
+
+The server can be launched with the -e option in order to exit at the end of a Client-Server connection. If the -e option is not used, the Server can perform as many tests as he wants until manual ending.
+
+**Important Notes** : 
+    * If you want to perform consecutive tests (with or without the server's -e option, and from 1 or several clients), there must be at least 2 seconds between each test to avoid packets mixing between 2 consecutive tests. Otherwise, it could generate wrong results.
+    * Avoid too long tests (transmitted_packets < 1 MPackets and duration < 10s) as the server needs to parse all the receiving packets. The more packets are received, the more time it will need to perform analysis.
+    * The parameters 'transmitted_packets' and 'duration' have the same priority. The parameter which finishes the test earlier, will be triggered.
+    * The Client will send the packets at its maximal throughput, so some packets could be lost during the test. So, if the Client uses the parameter 'transmitted_packets', the value of the statistic 'total_packets_received' at the end of the test could be lower than the value of the 'transmitted_packets' parameter. It doesn't impact at all the results of the test. 
+
+
+=== Examples ===
+
+== Example 1 ==
+
+Perform a test of 3 seconds from Agent "client" to Agent "server" (Server IP address = ''10.3.0.1''). The server exits at the end of the client-server connection.
+
+In the web interface, set the following parameters:
+
+  * For Agent "server":
+    * **mode** = server
+    * **exit** = True
+  * For Agent "client":
+    * **mode** = client
+    * **server_ip** = 10.3.0.1
+    * **duration** = 3
+
+Or launch the job manually from the Agents as follows:
+
+From server Agent:
+<code>
+JOB_NAME=outoforder_detect sudo -E python3 /opt/openbach/agent/jobs/outoforder_detect/outoforder_detect.py server -e
+</code>
+
+From client Agent:
+<code>
+JOB_NAME=outoforder_detect sudo -E python3 /opt/openbach/agent/jobs/outoforder_detect/outoforder_detect.py client 10.3.0.1 -d 3
+</code>
+
+== Example 2 ==
+
+Test packets ordering and packets duplication for 100.000 packets sent from Agent "client" to Agent "server" (Server IP address = ''10.3.0.1''). The server doesn't exit at the end of the client-server connection in order to be available for additional tests.
+
+In the web interface, set the following parameters:
+
+  * For Agent "server":
+    * **mode** = server
+    * **exit** = False
+  * For Agent "client":
+    * **mode** = client
+    * **server_ip** = 10.3.0.1
+    * **duration** = 0
+    * **transmitted_packets** = 100K
+
+Or launch the job manually from the Agents as follows:
+
+From server Agent:
+<code>
+JOB_NAME=outoforder_detect sudo -E python3 /opt/openbach/agent/jobs/outoforder_detect/outoforder_detect.py server
+</code>
+
+From client Agent:
+<code>
+JOB_NAME=outoforder_detect sudo -E python3 /opt/openbach/agent/jobs/outoforder_detect/outoforder_detect.py client 10.3.0.1 -d 0 -n 100K
+</code>
+
