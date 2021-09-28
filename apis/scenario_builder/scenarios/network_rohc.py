@@ -44,122 +44,122 @@ It can then, optionally, plot the header compression ratio metrics using time-se
 
 
 def rohc_tunnel_bidirectional(
-        sender_entity, receiver_entity, sender_sat_ipv4, receiver_sat_ipv4,
-        sender_lan_ipv4, receiver_lan_ipv4, sender_lan_ipv6, receiver_lan_ipv6,
-        sender_tunnel_ipv4, receiver_tunnel_ipv4, sender_tunnel_ipv6, receiver_tunnel_ipv6,
+        server_entity, client_entity, server_int_ipv4, client_int_ipv4,
+        server_ext_ipv4, client_ext_ipv4, server_ext_ipv6, client_ext_ipv6,
+        server_tunnel_ipv4, client_tunnel_ipv4, server_tunnel_ipv6, client_tunnel_ipv6,
         cid_type='largecid', max_contexts=16, rohc_packet_size=1500, scenario_name=SCENARIO_NAME):
 
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    scenario.add_constant('sender_sat_ipv4', sender_sat_ipv4)
-    scenario.add_constant('receiver_sat_ipv4', receiver_sat_ipv4)
-    scenario.add_constant('sender_lan_ipv4', sender_lan_ipv4)
-    scenario.add_constant('receiver_lan_ipv4', receiver_lan_ipv4)
-    scenario.add_constant('sender_lan_ipv6', sender_lan_ipv6)
-    scenario.add_constant('receiver_lan_ipv6', receiver_lan_ipv6)
-    scenario.add_constant('sender_tunnel_ipv4', sender_tunnel_ipv4)
-    scenario.add_constant('receiver_tunnel_ipv4', receiver_tunnel_ipv4)
-    scenario.add_constant('sender_tunnel_ipv6', sender_tunnel_ipv6)
-    scenario.add_constant('receiver_tunnel_ipv6', receiver_tunnel_ipv6)
+    scenario.add_constant('server_int_ipv4', server_int_ipv4)
+    scenario.add_constant('client_int_ipv4', client_int_ipv4)
+    scenario.add_constant('server_ext_ipv4', server_ext_ipv4)
+    scenario.add_constant('client_ext_ipv4', client_ext_ipv4)
+    scenario.add_constant('server_ext_ipv6', server_ext_ipv6)
+    scenario.add_constant('client_ext_ipv6', client_ext_ipv6)
+    scenario.add_constant('server_tunnel_ipv4', server_tunnel_ipv4)
+    scenario.add_constant('client_tunnel_ipv4', client_tunnel_ipv4)
+    scenario.add_constant('server_tunnel_ipv6', server_tunnel_ipv6)
+    scenario.add_constant('client_tunnel_ipv6', client_tunnel_ipv6)
     scenario.add_constant('cid_type', cid_type)
     scenario.add_constant('max_contexts', max_contexts)
     scenario.add_constant('rohc_packet_size', rohc_packet_size)
 
-    sender_rohc = rohc_add_pop(
-        scenario, sender_entity, '$receiver_sat_ipv4', '$sender_sat_ipv4',
-        '$sender_tunnel_ipv4', '$sender_tunnel_ipv6',
+    server_rohc = rohc_add_pop(
+        scenario, server_entity, '$client_int_ipv4', '$server_int_ipv4',
+        '$server_tunnel_ipv4', '$server_tunnel_ipv6',
         behavior='both',
         direction='bidirectional',
         cid_type='$cid_type', max_contexts='$max_contexts', rohc_packet_size='$rohc_packet_size')
 
-    receiver_rohc = rohc_add_pop(
-        scenario, receiver_entity, '$sender_sat_ipv4', '$receiver_sat_ipv4',
-        '$receiver_tunnel_ipv4', '$receiver_tunnel_ipv6',
+    client_rohc = rohc_add_pop(
+        scenario, client_entity, '$server_int_ipv4', '$client_int_ipv4',
+        '$client_tunnel_ipv4', '$client_tunnel_ipv6',
         behavior='both',
         direction='bidirectional',
         cid_type='$cid_type', max_contexts='$max_contexts', rohc_packet_size='$rohc_packet_size')
 
-    sender_route_v4 = ip_route(scenario, sender_entity, 'replace', '$receiver_lan_ipv4', device='rohc0',
-        wait_launched=sender_rohc + receiver_rohc, wait_delay=5)
-    receiver_route_v4 = ip_route(scenario, receiver_entity, 'replace', '$sender_lan_ipv4', device='rohc0',
-        wait_launched=sender_rohc + receiver_rohc, wait_delay=5)
+    server_route_v4 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv4', device='rohc0',
+        wait_launched=server_rohc + client_rohc, wait_delay=5)
+    client_route_v4 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv4', device='rohc0',
+        wait_launched=server_rohc + client_rohc, wait_delay=5)
 
-    if sender_lan_ipv6 and receiver_lan_ipv6:
-        sender_route_v6 = ip_route(scenario, sender_entity, 'replace', '$receiver_lan_ipv6', device='rohc0',
-            wait_launched=sender_rohc + receiver_rohc, wait_delay=5)
-        receiver_route_v6 = ip_route(scenario, receiver_entity, 'replace', '$sender_lan_ipv6', device='rohc0',
-            wait_launched=sender_rohc + receiver_rohc, wait_delay=5)
+    if server_ext_ipv6 and client_ext_ipv6:
+        server_route_v6 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv6', device='rohc0',
+            wait_launched=server_rohc + client_rohc, wait_delay=5)
+        client_route_v6 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv6', device='rohc0',
+            wait_launched=server_rohc + client_rohc, wait_delay=5)
 
     return scenario
 
 
 def rohc_tunnel_unidirectional(
-        sender_entity, receiver_entity, sender_sat_ipv4, receiver_sat_ipv4,
-        sender_lan_ipv4, receiver_lan_ipv4, sender_lan_ipv6, receiver_lan_ipv6,
-        sender_tunnel_ipv4, receiver_tunnel_ipv4, sender_tunnel_ipv6, receiver_tunnel_ipv6,
+        server_entity, client_entity, server_int_ipv4, client_int_ipv4,
+        server_ext_ipv4, client_ext_ipv4, server_ext_ipv6, client_ext_ipv6,
+        server_tunnel_ipv4, client_tunnel_ipv4, server_tunnel_ipv6, client_tunnel_ipv6,
         cid_type='largecid', max_contexts=16, rohc_packet_size=1500, scenario_name=SCENARIO_NAME):
 
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    scenario.add_constant('sender_sat_ipv4', sender_sat_ipv4)
-    scenario.add_constant('receiver_sat_ipv4', receiver_sat_ipv4)
-    scenario.add_constant('sender_lan_ipv4', sender_lan_ipv4)
-    scenario.add_constant('receiver_lan_ipv4', receiver_lan_ipv4)
-    scenario.add_constant('sender_lan_ipv6', sender_lan_ipv6)
-    scenario.add_constant('receiver_lan_ipv6', receiver_lan_ipv6)
-    scenario.add_constant('sender_tunnel_ipv4', sender_tunnel_ipv4)
-    scenario.add_constant('receiver_tunnel_ipv4', receiver_tunnel_ipv4)
-    scenario.add_constant('sender_tunnel_ipv6', sender_tunnel_ipv6)
-    scenario.add_constant('receiver_tunnel_ipv6', receiver_tunnel_ipv6)
+    scenario.add_constant('server_int_ipv4', server_int_ipv4)
+    scenario.add_constant('client_int_ipv4', client_int_ipv4)
+    scenario.add_constant('server_ext_ipv4', server_ext_ipv4)
+    scenario.add_constant('client_ext_ipv4', client_ext_ipv4)
+    scenario.add_constant('server_ext_ipv6', server_ext_ipv6)
+    scenario.add_constant('client_ext_ipv6', client_ext_ipv6)
+    scenario.add_constant('server_tunnel_ipv4', server_tunnel_ipv4)
+    scenario.add_constant('client_tunnel_ipv4', client_tunnel_ipv4)
+    scenario.add_constant('server_tunnel_ipv6', server_tunnel_ipv6)
+    scenario.add_constant('client_tunnel_ipv6', client_tunnel_ipv6)
     scenario.add_constant('cid_type', cid_type)
     scenario.add_constant('max_contexts', max_contexts)
     scenario.add_constant('rohc_packet_size', rohc_packet_size)
 
-    sender_rohc = rohc_add_pop(
-        scenario, sender_entity, '$receiver_sat_ipv4', '$sender_sat_ipv4',
-        '$sender_tunnel_ipv4', '$sender_tunnel_ipv6',
+    server_rohc = rohc_add_pop(
+        scenario, server_entity, '$client_int_ipv4', '$server_int_ipv4',
+        '$server_tunnel_ipv4', '$server_tunnel_ipv6',
         behavior='send',
         direction = 'unidirectional',
         cid_type='$cid_type', max_contexts='$max_contexts', rohc_packet_size='$rohc_packet_size')
 
-    receiver_rohc = rohc_add_pop(
-        scenario, receiver_entity, '$sender_sat_ipv4', '$receiver_sat_ipv4',
-        '$receiver_tunnel_ipv4', '$receiver_tunnel_ipv6',
+    client_rohc = rohc_add_pop(
+        scenario, client_entity, '$server_int_ipv4', '$client_int_ipv4',
+        '$client_tunnel_ipv4', '$client_tunnel_ipv6',
         behavior='receive',
         direction='unidirectional',
         cid_type='$cid_type', max_contexts='$max_contexts', rohc_packet_size='$rohc_packet_size')
 
-    sender_route_v4 = ip_route(scenario, sender_entity, 'replace', '$receiver_lan_ipv4', device='rohc0',
-        wait_launched=sender_rohc + receiver_rohc, wait_delay=5)
-    receiver_route_v4 = ip_route(scenario, receiver_entity, 'replace', '$sender_lan_ipv4', device='rohc0',
-        wait_launched=sender_rohc + receiver_rohc, wait_delay=5)
+    server_route_v4 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv4', device='rohc0',
+        wait_launched=server_rohc + client_rohc, wait_delay=5)
+    client_route_v4 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv4', device='rohc0',
+        wait_launched=server_rohc + client_rohc, wait_delay=5)
     
-    if receiver_lan_ipv6:
-        sender_route_v6 = ip_route(scenario, sender_entity, 'replace', '$receiver_lan_ipv6', device='rohc0',
-            wait_launched=sender_rohc + receiver_rohc, wait_delay=5)
-        receiver_route_v6 = ip_route(scenario, receiver_entity, 'replace', '$sender_lan_ipv6', device='rohc0',
-            wait_launched=sender_rohc + receiver_rohc, wait_delay=5)
+    if client_ext_ipv6:
+        server_route_v6 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv6', device='rohc0',
+            wait_launched=server_rohc + client_rohc, wait_delay=5)
+        client_route_v6 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv6', device='rohc0',
+            wait_launched=server_rohc + client_rohc, wait_delay=5)
 
     return scenario
 
 
 def build(
-        sender_entity, receiver_entity, sender_sat_ipv4, receiver_sat_ipv4,
-        sender_lan_ipv4, receiver_lan_ipv4, sender_lan_ipv6, receiver_lan_ipv6,
-        sender_tunnel_ipv4, receiver_tunnel_ipv4, sender_tunnel_ipv6, receiver_tunnel_ipv6,
+        server_entity, client_entity, server_int_ipv4, client_int_ipv4,
+        server_ext_ipv4, client_ext_ipv4, server_ext_ipv6, client_ext_ipv6,
+        server_tunnel_ipv4, client_tunnel_ipv4, server_tunnel_ipv6, client_tunnel_ipv6,
         direction, cid_type, max_contexts, rohc_packet_size, duration=0,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
 
     if direction == 'bidirectional':
         scenario = rohc_tunnel_bidirectional(
-                sender_entity, receiver_entity, sender_sat_ipv4, receiver_sat_ipv4,
-                sender_lan_ipv4, receiver_lan_ipv4, sender_lan_ipv6, receiver_lan_ipv6,
-                sender_tunnel_ipv4, receiver_tunnel_ipv4, sender_tunnel_ipv6, receiver_tunnel_ipv6,
+                server_entity, client_entity, server_int_ipv4, client_int_ipv4,
+                server_ext_ipv4, client_ext_ipv4, server_ext_ipv6, client_ext_ipv6,
+                server_tunnel_ipv4, client_tunnel_ipv4, server_tunnel_ipv6, client_tunnel_ipv6,
                 cid_type, max_contexts, rohc_packet_size, scenario_name)
 
     if direction == 'unidirectional':
         scenario = rohc_tunnel_unidirectional(
-                sender_entity, receiver_entity, sender_sat_ipv4, receiver_sat_ipv4,
-                sender_lan_ipv4, receiver_lan_ipv4, sender_lan_ipv6, receiver_lan_ipv6,
-                sender_tunnel_ipv4, receiver_tunnel_ipv4, sender_tunnel_ipv6, receiver_tunnel_ipv6,
+                server_entity, client_entity, server_int_ipv4, client_int_ipv4,
+                server_ext_ipv4, client_ext_ipv4, server_ext_ipv6, client_ext_ipv6,
+                server_tunnel_ipv4, client_tunnel_ipv4, server_tunnel_ipv6, client_tunnel_ipv6,
                 cid_type, max_contexts, rohc_packet_size, scenario_name)
 
     if duration:
@@ -174,7 +174,7 @@ def build(
 
         post_processed = list(scenario.extract_function_id('rohc'))
 
-        legend = [[sender_entity], [receiver_entity]]
+        legend = [[server_entity], [client_entity]]
 
         time_series_on_same_graph(
                 scenario,
@@ -183,7 +183,7 @@ def build(
                 [['comp_header_ratio']],
                 [['Ratio']], [['Header Compression Ratio']],
                 legend,
-                filename='time_series_rohc_comp_header_ratio_{}_{}'.format(sender_entity, receiver_entity),
+                filename='time_series_rohc_comp_header_ratio_{}_{}'.format(server_entity, client_entity),
                 wait_finished=waiting_jobs,
                 wait_delay=2)
         cdf_on_same_graph(
@@ -194,7 +194,7 @@ def build(
                 [['comp_header_ratio']],
                 [['Ratio']], [['Header Compression Ratio']],
                 legend,
-                filename='histogram_rohc_comp_header_ratio_{}_{}'.format(sender_entity, receiver_entity),
+                filename='histogram_rohc_comp_header_ratio_{}_{}'.format(server_entity, client_entity),
                 wait_finished=waiting_jobs,
                 wait_delay=2)
 
