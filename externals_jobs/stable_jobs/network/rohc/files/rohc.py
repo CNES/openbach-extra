@@ -37,6 +37,7 @@ __credits__ = '''Contributors:
 
 import os
 import re
+import sys
 import time
 import syslog
 import argparse
@@ -68,6 +69,16 @@ def use_configuration(filepath):
         if e.code != 0:
             collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
         raise
+
+
+def run_command(cmd):
+    p = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    if p.returncode:
+        message = "Error when executing command '{}': '{}'".format(
+                    ' '.join(cmd), p.stderr.decode())
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    return p.returncode, p.stdout.decode()
 
 
 def generate_command(remote_ip, local_ip, port, direction, behavior, cid_type, max_contexts, size):
@@ -137,15 +148,22 @@ def main(remote_ip, local_ip, tunnel_ipv4, tunnel_ipv6, port, direction, behavio
         behavior = 'no'
 
     collect_agent.send_log(syslog.LOG_DEBUG, 'Starting rohc job')
+    # Check there is not another ROHC tunnel established
+    p = subprocess.run(['ip', 'l', 'show', 'rohc0'], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    if p.returncode == 0:
+        message = "Error: Interface 'rohc0' already exists. A ROHC tunnel might be already established."
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+
     # Get shell command to launch ROHC binary
     cmd = generate_command(remote_ip, local_ip, port, direction, behavior, cid_type, max_contexts, size)
     p = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
     time.sleep(1)
 
-    subprocess.run(['ip', 'a', 'add', tunnel_ipv4, 'dev', 'rohc0'])
-    subprocess.run(['ip', '-6', 'a', 'add', tunnel_ipv6, 'dev', 'rohc0'])
-    subprocess.run(['ip', 'l', 'set', 'rohc0', 'up'])
+    run_command(['ip', 'a', 'add', tunnel_ipv4, 'dev', 'rohc0'])
+    run_command(['ip', '-6', 'a', 'add', tunnel_ipv6, 'dev', 'rohc0'])
+    run_command(['ip', 'l', 'set', 'rohc0', 'up'])
 
     # Init local variables used to calculate statistics
     comp_stats = init_comp_stats()
