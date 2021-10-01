@@ -68,7 +68,7 @@ arguments:
             The time in seconds to transmit for (client only) (default: infinite)  
           
 statistics:
-    - name: "received  messages"
+    - name: "received messages"
       description: >
           The number of messages received
       frequency: 'On message received' 

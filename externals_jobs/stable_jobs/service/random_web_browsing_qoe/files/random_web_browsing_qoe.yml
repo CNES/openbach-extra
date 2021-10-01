@@ -63,3 +63,7 @@ statistics:
       description: >
           The time elapsed in ms, between a user's request and the moment when page is fully loaded in their browser.
       frequency: 'every time a page is fetched'
+    - name: "url"
+      description: >
+          The url web pages visited
+      frequency: 'every time a page is fetched'

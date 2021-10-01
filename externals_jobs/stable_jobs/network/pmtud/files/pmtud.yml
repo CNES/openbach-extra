@@ -45,4 +45,7 @@ arguments:
           Number of pings to do for each iteration. Default: 1.
           
 statistics:
-
+    - name: "mtu"
+      description: >
+          Maximum Transmission Unit
+      frequency: 'once'
