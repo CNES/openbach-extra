@@ -35,13 +35,32 @@ SCENARIO_DESCRIPTION = """This transport_pep scenario launches
 PEPSal, and sets up the routes and iptables configurations necessary 
 to perform TCP splitting."""
 
+
+def launch_pep(
+        entity, address, port, fastopen, maxconns, gcc_interval, log_file,
+        pending_lifetime, stop, redirect_ifaces, redirect_src_ip, redirect_dst_ip,
+        mark, table_num, scenario_name=SCENARIO_NAME):
+
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    pep(scenario, entity, address, port, fastopen, maxconns, gcc_interval, log_file,
+            pending_lifetime, stop, redirect_ifaces, redirect_src_ip, redirect_dst_ip, mark, table_num)
+
+    return scenario
+
+
 def build(entity, address=None, port=None, fastopen=None, maxconns=None,
         gcc_interval=None, log_file=None, pending_lifetime=None, stop=None,
         redirect_ifaces=None, redirect_src_ip=None, redirect_dst_ip=None, mark=None,
-        table_num=None, scenario_name=SCENARIO_NAME):
+        table_num=None, duration=None, scenario_name=SCENARIO_NAME):
 
-    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
-    pep(scenario, entity, address, port, fastopen, maxconns, gcc_interval, log_file, pending_lifetime, stop, redirect_ifaces, redirect_src_ip, redirect_dst_ip, mark, table_num)
+    scenario = launch_pep(entity, address, port, fastopen, maxconns, gcc_interval, log_file, pending_lifetime,
+            stop, redirect_ifaces, redirect_src_ip, redirect_dst_ip, mark, table_num)
+
+
+    if duration:
+        jobs = [f for f in scenario.openbach_functions if isinstance(f, StartJobInstance)]
+        scenario.add_function('stop_job_instance', wait_launched=jobs, wait_delay=duration).configure(*jobs)
+
 
     return scenario
 
