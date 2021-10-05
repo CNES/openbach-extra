@@ -76,17 +76,17 @@ def rohc_tunnel_bidirectional(
         direction='bidirectional',
         cid_type='$cid_type', max_contexts='$max_contexts', rohc_packet_size='$rohc_packet_size')
 
-    server_route_v4 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv4', device='rohc0',
+    server_route_v4 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv4', device='rohc0', restore=True,
         wait_launched=server_rohc + client_rohc, wait_delay=5)
-    client_route_v4 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv4', device='rohc0',
+    client_route_v4 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv4', device='rohc0', restore=True,
         wait_launched=server_rohc + client_rohc, wait_delay=5)
 
     if server_ext_ipv6 and client_ext_ipv6:
         scenario.add_constant('server_ext_ipv6', server_ext_ipv6)
         scenario.add_constant('client_ext_ipv6', client_ext_ipv6)
-        server_route_v6 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv6', device='rohc0',
+        server_route_v6 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv6', device='rohc0', restore=True,
             wait_launched=server_rohc + client_rohc, wait_delay=5)
-        client_route_v6 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv6', device='rohc0',
+        client_route_v6 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv6', device='rohc0', restore=True,
             wait_launched=server_rohc + client_rohc, wait_delay=5)
 
     return scenario
@@ -125,17 +125,17 @@ def rohc_tunnel_unidirectional(
         direction='unidirectional',
         cid_type='$cid_type', max_contexts='$max_contexts', rohc_packet_size='$rohc_packet_size')
 
-    server_route_v4 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv4', device='rohc0',
+    server_route_v4 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv4', device='rohc0', restore=True,
         wait_launched=server_rohc + client_rohc, wait_delay=5)
-    client_route_v4 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv4', device='rohc0',
+    client_route_v4 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv4', device='rohc0', restore=True,
         wait_launched=server_rohc + client_rohc, wait_delay=5)
     
     if server_ext_ipv6 and client_ext_ipv6:
         scenario.add_constant('server_ext_ipv6', server_ext_ipv6)
         scenario.add_constant('client_ext_ipv6', client_ext_ipv6)
-        server_route_v6 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv6', device='rohc0',
+        server_route_v6 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv6', device='rohc0', restore=True,
             wait_launched=server_rohc + client_rohc, wait_delay=5)
-        client_route_v6 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv6', device='rohc0',
+        client_route_v6 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv6', device='rohc0', restore=True,
             wait_launched=server_rohc + client_rohc, wait_delay=5)
 
     return scenario
