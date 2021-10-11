@@ -1,0 +1,115 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016-2020 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+---
+
+general:
+  name: sr_tunnel
+  description: >
+      This Job implements a Selective Repeat algorithm at the IP level within a
+      TUN/TAP tunnel. A good illustration of the algorithm implemented is given
+      at https://www2.tkn.tu-berlin.de/teaching/rn/animations/gbn_sr/.
+  job_version: '1.0'
+  keywords:
+    - selective
+    - repeat
+    - retransmission
+  persistent: yes
+  need_privileges: yes
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/sr_tunnel/sr_tunnel.py'
+    command_stop:
+
+arguments:
+  required:
+    - name: tun_ip
+      type: str
+      count: 1
+      description: IPv4/mask address of the local tun0 interface that will be created.
+  optional:
+    - name: trace
+      type: str
+      count: 1
+      flag: '-t'
+      description: The path to store the trace of packets (default /opt/openbach/agent/jobs/sr_tunnel/sr_tunnel.log).
+    - name: drop
+      type: int
+      count: 1
+      flag: '-d'
+      description: Emulate link-layer losses by dropping sent packet (in percentage 0 to 100).
+    - name: burst
+      type: int
+      count: 1
+      flag: '-b'
+      description: Average burst size. GE model for losses (Default is 1 if -d is set).
+  subcommand:
+    - group_name: mode
+      optional: no
+      choices:
+        - name: server
+          required:
+          optional:
+            - name: port
+              type: int
+              count: 1
+              flag: '-p'
+              description: Port to listen on (Default 30001)
+        - name: client
+          required:
+            - name: server_ip
+              type: str
+              count: 1
+              description: The IP address of the server.
+          optional:
+            - name: server_port
+              type: int
+              count: 1
+              flag: '-p'
+              description: The port of the server (default 30001).
+
+statistics:
+    - name: 'sent_packets'
+      description: The amount of packets sent by the node (server and client side)
+      frequency: '1 second'
+    - name: 'received_packets'
+      description: The amount of packets received by the node (server and client side)
+      frequency: '1 second'
+    - name: 'sent_acks'
+      description: The amount of ACKs sent by the node (server and client side)
+      frequency: '1 second'
+    - name: 'received_acks'
+      description: The amount of ACKs received by the node (server and client side)
+      frequency: '1 second'
+    - name: 'dropped_packets'
+      description: The amount of packets dropped packets due to generated losses (server and client side)
+      frequency: '1 second'
+    - name: 'retransmitted_packets'
+      description: The amount of packets retransmitted due to generated losses (server and client side)
+      frequency: '1 second'
+
