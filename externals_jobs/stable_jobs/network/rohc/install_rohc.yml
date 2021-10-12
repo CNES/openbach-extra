@@ -1,0 +1,70 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016−2019 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+---
+
+- name: Install ROHC requirements
+  apt:
+    name:
+      - gcc
+      - make
+      - libpcap-dev
+    state: present
+    update_cache: no
+  become: yes
+
+- name: Create the rohc Job Repository
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: "0755"
+
+- name: Install job's files
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
+  with_items:
+    - {file: "rohc.py", mode: "0755"}
+    - {file: "rohc_rstats_filter.conf", mode: "0644"}
+    - {file: "rohc_src.tar.gz", mode: "0644"}
+
+- name: Extract rohc_src
+  unarchive:
+    src: /opt/openbach/agent/jobs/{{ job_name }}/rohc_src.tar.gz
+    dest: /opt/openbach/agent/jobs/{{ job_name }}
+    remote_src: yes
+  become: yes
+
+- name: Compile rohc_src
+  shell: "{{ item }}"
+  args:
+    chdir: /opt/openbach/agent/jobs/{{ job_name }}/rohc_src/
+  with_items:
+    - "make clean"
+    - "make rohc_tunnel"
+    - "make install"
+  become: yes
+

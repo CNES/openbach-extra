@@ -26,35 +26,25 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of ip_route job """
-
-from ..utils import filter_none
+""" Helpers of rohc job """
 
 
-def ip_route(
-        scenario, entity, operation, destination_ip, gateway_ip=None,
-        device=None, initcwnd=None, initrwnd=None, restore=None,
+def rohc_add_pop(
+        scenario, entity, remote_ip, local_ip,
+        tunnel_ipv4, tunnel_ipv6,
+        port=5400, direction="bidirectional", behavior="both",
+        cid_type="largecid", max_contexts=16, rohc_packet_size=1544,
         wait_finished=None, wait_launched=None, wait_delay=0):
-    route_config = scenario.add_function(
+
+    rohc = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
 
-    parameters = filter_none(
-            operation=operation,
-            offset=0,
-            initcwnd=initcwnd,
-            initrwnd=initrwnd,
-            gateway_ip=gateway_ip,
-            device=device,
-            restore=restore)
+    rohc.configure('rohc', entity, remote_ip=remote_ip, local_ip=local_ip,
+            tunnel_ipv4=tunnel_ipv4, tunnel_ipv6=tunnel_ipv6,
+            port=port, direction=direction, behavior=behavior,
+            cid_type=cid_type, max_contexts=max_contexts, rohc_packet_size=rohc_packet_size)
 
-    if destination_ip == 'default':
-       parameters['default']={}
-    else:
-       parameters['destination_ip']={'network_ip':destination_ip}    
-
-    route_config.configure('ip_route', entity, **parameters)
-
-    return [route_config]
+    return [rohc]

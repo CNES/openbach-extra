@@ -26,35 +26,19 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of ip_route job """
+""" Helpers of ip_neighbour job """
 
-from ..utils import filter_none
-
-
-def ip_route(
-        scenario, entity, operation, destination_ip, gateway_ip=None,
-        device=None, initcwnd=None, initrwnd=None, restore=None,
+def ip_neighbour(
+        scenario, entity, operation, device, destination_ip, mac_address,
         wait_finished=None, wait_launched=None, wait_delay=0):
-    route_config = scenario.add_function(
+    
+    function = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
-            wait_delay=wait_delay)
+            wait_delay=wait_delay)  
 
-    parameters = filter_none(
-            operation=operation,
-            offset=0,
-            initcwnd=initcwnd,
-            initrwnd=initrwnd,
-            gateway_ip=gateway_ip,
-            device=device,
-            restore=restore)
+    function.configure('ip_neighbour', entity, operation=operation, device=device,
+            destination_ip=destination_ip, mac_address=mac_address)
 
-    if destination_ip == 'default':
-       parameters['default']={}
-    else:
-       parameters['destination_ip']={'network_ip':destination_ip}    
-
-    route_config.configure('ip_route', entity, **parameters)
-
-    return [route_config]
+    return [function]

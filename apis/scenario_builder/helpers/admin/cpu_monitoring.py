@@ -26,35 +26,19 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Helpers of ip_route job """
-
-from ..utils import filter_none
+""" Helpers of cpu_monitoring job """
 
 
-def ip_route(
-        scenario, entity, operation, destination_ip, gateway_ip=None,
-        device=None, initcwnd=None, initrwnd=None, restore=None,
+def cpu_monitoring(
+        scenario, entity, interval=1,
         wait_finished=None, wait_launched=None, wait_delay=0):
-    route_config = scenario.add_function(
+
+    cpu_monitoring = scenario.add_function(
             'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
 
-    parameters = filter_none(
-            operation=operation,
-            offset=0,
-            initcwnd=initcwnd,
-            initrwnd=initrwnd,
-            gateway_ip=gateway_ip,
-            device=device,
-            restore=restore)
+    cpu_monitoring.configure('cpu_monitoring', entity, interval=1)
 
-    if destination_ip == 'default':
-       parameters['default']={}
-    else:
-       parameters['destination_ip']={'network_ip':destination_ip}    
-
-    route_config.configure('ip_route', entity, **parameters)
-
-    return [route_config]
+    return [cpu_monitoring]
