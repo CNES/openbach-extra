@@ -54,7 +54,7 @@ def build(entity, address=None, port=None, fastopen=None, maxconns=None,
         table_num=None, duration=None, scenario_name=SCENARIO_NAME):
 
     scenario = launch_pep(entity, address, port, fastopen, maxconns, gcc_interval, log_file, pending_lifetime,
-            stop, redirect_ifaces, redirect_src_ip, redirect_dst_ip, mark, table_num)
+            stop, redirect_ifaces, redirect_src_ip, redirect_dst_ip, mark, table_num, scenario_name)
 
 
     if duration:

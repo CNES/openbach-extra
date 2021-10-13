@@ -340,7 +340,7 @@ def build(
         # pep on R: redirect traffic from A to C /// ou c'est de R à C ? Ou de L à R ?
         scenario_pep_RL = transport_pep.build(
                 entity=routerR,
-                redirect_ifaces='{},{},{}'.format(interface_RC, interface_RD, interface_RL), #'ens3, ens6, ens4'
+                redirect_ifaces='{}, {}, {}'.format(interface_RC, interface_RD, interface_RL), #'ens3, ens6, ens4'
                 scenario_name='pep_RL')
         start_pep_RL = scenario.add_function(
                 'start_scenario_instance',
@@ -353,7 +353,7 @@ def build(
         # pep on L: redirect traffic from B to D
         scenario_pep_LR = transport_pep.build(
                 entity=routerL,
-                redirect_ifaces='{},{},{}'.format(interface_LA, interface_LB, interface_LR), #'ens3, ens6, ens4'
+                redirect_ifaces='{}, {}, {}'.format(interface_LA, interface_LB, interface_LR), #'ens3, ens6, ens4'
                 scenario_name='pep_LR')
         start_pep_LR = scenario.add_function(
                 'start_scenario_instance',
