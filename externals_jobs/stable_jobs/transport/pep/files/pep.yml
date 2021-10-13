@@ -4,7 +4,7 @@ general:
   name:            pep
   description: >
       This Job sets up the PEPsal Performance-Enhancing Proxy (PEP) and redirects traffic to be intercepted.
-  job_version:     '1.1'
+  job_version:     '1.2'
   keywords:        [pep, tcp]
   persistent:      False
 
