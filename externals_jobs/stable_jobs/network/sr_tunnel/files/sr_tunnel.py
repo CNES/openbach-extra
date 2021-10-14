@@ -74,7 +74,7 @@ tokens_map = {
         'A': 'sent_acks',
         'a': 'received_acks',
         'D': 'dropped_packets',
-        'T': 'retansmitted_packets'}
+        'T': 'retransmitted_packets'}
 
 
 @contextlib.contextmanager
@@ -164,11 +164,11 @@ def main(mode, tun_ip=None, server_ip=None, server_port=None, drop=None, burst=N
         cmd += ['-s']
     cmd += ['-t', trace]
     if server_port is not None:
-        cmd += ['-p', server_port]
+        cmd += ['-p', str(server_port)]
     if drop is not None:
-        cmd += ['-d', drop]
+        cmd += ['-d', str(drop)]
     if burst is not None:
-        cmd += ['-b', burst]
+        cmd += ['-b', str(burst)]
 
     p = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     collect_t = threading.Thread(target=collect_metrics) 
