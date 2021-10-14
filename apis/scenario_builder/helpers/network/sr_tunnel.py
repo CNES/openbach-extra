@@ -31,9 +31,9 @@
 from ..utils import filter_none
 
 
-def sr_tunnel(
-        scenario, server_entity, client_entity, server_tun_ip, client_tun_ip, server_ip,
-        server_port=None, trace=None, drop=None, burst=None,
+def create_sr_tunnel(
+        scenario, server_entity, client_entity, server_ip, server_tun_ip, client_tun_ip, server_port=None,
+        trace=None, server_drop=None, client_drop=None, server_burst=None, client_burst=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
 
     server = scenario.add_function(
@@ -45,11 +45,10 @@ def sr_tunnel(
     server_params = filter_none(
             tun_ip=server_tun_ip,
             trace=trace,
-            drop=drop,
-            burst=burst)
+            drop=server_drop,
+            burst=server_burst)
 
-    if server_port is not None:
-        server_params['client'] = {'port': server_port}
+    server_params['server'] = {'port': server_port} if server_port is not None else {}
 
     server.configure(
             'sr_tunnel',
@@ -63,12 +62,12 @@ def sr_tunnel(
             wait_delay=2)
 
     client_params = filter_none(
-            tun_ip=server_tun_ip,
+            tun_ip=client_tun_ip,
             trace=trace,
-            drop=drop,
-            burst=burst)
+            drop=client_drop,
+            burst=client_burst)
 
-    client_subparams = filte_none(
+    client_subparams = filter_none(
             server_ip=server_ip,
             server_port=server_port)
 
@@ -78,7 +77,7 @@ def sr_tunnel(
     return [server]
 
 
-def sr_server(
+def init_sr_server(
         scenario, server_entity, server_tun_ip, server_port=None, trace=None,
         drop=None, burst=None, wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
@@ -104,7 +103,7 @@ def sr_server(
     return [server]
 
 
-def sr_client(
+def init_sr_client(
         scenario, client_entity, client_tun_ip, server_ip, server_port=None, trace=None,
         drop=None, burst=None, wait_finished=None, wait_launched=None, wait_delay=0):
     client = scenario.add_function(
