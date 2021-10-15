@@ -31,6 +31,15 @@
     state: directory
     mode: 0755
 
+- name: Install some dependencies
+  apt:
+    name:
+      - build-essential
+      - clang
+    state: present
+  become: yes
+  environment: "{{ openbach_proxies }}"
+
 - name: Clone sr_tunnel from github
   git:
     repo: https://github.com/elochin/sr_tunnel.git
