@@ -36,6 +36,7 @@
     name:
       - build-essential
       - clang
+      - make
     state: present
   become: yes
   environment: "{{ openbach_proxies }}"
