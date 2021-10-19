@@ -11,6 +11,7 @@ Usage procedure : The user needs to launch the job in "server mode" in an agent,
 **Important Notes** : 
     * The server only supports 1 connection.
     * If the client closes the connection, the server needs to be shutdown to launch a new test.
+    * There may be issues when configure link is exploited to limit the interface on which the sr_tunnel is applied.
 
 === Example ===
 
