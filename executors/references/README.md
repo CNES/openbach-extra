@@ -544,38 +544,407 @@ TBD
 </details>
 
 <details><summary>executor_transport_tcp_stack_conf.py</summary>
-TBD
+
+This section provides instructions to exploit *transport_tcp_stack_conf*
+scenario. This scenario relies on the OpenBACH jobs [
+tcp\_conf\_linux](https://github.com/CNES/openbach-extra/externals_jobs/stable_jobs/transport/tcp_conf_linux),
+[
+ethtool](https://github.com/CNES/openbach-extra/externals_jobs/stable_jobs/transport/ethtool)
+and [
+ip\_route](https://github.com/CNES/openbach/src/jobs/core_jobs/network/ip_route)
+to configure:
+
+- TCP  congestion control,
+- route including TCP parameters like initial congestion and receive windows
+- TCP segmentation offloading on a network interface. Its a useful scenario allowing to evaluate the impact of these parameters on the performances of a TCP flow.
+
+##### How to launch it
+
+The scenario is available in [
+transport\_tcp\_stack\_conf](https://github.com/CNES/openbach-extra/apis/scenario_builder/scenarios/transport_tcp_stack_conf.py).
+
+You must already have a project (i.e. "your_project"), one entity in
+the project (i.e. "your_entity"), with the following jobs installed
+on this entity: ip_route, tcp_conf_linux and ethtool.
+
+The executor script [
+executor\_transport\_tcp\_stack\_conf](https://github.com/CNES/openbach-extra/executors/references/executor_transport_tcp_stack_conf.py)
+will allow to launch it as follows.
+
+```bash 
+python3 executor_transport_tcp_stack_conf.py your_project --entity your_entity --congestion-control congestion_control --dest-ip @network_ip_address --gw-ip @gateway_ip_address --dev output_device --icwnd initcwnd --irwnd initrwnd --interface net_iface run
+```
+
+Alternatively, it can create a JSON file that could be imported to the
+OpenBACH web interface:
+
+```bash 
+python3 executor_transport_tcp_stack_conf.py your_project --entity your_entity --congestion-control congestion_control --dest-ip @network_ip_address --gw-ip @gateway_ip_address --dev output_device --icwnd initcwnd --irwnd initrwnd --interface net_iface build 
+```
+
+You can make a parameter as an argument of generated scenario, just by
+specifying its value starting with '$'.
+
+This script includes a manual page listing all of the command-line
+options. Issue following commands for more information about paramaters
+`python3 executor_transport_tcp_stack_conf.py -h`
+
+##### Use cases
+
+This scenario can be used as module (or building block) to build more
+complex scenarios. 
+
 </details>
 
 <details><summary>executor_transport_tcp_one_flow.py</summary>
-TBD
+
+This scenario transmits a variable amount of data with TCP transport
+protocol.
+
+#### Methodology
+
+The scenario proposed herein will :
+
+- Launch the subscenario transport_tcp_one_flow_core (Launch one tcp iperf3 flow with a transmitted size: as if a file was is being sent).
+- Perform two postprocessing tasks to compare the time-series and the CDF of the rate measurements
+
+These scenarios have been written using the [scenario
+builder](http://github.com/CNES/openbach-extra/apis/scenario_builder).
+
+#### How to launch it
+
+The scenario is available in [ transport\_tcp\_one\_flow
+](https://github.com/CNES/openbach-extra/apis/scenario_builder/scenarios/transport_tcp_one_flow.py).
+
+You must already have a project (i.e. "your_project"), two entities
+in the project (a server and a client), the iperf3 jobs installed in the
+client and the server. You also need to install histogram and
+time-series jobs on "your_entity".
+
+The executor script [
+executor\_transport\_tcp\_one\_flow](https://github.com/CNES/openbach-extra/executors/references/executor_transport_tcp_one_flow.py)
+will allow to launch it as follows.
+```bash
+python3 executor_transport_tcp_one_flow.py your_project --client-entity your_client_entity --server-entity your_server_entity --server-ip @IP --server-port @port --transmitted_size 10M --post-processing-entity your_entity run
+```
+
+The *transmitted_size* must be specified in bytes, and you can use
+\[K/M/G\], e.g. set 100M to send 100 MBytes.
+
 </details>
 
 <details><summary>executor_service_data_transfer.py</summary>
-TBD
+This service allows to either :
+
+- transfer one file with TCP between two OpenBACH agents, or
+- transfer data with TCP between two OpenBACH agents during a certain time
+
+It uses the OpenBACH job
+[iperf3](https://github.com/CNES/openbach/src/jobs/core_jobs/metrology/iperf3).
+The executor script can be found
+[here](https://github.com/CNES/openbach-extra/executors/references/executor_service_data_transfer.py).
+
+##### How to launch it
+
+The scenario can be launched with the following command (if the duration
+determines the end of the data transfer):
+
+```bash
+python3 executor_service_data_transfer.py your_project --server-entity source_entity --client-entity destination_entity --server-ip source_ip_address --client-ip destination_ip_address --server-port server_port --tos tos --mtu mtu --duration duration --post-processing-entity pp_entity run
+```
+
+Or with the following command (if the file size determines the end of
+the data transfer):
+
+```bash
+python3 executor_service_data_transfer.py your_project --server-entity source_entity --client-entity destination_entity --server-ip source_ip_address --client-ip destination_ip_address --server-port server_port --file_size file_size --tos tos --mtu mtu --duration duration --post-processing-entity pp_entity run
+```
+
+The source of the traffic is the iperf3 client and the destination is
+the iperf3 server.
+
+Here is a description of each argument:
+
+- **src_entity**: the name of the OpenBACH agent sending iperf3 traffic
+- **dst_entity**: the name of the OpenBACH agent receiving iperf3 traffic
+- **dst_ip**: the ip address of the iperf3 traffic destination
+- **dst_port**: the port of the iperf3 traffic destination (e.g. 5201)
+- **file_size**: the size of the file to transmit (in bytes) 
+- **tos**: set the ToS field of the TCP iperf3 traffic (e.g. 0x04)
+- **mtu**: set the MTU of the TCP iperf3 traffic (in bytes, e.g. 1400)
+- **duration**: the duration of the transfer (in seconds) 
+- **entity_pp**: the OpenBACH agent post-processing statistics
+
+##### Statistics returned
+
+The scenario returns the metrics generated by the exploited jobs as a
+raw csv file. More details on the available metrics are given on the
+source of each exploited job. time\_series and histograms plots are
+generated, plotting the temporal evolution and the CDF of the throughput
+on the server side (destination).
+
 </details>
 
 <details><summary>executor_service_web_browsing.py</summary>
-TBD
+
+This service allows to load one or several web pages, from an Apache2
+server or real websites. It uses the OpenBACH jobs
+[apache2](https://github.com/CNES/openbach/src/jobs/core_jobs/service/apache2)
+and
+[web\_browsing\_qoe](https://github.com/CNES/openbach/src/jobs/core_jobs/service/web_browsing_qoe).
+The executor script can be found
+[here](https://github.com/CNES/openbach-extra/executors/references/executor_service_web_browsing.py).
+
+##### How to launch it
+
+The scenario can be launched with the following command:
+
+```bash 
+python3 executor_traffic_web_browsing.py your_project --server-entity source_entity --client-entity destination_entity --server-ip source_ip_address --client-ip destination_ip_address --nb_runs nb_runs --nb_parallel_runs nb_parallel_runs --urls `[`http://XX.XX.XX.XX`](http://XX.XX.XX.XX)` --duration duration --post-processing-entity pp_entity run
+```
+
+The *--without-apache* option prevents the scenario from launching the
+Apache2 server.
+
+The *--no-compression* option is recommended since the compression may
+impact the actual size of the transfer.
+
+The source of the traffic is the Apache2 server and the destination is
+the node launching the web_browsing_qoe job.
+
+Warning: the websites to fetch need to be placed in the
+*/opt/openbach/agent/jobs/web_browsing_qoe/config.yaml* file on the
+destination entity or specified in with the -url option. It can be
+websites stored on the Apache2 server, or real websites on the Internet.
+
+Here is a description of each argument:
+
+- **server_entity**: the name of the OpenBACH agent sending web traffic
+- **client_entity**: the name of the OpenBACH agent receiving web traffic
+- **nb_runs**: the number of fetches to perform for each website
+- **nb_parallel_runs**: the maximum number of fetches that can work simultaneously
+- **duration**: the time after which the web browsing transmission is stoped (in seconds)
+- **entity_pp**: the OpenBACH agent post-processing statistics
+
+##### Statistics returned
+
+The scenario returns the metrics generated by the exploited jobs as a
+raw csv file. More details on the available metrics are given on the
+source of each exploited job. time_series and histograms plots are
+generated, plotting the temporal evolution and the CDF of the page Load
+Time of the website loaded.
+
 </details>
 
 <details><summary>executor_service_ftp.py</summary>
-TBD
+
+To transfer files through network, we can use the File Transfer Protocol
+(FTP). This scenario allows to transfer one specific file between two
+OpenBACH agents, either once or repeatedly. It uses the jobs
+[ftp_clt](https://github.com/CNES/openbach-extra/externals_jobs/stable_jobs/service/ftp_clt)
+and
+[ftp_srv](https://github.com/CNES/openbach-extra/externals_jobs/stable_jobs/service/ftp_srv).
+
+##### How to launch it
+
+The scenario can be launched with the following command:
+
+```bash 
+python3 executor_service_ftp.py your_project --client-entity client_entity --server-entity server-entity --server-ip server_ip --server-port port --mode upload_or_download --ftp-file_path path_of_the_file --ftp-user user --ftp-passwrd password --multiple multiple --blocksize blocksize --post-processing-entity post_processing_entity run
+```
+
+Here is a description of each argument:
+
+- **client_entity **: the name of the OpenBACH agent being the FTP client
+- **server-entity **: the name of the OpenBACH agent being the FTP server
+- **ip_srv**: the ip address of the FTP server
+- **port**: the port of the FTP server [not required]
+- **mode**: Either "upload" or "download", the client will upload or download the file
+- **ftp-file_path**: The file's path, either on the server or the client. On the server you need to consider "/srv/" as the root directory and on the client "/srv/" as the current directory.
+- **ftp-user**: set the authorized FTP user on the server (and the client) [not required]
+- **ftp-passwrd**: set the authorized FTP user's password on the server (and the client) [not required]
+- **multiple**: set the number of time the file will be transferred (default: 1) [not required]
+- **post-processing-entity**: the name of the OpenBACH agent post-processing statistics [not required]
+
+If multiple is different of 1, only one transfer will be done at a time
+
+An example of the type of results that this scenarios is capable of
+plotting is shown below:
+
+#### CDF of Throughput (upload of two files to server)
+
+The FTP server computes only the average value of throughput on Upload,
+while the client is capable of computing the throughput during all the
+transfer.
+
+#### Time-series of Throughput (file downloaded by 5 clients)
+
+The FTP server computes only the average value of throughput on
+Download, while each client is capable of computing the throughput
+during all the transfer.
+
 </details>
+
 <details><summary>executor_service_quic.py</summary>
 TBD
 </details>
 
 <details><summary>executor_service_video_dash.py</summary>
-TBD
+
+This service allows to transfer one video between two OpenBACH agents,
+using DASH. It uses the OpenBACH jobs [dashjs
+player&server](https://github.com/CNES/openbach-extra/externals_jobs/stable_jobs/service/dashjs_player_server)
+and [dashjs
+client](https://github.com/CNES/openbach-extra/externals_jobs/stable_jobs/service/dashjs_client).
+The executor script can be found
+[here](https://github.com/CNES/openbach-extra/executors/references/executor_service_video_dash.py).
+
+##### How to launch it
+
+The scenario can be launched with the following command:
+
+```bash
+python3 executor_service_video_dash.py your_project --server-entity source_entity --client-entity destination_entity --server-ip source_ip_address --client-ip destination_ip_address --protocol protocol --duration duration --post-processing-entity pp_entity run
+```
+
+The source of the traffic is the DASH server and the destination is the
+DASH client.
+
+Here is a description of each argument:
+
+- **src_entity**: the name of the OpenBACH agent sending DASH traffic
+- **dst_entity**: the name of the OpenBACH agent receiving DASH traffic
+- **src_ip**: the ip address of the DASH traffic source (DASH server)
+- **protocol**: the protocol used by DASH. Possible values are http/1.1 and http/2
+- **duration**: the duration of the DASH transfer
+- **entity_pp**: the OpenBACH agent post-processing statistics
+
+##### Statistics returned
+
+The scenario returns the metrics generated by the exploited jobs as a
+raw csv file. More details on the available metrics are given on the
+source of each exploited job. time_series and histograms plots are
+generated, plotting the temporal evolution and the CDF of the bitrate of
+the video downloaded.
+
 </details>
 
 <details><summary>executor_service_voip.py</summary>
-TBD
+
+This service allows to generate one VoIP traffic between two OpenBACH
+agents. The scenario returns the quality-of-experience as a Mean Opinion
+Score metric. It uses the OpenBACH jobs
+[voip\_qoe\_src](https://github.com/CNES/openbach-extra/externals_jobs/stable_jobs/service/voip_qoe/voip_qoe_src)
+and
+[voip\_qoe\_dest](https://github.com/CNES/openbach-extra/externals_jobs/stable_jobs/service/voip_qoe/voip_qoe_dest).
+This executor script can be found
+[here](https://github.com/CNES/openbach-extra/executors/references/executor_service_voip.py).
+
+##### How to launch it
+
+The scenario can be launched with the following command:
+
+```bash 
+python3 executor_service_voip.py your_project --server_entity source_entity --client-entity client_entity --server-ip source_ip_address --client-ip destination_ip_address --server-port destination_port --codec codec --duration duration --post-processing-entity pp_entity run
+```
+
+Here is a description of each argument:
+
+- **src_entity**: the name of the OpenBACH agent sending VoIP traffic
+- **dst_entity**: the name of the OpenBACH agent receiving VoIP traffic
+- **src_ip**: the ip address of the VoIP traffic source
+- **dst_ip**: the ip address of the VoIP traffic destination
+- **dst_port**: the port of the VoIP traffic destination
+- **codec**: the codec used by the job. Possible values are: G.711.1, G.711.2, G.723.1, G.729.2, G.729.3
+- **duration**: the duration of the VoIP transfer
+- **entity_pp**: the OpenBACH agent post-processing statistics
+
+##### Statistics returned
+
+The scenario returns the metrics generated by the exploited jobs as a
+raw csv file. More details on the available metrics are given on the
+source of each exploited job. time_series and histograms plots are
+generated, plotting the temporal evolution and the CDF of the MOS
+metric.
+
 </details>
 
 <details><summary>executor_service_traffic_mix.py</summary>
-TBD
+This scenario allows to create several traffics, to schedule and launch
+them with OpenBACH. The four traffics available are:
+
+- voip
+- dash
+- web_browsing
+- data_transfer
+
+The description of each traffic to be launched has to be put in an
+extra\_args file, which will be described in the next section. This
+scenario can be found
+[here](https://github.com/CNES/openbach-extra/executors/references/executor_service_traffic_mix.py).
+
+You can launch the service scenario with the following command:
+
+```bash
+python3 generate_service_traffic.py your_project @path_to_traffic_args_file --post-processing-entity your_entity run
+```
+
+#### extra\_args file description
+
+This file contains all the information needed to generate the traffics.
+It is composed of several lines, one per traffic. Each line can be split
+into 2 parts: first the arguments common to all the traffics, then the
+arguments linked to the traffic declared in this line. An example can be
+found
+[here](https://github.com/CNES/openbach-extra/executors/references/executor_service_traffic_mix_arg.txt).
+
+The first part must be formatted as follows:
+
+`id traffic_type src_entity dst_entity duration wait_launched wait_finished wait_delay src_ip dst_ip`
+
+Here is a description of each element:
+
+- **id**: the id of the flow, must be unique, and should be higher than the id of previous lines
+- **traffic_type**: the kind of traffic: voip, dash, web_browsing or data_transfer
+- **src_entity**: the name of the source entity
+- **dst_entity**: the name of the destination entity
+- **duration**: the duration of the transfer for this traffic in seconds (not always used by data transfer: see below)
+- **wait_delay**: time to wait in seconds between the completion of wait_launched and wait_finished, and the launch of this traffic
+- **wait_launched**: launch the traffic wait_delay seconds after these traffics are launched. These traffics are described by their ids (which has to be declared in the previous lines), separated by a "-". If no traffic, put "None"
+- **wait_finished**: launch the traffic //wait_delay// seconds after these traffics are finished. These traffics are described by their ids (which has to be declared in the previous lines), separated by a "-". If no traffic, put "None"
+- **src_ip**: the ip address of the traffic source (ignored by web browsing and data transfer traffics)
+- **dst_ip**: the ip address of the traffic source (ignored by DASH and web browsing traffics)
+
+For example, if we enter the following line, assuming traffics with id
+1, 2 and 3 have already been declared in the file:
+
+`4 dash src_node dst_node 60 3 1-2 10 192.168.1.1 192.168.1.2`
+
+This line says: launch a DASH traffic (with id=4) between src_node
+(whose address is 192.168.1.1) and dst_node (whose address is
+192.168.1.2), during 60 seconds. This traffic will be launched 10
+seconds after 1 and 2 are finished and 3 is launched.
+
+The second part of the line depends on the traffic chosen, and is
+described in the following: 
+
+- voip : *dst_port* *codecs* (arguments format), actually it is impossible to launch simultaneously to VoIP traffics. Codecs available are G.711.1, G.711.2, G.723.1, G.729.2 and G.729.3
+- dash : *protocol* (arguments format), protocol value is http/1.1 or http/2
+- web_browsing : *nb_runs* *nb_parallel_run* (arguments format), dot forget to edit the config file with correct address to fetch in the installation folder of the job (/opt/openbach/agent/jobs/web_browsing_qoe)
+- data_transfer: *dst_port* *file_size* *tos* *mtu* (argument format), if *file_size* is 0, the transfer will last *duration* seconds. Otherwise, it will transfer *file_size* bytes, regardless of the duration
+
+Any traffic not correctly formatted will be ignored.
+
+#### Statistics returned
+
+The scenario returns the metrics generated by the exploited jobs as a
+raw csv file. time_series and histograms plots are generated:
+
+- **voip**: one time_series and one histogram per VoIP traffic, and one time_series and one histogram with all VoIP traffics. The metric plotted is the Mean Opinion Score
+- **dash**: one time_series and one histogram with all DASH traffics. The metric plotted is the bitrate
+- **web_browsing**: one time_series and one histogram per web_browsing traffic, and one time_series and one histogram with all web_browsing traffics. The metric plotted is the Page Load Time
+- **data_transfer**: one time_series and one histogram per data_transfer traffic, and one time_series and one histogram with all data_transfer traffics. The metric plotted is the throughput
+
 </details>
 
 [1]: https://github.com/CNES/opensand/
