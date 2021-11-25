@@ -29,7 +29,11 @@
 
 """This executor builds and launches the *network_configure_link* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
-It permits to configure latency, rate on interfaces with tc component.
+
+This scenario relies on the OpenBACH jobs tc_configure_link which uses Linux
+Traffic Control (tc) with Network Emulation (netem) to emulate a network link
+or simulate networking conditions like WIFI, 4G. Many link characteristiscs can
+be emulated including: bandwidh, losses, delay and jitter.
 
 Path characteristics of reference communication systems:
  # WLAN :
