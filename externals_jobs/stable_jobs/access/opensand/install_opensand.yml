@@ -60,16 +60,6 @@
     - { file: 'opensand.help', mode: '0644' }
     - { file: 'opensand_rstats_filter.conf', mode: '0644' }
 
-- name: Add OpenSAND {{ opensand_repository_component }} repository for {{ opensand_repository_distribution }} distribution
-  apt_repository:
-    repo: deb http://packages.net4sat.org/opensand/ {{ item }} dev
-    state: present
-  with_items:
-    - focal
-    - xenial
-  become: yes
-  environment: "{{ openbach_proxies }}"
-
 - name: Install OpenSAND
   environment: "{{ openbach_proxies | combine({'DEBIAN_FRONTEND': 'noninteractive'}) }}"
   apt:

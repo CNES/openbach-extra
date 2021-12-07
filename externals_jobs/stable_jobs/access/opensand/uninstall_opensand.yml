@@ -35,12 +35,6 @@
 
 ---
 
-- name: Set OpenSAND repository variables
-  set_fact:
-    opensand_repository_url: "{{ opensand_repository_url | default('http://packages.net4sat.org/opensand/') }}"
-    opensand_repository_distribution: "{{ opensand_repository_distribution | default('xenial') }}"
-    opensand_repository_component: "{{ opensand_repository_component | default('dev') }}"
-
 - name: Delete OpenSAND Job repository
   file:
     path: /opt/openbach/agent/jobs/{{ job_name }}
@@ -62,11 +56,4 @@
     - librle
     state: absent
     purge: yes
-  become: yes
-
-- name: Remove OpenSAND {{ opensand_repository_component }} repository for {{ opensand_repository_distribution }} distribution
-  apt_repository:
-    repo: "deb {{ opensand_repository_url }} {{ opensand_repository_distribution }} {{ opensand_repository_component }}"
-    state: absent
-    update_cache: yes
   become: yes

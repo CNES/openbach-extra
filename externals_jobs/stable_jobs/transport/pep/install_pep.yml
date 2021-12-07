@@ -32,12 +32,6 @@
 
 ---
 
-- name: Add net4sat repository
-  apt_repository: repo="deb http://packages.net4sat.org/opensand xenial stable" state=present update_cache=yes
-  ignore_errors: yes
-  become: yes 
-  environment: "{{ openbach_proxies }}"
-
 - name: Install package pepsal
   apt: name=pepsal state=present allow_unauthenticated=yes
   become: yes
