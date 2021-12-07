@@ -32,13 +32,6 @@
 #
 ---
 
-- name: Add DamBOX release repository
-  apt_repository:
-    repo: "deb https://packages.net4sat.org/openbach/ xenial stable" 
-    state: present 
-  become: yes
-  environment: "{{ openbach_proxies }}"
-
 - name: Install package DamBOX
   apt:
     name: "dambox"

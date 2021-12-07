@@ -24,13 +24,11 @@ Both jobs have been extensively tested on Ubuntu 16.04 virtual machines with suc
 
 ### Option 1: Install on a fresh OpenBACH install
 
-See the procedure described on OpenBACH wiki: [OpenBACH wiki - Adding Jobs from External Sources](https://wiki.net4sat.org/doku.php?id=openbach:manuals:2.x:installation_manual:using_ansible:index#adding_jobs_from_external_sources).
+See the procedure described on OpenBACH manual: [Adding Jobs from External Sources](https://github.com/CNES/openbach-extra/blob/dev/externals_jobs/README.md).
 
 Typically, having installed the [ansible software](https://www.ansible.com/), the install command would be:
 
     ansible-playbook install.yml -u openbach -k -K -e '{"openbach_jobs_folders": ["/path/to/voip_qoe_src/", "/path/to/voip_qoe_dest/"]}'
-
-Finally, remember to finalize Grafana association: [OpenBACH wiki - Manual Intervention](https://wiki.net4sat.org/doku.php?id=openbach:manuals:1.x:advanced_installation_manual:index#manual_intervention).
 
 ### Option 2: Install via OpenBACH GUI
 
@@ -43,8 +41,8 @@ Finally, remember to finalize Grafana association: [OpenBACH wiki - Manual Inter
 
 First, clone the Auditorium scripts repository from the forge
 
-    git clone https://forge.net4sat.org/openbach/auditorium-scripts.git
-    cd auditorium-scripts
+    git clone https://github.com/CNES/openbach-extra
+    cd openbach-extra/apis/auditorium_scripts
     
 Then, execute the `add_job.py` script with following arguments:
 

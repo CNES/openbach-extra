@@ -68,4 +68,3 @@ JSON overview:
       "arguments": {}
     }
 
-The scenario JSON file can also be found at: https://forge.net4sat.org/tesa/rt16-tc8-29_partage-leo-geo/tree/master/openbach_jobs/test_scenario.json

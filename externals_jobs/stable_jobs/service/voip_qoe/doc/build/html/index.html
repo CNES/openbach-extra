@@ -1,18 +1,18 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>OpenBach jobs’s documentation &#8212; OpenBACH jobs  documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Installation instructions" href="installation.html" />
@@ -32,28 +32,28 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="openbach-jobs-s-documentation">
+  <section id="openbach-jobs-s-documentation">
 <h1>OpenBach jobs’s documentation<a class="headerlink" href="#openbach-jobs-s-documentation" title="Permalink to this headline">¶</a></h1>
 <p>Two complementary OpenBACH jobs have been developed in the context of this R&amp;T:</p>
 <ul class="simple">
-<li><strong>voip_qoe_dest</strong> is an OpenBACH job to measure the QoE of one or many VoIP sessions generated with D-ITG software. This job corresponds to the receiver (destination) component and should be launched before the caller (source) component.</li>
-<li><strong>voip_qoe_src</strong> is an OpenBACH job to measure the QoE of one or many VoIP sessions generated with D-ITG software. This job corresponds to the caller (source) component and should be launched after the receiver (destination) component</li>
+<li><p><strong>voip_qoe_dest</strong> is an OpenBACH job to measure the QoE of one or many VoIP sessions generated with D-ITG software. This job corresponds to the receiver (destination) component and should be launched before the caller (source) component.</p></li>
+<li><p><strong>voip_qoe_src</strong> is an OpenBACH job to measure the QoE of one or many VoIP sessions generated with D-ITG software. This job corresponds to the caller (source) component and should be launched after the receiver (destination) component</p></li>
 </ul>
 <p>Contact: Antoine Auger [<a class="reference external" href="mailto:antoine&#46;auger&#37;&#52;&#48;tesa&#46;prd&#46;fr">antoine<span>&#46;</span>auger<span>&#64;</span>tesa<span>&#46;</span>prd<span>&#46;</span>fr</a>]</p>
 <ul class="simple">
-<li>Application service: Voice over IP (VoIP)</li>
-<li>Language: Python 3.5</li>
+<li><p>Application service: Voice over IP (VoIP)</p></li>
+<li><p>Language: Python 3.5</p></li>
 </ul>
-<div class="section" id="requirements">
+<section id="requirements">
 <h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>OpenBACH software (see <a class="reference external" href="http://www.openbach.org">http://www.openbach.org</a>)</li>
-<li>2 OpenBACH agents installed on two different hosts</li>
-<li>A password-less connection between the two hosts (see the “Installation” section for more details)</li>
+<li><p>OpenBACH software (see <a class="reference external" href="http://www.openbach.org">http://www.openbach.org</a>)</p></li>
+<li><p>2 OpenBACH agents installed on two different hosts</p></li>
+<li><p>A password-less connection between the two hosts (see the “Installation” section for more details)</p></li>
 </ul>
 <p>Both jobs have been extensively tested on Ubuntu 16.04 virtual machines with success. They may also work on other Ubuntu versions.</p>
 <div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation instructions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#important-prerequisites">IMPORTANT: Prerequisites</a></li>
@@ -64,17 +64,17 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="scenario_example.html">Scenario example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="voip_qoe_dest.html">voip_qoe_src job</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="voip_qoe_dest.html#module-voip_qoe_src.files.voip_qoe_src">Method listing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voip_qoe_dest.html#method-listing">Method listing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="voip_qoe_src.html">voip_qoe_dest job</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="voip_qoe_src.html#module-voip_qoe_dest.files.voip_qoe_dest">Method listing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voip_qoe_src.html#method-listing">Method listing</a></li>
 </ul>
 </li>
 </ul>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -93,7 +93,7 @@
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scenario_example.html">Scenario example</a></li>
@@ -110,17 +110,23 @@
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
         </div>
       </div>
       <div class="clearer"></div>
@@ -129,8 +135,8 @@
       &copy;2018, Antoine Auger.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.9</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="_sources/index.rst.txt"

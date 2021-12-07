@@ -1,7 +1,7 @@
 === Job description ===
 The job 'dambox' launches the software DamBOX, and sets up the iptables
 configurations necessary to perform temporal intermittence.
-see https://wiki.net4sat.org/doku.php?id=dambox:index for more info on the DamBOX
+See https://github.com/CNES/dambox for more info on the DamBOX
 
 The job will erase all iptables rules already in place and create a specefic one for the DamBOX software.
 Be aware of this

@@ -1,18 +1,18 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Installation instructions &#8212; OpenBACH jobs  documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Scenario example" href="scenario_example.html" />
@@ -33,14 +33,14 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="installation-instructions">
+  <section id="installation-instructions">
 <h1>Installation instructions<a class="headerlink" href="#installation-instructions" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="important-prerequisites">
+<section id="important-prerequisites">
 <h2>IMPORTANT: Prerequisites<a class="headerlink" href="#important-prerequisites" title="Permalink to this headline">¶</a></h2>
 <p>You first want to setup a password-less ssh connection between your host 1 and your host 2, where <em>voip_qoe_src</em> and <em>voip_qoe_dest</em> jobs are installed, respectively.</p>
 <p>This password-less connection should be enforced for both the OpenBACH user (generally openbach) and for the root user.</p>
 <ul class="simple">
-<li>Step 1: key generation</li>
+<li><p>Step 1: key generation</p></li>
 </ul>
 <p>On host 1 (<em>voip_qoe_src</em>), generate a pair of public keys using following command:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ssh-keygen -t rsa</span>
@@ -71,7 +71,7 @@
 </pre></div>
 </div>
 <ul class="simple">
-<li>Step 2: key exchange</li>
+<li><p>Step 2: key exchange</p></li>
 </ul>
 <p>Copy the key from host 1 (<em>voip_qoe_src</em>) to host 2 (<em>voip_qoe_src</em>)</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ssh-copy-id openbach@host2</span>
@@ -83,48 +83,44 @@
 </div>
 <p>You shoud not be prompted for any password.</p>
 <ul class="simple">
-<li>Step 3</li>
+<li><p>Step 3</p></li>
 </ul>
 <p>On host 1, sudo as root:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">sudo su</span>
 </pre></div>
 </div>
 <ul class="simple">
-<li>Step 4</li>
+<li><p>Step 4</p></li>
 </ul>
 <p>Perform again step 1 and step 2.</p>
 <p>Once -and only once- this has been done, the two jobs can be added to OpenBACH in three different ways.</p>
-</div>
-<div class="section" id="option-1-install-on-a-fresh-openbach-install">
+</section>
+<section id="option-1-install-on-a-fresh-openbach-install">
 <h2>Option 1: Install on a fresh OpenBACH install<a class="headerlink" href="#option-1-install-on-a-fresh-openbach-install" title="Permalink to this headline">¶</a></h2>
 <p>See the procedure described on OpenBACH wiki:</p>
 <ul class="simple">
-<li>OpenBACH wiki: Adding Jobs from External Sources <a class="reference external" href="https://wiki.net4sat.org/doku.php?id=openbach:manuals:installation_manual:index#adding_jobs_from_external_sources">https://wiki.net4sat.org/doku.php?id=openbach:manuals:installation_manual:index#adding_jobs_from_external_sources</a>.</li>
+<li><p>OpenBACH wiki: Adding Jobs from External Sources <a class="reference external" href="https://github.com/CNES/openbach-extra/blob/dev/externals_jobs/README.md">https://github.com/CNES/openbach-extra/blob/dev/externals_jobs/README.md</a></p></li>
 </ul>
 <p>Typically, having installed the [ansible software](<a class="reference external" href="https://www.ansible.com/">https://www.ansible.com/</a>), the install command would be:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ansible-playbook install.yml -u openbach -k -K -e &#39;{&quot;openbach_jobs_folders&quot;: [&quot;/path/to/voip_qoe_src/&quot;, &quot;/path/to/voip_qoe_dest/&quot;]}&#39;</span>
 </pre></div>
 </div>
-<p>Finally, remember to finalize Grafana association:</p>
-<ul class="simple">
-<li>OpenBACH wiki - Manual Intervention <a class="reference external" href="https://wiki.net4sat.org/doku.php?id=openbach:manuals:installation_manual:index#manual_intervention">https://wiki.net4sat.org/doku.php?id=openbach:manuals:installation_manual:index#manual_intervention</a>.</li>
-</ul>
-</div>
-<div class="section" id="option-2-install-via-openbach-gui">
+</section>
+<section id="option-2-install-via-openbach-gui">
 <h2>Option 2: Install via OpenBACH GUI<a class="headerlink" href="#option-2-install-via-openbach-gui" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Go to the OpenBACH administration webpage at <a class="reference external" href="http:/">http:/</a>/&lt;CONTROLLER_IP&gt;/app</li>
-<li>Click on the <em>OpenBACH</em> menu in the top-right corner and then on <em>Jobs</em></li>
-<li>Enter <em>voip_qoe_src</em> in the <em>New Job Name</em> field</li>
-<li>Import the tar.gz archive containing the voip_qoe_src job</li>
-<li>Repeat procedure for the voip_qoe_dest job</li>
+<li><p>Go to the OpenBACH administration webpage at <a class="reference external" href="http:/">http:/</a>/&lt;CONTROLLER_IP&gt;/app</p></li>
+<li><p>Click on the <em>OpenBACH</em> menu in the top-right corner and then on <em>Jobs</em></p></li>
+<li><p>Enter <em>voip_qoe_src</em> in the <em>New Job Name</em> field</p></li>
+<li><p>Import the tar.gz archive containing the voip_qoe_src job</p></li>
+<li><p>Repeat procedure for the voip_qoe_dest job</p></li>
 </ul>
-</div>
-<div class="section" id="option-3-install-with-auditorium-scripts-cli">
+</section>
+<section id="option-3-install-with-auditorium-scripts-cli">
 <h2>Option 3: Install with auditorium scripts (CLI)<a class="headerlink" href="#option-3-install-with-auditorium-scripts-cli" title="Permalink to this headline">¶</a></h2>
 <p>First, clone the Auditorium scripts repository from the forge</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://forge.net4sat.org/openbach/auditorium-scripts.git</span>
-<span class="go">cd auditorium-scripts</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://github.com/CNES/openbach-extra</span>
+<span class="go">cd openbach-extra/apis/auditorium_scripts</span>
 </pre></div>
 </div>
 <p>Then, execute the <cite>add_job.py</cite> script with following arguments:</p>
@@ -137,8 +133,8 @@
 <span class="go">./add_job.py --controller &lt;CONTROLLER_IP&gt; --login openbach -t /path/to/voip_qoe_dest.tar.gz</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -157,7 +153,7 @@
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation instructions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#important-prerequisites">IMPORTANT: Prerequisites</a></li>
@@ -181,17 +177,23 @@
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
         </div>
       </div>
       <div class="clearer"></div>
@@ -200,8 +202,8 @@
       &copy;2018, Antoine Auger.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.9</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="_sources/installation.rst.txt"
