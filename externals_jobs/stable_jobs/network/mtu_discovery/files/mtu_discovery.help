@@ -1,0 +1,31 @@
+=== Job description ===
+
+This Job discovers the Path MTU (in bytes) from the agent runing the job to a distant machine.
+**Warning** : The job will not work if the RTT between the agent and the distant machine is higher than 2 seconds.
+
+=== Examples ===
+
+== Example 1 ==
+
+Discover the Path MTU to a given IP address (8.8.8.8)
+
+In the web interface, set the following parameters:
+  * **destination_ip** = 8.8.8.8
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=mtu_discovery sudo -E python3 /opt/openbach/agent/jobs/mtu_discovery/mtu_discovery.py 8.8.8.8
+</code>
+
+== Example 2 ==
+
+Discover the Path MTU to a domain name (www.google.com)
+Important note : do not put the protocol suffix (ex : use "www.google.com" instead of "https://www.google.com")
+
+In the web interface, set the following parameters:
+  * **destination_ip** = www.google.com
+
+Or launch the job manually from the Agent as follows:
+<code>
+JOB_NAME=mtu_discovery sudo -E python3 /opt/openbach/agent/jobs/mtu_discovery/mtu_discovery.py "www.google.com"
+</code>

@@ -32,8 +32,8 @@ from ..utils import filter_none
 
 
 def ip_route(
-        scenario, entity, operation, destination_ip,
-        gateway_ip=None, device=None, initcwnd=None, initrwnd=None,
+        scenario, entity, operation, destination_ip, gateway_ip=None,
+        device=None, initcwnd=None, initrwnd=None, restore=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     route_config = scenario.add_function(
             'start_job_instance',
@@ -47,7 +47,8 @@ def ip_route(
             initcwnd=initcwnd,
             initrwnd=initrwnd,
             gateway_ip=gateway_ip,
-            device=device)
+            device=device,
+            restore=restore)
 
     if destination_ip == 'default':
        parameters['default']={}

@@ -59,7 +59,7 @@ def quic(
     parameters = filter_none(
                 implementation=client_implementation,
                 server_port=server_port,
-                log_dir=server_log_dir,
+                log_dir=client_log_dir,
                 extra_args=client_extra_args)
     parameters['client'] = filter_none(
                 server_ip=server_ip,

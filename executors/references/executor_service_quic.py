@@ -86,7 +86,7 @@ def main(argv=None):
             args.server_entity,
             args.server_ip,
             args.server_port,
-            args.server_implemenation,
+            args.server_implementation,
             args.client_entity,
             args.client_implementation,
             args.resources,

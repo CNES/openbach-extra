@@ -37,8 +37,8 @@
 ### dash          -> protocol tornado_port
 ### voip          -> dst_port codecs ntp_synchro_acceptable_offset ntp_synchro_timeout
 ###                  (Warning: it is impossible to launch several voip_src at same time... should be fixed later)
-### web_browsing  -> nb_runs nb_parallel_runs
-###                  (Do not forget to edit the config file with correct addresses.)
+### web_browsing  -> nb_runs nb_parallel_runs urls
+###                  (If parameter "urls" is not set, the scenario will load the "config.yaml" file of the job web_browsing.)
 
 # Example launch command:
 # PYTHONPATH=~/openbach-extra/apis/ python3 executor_service_traffic_mix.py @executor_service_traffic_mix_arg.txt --post-processing-entity name_entity_post_processing my_project run
@@ -47,12 +47,13 @@
 
 --data-transfer 1 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 5201 10M 0 1500
 --dash 2 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2 5301
---web-browsing 3 SRC ST1 60 None None 0 10.42.42.11 10.42.14.3 10 2
+--web-browsing 3 SRC ST1 60 None None 0 10.42.42.11 10.42.14.3 10 2 "https://www.google.com" "https://www.lemonde.fr"
 # Perform NTP synchro check on this VoIP, but not on the others since the check should still be valid
 --voip 4 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 8011 G.711.1 75.0 120.0
 
 --data-transfer 5 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 5201 10M 0 1500
 --dash 6 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 http/2 5301
+# This time, web-browsing loads "config.yaml" file
 --web-browsing 7 SRC ST2 60 4 None 5 10.42.42.11 10.42.15.3 10 2
 --voip 8 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 8012 G.711.1 None None
 

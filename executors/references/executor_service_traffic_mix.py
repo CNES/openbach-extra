@@ -36,8 +36,9 @@ and service_data_transfer in a flexible manner.
 
 import argparse
 
-from auditorium_scripts.scenario_observer import ScenarioObserver
+from scenario_builder.helpers.utils import patch_print_help, ValidateOptional
 from scenario_builder.scenarios import service_traffic_mix
+from auditorium_scripts.scenario_observer import ScenarioObserver
 
 
 def _try_float(value):
@@ -105,10 +106,19 @@ class ValidateVoip(_Validate):
     TRAFFIC_TYPE = service_traffic_mix.VoipArguments
 
 
-class ValidateWebBrowsing(_Validate):
-    VALIDATOR = _Validate.VALIDATOR + (int, int)
+class ValidateWebBrowsing(_Validate, ValidateOptional):
+    VALIDATOR = _Validate.VALIDATOR + (int, int, None)
     TRAFFIC_NAME = 'web_browsing'
     TRAFFIC_TYPE = service_traffic_mix.WebBrowsingArguments
+
+    def __call__(self, parser, args, values, option_string=None):
+        vals = values[:len(self.VALIDATOR) - 1]
+        urls = values[len(self.VALIDATOR) - 1:]
+        values = [*vals, urls or None]
+        self.nargs = len(self.VALIDATOR)
+        args_pattern = '%s' % ''.join('A' * len(values))
+        parser._match_argument(self, args_pattern)
+        return super().__call__(parser, args, values, option_string)
 
 
 class ValidateDash(_Validate):
@@ -132,7 +142,8 @@ def main(argv=None):
             '--dash', **_prepare_argparse_arguments(ValidateDash),
             help='add a Dash traffic generator sub-scenario')
     observer.add_scenario_argument(
-            '--web-browsing', **_prepare_argparse_arguments(ValidateWebBrowsing),
+            '--web-browsing', nargs='*', action=ValidateWebBrowsing, dest='traffic',
+            metavar='id source destination duration wait_launched wait_finished wait_delay source_ip destination_ip run_count parallel_runs [url ...]',
             help='add a web browsing traffic generator sub-scenario')
     observer.add_scenario_argument(
             '--data-transfer', **_prepare_argparse_arguments(ValidateDataTransfer),
@@ -140,6 +151,8 @@ def main(argv=None):
     observer.add_scenario_argument(
             '--post-processing-entity', help='The entity where the post-processing will be performed '
             '(histogram/time-series jobs must be installed) if defined')
+
+    patch_print_help(observer.parser)
 
     args = observer.parse(argv, service_traffic_mix.SCENARIO_NAME)
 

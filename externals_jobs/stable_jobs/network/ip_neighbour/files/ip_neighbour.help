@@ -1,0 +1,19 @@
+=== Job description ===
+
+This job launches the ip neighbour tool which allows to add, change, replace or delete entries in the ARP tables. 
+
+=== Example ===
+
+Add a new entry in the ARP table: device "eth0" will associate link address "192.168.10.100" to the MAC address "fa:16:3e:0d:a2:f0"
+
+In the web interface, set parameters as follows:
+  * **operation** = add
+  * **device** = eth0
+  * **destination_ip** = 192.168.10.100
+  * **mac_address** = fa:16:3e:0d:a2:f0
+
+Or launch the job manually from CLI on the agent as follows:
+<code>
+JOB_NAME=ip_neighbour sudo -E python3 /opt/openbach/agent/jobs/ip_neighbour/ip_neighbour.py add eth0 192.168.10.100 fa:16:3e:0d:a2:f0
+</code>
+

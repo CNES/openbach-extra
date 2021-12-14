@@ -1,0 +1,115 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016-2020 CNES
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+---
+
+general:
+  name: outoforder_detect
+  description: >
+      This Job sends identified UDP packets from a Client to a Server in order to
+      check if the link introduces packets deordering and/or packets duplication.
+      The analysis is performed in one direction only (from Client to Server).
+  job_version: '1.0'
+  keywords:
+    - order
+    - duplicate
+  persistent: yes
+  need_privileges: no
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/outoforder_detect/outoforder_detect.py'
+    command_stop:
+
+arguments:
+  required:
+  optional:
+    - name: server_port
+      type: int
+      count: 1
+      flag: '-p'
+      description: Set server port to listen on/connect to (default 61234).
+    - name: signal_port
+      type: int
+      count: 1
+      flag: '-s'
+      description: Set signalisation port to manage connection between Client and Server (default 61235).
+  subcommand:
+    - group_name: mode
+      optional: no
+      choices:
+        - name: server
+          required:
+          optional:
+            - name: exit
+              type: None
+              count: 0
+              flag: '-e'
+              description: Exit upon completion of one connection.
+            - name: address
+              type: ip
+              count: 1
+              flag: '-a'
+              description: The address to bind the server (default 0.0.0.0)
+        - name: client
+          required:
+            - name: server_ip
+              type: ip
+              count: 1
+              flag: '-c'
+              description: The IP address of the server.
+          optional:
+            - name: duration
+              type: float
+              count: 1
+              flag: '-d'
+              description: The duration of the transmission in seconds (default 5).
+            - name: transmitted_packets
+              type: str
+              count: 1
+              flag: '-n'
+              description: >
+                  The number of packets to transmit. It has same priority as
+                  duration parameter. You can use [K/M/G]: set 100K to send 100.000 packets.
+                              
+
+statistics:
+    - name: "total_packets_received"
+      description: The amount of packets received by the server (server side)
+      frequency: 'every client-server connection'
+    - name: "out_of_order_packets"
+      description: The amount of out of order packets received by the server (server side)
+      frequency: 'every client-server connection'
+    - name: "out_of_order_ratio"
+      description: The ratio of out of order packets received by the server (server side)
+      frequency: 'every client-server connection'
+    - name: "duplicated_packets"
+      description: The amount of duplicated packets received by the server (server side)
+      frequency: 'every client-server connection'
+    - name: "duplicated_ratio"
+      description: The ratio of duplicated packets received by the server (server side)
+      frequency: 'every client-server connection'

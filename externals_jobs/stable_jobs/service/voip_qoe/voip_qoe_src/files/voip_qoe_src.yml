@@ -121,19 +121,19 @@ statistics:
           Instantaneous Mean Opinion Score (MOS) of the current VoIP session.
           The MOS is a float value between 0 and 5.
       frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'
-    - name: bitrate
+    - name: bitrate (Kbits/s)
       description: >
           Instantaneous bitrate (in Kbits/s) of the current VoIP session.
       frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'
-    - name: delay
+    - name: delay (ms)
       description: >
           Instantaneous one-way delay (in ms) of the current VoIP session.
       frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'
-    - name: jitter
+    - name: jitter (ms)
       description: >
           Instantaneous jitter (in ms) of the current VoIP session.
       frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'
-    - name: packet_loss
+    - name: packet_loss (%)
       description: >
           Instantaneous packet loss ration (in %) of the current VoIP session.
           To compute this metric, we rely on the theoretical packet rate specific to each codec.

@@ -124,8 +124,9 @@ def send_stats(line, last_sent, current_node, collect_agent, interval_stats):
             statistics['pie_prob'] = convert(line[ind+1])
             ind = line.index('delay')
             statistics['pie_current_delay'] = convert(line[ind+1][:-1])
-            ind = line.index('avg_dq_rate')
-            statistics['pie_avg_dq_rate'] = convert(line[ind+1])
+            if "avg_dq_rate" in line:
+                ind = line.index('avg_dq_rate')
+                statistics['pie_avg_dq_rate'] = convert(line[ind+1])
             ind = line.index('pkts_in')
             statistics['pie_pkts_in'] = convert(line[ind+1])
             ind = line.index('dropped')
@@ -194,3 +195,4 @@ if __name__ == "__main__":
         qdisc_nodes = args.qdisc_nodes
         interval_stats = args.interval_stats
         main(interface, qdisc_nodes, interval_stats)
+

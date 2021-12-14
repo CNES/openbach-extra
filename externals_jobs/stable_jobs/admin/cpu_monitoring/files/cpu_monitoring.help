@@ -1,0 +1,15 @@
+=== Job description ===
+
+This job allows to deploy measure CPU, RAM and Swap usage over time.
+
+=== Example ===
+
+Measure the statistics every 2 seconds.
+
+In the web interface, set parameters as follows:
+  * **sampling_interval** = 2
+                
+Or launch the job manually from CLI on the agent as follows:
+<code>
+JOB_NAME=cpu_monitoring python3 /opt/openbach/agent/jobs/cpu_monitoring/cpu_monitoring.py -i 2
+</code>

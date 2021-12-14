@@ -1,6 +1,10 @@
 === Job description ===
 
-This job runs a client or a server QUIC. Supported QUIC implementations are ngtcp2, picoquic, quicly. In server mode, resources are served from /var/www/quic.openbach.com. Some resources are deployed there when installing the job. You can add more resources if needed.
+This job runs a client or a server QUIC. 
+Supported QUIC implementations are ngtcp2, picoquic, quicly. 
+In server mode, resources are served from /var/www/quic.openbach.com. 
+Some resources are deployed there when installing the job (e.g. '500K_file.txt' or '1M_file.txt'). 
+You can add more resources if needed.
 
 === Examples ===
 
@@ -19,7 +23,7 @@ From the web interface of the controller, in an existing project, create an scen
     * **server_port** = 4433
     * **mode** = client
     * ** server_ip** = 192.168.1.1
-    * **resources** = logo.jpg,index.htlm
+    * **resources** = logo.jpg,index.html
     * **nb_run** = 10
 
 Or launch the job manually from the CLI of the Agent as follows: 
@@ -31,7 +35,7 @@ JOB_NAME=quic sudo -E python3 /opt/openbach/agent/jobs/quic/quic.py ngtcp2 -p 44
 
 From client agent:
 <code>
-JOB_NAME=quic sudo -E python3 /opt/openbach/agent/jobs/quic/quic.py picoquuic -p 4433 client  192.168.1.1  logo.jpg;index.html -n 10
+JOB_NAME=quic sudo -E python3 /opt/openbach/agent/jobs/quic/quic.py picoquic -p 4433 client  192.168.1.1  logo.jpg;index.html -n 10
 </code>
 
 === Additional Information ===

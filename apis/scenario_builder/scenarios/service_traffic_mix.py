@@ -52,7 +52,7 @@ It can then, optionally,  post-processes the generated data by plotting time-ser
 
 _Arguments = namedtuple('Arguments', ('id', 'traffic', 'source', 'destination', 'duration', 'wait_launched', 'wait_finished', 'wait_delay', 'source_ip', 'destination_ip'))
 VoipArguments = namedtuple('VoipArguments', _Arguments._fields + ('port', 'codec', 'synchro_offset', 'synchro_timeout'))
-WebBrowsingArguments = namedtuple('WebBrowsingArguments', _Arguments._fields + ('run_count', 'parallel_runs'))
+WebBrowsingArguments = namedtuple('WebBrowsingArguments', _Arguments._fields + ('run_count', 'parallel_runs', 'urls'))
 DashArguments = namedtuple('DashArguments', _Arguments._fields + ('protocol', 'tornado_port'))
 DataTransferArguments = namedtuple('DataTransferArguments', _Arguments._fields + ('port', 'size', 'tos', 'mtu'))
 
@@ -127,7 +127,7 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
             scenario_name = '{}_{}'.format(service_web_browsing.SCENARIO_NAME, args.id)
             scenario = service_web_browsing.build(
                     args.source, args.destination, args.duration,
-                    args.run_count, args.parallel_runs,
+                    args.run_count, args.parallel_runs, urls=args.urls,
                     post_processing_entity=post_processing_entity,
                     scenario_name=scenario_name)
         elif args.traffic == "voip":

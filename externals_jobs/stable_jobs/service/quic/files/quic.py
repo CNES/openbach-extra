@@ -71,6 +71,16 @@ class Implementations(Enum):
     PICOQUIC='picoquic'
     QUICLY='quicly'
 
+
+class DownloadError(RuntimeError):
+    def __init__(self, resource, p):
+        self.message = (
+                "Error downloading resource '{}'."
+                "\n {} \n {}".format(resource, p.stdout.decode(), p.stderr.decode())
+                )
+        super().__init__(self.message)
+
+
 @contextlib.contextmanager
 def use_configuration(filepath):
     success = collect_agent.register_collect(filepath)
@@ -90,6 +100,7 @@ def use_configuration(filepath):
             collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
         raise
 
+
 def now():
     return int(time.time() * 1000)
 
@@ -97,7 +108,7 @@ def now():
 def run_command(cmd, cwd=None):
     "Run cmd and wait for command to complete then return a CompletedProcessess instance"
     try:
-      p = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, cwd=cwd, check=False)
+        p = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, cwd=cwd, check=False)
     except Exception as ex:
         message = "Error running command '{}': '{}'".format(' '.join(cmd), ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
@@ -120,94 +131,110 @@ def remove_resources(resources, download_dir):
            os.remove(r_path)
 
 
-def check_resources(resources, donwload_dir, p, exit_ok=True):
+def check_resources(resources, download_dir, p):
     "Check if resources have been successfully downloaded"
-    status = True
+    downloaded_bytes = 0
     for r in resources.split(','):
-        r_path = os.path.join(donwload_dir, r)
-        if os.path.exists(r_path) and os.path.getsize(r_path) > 0:
-           continue
+        r_path = os.path.join(download_dir, r)
+        if not os.path.exists(r_path) or os.path.getsize(r_path) <= 0:
+            raise DownloadError(r, p)
         else:
-           message = ("Error downloading resources. Resource '{}' may be does'nt exist on server or server unreachable. \n {} \n {}"
-                      .format(r, p.stdout.decode(), p.stderr.decode()))
-           collect_agent.send_log(syslog.LOG_ERR, message)
-           print(message)
-           if exit_ok:
-              sys.exit(message)
-           status = False
-    return status 
-  
+            downloaded_bytes += os.path.getsize(r_path)
+
+    return downloaded_bytes
 
 
-def build_cmd(implementation, mode, server_port, log_file, server_ip=None, resources=None, download_dir=None, extra_args=None):
+def build_cmd(implementation, mode, server_port, store_logs, log_file, server_ip=None, resources=None, download_dir=None, extra_args=None):
     cmd = []
     _, server_port = _command_build_helper(None, server_port)
     if implementation == Implementations.NGTCP2.value:
-       if mode == 'client':
-          _, server_ip = _command_build_helper(None, server_ip)
-          cmd.extend(['ngtcp2_client', server_ip, server_port])
-          cmd.extend(['https://{}:{}/{}'.format(server_ip, server_port, res) for res in resources])
-          cmd.extend(_command_build_helper('--download', download_dir))
-          cmd.extend(['--exit-on-all-streams-close'])
-          cmd.extend(_command_build_helper('--qlog-file', log_file))
-          if extra_args: cmd.extend(shlex.split(extra_args))
-       if mode == 'server':
-          cmd.extend(['ngtcp2_server', '0.0.0.0', server_port])
-          cmd.extend([KEY, CERT])
-          cmd.extend(_command_build_helper('-d', HTDOCS))
-          cmd.extend(_command_build_helper('--qlog-dir', os.path.split(log_file)[0]))
-          if extra_args: cmd.extend(shlex.split(extra_args))
+        if mode == 'client':
+            _, server_ip = _command_build_helper(None, server_ip)
+            cmd.extend(['ngtcp2_client', server_ip, server_port])
+            cmd.extend(['https://{}:{}/{}'.format(server_ip, server_port, res) for res in resources])
+            cmd.extend(_command_build_helper('--download', download_dir))
+            cmd.extend(['--exit-on-all-streams-close'])
+            if store_logs: cmd.extend(_command_build_helper('--qlog-file', log_file))
+            if extra_args: cmd.extend(shlex.split(extra_args))
+        if mode == 'server':
+            cmd.extend(['ngtcp2_server', '0.0.0.0', server_port])
+            cmd.extend([KEY, CERT])
+            cmd.extend(_command_build_helper('-d', HTDOCS))
+            if store_logs: cmd.extend(_command_build_helper('--qlog-dir', os.path.split(log_file)[0]))
+            if extra_args: cmd.extend(shlex.split(extra_args))
+        cmd.extend(['-q'])
     if implementation == Implementations.PICOQUIC.value:
-       cmd.extend(['picoquic'])
-       if mode == 'client':
-          _, server_ip = _command_build_helper(None, server_ip)
-          cmd.extend(_command_build_helper('-o', download_dir))
-          cmd.extend(_command_build_helper('-l', log_file))
-          if extra_args: cmd.extend(shlex.split(extra_args))
-          cmd.extend([server_ip, server_port])
-          cmd.extend([';'.join(['/{}'.format(res) for res in resources])])
-       if mode == 'server':
-          cmd.extend(_command_build_helper('-c', CERT))
-          cmd.extend(_command_build_helper('-k', KEY))
-          cmd.extend(_command_build_helper('-w', HTDOCS))
-          cmd.extend(_command_build_helper('-l', log_file))
-          cmd.extend(_command_build_helper('-p', server_port))
-          if extra_args: cmd.extend(shlex.split(extra_args))
+        cmd.extend(['picoquic'])
+        if mode == 'client':
+            _, server_ip = _command_build_helper(None, server_ip)
+            cmd.extend(_command_build_helper('-o', download_dir))
+            if store_logs: cmd.extend(_command_build_helper('-l', log_file))
+            if extra_args: cmd.extend(shlex.split(extra_args))
+            cmd.extend([server_ip, server_port])
+            cmd.extend([';'.join(['/{}'.format(res) for res in resources])])
+        if mode == 'server':
+            cmd.extend(_command_build_helper('-c', CERT))
+            cmd.extend(_command_build_helper('-k', KEY))
+            cmd.extend(_command_build_helper('-w', HTDOCS))
+            if store_logs: cmd.extend(_command_build_helper('-l', log_file))
+            cmd.extend(_command_build_helper('-p', server_port))
+            if extra_args: cmd.extend(shlex.split(extra_args))
     if implementation == Implementations.QUICLY.value:
-       cmd.extend(['quicly'])
-       if mode == 'client':
-          _, server_ip = _command_build_helper(None, server_ip)
-          _, server_port = _command_build_helper(None, server_port)
-          cmd.extend(_command_build_helper('-e', log_file))
-          cmd.extend(['-p /{}'.format(res) for res in resources])
-          if extra_args: cmd.extend(shlex.split(extra_args))
-          cmd.extend([server_ip, server_port])
-       if mode == 'server':
-          cmd.extend(_command_build_helper('-c', CERT))
-          cmd.extend(_command_build_helper('-k', KEY))
-          cmd.extend(_command_build_helper('-e', log_file))
-          if extra_args: cmd.extend(shlex.split(extra_args))
-          cmd.extend(['0.0.0.0', server_port])
+        cmd.extend(['quicly'])
+        if mode == 'client':
+            _, server_ip = _command_build_helper(None, server_ip)
+            _, server_port = _command_build_helper(None, server_port)
+            if store_logs: cmd.extend(_command_build_helper('-e', log_file))
+            cmd.extend(['-p /{}'.format(res) for res in resources])
+            if extra_args: cmd.extend(shlex.split(extra_args))
+            cmd.extend([server_ip, server_port])
+        if mode == 'server':
+            cmd.extend(_command_build_helper('-c', CERT))
+            cmd.extend(_command_build_helper('-k', KEY))
+            if store_logs: cmd.extend(_command_build_helper('-e', log_file))
+            if extra_args: cmd.extend(shlex.split(extra_args))
+            cmd.extend(['0.0.0.0', server_port])
     return cmd          
 
 
-def client(implementation, server_port, log_dir, extra_args, server_ip, resources, download_dir, nb_runs):
+def client(implementation, server_port, store_logs, log_dir, extra_args, server_ip, resources, download_dir, nb_runs):
+    errors = []
     for run_number in range(nb_runs):
-        with open(os.path.join(log_dir, 'log_client_{}.txt'.format(str(run_number+1))), 'w+') as log_file:
-             cmd = build_cmd(implementation, 'client', server_port, log_file.name, server_ip, [r for r in resources.split(',')], 
-                             download_dir, extra_args=extra_args)
-             remove_resources(resources, download_dir) 
-             start_time = now()
-             p = run_command(cmd, cwd=download_dir)
-             end_time = now()
-             elapsed_time = end_time - start_time
-             status = check_resources(resources, download_dir, p, exit_ok=True)
-             if status: collect_agent.send_stat(now(), **{'download_time':elapsed_time})
+        with open(os.path.join(log_dir, 'log_client_{}.txt'.format(run_number + 1)), 'w+') as log_file:
+            cmd = build_cmd(
+                    implementation,
+                    'client',
+                    server_port,
+                    store_logs,
+                    log_file.name,
+                    server_ip,
+                    resources.split(','),
+                    download_dir,
+                    extra_args=extra_args)
+            remove_resources(resources, download_dir) 
+            start_time = now()
+            p = run_command(cmd, cwd=download_dir)
+            end_time = now()
+        elapsed_time = end_time - start_time
+        try:
+            downloaded_bytes = check_resources(resources, download_dir, p)
+        except DownloadError as error:
+            errors.append((run_number + 1, error.message))
+        else:
+            collect_agent.send_stat(
+                    now(),
+                    download_time=elapsed_time,
+                    downloaded_bytes=downloaded_bytes)
+
+    if errors:
+        message = '\n'.join('Error on run #{}: {}'.format(run, error) for run, error in errors)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
 
        
-def server(implementation, server_port, log_dir, extra_args):
+def server(implementation, server_port, store_logs, log_dir, extra_args):
     with open(os.path.join(log_dir, 'log_server.txt'), 'w+') as log_file:
-         cmd = build_cmd(implementation, 'server', server_port, log_file.name, extra_args=extra_args)
+         cmd = build_cmd(implementation, 'server', server_port, store_logs, log_file.name, extra_args=extra_args)
          p = run_command(cmd, cwd=HTDOCS)
 
 
@@ -254,6 +281,10 @@ if __name__ == "__main__":
                    '-p', '--server-port', type=int, default=SERVER_PORT,
                    help='The server port to connect to/listen on' 
         )
+        parser.add_argument(
+                   '-s', '--store-logs', action='store_true',
+                   help='Enable this option to store logs in the "log-dir" directory'
+        ) 
         parser.add_argument(
                    '-l', '--log-dir', type=writable_dir, default=LOG_DIR,
                    help='The Path to the directory to save log files'
@@ -304,6 +335,4 @@ if __name__ == "__main__":
         args = vars(parser.parse_args())
         main = args.pop('function')
         main(**args)
-
-
 
