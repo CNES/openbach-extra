@@ -56,6 +56,7 @@ def build(
     #Create top network_global scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
+    """
     # Add Delay metrology scenario in sequential mode.
     simultaneous=False
     scenario_network_delay = network_delay.build(
@@ -93,21 +94,23 @@ def build(
             wait_finished=[start_network_one_way_delay],
             wait_delay=2)
     start_network_jitter.configure(scenario_network_jitter)
+    """
 
     # Add forward Rate metrology sub scenario
     scenario_network_rate_forward = network_rate.build(
-            server_entity, client_entity, server_ip, server_port, command_port,
+            client_entity, server_entity, client_ip, client_port, command_port,
             duration, rate_limit, num_flows, tos, mtu, post_processing_entity,
             scenario_name='network_rate_forward')
     start_network_rate_forward = scenario.add_function(
             'start_scenario_instance',
-            wait_finished=[start_network_jitter],
+            #wait_finished=[start_network_jitter],
+            wait_finished=[],
             wait_delay=2)
     start_network_rate_forward.configure(scenario_network_rate_forward)
 
     # Add return Rate metrology sub scenario
     scenario_network_rate_return = network_rate.build(
-            client_entity, server_entity, client_ip, client_port, command_port,
+            server_entity, client_entity, server_ip, server_port, command_port,
             duration, rate_limit, num_flows, tos, mtu, post_processing_entity,
             scenario_name='network_rate_return')
     start_network_rate_return = scenario.add_function(
@@ -116,6 +119,7 @@ def build(
             wait_delay=2)
     start_network_rate_return.configure(scenario_network_rate_return)
 
+    """
     if loss_measurement:
         # Add forward Packet Loss Rate metrology sub scenario
         scenario_network_packet_loss_forward = network_packet_loss.build(
@@ -140,5 +144,6 @@ def build(
                 wait_finished=[start_network_packet_loss_forward],
                 wait_delay=2)
         start_network_packet_loss_return.configure(scenario_network_packet_loss_return)
+    """
 
     return scenario

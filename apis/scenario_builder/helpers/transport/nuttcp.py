@@ -57,6 +57,7 @@ def nuttcp_rate_udp(
                 'port': port,
                 'duration': duration,
                 'rate_limit': rate_limit,
+                'receiver': True,
                 'udp': {},
             })
 
@@ -93,7 +94,7 @@ def nuttcp_rate_tcp(
                 'port': port,
                 'dscp':'{0}'.format(tos),
                 'n_streams': num_flows,
-                'receiver': False,
+                'receiver': True,
                 'duration': duration,
                 'tcp': {'mss':'{0}'.format(mtu)},
             })

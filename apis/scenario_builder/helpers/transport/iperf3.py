@@ -42,6 +42,7 @@ def iperf3_rate_tcp(
             'iperf3', server_entity,
             offset=0,
             num_flows=num_flows,
+            reverse=True,
             port=port,
             metrics_interval=1.0,
             server={
@@ -57,6 +58,7 @@ def iperf3_rate_tcp(
             'iperf3', client_entity,
             offset=0,
             num_flows=num_flows,
+            reverse=True,
             port=port,
             client={
                 'server_ip': server_ip,
@@ -81,6 +83,7 @@ def iperf3_rate_udp(
             'iperf3', server_entity,
             offset=0,
             num_flows=num_flows,
+            reverse=True,
             port=port,
             metrics_interval=1.0,
             server={
@@ -96,6 +99,7 @@ def iperf3_rate_udp(
             'iperf3', client_entity,
             offset=0,
             num_flows=num_flows,
+            reverse=True,
             port=port,
             client={
                 'server_ip': server_ip,
@@ -120,6 +124,7 @@ def iperf3_send_file_tcp(
             'iperf3', server_entity,
             offset=0,
             port=port,
+            reverse=True,
             server={
                 'exit': True,
                 'bind': server_ip,
@@ -133,6 +138,7 @@ def iperf3_send_file_tcp(
             'iperf3', client_entity,
             offset=0,
             port=port,
+            reverse=True,
             client={
                 'server_ip': server_ip,
                 'transmitted_size': transmitted_size,
@@ -144,7 +150,7 @@ def iperf3_send_file_tcp(
 
 
 def iperf3_server(
-        scenario, server_entity, server_ip, port, exit=True,
+        scenario, server_entity, server_ip, port, reverse=False, exit=True,
         wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
             'start_job_instance',
@@ -155,6 +161,7 @@ def iperf3_server(
             'iperf3', server_entity,
             offset=0,
             port=port,
+            reverse=reverse,
             server={
                 'exit': exit,
                 'bind': server_ip,
@@ -164,7 +171,7 @@ def iperf3_server(
 
 def iperf3_client(
         scenario, client_entity, server_ip, port,
-        duration=None, num_flows=None, tos=None,
+        duration=None, num_flows=None, reverse=False, tos=None,
         transmitted_size=None, tcp_mtu=None, udp_bandwidth=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     client = scenario.add_function(
@@ -192,6 +199,7 @@ def iperf3_client(
     }
     if num_flows is not None:
         parameters['num_flows'] = num_flows
+    parameters['reverse'] = reverse
 
     client.configure('iperf3', client_entity, offset=0, **parameters)
     return [client]
