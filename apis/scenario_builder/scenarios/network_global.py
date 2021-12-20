@@ -56,7 +56,6 @@ def build(
     #Create top network_global scenario
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
 
-    """
     # Add Delay metrology scenario in sequential mode.
     simultaneous=False
     scenario_network_delay = network_delay.build(
@@ -94,7 +93,6 @@ def build(
             wait_finished=[start_network_one_way_delay],
             wait_delay=2)
     start_network_jitter.configure(scenario_network_jitter)
-    """
 
     # Add forward Rate metrology sub scenario
     scenario_network_rate_forward = network_rate.build(
@@ -119,7 +117,6 @@ def build(
             wait_delay=2)
     start_network_rate_return.configure(scenario_network_rate_return)
 
-    """
     if loss_measurement:
         # Add forward Packet Loss Rate metrology sub scenario
         scenario_network_packet_loss_forward = network_packet_loss.build(
@@ -144,6 +141,5 @@ def build(
                 wait_finished=[start_network_packet_loss_forward],
                 wait_delay=2)
         start_network_packet_loss_return.configure(scenario_network_packet_loss_return)
-    """
 
     return scenario

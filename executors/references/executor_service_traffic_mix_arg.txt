@@ -45,21 +45,19 @@
 
 # Example of trafic mix with data_transfer,dash, web_browsing and voip traffic:
 
-#--data-transfer 1 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 5201 10M 0 1500
-#--dash 2 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2 5301
-#--web-browsing 3 SRC ST1 60 None None 0 10.42.42.11 10.42.14.3 10 2 "https://www.google.com" "https://www.lemonde.fr"
+--data-transfer 1 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 5201 10M 0 1500
+--dash 2 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 http/2 5301
+--web-browsing 3 SRC ST1 60 None None 0 10.42.42.11 10.42.14.3 10 2 "https://www.google.com" "https://www.lemonde.fr"
 # Perform NTP synchro check on this VoIP, but not on the others since the check should still be valid
-#--voip 4 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 8011 G.711.1 75.0 120.0
+--voip 4 SRC ST1 60 None None 0 10.42.42.1 10.42.14.3 8011 G.711.1 75.0 120.0
 
-#--data-transfer 5 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 5201 10M 0 1500
-#--dash 6 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 http/2 5301
+--data-transfer 5 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 5201 10M 0 1500
+--dash 6 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 http/2 5301
 # This time, web-browsing loads "config.yaml" file
-#--web-browsing 7 SRC ST2 60 4 None 5 10.42.42.11 10.42.15.3 10 2
-#--voip 8 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 8012 G.711.1 None None
+--web-browsing 7 SRC ST2 60 4 None 5 10.42.42.11 10.42.15.3 10 2
+--voip 8 SRC ST2 60 4 None 5 10.42.42.1 10.42.15.3 8012 G.711.1 None None
 
-#--data-transfer 9 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 5201 0 0 1500
-#--dash 10 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 http/2 5301
-#--web-browsing 11 SRC ST3 60 8 None 5 10.42.42.11 10.42.16.3 10 2
-#--voip 12 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 8013 G.711.1 None None
-
---data-transfer 1 server client 60 None None 0 192.168.1.1 192.168.1.2 5201 10M 0 1500
+--data-transfer 9 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 5201 0 0 1500
+--dash 10 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 http/2 5301
+--web-browsing 11 SRC ST3 60 8 None 5 10.42.42.11 10.42.16.3 10 2
+--voip 12 SRC ST3 60 8 None 5 10.42.42.1 10.42.16.3 8013 G.711.1 None None

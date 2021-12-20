@@ -150,7 +150,7 @@ def iperf3_send_file_tcp(
 
 
 def iperf3_server(
-        scenario, server_entity, server_ip, port, reverse=False, exit=True,
+        scenario, server_entity, server_ip, port, reverse=True, exit=True,
         wait_finished=None, wait_launched=None, wait_delay=0):
     server = scenario.add_function(
             'start_job_instance',
@@ -171,7 +171,7 @@ def iperf3_server(
 
 def iperf3_client(
         scenario, client_entity, server_ip, port,
-        duration=None, num_flows=None, reverse=False, tos=None,
+        duration=None, num_flows=None, reverse=True, tos=None,
         transmitted_size=None, tcp_mtu=None, udp_bandwidth=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     client = scenario.add_function(
