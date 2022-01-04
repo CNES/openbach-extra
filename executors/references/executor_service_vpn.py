@@ -34,7 +34,7 @@ The platform running this scenario is supposed to have an architecture
 which looks likes the following :
 
 +-----------+                       +----------------------+     +--------------------+                       +-----------+
-|  Client   |                       |      Client PEP      |<--->|     Server PEP     |                       |  Server   |
+|  Client   |                       |      Client VPN      |<--->|     Server VPN     |                       |  Server   |
 |           |                       |   (client_entity*)   |     |  (server_entity*)  |                       |           |
 +-----------+                       +----------------------+     +--------------------+                       +-----------+
 |           |                       |                      |     |                    |                       |           |
