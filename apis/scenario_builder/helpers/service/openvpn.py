@@ -31,8 +31,8 @@ from ..utils import filter_none
 
 PROTOCOL = 'udp'
 PORT = 1194
-SERVER_TUN_IP = '10.8.0.1'
-CLIENT_TUN_IP = '10.8.0.2'
+SERVER_TUN_IP = '10.10.10.1'
+CLIENT_TUN_IP = '10.10.10.2'
 DEVICE = 'tun0'
 
 

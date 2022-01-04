@@ -29,7 +29,26 @@
 """This executor builds and launches the *service_vpn* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
 It permits to create a VPN between 2 agents with Wireguard or OpenVPN.
+
+The platform running this scenario is supposed to have an architecture
+which looks likes the following :
+
++-----------+                       +----------------------+     +--------------------+                       +-----------+
+|  Client   |                       |      Client PEP      |<--->|     Server PEP     |                       |  Server   |
+|           |                       |   (client_entity*)   |     |  (server_entity*)  |                       |           |
++-----------+                       +----------------------+     +--------------------+                       +-----------+
+|           |                       |                      |     |                    |                       |           |
+|           |<--(client_ext_ipv4)-->|       client_int_ipv4|<--->|server_int_ipv4     |<--(server_ext_ipv4)-->|           |
++-----------+                       +----------------------+     +--------------------+                       +-----------+
+
+* 'client' and 'server' stands for traffic generation and reception.
+
+The VPN tunnel will be created between the 'server_entity' and the
+'client_entity' based on the parameters 'server-tunnel-ipv4/port' and
+'client-tunnel-ipv4/port'.
+
 """
+
 from auditorium_scripts.scenario_observer import ScenarioObserver
 from scenario_builder.scenarios import service_vpn
 
@@ -43,11 +62,23 @@ def main(argv=None):
         '--client-entity', required=True,
         help='Name of the client entity')
     observer.add_scenario_argument(
-        '--server-ip', required=True,
+        '--server-ext-ipv4', required=True,
+        help="IPv4 network address (in CIDR format) of the server's LAN (aka external side).")
+    observer.add_scenario_argument(
+        '--client-ext-ipv4', required=True,
+        help="IPv4 network address (in CIDR format) of the client's LAN (aka external side).")
+    observer.add_scenario_argument(
+        '--server-int-ipv4', required=True,
         help='IP address of the server')
     observer.add_scenario_argument(
-        '--client-ip', required=False,
-        help='IP address of the client. Required for Wireguard')
+        '--client-int-ipv4', required=True,
+        help='IP address of the client')
+    observer.add_scenario_argument(
+        '--server-tun-ipv4', default=service_vpn.SERVER_TUN_IP_DEFAULT,
+        help='Tun IP address of the server for OpenVPN Tun IP/CIDR for Wireguard')
+    observer.add_scenario_argument(
+        '--client-tun-ipv4', default=service_vpn.CLIENT_TUN_IP_DEFAULT,
+        help='Tun IP address of the client for OpenVPN Tun IP/CIDR for Wireguard')
     observer.add_scenario_argument(
         '--server-tun-port', type=int, default=1194,
         help='Listening port of the server for the VPN tunnel')
@@ -55,31 +86,31 @@ def main(argv=None):
         '--client-tun-port', type=int, default=1194,
         help='Listening port of the client for the VPN tunnel')
     observer.add_scenario_argument(
-        '--server-tun-ip', default=service_vpn.SERVER_TUN_IP_DEFAULT,
-        help='Tun IP address of the server for OpenVPN Tun IP/CIDR for Wireguard')
-    observer.add_scenario_argument(
-        '--client-tun-ip', default=service_vpn.CLIENT_TUN_IP_DEFAULT,
-        help='Tun IP address of the client for OpenVPN Tun IP/CIDR for Wireguard')
-    observer.add_scenario_argument(
         '--vpn', choices=["wireguard", "openvpn"],
         default="openvpn", help='VPN to test')
     observer.add_scenario_argument(
         '--opvpn-protocol', choices=["udp", "tcp"],
         default="udp", help='OpenVPN protocol (ignored with Wireguard)')
+    observer.add_scenario_argument(
+        '--duration', type=int, default=0,
+        help='Duration of the VPN tunnel application, leave blank for endless running.')
 
     args = observer.parse(argv, service_vpn.SCENARIO_NAME)
 
     scenario = service_vpn.build(
         args.server_entity,
         args.client_entity,
-        args.server_ip,
-        args.client_ip,
+        args.server_ext_ipv4,
+        args.client_ext_ipv4,
+        args.server_int_ipv4,
+        args.client_int_ipv4,
+        args.server_tun_ipv4,
+        args.client_tun_ipv4,
         args.server_tun_port,
         args.client_tun_port,
-        args.server_tun_ip,
-        args.client_tun_ip,
         args.vpn,
         args.opvpn_protocol,
+        args.duration,
         scenario_name=args.scenario_name)
 
     observer.launch_and_wait(scenario)

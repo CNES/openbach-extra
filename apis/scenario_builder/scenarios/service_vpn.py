@@ -30,10 +30,11 @@ from scenario_builder import Scenario
 from scenario_builder.openbach_functions import StartJobInstance
 from scenario_builder.helpers.service.openvpn import openvpn
 from scenario_builder.helpers.service.wireguard import wireguard
+from scenario_builder.helpers.network.ip_route import ip_route
 
 
-SERVER_TUN_IP = "10.8.0.1"
-CLIENT_TUN_IP = "10.8.0.2"
+SERVER_TUN_IP = "10.10.10.1"
+CLIENT_TUN_IP = "10.10.10.2"
 DEFAULT_CIDR = "/24"
 
 SERVER_TUN_IP_DEFAULT = "{} if vpn is OpenVPN else {}".format(
@@ -47,46 +48,84 @@ This tunnel is created with {}.
 """
 
 
-def service_vpn_scenario_wireguard(server_entity, client_entity, server_ip, client_ip, server_tun_port, client_tun_port,
-                                   server_tun_ip, client_tun_ip, scenario_name=SCENARIO_NAME):
-    scenario = Scenario(
-        scenario_name, SCENARIO_DESCRIPTION.format("Wireguard"))
+def service_vpn_scenario_wireguard(server_entity, client_entity, server_ext_ipv4, client_ext_ipv4, server_int_ipv4, client_int_ipv4, server_tun_ipv4, client_tun_ipv4,
+                                 server_tun_port, client_tun_port, scenario_name=SCENARIO_NAME):
 
-    wireguard(scenario, server_entity, client_entity, server_ip, client_ip=client_ip, server_listen_port=server_tun_port, client_listen_port=client_tun_port,
-              server_tun_ip=server_tun_ip, client_tun_ip=client_tun_ip)
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format("Wireguard"))
+
+    scenario.add_constant('server_int_ipv4', server_int_ipv4)
+    scenario.add_constant('client_int_ipv4', client_int_ipv4)
+    scenario.add_constant('server_ext_ipv4', server_ext_ipv4)
+    scenario.add_constant('client_ext_ipv4', client_ext_ipv4)
+    scenario.add_constant('server_tun_ipv4', server_tun_ipv4)
+    scenario.add_constant('client_tun_ipv4', client_tun_ipv4)
+    scenario.add_constant('server_tun_port', server_tun_port)
+    scenario.add_constant('client_tun_port', client_tun_port)
+
+    wireguard(scenario, server_entity, client_entity, '$server_int_ipv4', client_ip='$client_int_ipv4', server_listen_port='$server_tun_port', client_listen_port='$client_tun_port',
+              server_tun_ip='$server_tun_ipv4', client_tun_ip='$client_tun_ipv4')
+
+    jobs = [f for f in scenario.openbach_functions if isinstance(f, StartJobInstance)]
+    server_route_v4 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv4', device='tun0', restore=True,
+        wait_launched=jobs, wait_delay=5)
+    client_route_v4 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv4', device='tun0', restore=True,
+        wait_launched=jobs, wait_delay=5)
 
     return scenario
 
 
-def service_vpn_scenario_openvpn(server_entity, client_entity, server_ip, client_ip, server_tun_port, client_tun_port,
-                                 server_tun_ip, client_tun_ip, opvpn_protocol, scenario_name=SCENARIO_NAME):
-    scenario = Scenario(
-        scenario_name, SCENARIO_DESCRIPTION.format("OpenVPN "+opvpn_protocol.upper()))
+def service_vpn_scenario_openvpn(server_entity, client_entity, server_ext_ipv4, client_ext_ipv4, server_int_ipv4, client_int_ipv4, server_tun_ipv4, client_tun_ipv4,
+                                 server_tun_port, client_tun_port, opvpn_protocol, scenario_name=SCENARIO_NAME):
 
-    openvpn(scenario, server_entity, server_ip,
-            client_entity, client_ip=client_ip, protocol=opvpn_protocol, server_port=server_tun_port, client_port=client_tun_port, server_tun_ip=server_tun_ip, client_tun_ip=client_tun_ip)
+    scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION.format("OpenVPN "+opvpn_protocol.upper()))
+
+    scenario.add_constant('server_int_ipv4', server_int_ipv4)
+    scenario.add_constant('client_int_ipv4', client_int_ipv4)
+    scenario.add_constant('server_ext_ipv4', server_ext_ipv4)
+    scenario.add_constant('client_ext_ipv4', client_ext_ipv4)
+    scenario.add_constant('server_tun_ipv4', server_tun_ipv4)
+    scenario.add_constant('client_tun_ipv4', client_tun_ipv4)
+    scenario.add_constant('server_tun_port', server_tun_port)
+    scenario.add_constant('client_tun_port', client_tun_port)
+    scenario.add_constant('opvpn_protocol', opvpn_protocol)
+
+    openvpn(scenario, server_entity, '$server_int_ipv4',
+            client_entity, client_ip='$client_int_ipv4', protocol='$opvpn_protocol', server_port='$server_tun_port', client_port='$client_tun_port',
+            server_tun_ip='$server_tun_ipv4', client_tun_ip='$client_tun_ipv4')
+
+    jobs = [f for f in scenario.openbach_functions if isinstance(f, StartJobInstance)]
+    server_route_v4 = ip_route(scenario, server_entity, 'replace', '$client_ext_ipv4', device='tun0', restore=True,
+        wait_launched=jobs, wait_delay=5)
+    client_route_v4 = ip_route(scenario, client_entity, 'replace', '$server_ext_ipv4', device='tun0', restore=True,
+        wait_launched=jobs, wait_delay=5)
 
     return scenario
 
 
-def build(server_entity, client_entity, server_ip, client_ip, server_tun_port, client_tun_port, server_tun_ip, client_tun_ip,
-          vpn, opvpn_protocol, scenario_name=SCENARIO_NAME):
+def build(server_entity, client_entity, server_ext_ipv4, client_ext_ipv4, server_int_ipv4, client_int_ipv4, server_tun_ipv4, client_tun_ipv4,
+          server_tun_port, client_tun_port, vpn, opvpn_protocol, duration=0, scenario_name=SCENARIO_NAME):
 
     scenario = None
 
     if vpn == "openvpn":
-        if server_tun_ip == SERVER_TUN_IP_DEFAULT:
-            server_tun_ip = SERVER_TUN_IP
-        if client_tun_ip == CLIENT_TUN_IP_DEFAULT:
-            client_tun_ip = CLIENT_TUN_IP
+        if server_tun_ipv4 == SERVER_TUN_IP_DEFAULT:
+            server_tun_ipv4 = SERVER_TUN_IP
+        if client_tun_ipv4 == CLIENT_TUN_IP_DEFAULT:
+            client_tun_ipv4 = CLIENT_TUN_IP
         scenario = service_vpn_scenario_openvpn(
-            server_entity, client_entity, server_ip, client_ip, server_tun_port, client_tun_port, server_tun_ip, client_tun_ip, opvpn_protocol, scenario_name=scenario_name)
+            server_entity, client_entity, server_ext_ipv4, client_ext_ipv4, server_int_ipv4, client_int_ipv4,
+            server_tun_ipv4, client_tun_ipv4, server_tun_port, client_tun_port, opvpn_protocol, scenario_name=scenario_name)
     else:
-        if server_tun_ip == SERVER_TUN_IP_DEFAULT:
-            server_tun_ip = SERVER_TUN_IP+DEFAULT_CIDR
-        if client_tun_ip == CLIENT_TUN_IP_DEFAULT:
-            client_tun_ip = CLIENT_TUN_IP+DEFAULT_CIDR
+        if server_tun_ipv4 == SERVER_TUN_IP_DEFAULT:
+            server_tun_ipv4 = SERVER_TUN_IP+DEFAULT_CIDR
+        if client_tun_ipv4 == CLIENT_TUN_IP_DEFAULT:
+            client_tun_ipv4 = CLIENT_TUN_IP+DEFAULT_CIDR
         scenario = service_vpn_scenario_wireguard(
-            server_entity, client_entity, server_ip,  client_ip, server_tun_port, client_tun_port, server_tun_ip, client_tun_ip, scenario_name=scenario_name)
+            server_entity, client_entity, server_ext_ipv4, client_ext_ipv4, server_int_ipv4, client_int_ipv4,
+            server_tun_ipv4, client_tun_ipv4, server_tun_port, client_tun_port, scenario_name=scenario_name)
+
+    if duration:
+        jobs = [f for f in scenario.openbach_functions if isinstance(f, StartJobInstance)]
+        scenario.add_function('stop_job_instance', wait_launched=jobs, wait_delay=duration).configure(*jobs)
 
     return scenario

@@ -31,8 +31,8 @@ from nacl.public import PrivateKey
 from base64 import b64encode, b64decode
 from ..utils import filter_none
 
-SERVER_TUN_IP = "10.8.0.1/24"
-CLIENT_TUN_IP = "10.8.0.2/24"
+SERVER_TUN_IP = "10.10.10.1/24"
+CLIENT_TUN_IP = "10.10.10.2/24"
 ALLOWED_IPS = "0.0.0.0/0"
 PORT = 8888
 
@@ -51,7 +51,7 @@ def public_key(private_key):
     return b64encode(bytes(private.public_key)).decode("ascii")
 
 
-def wireguard_create_interface(scenario, entity, tun_ip, private_key, tun_dev="wg0", listen_port=0, mtu=None,
+def wireguard_create_interface(scenario, entity, tun_ip, private_key, tun_dev="tun0", listen_port=0, mtu=None,
                                wait_finished=None, wait_launched=None, wait_delay=0):
 
     create_interface = scenario.add_function(
@@ -75,7 +75,7 @@ def wireguard_create_interface(scenario, entity, tun_ip, private_key, tun_dev="w
     return [create_interface]
 
 
-def wireguard_set_peer(scenario, entity, peer_pub_key, tun_dev="wg0", allowed_ips=None, endpoint=None, persistent_keepalive=None,
+def wireguard_set_peer(scenario, entity, peer_pub_key, tun_dev="tun0", allowed_ips=None, endpoint=None, persistent_keepalive=None,
                        wait_finished=None, wait_launched=None, wait_delay=0):
 
     add_peer = scenario.add_function(
@@ -99,7 +99,7 @@ def wireguard_set_peer(scenario, entity, peer_pub_key, tun_dev="wg0", allowed_ip
     return [add_peer]
 
 
-def wireguard_create_interface_and_set_peer(scenario, entity, tun_ip, private_key, peer_pub_key, tun_dev="wg0", listen_port=0,
+def wireguard_create_interface_and_set_peer(scenario, entity, tun_ip, private_key, peer_pub_key, tun_dev="tun0", listen_port=0,
                                             allowed_ips=None, endpoint=None, mtu=None, persistent_keepalive=None,
                                             wait_finished=None, wait_launched=None, wait_delay=0):
     """
@@ -119,7 +119,7 @@ def wireguard_create_interface_and_set_peer(scenario, entity, tun_ip, private_ke
 def wireguard(
         scenario, server_entity, client_entity, server_ip, client_ip=None,
         server_listen_port=PORT, client_listen_port=None,
-        server_tun_dev="wg0", client_tun_dev="wg0",
+        server_tun_dev="tun0", client_tun_dev="tun0",
         server_tun_ip=SERVER_TUN_IP, client_tun_ip=CLIENT_TUN_IP,
         server_key=generate_key(), client_key=generate_key(),
         server_allowed_ips=ALLOWED_IPS, client_allowed_ips=ALLOWED_IPS,
