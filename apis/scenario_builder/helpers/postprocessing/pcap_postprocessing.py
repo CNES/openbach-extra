@@ -31,7 +31,7 @@
 from ..utils import filter_none
 
 
-def pcap_postprocessing(
+def pcap_postprocessing_one_file(
         scenario, entity, capture_file, src_ip=None, dst_ip=None, 
         src_port=None, dst_port=None, proto=None, metrics_interval=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
@@ -48,7 +48,33 @@ def pcap_postprocessing(
             src_port=src_port,
             dst_port=dst_port,
             proto=proto,
-            metrics_interval=metrics_interval)
+            stats_one_file={
+                'metrics_interval': metrics_interval
+            })
+
+    f_start_analyze.configure(
+            'pcap_postprocessing', entity, **parameters)
+
+def pcap_postprocessing_gilbert_elliot(
+        scenario, entity, capture_file, second_capture_file,
+        src_ip=None, dst_ip=None, src_port=None, dst_port=None, proto=None,
+        wait_finished=None, wait_launched=None, wait_delay=0):
+    f_start_analyze = scenario.add_function(
+            'start_job_instance',
+            wait_finished=wait_finished,
+            wait_launched=wait_launched,
+            wait_delay=wait_delay)
+
+    parameters = filter_none(
+            capture_file=capture_file,
+            src_ip=src_ip,
+            dst_ip=dst_ip,
+            src_port=src_port,
+            dst_port=dst_port,
+            proto=proto,
+            gilbert_elliot={
+                'second_capture_file': second_capture_file
+            })
 
     f_start_analyze.configure(
             'pcap_postprocessing', entity, **parameters)

@@ -411,6 +411,47 @@ class PushFile(OpenBachFunction):
         return context
 
 
+class PullFile(OpenBachFunction):
+    """Representation of the pull_file openbach function."""
+
+    def __init__(self, launched, finished, delay, label):
+        super().__init__(launched, finished, delay, label)
+        self.arguments = None
+
+    def configure(self, entity_name, controller_path, agent_path, users=(), groups=()):
+        """Define this openbach function with the mandatory values:
+         - entity_name: name of the entity (hopefully with an agent
+                        installed on) that should receive the file;
+         - controller_path: path of the file to send, on the controller; can be a list;
+         - agent_path: path where to store the file on the agent; can be a list;
+        """
+        self.arguments = {
+                'entity_name': entity_name,
+                'local_path': controller_path,
+                'remote_path': agent_path,
+        }
+
+        if users:
+            self.arguments['users'] = users
+
+        if groups:
+            self.arguments['groups'] = groups
+
+    def build(self, functions, function_id):
+        """Construct a dictionary representing this function.
+
+        This dictionary is suitable to be included in the
+        `openbach_functions` array of the associated scenario.
+        """
+
+        if self.arguments is None:
+            raise ImproperlyConfiguredFunction('pull_file')
+
+        context = super().build(functions, function_id)
+        context['pull_file'] = self.arguments.copy()
+        return context
+
+
 def safe_indexor(reference, lookup):
     """Generate the index of each element of `lookup` in the
     `reference` array.
