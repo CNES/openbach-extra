@@ -9,7 +9,6 @@ In the OpenBACH controller web interface, create a scenario and add two start_jo
     * **local_ip** = 192.168.42.1
     * **mode** = server
   * For entity ST:
-    * **local_ip** = 192.168.1.1
     * **mode** = client
     * **server_ip** = 192.168.42.1
 
@@ -17,10 +16,10 @@ Or launch the job manually
 
 From the GW Agent:
 <code>
-JOB_NAME=openvpn sudo -E python3 /opt/openbach/agent/jobs/openvpn/openvpn.py 192.168.42.1 server
+JOB_NAME=openvpn sudo -E python3 /opt/openbach/agent/jobs/openvpn/openvpn.py --local-ip 192.168.42.1 server
 </code>
 
 From the ST Agent:
 <code>
-JOB_NAME=openvpn sudo -E python3 /opt/openbach/agent/jobs/openvpn/openvpn.py 192.168.1.1 client 192.168.42.1
+JOB_NAME=openvpn sudo -E python3 /opt/openbach/agent/jobs/openvpn/openvpn.py client 192.168.42.1
 </code>
