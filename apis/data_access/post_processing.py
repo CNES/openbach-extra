@@ -191,13 +191,6 @@ class Statistics(InfluxDBCommunicator):
                 section.columns = pd.MultiIndex.from_tuples([index + (name,) for name in section.columns], names=names)
                 yield section
 
-    def fetch_file(
-            self, job=None, scenario=None, agent=None, job_instances=(),
-            suffix=None, fields=None, condition=None):
-        query = self._raw_influx_query(job, scenario, agent, job_instances, suffix, fields, condition)
-        data = self.sql_query(query)
-        yield data
-
     def fetch(
             self, job=None, scenario=None, agent=None, job_instances=(),
             suffix=None, fields=None, condition=None):

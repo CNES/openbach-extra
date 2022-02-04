@@ -78,7 +78,7 @@ def gilbert_elliot(server_entity, client_entity, server_interface, client_interf
             wait_finished=tcpdump_jobs, wait_launched=None, wait_delay=5)
 
     push = push_file(scenario, server_entity, ["/tmp/tcpdump_ge_client.pcap"], controller_path=["tcpdump_ge_client.pcap"],
-            wait_finished=tcpdump_jobs, wait_launched=None, wait_delay=35)
+            removes=[True], wait_finished=tcpdump_jobs, wait_launched=None, wait_delay=35)
 
     pcap_postprocessing_gilbert_elliot(scenario, server_entity, "/tmp/tcpdump_ge_server.pcap", "/tmp/tcpdump_ge_client.pcap",
             proto="udp", wait_finished=tcpdump_jobs, wait_delay=65)

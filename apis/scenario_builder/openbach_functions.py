@@ -377,7 +377,7 @@ class PushFile(OpenBachFunction):
         super().__init__(launched, finished, delay, label)
         self.arguments = None
 
-    def configure(self, entity_name, controller_path, agent_path, users=(), groups=()):
+    def configure(self, entity_name, controller_path, agent_path, users=(), groups=(), removes=()):
         """Define this openbach function with the mandatory values:
          - entity_name: name of the entity (hopefully with an agent
                         installed on) that should receive the file;
@@ -395,6 +395,9 @@ class PushFile(OpenBachFunction):
 
         if groups:
             self.arguments['groups'] = groups
+
+        if removes:
+            self.arguments['removes'] = removes
 
     def build(self, functions, function_id):
         """Construct a dictionary representing this function.
@@ -418,7 +421,7 @@ class PullFile(OpenBachFunction):
         super().__init__(launched, finished, delay, label)
         self.arguments = None
 
-    def configure(self, entity_name, controller_path, agent_path, users=(), groups=()):
+    def configure(self, entity_name, controller_path, agent_path, users=(), groups=(), removes=()):
         """Define this openbach function with the mandatory values:
          - entity_name: name of the entity (hopefully with an agent
                         installed on) that should receive the file;
@@ -436,6 +439,9 @@ class PullFile(OpenBachFunction):
 
         if groups:
             self.arguments['groups'] = groups
+
+        if removes:
+            self.arguments['removes'] = removes
 
     def build(self, functions, function_id):
         """Construct a dictionary representing this function.
