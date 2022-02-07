@@ -51,7 +51,7 @@ def main(argv=None):
             '--client-interface', required=True,
             help='IP address of the traffic sender')
     observer.add_scenario_argument(
-            '--duration', type=int, default=10,
+            '--duration', type=int, default=300,
             help='Duration of the capture (seconds)')
 
     args = observer.parse(argv, network_gilbert_elliot.SCENARIO_NAME)

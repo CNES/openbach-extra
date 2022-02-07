@@ -63,7 +63,7 @@ def gilbert_elliot(server_entity, client_entity, server_interface, client_interf
 
     # TODO not en dur
     iperf3 = iperf3_rate_udp(scenario, client_entity, server_entity,
-        "192.168.1.1", 5201, 1, "$duration", 0, "10M",
+        "192.168.1.1", 5201, 1, "$duration", 0, "100k", 25,
         wait_launched=tcpdump_jobs, wait_delay=2)
 
     stopper = scenario.add_function(
