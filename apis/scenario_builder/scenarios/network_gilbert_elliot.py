@@ -39,18 +39,19 @@ from scenario_builder.helpers.transport.iperf3 import iperf3_rate_udp
 
 SCENARIO_NAME = 'network_gilbert_elliot'
 SCENARIO_DESCRIPTION = """This scenario allow to compute Gilbert Elliot parameters.
+It launches iperf3 UDP traffic and computes p and r parameters depending on the loss pattern measured.
 """
-# TODO update description
 
-# TODO add src_ip, dst_ip, src_port, dst_port, proto
-
-# TODO command PYTHONPATH=/home/bastien/Documents/OpenBACH/openbach-extra/apis/ python3 executor_network_gilbert_elliot.py --server-entity server --client-entity client --server-interface ens4 --client-interface ens4 --post-processing-entity server tests_iperf3 run
-
-
-def gilbert_elliot(server_entity, client_entity, server_interface, client_interface, duration, scenario_name=SCENARIO_NAME):
+def gilbert_elliot(server_entity, client_entity, server_ip, client_ip, server_interface, client_interface,
+                   server_port, udp_bandwidth, packet_size, duration, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
+    scenario.add_constant("server_ip", server_ip)
+    scenario.add_constant("client_ip", client_ip)
     scenario.add_constant("server_interface", server_interface)
     scenario.add_constant("client_interface", client_interface)
+    scenario.add_constant("server_port", server_port)
+    scenario.add_constant("udp_bandwidth", udp_bandwidth)
+    scenario.add_constant("packet_size", packet_size)
     scenario.add_constant("duration", duration)
 
     tcpdump_jobs = []
@@ -61,9 +62,8 @@ def gilbert_elliot(server_entity, client_entity, server_interface, client_interf
       scenario, client_entity, "/tmp/tcpdump_ge_client.pcap", interface="$client_interface",
       wait_finished=None, wait_launched=None, wait_delay=0)
 
-    # TODO not en dur
     iperf3 = iperf3_rate_udp(scenario, client_entity, server_entity,
-        "192.168.1.1", 5201, 1, "$duration", 0, "100k", 25,
+        "$server_ip", "$server_port", 1, "$duration", 0, "$udp_bandwidth", "$packet_size",
         wait_launched=tcpdump_jobs, wait_delay=2)
 
     stopper = scenario.add_function(
@@ -72,50 +72,28 @@ def gilbert_elliot(server_entity, client_entity, server_interface, client_interf
             wait_delay=5)
     stopper.configure(*tcpdump_jobs)
 
-    post_process = list(scenario.extract_function_id('tcpdump_pcap'))
+    scenario_pull = Scenario("pull_file_scenario", "Sub-scenario used to pull file in Gilbert Elliot scenario")
+    start_scenario_pull = scenario.add_function('start_scenario_instance', wait_finished=tcpdump_jobs, wait_launched=None, wait_delay=5)
+    start_scenario_pull.configure(scenario_pull)
+    pull_file(scenario_pull, client_entity, ["/tmp/tcpdump_ge_client.pcap"], controller_path=["tcpdump_ge_client.pcap"],
+            wait_finished=None, wait_launched=None, wait_delay=0)
 
-    pull = pull_file(scenario, client_entity, ["/tmp/tcpdump_ge_client.pcap"], controller_path=["tcpdump_ge_client.pcap"],
-            wait_finished=tcpdump_jobs, wait_launched=None, wait_delay=5)
-
-    push = push_file(scenario, server_entity, ["/tmp/tcpdump_ge_client.pcap"], controller_path=["tcpdump_ge_client.pcap"],
+    scenario_push = Scenario("push_file_scenario", "Sub-scenario used to push file in Gilbert Elliot scenario")
+    start_scenario_push = scenario.add_function('start_scenario_instance', wait_finished=[start_scenario_pull], wait_launched=None, wait_delay=5)
+    start_scenario_push.configure(scenario_push)
+    pull = push_file(scenario_push, server_entity, ["/tmp/tcpdump_ge_client.pcap"], controller_path=["tcpdump_ge_client.pcap"],
             removes=[True], wait_finished=tcpdump_jobs, wait_launched=None, wait_delay=35)
 
     pcap_postprocessing_gilbert_elliot(scenario, server_entity, "/tmp/tcpdump_ge_server.pcap", "/tmp/tcpdump_ge_client.pcap",
-            proto="udp", wait_finished=tcpdump_jobs, wait_delay=65)
-
-    # TODO wait_finished use pull and push
+            src_ip="$server_ip", dst_ip="$client_ip", src_port="$server_port", proto="udp", wait_finished=[start_scenario_push], wait_delay=5)
 
     return scenario
 
-def pcap_postprocessing(
-        scenario, entity, capture_file, src_ip=None, dst_ip=None, 
-        src_port=None, dst_port=None, proto=None, metrics_interval=None,
-        wait_finished=None, wait_launched=None, wait_delay=0):
-    f_start_analyze = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-
-    parameters = filter_none(
-            capture_file=capture_file,        
-            src_ip=src_ip,
-            dst_ip=dst_ip,
-            src_port=src_port,
-            dst_port=dst_port,
-            proto=proto,
-            metrics_interval=metrics_interval)
-
-    f_start_analyze.configure(
-            'pcap_postprocessing', entity, **parameters)
-
-    return [f_start_analyze]
-
-
-
 def build(
-        server_entity, client_entity, server_interface, client_interface, duration,
+        server_entity, client_entity, server_ip, client_ip, server_interface, client_interface, server_port=5201,
+        udp_bandwidth="100k", packet_size=25, duration=300,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
-    scenario = gilbert_elliot(server_entity, client_entity, server_interface, client_interface, duration, scenario_name)
+    scenario = gilbert_elliot(server_entity, client_entity, server_ip, client_ip, server_interface, client_interface,
+                            server_port, udp_bandwidth, packet_size, duration, scenario_name)
 
     return scenario

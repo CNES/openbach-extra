@@ -40,16 +40,31 @@ def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
-            help='Name of the entity which receives the traffic')
+            help='Name of the entity which sends the traffic')
     observer.add_scenario_argument(
             '--client-entity', required=True,
-            help='Name of the entity which sends the traffic')
+            help='Name of the entity which receives the traffic')
+    observer.add_scenario_argument(
+            '--server-ip', required=True,
+            help='IPv4 address of the entity which sends the traffic')
+    observer.add_scenario_argument(
+            '--client-ip', required=True,
+            help='IPv4 address of the entity which receives the traffic')
     observer.add_scenario_argument(
             '--server-interface', required=True,
             help='IP address of the traffic receiver')
     observer.add_scenario_argument(
             '--client-interface', required=True,
             help='IP address of the traffic sender')
+    observer.add_scenario_argument(
+            '--server-port', type=int, default=5201,
+            help='Port used by iperf3 server to wait for connection')
+    observer.add_scenario_argument(
+            '--udp_bandwidth', type=str, default="100k",
+            help='UDP bandwidth used by iperf3')
+    observer.add_scenario_argument(
+            '--packet-size', type=int, default=25,
+            help='UDP packet size used by iperf3')
     observer.add_scenario_argument(
             '--duration', type=int, default=300,
             help='Duration of the capture (seconds)')
@@ -59,8 +74,13 @@ def main(argv=None):
     scenario = network_gilbert_elliot.build(
                       args.server_entity,
                       args.client_entity,
+                      args.server_ip,
+                      args.client_ip,
                       args.server_interface,
                       args.client_interface,
+                      args.server_port,
+                      args.udp_bandwidth,
+                      args.packet_size,
                       args.duration,
                       scenario_name=args.scenario_name)
 
