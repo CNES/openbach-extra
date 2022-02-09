@@ -29,7 +29,9 @@
 
 """This executor builds or launches the *network_gilbert_elliot* scenario
 from /openbach-extra/apis/scenario_builder/scenarios/
-It measures the network packet loss rate.
+It measures the Gilbert Elliot parameters to model the losses.
+The number of packets needs to be high enough to have pertinent results.
+For very low probabilities or to increase precision, duration or bandwidth may be increased.
 """
 
 from auditorium_scripts.scenario_observer import ScenarioObserver

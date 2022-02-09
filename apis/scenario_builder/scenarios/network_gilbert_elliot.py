@@ -39,7 +39,9 @@ from scenario_builder.helpers.transport.iperf3 import iperf3_rate_udp
 
 SCENARIO_NAME = 'network_gilbert_elliot'
 SCENARIO_DESCRIPTION = """This scenario allow to compute Gilbert Elliot parameters.
-It launches iperf3 UDP traffic and computes p and r parameters depending on the loss pattern measured.
+It launches iperf3 UDP traffic and computes p and r parameters depending on the repartition of losses measured.
+The number of packets needs to be high enough to have pertinent results.
+For very low probabilities or to increase precision, duration or bandwidth may be increased.
 """
 
 def gilbert_elliot(server_entity, client_entity, server_ip, client_ip, server_interface, client_interface,
