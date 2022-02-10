@@ -1,0 +1,51 @@
+=== Examples ===
+
+== Example 1 ==
+
+This example is inspired from https://www.wireguard.com/quickstart/
+I just changed the allowed_ips for the second instance to simulate the case of a server.
+
+It is assumed that the second instance IP address is 192.168.0.3
+
+    * Instance 1
+        ** tun_ip = 10.8.0.1/24
+        ** private_key = QA/PTitZ9sW6DiEpMN1mKBvh2FKDE6zuSjL1uHA+7XA=
+        ** allowed_ips = 10.0.1.2/32
+        ** peer_pub_key = 21vHIshnqZFBM3jx2us+tHQR6mcjX/6UdJI51WtTmBA=
+        ** endpoint = 192.168.0.3:60771
+    * Instance 2
+        ** tun_ip = 10.8.0.2/24
+        ** private_key = eEzF3omk3s4IvVKOqLGmA697e4BaPZsrmJtIJQxEy00=
+        ** allowed_ips = 0.0.0.0/0
+        ** peer_pub_key = QiBbFBAAB5JXSjvxVrTLQCcabQaF0HS8gwaNMc707n8=
+        ** listen_port = 60771
+
+
+First create the wireguard interfaces for each instance
+
+Instance 1:
+<code>
+JOB_NAME=wireguard sudo -E python3 /opt/openbach/agent/jobs/wireguard/wireguard.py create_interface 10.8.0.1/24 QA/PTitZ9sW6DiEpMN1mKBvh2FKDE6zuSjL1uHA+7XA=
+</code>
+
+Instance 2:
+<code>
+JOB_NAME=wireguard sudo -E python3 /opt/openbach/agent/jobs/wireguard/wireguard.py create_interface 10.8.0.2/24 eEzF3omk3s4IvVKOqLGmA697e4BaPZsrmJtIJQxEy00= --listen-port 60771
+</code>
+
+Then add a peer on instances:
+Instance 1:
+<code>
+JOB_NAME=wireguard_peer sudo -E python3 /opt/openbach/agent/jobs/wireguard/wireguard.py peer 21vHIshnqZFBM3jx2us+tHQR6mcjX/6UdJI51WtTmBA= --allowed_ips 10.0.1.2/32 --endpoint 192.168.0.3:60771
+</code>
+
+Instance 2:
+<code>
+JOB_NAME=wireguard_peer sudo -E python3 /opt/openbach/agent/jobs/wireguard/wireguard.py peer QiBbFBAAB5JXSjvxVrTLQCcabQaF0HS8gwaNMc707n8= --allowed_ips 0.0.0.0/0
+</code>
+
+After this configuration you can ping 10.8.0.2 frome the first instance. This ping will allow the second instance to know the address
+of the first instance and it can ping it back after.
+
+The private keys can be generated with the following command: wg genkey 
+The public ones can be generated with the following command: wg pubkey <private_key>

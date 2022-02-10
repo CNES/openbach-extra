@@ -68,7 +68,7 @@ def main(argv=None):
             '--packet-size', type=int, default=25,
             help='UDP packet size used by iperf3')
     observer.add_scenario_argument(
-            '--duration', type=int, default=300,
+            '--duration', type=int, default=60,
             help='Duration of the capture (seconds)')
 
     args = observer.parse(argv, network_gilbert_elliot.SCENARIO_NAME)

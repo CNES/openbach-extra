@@ -40,7 +40,7 @@ SCENARIO_DESCRIPTION = """This network_rate scenario allows to:
  - Perform two post-processing tasks to compare the
    time-series and the CDF of the rate measurements.
  - NB : client and server entities/IPs/ports are in accordance
-   with iperf3 logic (server = receiver and client = sender)
+   with iperf3 logic in reverse mode (server = sender and client = receiver)
 """
 
 

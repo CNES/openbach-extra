@@ -1,0 +1,41 @@
+=== Job Description ===
+
+This job launches 'sr_tunnel', a program which implements a Selective Repeat algorithm at the IP level within a TUN/TAP tunnel.
+A good illustration of the algorithm implemented is given here : https://www2.tkn.tu-berlin.de/teaching/rn/animations/gbn_sr/.
+
+The source code of 'src_tunnel' and further information are available in https://github.com/elochin/sr_tunnel.
+
+Usage procedure : The user needs to launch the job in "server mode" in an agent, and after, he needs to launch it in "client mode" in a different agent. 
+
+
+**Important Notes** : 
+    * The server only supports 1 connection.
+    * If the client closes the connection, the server needs to be shutdown to launch a new test.
+    * There may be issues when configure link is exploited to limit the interface on which the sr_tunnel is applied.
+
+=== Example ===
+
+Perform a test between an agent "Client" and an agent "Server" (Server IP address = ''10.3.0.1'').
+
+In the web interface, set the following parameters:
+
+  * For agent "Server":
+    * **tun_ip** = 192.168.10.2/24
+    * **mode** = server
+  * For agent "Client":
+    * **tun_ip** = 192.168.10.1/24
+    * **mode** = client
+    * **server_ip** = 10.3.0.1
+
+Or launch the job manually from the Agents as follows:
+
+From agent "Server":
+<code>
+JOB_NAME=sr_tunnel sudo -E python3 /opt/openbach/agent/jobs/sr_tunnel/sr_tunnel.py "192.168.10.2/24" server
+</code>
+
+From agent "Client":
+<code>
+JOB_NAME=sr_tunnel sudo -E python3 /opt/openbach/agent/jobs/sr_tunnel/sr_tunnel.py "192.168.10.1/24" client 10.3.0.1
+</code>
+

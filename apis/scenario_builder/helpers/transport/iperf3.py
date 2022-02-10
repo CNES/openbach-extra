@@ -31,178 +31,134 @@
 
 def iperf3_rate_tcp(
         scenario, client_entity, server_entity,
-        server_ip, port, duration, num_flows, tos, mtu,
+        server_ip, port, duration, num_flows, tos=None,
+        mtu=None, metrics_interval=1, congestion_control=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
-    server = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    server.configure(
-            'iperf3', server_entity,
-            offset=0,
-            num_flows=num_flows,
-            reverse=True,
-            port=port,
-            metrics_interval=1.0,
-            server={
-                'exit': True,
-                'bind': server_ip,
-            })
 
-    client = scenario.add_function(
-            'start_job_instance',
-            wait_launched=[server],
-            wait_delay=2)
-    client.configure(
-            'iperf3', client_entity,
-            offset=0,
-            num_flows=num_flows,
-            reverse=True,
-            port=port,
-            client={
-                'server_ip': server_ip,
-                'duration_time': duration,
-                'tos': str(tos),
-                'tcp': {'mss': str(mtu)},
-            })
+    server = iperf3_server(
+            scenario, server_entity, server_ip, port,
+            metrics_interval=metrics_interval, reverse=True, exit=True,
+            wait_finished=wait_finished, wait_launched=wait_launched, wait_delay=wait_delay)
 
-    return [server]
+    iperf3_client(
+            scenario, client_entity, server_ip, port, "tcp",
+            duration=duration, num_flows=num_flows, tos=tos, tcp_mtu=mtu,
+            metrics_interval=metrics_interval,
+            congestion_control=congestion_control,
+            wait_launched=server, wait_delay=2)
+
+    return server
 
 
 def iperf3_rate_udp(
         scenario, client_entity, server_entity,
-        server_ip, port, num_flows, duration, tos, bandwidth, udp_size,
+        server_ip, port, duration, num_flows=None,
+        tos=None, bandwidth=None, udp_size=None, metrics_interval=1,
         wait_finished=None, wait_launched=None, wait_delay=0):
-    server = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    server.configure(
-            'iperf3', server_entity,
-            offset=0,
-            num_flows=num_flows,
-            reverse=True,
-            port=port,
-            metrics_interval=1.0,
-            server={
-                'exit': True,
-                'bind': server_ip,
-            })
 
-    client = scenario.add_function(
-            'start_job_instance',
-            wait_launched=[server],
-            wait_delay=2)
-    client.configure(
-            'iperf3', client_entity,
-            offset=0,
-            num_flows=num_flows,
-            reverse=True,
-            port=port,
-            client={
-                'server_ip': server_ip,
-                'duration_time': duration,
-                'tos': str(tos),
-                'udp': {'bandwidth': str(bandwidth),
-                        'udp_size':str(udp_size)},
-            })
+    server = iperf3_server(
+            scenario, server_entity, server_ip, port,
+            metrics_interval=metrics_interval, reverse=True, exit=True,
+            wait_finished=wait_finished, wait_launched=wait_launched, wait_delay=wait_delay)
 
-    return [server]
+    iperf3_client(
+            scenario, client_entity, server_ip, port,
+            "udp", duration=duration, reverse=True,
+            metrics_interval=metrics_interval,
+            num_flows=num_flows, tos=tos,
+            udp_bandwidth=bandwidth, udp_size=udp_size,
+            wait_launched=server, wait_delay=2)
+
+    return server
 
 
 def iperf3_send_file_tcp(
         scenario, client_entity, server_entity,
-        server_ip, port, transmitted_size, tos, mtu,
+        server_ip, port, transmitted_size, tos=None,
+        mtu=None, metrics_interval=1, congestion_control=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
-    server = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
-    server.configure(
-            'iperf3', server_entity,
-            offset=0,
-            port=port,
-            reverse=True,
-            server={
-                'exit': True,
-                'bind': server_ip,
-            })
 
-    client = scenario.add_function(
-            'start_job_instance',
-            wait_launched=[server],
-            wait_delay=2)
-    client.configure(
-            'iperf3', client_entity,
-            offset=0,
-            port=port,
-            reverse=True,
-            client={
-                'server_ip': server_ip,
-                'transmitted_size': transmitted_size,
-                'tos': str(tos),
-                'tcp': {'mss': str(mtu)},
-            })
+    server = iperf3_server(
+            scenario, server_entity, server_ip, port,
+            exit=True, reverse=True, metrics_interval=metrics_interval,
+            wait_finished=wait_finished, wait_launched=wait_launched, wait_delay=wait_delay)
 
-    return [server]
+    iperf3_client(
+            scenario, client_entity, server_ip, port,
+            "tcp", metrics_interval=metrics_interval, reverse=True,
+            tos=tos, tcp_mtu=mtu, transmitted_size=transmitted_size,
+            congestion_control=congestion_control,
+            wait_launched=server, wait_delay=2)
+
+    return server
 
 
 def iperf3_server(
-        scenario, server_entity, server_ip, port, reverse=True, exit=True,
+        scenario, server_entity, server_ip, port,
+        metrics_interval=1, reverse=True, exit=True,
         wait_finished=None, wait_launched=None, wait_delay=0):
+
     server = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
+        'start_job_instance',
+        wait_finished=wait_finished,
+        wait_launched=wait_launched,
+        wait_delay=wait_delay)
+
     server.configure(
-            'iperf3', server_entity,
+            'iperf3',
+            server_entity,
             offset=0,
             port=port,
             reverse=reverse,
+            metrics_interval=metrics_interval,
             server={
                 'exit': exit,
                 'bind': server_ip,
             })
+
     return [server]
 
 
 def iperf3_client(
         scenario, client_entity, server_ip, port,
-        duration=None, num_flows=None, reverse=True, tos=None,
-        transmitted_size=None, tcp_mtu=None, udp_bandwidth=None,
+        protocol, metrics_interval=1, duration=None,
+        num_flows=None, tos=None, transmitted_size=None, reverse=True,
+        congestion_control=None, tcp_mtu=None, udp_bandwidth=None,
         udp_size=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
+
     client = scenario.add_function(
-            'start_job_instance',
-            wait_finished=wait_finished,
-            wait_launched=wait_launched,
-            wait_delay=wait_delay)
+        'start_job_instance',
+        wait_finished=wait_finished,
+        wait_launched=wait_launched,
+        wait_delay=wait_delay)
 
     clients_parameters = {
-            'server_ip': server_ip,
+        'server_ip': server_ip,
     }
+
     if tos is not None:
         clients_parameters['tos'] = str(tos)
     if transmitted_size is not None:
         clients_parameters['transmitted_size'] = transmitted_size
     if duration is not None:
         clients_parameters['duration_time'] = duration
-    if tcp_mtu is not None:
-        clients_parameters['tcp'] = {'mss': str(tcp_mtu)}
-    udp_parameters = {}
-    if udp_bandwidth is not None:
-        udp_parameters['bandwidth'] = str(bandwidth)
-    if udp_size is not None:
-        udp_parameters['udp_size'] = str(udp_size)
-    if udp_parameters:
-        clients_parameters['udp'] = udp_parameters
+    clients_parameters[protocol] = {}
+    if protocol == "tcp":
+        if tcp_mtu is not None:
+            clients_parameters['tcp']['mss'] = tcp_mtu
+        if congestion_control is not None:
+            clients_parameters['tcp']['cong_control'] = congestion_control
+    elif protocol == "udp":
+        if udp_bandwidth is not None:
+            clients_parameters['udp']['bandwidth'] = str(udp_bandwidth)
+        if udp_size is not None:
+            clients_parameters['udp']['udp_size'] = str(udp_size)
+
     parameters = {
-            'port': port,
-            'client': clients_parameters,
+        "metrics_interval": metrics_interval,
+        'port': port,
+        'client': clients_parameters,
     }
     if num_flows is not None:
         parameters['num_flows'] = num_flows
@@ -214,6 +170,7 @@ def iperf3_client(
 
 def iperf3_find_server(openbach_function):
     return 'server' in openbach_function.start_job_instance['iperf3']
+
 
 def iperf3_find_client(openbach_function):
     return 'client' in openbach_function.start_job_instance['iperf3']

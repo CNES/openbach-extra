@@ -65,7 +65,7 @@ def gilbert_elliot(server_entity, client_entity, server_ip, client_ip, server_in
       wait_finished=None, wait_launched=None, wait_delay=0)
 
     iperf3 = iperf3_rate_udp(scenario, client_entity, server_entity,
-        "$server_ip", "$server_port", 1, "$duration", 0, "$udp_bandwidth", "$packet_size",
+        "$server_ip", "$server_port", "$duration", 1, 0, "$udp_bandwidth", "$packet_size",
         wait_launched=tcpdump_jobs, wait_delay=2)
 
     stopper = scenario.add_function(
@@ -93,7 +93,7 @@ def gilbert_elliot(server_entity, client_entity, server_ip, client_ip, server_in
 
 def build(
         server_entity, client_entity, server_ip, client_ip, server_interface, client_interface, server_port=5201,
-        udp_bandwidth="100k", packet_size=25, duration=300,
+        udp_bandwidth="100k", packet_size=25, duration=60,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = gilbert_elliot(server_entity, client_entity, server_ip, client_ip, server_interface, client_interface,
                             server_port, udp_bandwidth, packet_size, duration, scenario_name)
