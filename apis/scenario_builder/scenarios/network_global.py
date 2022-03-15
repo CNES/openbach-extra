@@ -70,8 +70,8 @@ def build(
 
     # Add One Way Delay metrology scenario
     scenario_network_one_way_delay = network_one_way_delay.build(
-            server_entity, client_entity,
-            server_ip, client_ip,
+            server_entity, client_entity, server_ip,
+            client_ip, count, packets_interval,
             maximal_synchronization_offset,
             synchronization_timeout,
             post_processing_entity)
