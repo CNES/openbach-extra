@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+
 #   OpenBACH is a generic testbed able to control/configure multiple
 #   network/physical entities (under test) and collect data from them. It is
 #   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
@@ -26,21 +27,37 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-"""Helper of command push_file"""
+"""Helpers of pep job"""
 
+from ..utils import filter_none
 
-def push_file(
-        scenario, entity, remote_path, controller_path=None,
-        users=None, groups=None, removes=None,
+def pep(
+        scenario, entity, address=None, port=None, fastopen=None,
+        maxconns=None, gcc_interval=None, log_file=None, pending_lifetime=None,
+        stop=None, redirect_ifaces=None, redirect_src_ip=None,
+        redirect_dst_ip=None, mark=None, table_num=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
-    if controller_path is None:
-        controller_path = remote_path
-
-    push = scenario.add_function(
-            'push_file',
+    function = scenario.add_function(
+            'start_job_instance',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    push.configure(entity, controller_path, remote_path, users or [], groups or [], removes or [])
+    parameters = filter_none(
+            address=address,
+            port=port,
+            fastopen=fastopen,
+            maxconns=maxconns,
+            gcc_interval=gcc_interval,
+            log_file=log_file,
+            pending_lifetime=pending_lifetime,
+            stop=stop,
+            redirect_ifaces=redirect_ifaces,
+            redirect_src_ip=redirect_src_ip,
+            redirect_dst_ip=redirect_dst_ip,
+            mark=mark,
+            table_num=table_num)
 
-    return [push]
+    function.configure('pep', entity, **parameters)
+
+    return [function]
+

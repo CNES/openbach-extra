@@ -113,7 +113,7 @@ def traffic_mix(arguments, post_processing_entity, scenario_name=SCENARIO_NAME):
         if args.traffic == "data_transfer":
             scenario_name = '{}_{}'.format(service_data_transfer.SCENARIO_NAME, args.id)
             scenario = service_data_transfer.build(
-                    args.destination, args.source, args.destination_ip,
+                    args.source, args.destination, args.source_ip,
                     args.port, args.duration, args.size,
                     args.tos, args.mtu,
                     post_processing_entity, scenario_name)

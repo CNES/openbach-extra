@@ -39,10 +39,10 @@ def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
-            help='name of the entity for the server iperf3/nuttcp')
+            help='name of the entity for the server iperf3/nuttcp (sender)')
     observer.add_scenario_argument(
             '--client-entity', required=True,
-            help='name of the entity for the client iperf3/nuttcp')
+            help='name of the entity for the client iperf3/nuttcp (receiver)')
     observer.add_scenario_argument(
             '--server-ip', required=True, help='The server IP address')
     observer.add_scenario_argument(

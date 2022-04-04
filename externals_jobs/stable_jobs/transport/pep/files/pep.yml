@@ -4,7 +4,7 @@ general:
   name:            pep
   description: >
       This Job sets up the PEPsal Performance-Enhancing Proxy (PEP) and redirects traffic to be intercepted.
-  job_version:     '1.1'
+  job_version:     '1.2'
   keywords:        [pep, tcp]
   persistent:      False
 
@@ -23,19 +23,19 @@ arguments:
       count:       1
       flag:        '-i'
       description: >
-          Redirect all traffic from incoming interfaces to PEPsal (admits mulitple interfaces separated by ',' ' ')
+          Redirect all traffic from incoming interfaces to PEPsal (admits multiple interfaces separated by ',' ' ')
     - name:        redirect_src_ip
       type:        'str'
       count:       1
       flag:        '-s'
       description: >
-          Redirect all traffic with src IP to PEPsal (admits mulitple IPs separated by ',' ' ')
+          Redirect all traffic with src IP to PEPsal (admits multiple IPs separated by ',' ' ')
     - name:        redirect_dst_ip
       type:        'str'
       count:       1
       flag:        '-d'
       description: >
-          Redirect all traffic with dest IP to PEPsal (admits mulitple IPs separated by ',' ' ')
+          Redirect all traffic with dest IP to PEPsal (admits multiple IPs separated by ',' ' ')
     - name:        port
       type:        'int'
       count:       1
@@ -91,6 +91,12 @@ arguments:
       flag:        '-T'
       description: >
           (Advanced) The routing table number used for routing packets to the PEP (default: 100)
+    - name:        stop
+      type:        'None'
+      count:       0
+      flag:        '-x'
+      description: >
+          If set, unset routing configuration
           
 statistics:
 

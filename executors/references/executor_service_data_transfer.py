@@ -40,16 +40,16 @@ def main(argv=None):
     observer = ScenarioObserver()
     observer.add_scenario_argument(
             '--server-entity', required=True,
-            help='name of the destination entity for the iperf3 traffic')
-    observer.add_scenario_argument(
-            '--client-entity', required=True,
             help='name of the source entity for the iperf3 traffic')
     observer.add_scenario_argument(
+            '--client-entity', required=True,
+            help='name of the destination entity for the iperf3 traffic')
+    observer.add_scenario_argument(
             '--server-ip', required=True,
-            help='destination ip address for the iperf3 traffic')
+            help='server ip address for the iperf3 traffic')
     observer.add_scenario_argument(
             '--server-port', type=int, default=7001,
-            help='destination port for the iperf3 traffic (default : 7001)')
+            help='server port for the iperf3 traffic (default : 7001)')
     group = observer.scenario_group.add_mutually_exclusive_group(required=True)
     group.add_argument(
             '--duration', type=int,

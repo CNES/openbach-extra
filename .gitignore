@@ -4,6 +4,6 @@ __pycache__
 *.egg-info
 build
 dist
-
+*.tar.gz
 *.pyc
 controller
