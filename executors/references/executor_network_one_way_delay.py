@@ -52,6 +52,13 @@ def main(argv=None):
             '--client-ip', required=True,
             help='client ip address of d-itg test')
     observer.add_scenario_argument(
+            '--count', type=int, default=100,
+            help='The number of owamp packets to send')
+    observer.add_scenario_argument(
+            '--packets-interval', default='0.1e',
+            help='The mean average time between owamp packets (specify seconds and distribution type)'
+            'If e: random exponential distribution. If f: constant distribution')
+    observer.add_scenario_argument(
             '--max-synchro-off', type=float,
             help='maximal offset difference in milliseconds where we have to do a NTP '
             'resynchronization; if omitted, no NTP checks are performed')
@@ -69,6 +76,8 @@ def main(argv=None):
                       args.client_entity,
                       args.server_ip,
                       args.client_ip,
+                      args.count,
+                      args.packets_interval,
                       args.max_synchro_off,
                       args.synchronization_timeout,
                       args.post_processing_entity,
