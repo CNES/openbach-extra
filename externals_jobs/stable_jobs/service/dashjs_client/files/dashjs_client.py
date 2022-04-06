@@ -109,7 +109,7 @@ def main(dst_ip, proto, tornado_port, path, time):
     options = Options()
     options.add_argument('-headless')
     options.set_preference("network.websocket.allowInsecureFromHTTPS", True)
-    driver = Firefox(executable_path='geckodriver', firefox_options=options)
+    driver = Firefox(executable_path='geckodriver', options=options)
     wait = WebDriverWait(driver, timeout=10)
     
     # Get page
