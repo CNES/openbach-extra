@@ -112,4 +112,4 @@ if __name__ == '__main__':
 ```
 
 
-[1]: https://forge.net4sat.org/openbach/openbach/src/auditorium/README.md
+[1]: https://github.com/CNES/openbach/blob/master/src/auditorium/README.md

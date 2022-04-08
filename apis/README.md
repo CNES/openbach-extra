@@ -28,15 +28,9 @@ on other machines by cloning this repository and using the `setup.py` file:
 
 ```
 $ sudo apt-get install python3-setuptools python3-dev build-essential
-$ git clone https://forge.net4sat.org/openbach/openbach-extra.git
+$ git clone https://github.com/CNES/openbach-extra.git
 $ cd openbach-extra/apis/
 $ sudo python3 setup.py install
-```
-
-Or using `pip` and asking it to install the openbach-api [following wheel][2].
-
-```
-$ pip3 install https://forge.net4sat.org/openbach/openbach/raw/master/pip_mirror/python3/openbach_api-3.10.6-py3-none-any.whl
 ```
 
 ### Use your local (modified) version of the API
@@ -51,7 +45,7 @@ previously may or may not work depending on your configuration. Here are some ti
   * Alternatively, you can force Python to look into your development folder before anything else
     by using the `PYTHONPATH` environment variable (_e.g._
     `PYTHONPATH=~/openbach-extra/apis/ python3 executor_network_delay.py --arguments... run`);
-  * Or you can use [virtual environments][3] to completely separate your system from your test
+  * Or you can use [virtual environments][2] to completely separate your system from your test
     environment; once the virtual environment is activated, you can safely `python setup.py install`
     within it to always access your last version when testing (and deactivate it when done).
 
@@ -120,6 +114,5 @@ $ HTTP_PROXY="" ./list_projects.py --controller 192.168.1.3 --login openbach
 ```
 
 
-[1]: https://forge.net4sat.org/openbach/openbach/src/auditorium/README.md
-[2]: https://forge.net4sat.org/openbach/openbach/raw/master/pip_mirror/python3/openbach_api-3.10.6-py3-none-any.whl?inline=false
-[3]: https://docs.python.org/3/library/venv.html#module-venv
+[1]: https://github.com/CNES/openbach/blob/master/src/auditorium/README.md
+[2]: https://docs.python.org/3/library/venv.html#module-venv
