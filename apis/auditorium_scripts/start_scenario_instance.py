@@ -52,7 +52,7 @@ class StartScenarioInstance(FrontendBase):
                 'project_name',
                 help='name of the project the scenario is associated with')
         self.parser.add_argument(
-                '-a', '--argument', nargs=2, default={},
+                '-a', '--argument', nargs=2, default=[],
                 action='append', metavar=('NAME', 'VALUE'),
                 help='value of an argument of the scenario')
         self.parser.add_argument(

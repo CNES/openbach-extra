@@ -34,7 +34,7 @@ If reset option is set, the sysctl and CUBIC parameters are reset to the value
 they had at the installation of the job of tcp_conf_linux. Then the parameters
 are updated only if a new value is set in the arguments. More information on
 the wiki page of the job tcp_conf_linux :
-https://wiki.net4sat.org/doku.php?id=openbach:exploitation:jobs:tcpconflinux_2.0
+https://github.com/CNES/openbach-extra/tree/master/externals_jobs/stable_jobs/transport/tcp_conf_linux
 
 The job ip_route needs the following arguments to run:
 - dest_ip

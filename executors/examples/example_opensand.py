@@ -30,7 +30,7 @@
 
 This scenarios enables to configure the entities and run a full OpenSAND test.
 It is based on the scenarios opensand_net_conf, opensand_satcom_conf and opensand_run.
-Check the following link for further information about those scenarios : https://wiki.net4sat.org/doku.php?id=openbach:exploitation:reference_scenarios:index
+Check the following link for further information about those scenarios : https://github.com/CNES/openbach-extra/blob/master/executors/references/README.md
 
 
 # Step-by-step description of the scenario :
@@ -49,7 +49,7 @@ Check the following link for further information about those scenarios : https:/
 
 # Parameters description :
   A detailed description of the parameters with examples is available in the following link:
-  https://wiki.net4sat.org/doku.php?id=openbach:exploitation:reference_scenarios:access:opensand_satcom_conf:index
+  https://github.com/CNES/openbach-extra/tree/master/externals_jobs/stable_jobs/access/opensand
 
   Note : if a configuration files is not set, the entity will load the one saved at :
   /etc/opensand/{infrastructure,topology,profile}.xml to run OpenSAND

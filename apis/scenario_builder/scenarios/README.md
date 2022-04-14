@@ -24,7 +24,7 @@ function and the *build* function.
 
 You can also import reference scenarios (or some parts) and add them as
 subscenarios. In the same example [
-network\_delay](https://forge.net4sat.org/openbach/openbach-extra/blob/master/apis/scenario_builder/scenarios/network_delay.py "wikilink")
+network\_delay](https://github.com/CNES/openbach-extra/blob/master/apis/scenario_builder/scenarios/network_delay.py)
 which:
 
 - Launches the subscenarios *network_delay_simultaneous_core* or *network_delay_sequential_core* (allowing to compare the RTT measurement of fping, hping and owamp jobs).

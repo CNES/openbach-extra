@@ -45,36 +45,48 @@ SCENARIO_DESCRIPTION = """This scenario allows to :
 
 
 def one_way_delay(
-        server_entity, client_entity, server_ip, client_ip,
+        server_entity, client_entity, server_ip, client_ip, count, packets_interval,
         max_synchro_off=None, synchronization_timeout=60, scenario_name=SCENARIO_NAME):
     scenario = Scenario(scenario_name, SCENARIO_DESCRIPTION)
     scenario.add_constant('server_ip', server_ip)
     scenario.add_constant('client_ip', client_ip)
+    scenario.add_constant('count', count)
+    scenario.add_constant('packets_interval', packets_interval)
 
     wait_finished = []
     if max_synchro_off is not None and max_synchro_off > 0.0:
-        synchro_ntp_client = synchronization(scenario, client_entity, max_synchro_off, synchronization_timeout)
-        synchro_ntp_server = synchronization(scenario, server_entity, max_synchro_off, synchronization_timeout)
+        synchro_ntp_client = synchronization(
+                scenario, client_entity, max_synchro_off,
+                synchronization_timeout)
+        synchro_ntp_server = synchronization(
+                scenario, server_entity, max_synchro_off,
+                synchronization_timeout)
         wait_finished = []
         for function in scenario.openbach_functions:
             if isinstance(function, StartJobInstance):
                 wait_finished.append(function)
 
 
-    owamp_measure_owd(scenario, client_entity, server_entity, '$server_ip', wait_finished=wait_finished)
-    ditg_packet_rate(scenario, client_entity, server_entity, '$server_ip', '$client_ip', 'UDP', packet_rate=1, wait_finished=wait_finished)
+    owamp_measure_owd(
+            scenario, client_entity, server_entity,
+            '$server_ip', '$count', '$packets_interval',
+            wait_finished=wait_finished)
+    ditg_packet_rate(
+            scenario, client_entity, server_entity,
+            '$server_ip', '$client_ip', 'UDP', packet_rate=1,
+            wait_finished=wait_finished)
 
     return scenario
 
 
 def build(
-        server_entity, client_entity, server_ip, client_ip, 
-        max_synchro_off=None, synchronization_timeout=60,
+        server_entity, client_entity, server_ip, client_ip, count, 
+        packets_interval, max_synchro_off=None, synchronization_timeout=60,
         post_processing_entity=None, scenario_name=SCENARIO_NAME):
     scenario = one_way_delay(
             server_entity, client_entity,
-            server_ip, client_ip,
-            max_synchro_off,
+            server_ip, client_ip, count,
+            packets_interval, max_synchro_off,
             synchronization_timeout, scenario_name)
 
     if post_processing_entity is not None:

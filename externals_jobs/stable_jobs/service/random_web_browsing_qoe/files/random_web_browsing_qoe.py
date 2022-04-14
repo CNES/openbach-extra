@@ -93,7 +93,7 @@ def init_driver(binary_path, binary_type):
            # Disable notifications
            options.add_argument("--disable-notifications")
            options.add_argument("--headless")
-           driver = webdriver.Firefox(firefox_binary=binary, firefox_options=options)
+           driver = webdriver.Firefox(firefox_binary=binary, options=options)
         except Exception as ex:
            message = 'ERROR when initializing the web driver: {}'.format(ex)
            collect_agent.send_log(syslog.LOG_ERR, message)
