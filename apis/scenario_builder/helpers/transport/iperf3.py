@@ -53,7 +53,7 @@ def iperf3_rate_tcp(
 def iperf3_rate_udp(
         scenario, client_entity, server_entity,
         server_ip, port, duration, num_flows=None,
-        tos=None, bandwidth=None, metrics_interval=1,
+        tos=None, bandwidth=None, udp_size=None, metrics_interval=1,
         wait_finished=None, wait_launched=None, wait_delay=0):
 
     server = iperf3_server(
@@ -66,7 +66,7 @@ def iperf3_rate_udp(
             "udp", duration=duration, reverse=True,
             metrics_interval=metrics_interval,
             num_flows=num_flows, tos=tos,
-            udp_bandwidth=bandwidth,
+            udp_bandwidth=bandwidth, udp_size=udp_size,
             wait_launched=server, wait_delay=2)
 
     return server
@@ -124,6 +124,7 @@ def iperf3_client(
         protocol, metrics_interval=1, duration=None,
         num_flows=None, tos=None, transmitted_size=None, reverse=True,
         congestion_control=None, tcp_mtu=None, udp_bandwidth=None,
+        udp_size=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
 
     client = scenario.add_function(
@@ -142,7 +143,6 @@ def iperf3_client(
         clients_parameters['transmitted_size'] = transmitted_size
     if duration is not None:
         clients_parameters['duration_time'] = duration
-
     clients_parameters[protocol] = {}
     if protocol == "tcp":
         if tcp_mtu is not None:
@@ -152,6 +152,8 @@ def iperf3_client(
     elif protocol == "udp":
         if udp_bandwidth is not None:
             clients_parameters['udp']['bandwidth'] = str(udp_bandwidth)
+        if udp_size is not None:
+            clients_parameters['udp']['udp_size'] = str(udp_size)
 
     parameters = {
         "metrics_interval": metrics_interval,

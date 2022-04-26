@@ -26,21 +26,21 @@
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-"""Helper of command push_file"""
+"""Helper of command pull_file"""
 
 
-def push_file(
+def pull_file(
         scenario, entity, remote_path, controller_path=None,
         users=None, groups=None, removes=None,
         wait_finished=None, wait_launched=None, wait_delay=0):
     if controller_path is None:
         controller_path = remote_path
 
-    push = scenario.add_function(
-            'push_file',
+    pull = scenario.add_function(
+            'pull_file',
             wait_finished=wait_finished,
             wait_launched=wait_launched,
             wait_delay=wait_delay)
-    push.configure(entity, controller_path, remote_path, users or [], groups or [], removes or [])
+    pull.configure(entity, controller_path, remote_path, users or [], groups or [], removes or [])
 
-    return [push]
+    return [pull]

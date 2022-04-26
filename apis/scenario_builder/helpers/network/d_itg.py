@@ -37,7 +37,7 @@
 def ditg_packet_rate(
         scenario, sender_entity, recv_entity, recv_ip, sender_ip, protocol,
         dest_path="/tmp/", granularity=1000, packet_size=512,
-        packet_rate=1000, duration=10, meter="rttm", log_buffer_size=50,
+        packet_rate=1000, duration=10, meter="owdm", log_buffer_size=50,
         port=8999, signal_port=9000,
         wait_finished=None, wait_launched=None, wait_delay=0):
     
