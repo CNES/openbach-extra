@@ -111,6 +111,8 @@ def build_parser():
                         help='The source address for the signaling channel')
     parser.add_argument('-Ssd', '--sig_dest_addr', type=ipaddress.ip_address, default=None,
                         help='The destination address for the signaling channel')
+    parser.add_argument('-Sdp', '--signaling_dest_port', type=int, default=9000,
+                        help='Set the destination port for the signaling channel')
     parser.add_argument('-j', '--use_jitter', action='store_true',
                         help='Whether or not to convert jitter into delay for the MOS computation')
     parser.add_argument('-v', '--vad', action='store_true',
@@ -187,8 +189,8 @@ def main(config, args):
     #with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), config['FILE_TEMP_FLOWS']), "w") as f:
     with open('{}/{}'.format(job_dir, config['FILE_TEMP_FLOWS']), "w") as f:
         for port in range(args.starting_port, args.starting_port + args.nb_flows, 1):
-            str_to_write = "-a {} -rp {} -Sda {} -Ssa {} -t {} -poll VoIP -x {} -h {}"\
-                .format(args.dest_addr, port, args.sig_dest_addr, args.sig_src_addr, int(args.duration) * 1000,
+            str_to_write = "-a {} -rp {} -Sda {} -Ssa {} -Sdp {} -t {} -poll VoIP -x {} -h {}"\
+                .format(args.dest_addr, port, args.sig_dest_addr, args.sig_src_addr, args.signaling_dest_port, int(args.duration) * 1000,
                         args.codec, args.protocol)
             if args.vad:
                 str_to_write += " -VAD"

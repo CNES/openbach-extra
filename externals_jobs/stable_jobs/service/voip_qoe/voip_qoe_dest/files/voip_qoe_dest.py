@@ -34,6 +34,7 @@ __credits__ = '''Contributors:
  * Bastien TAURAN <bastien.tauran@viveris.fr>
 '''
 
+import sys
 import os
 import time
 import shutil
@@ -82,6 +83,8 @@ def build_parser():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('dest_addr', type=ipaddress.ip_address,
                         help='The destination IPv4 address to use for the signaling channel')
+    parser.add_argument('-sp', '--signaling_port', type=int, default=9000,
+                        help='Signaling channel port number. Default: 9000.')
     parser.add_argument('-cp', '--control_port', type=int, default=50000,
                         help='The port used on the sender side to send and receive OpenBACH commands from the client.'
                              'Should be the same on the destination side.  Default: 50000.')
@@ -141,7 +144,8 @@ def main(args):
         exit()
 
     try:
-        process = subprocess.Popen('ITGRecv', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cmd = ['ITGRecv', '-Sp', str(args.signaling_port)]
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except Exception as ex:
         message = 'Error running ITGRecv : {}'.format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
