@@ -1,0 +1,1 @@
+{"name": "Should be stopped", "description": "simple scenario that goes on indefinitelly", "arguments": {}, "constants": {}, "openbach_functions": [{"id": 0, "label": "#0", "wait": {"time": 0, "launched_ids": [], "finished_ids": []}, "start_job_instance": {"entity_name": "server", "fping": {"destination_ip": "127.0.0.1"}, "offset": 0}}]}
