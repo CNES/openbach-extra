@@ -112,7 +112,7 @@
 - name: Compile and install lib OpenSSL for QUIC
   shell: "{{ item }} chdir=/tmp/OpenSSL_1_1_1l+quic"
   with_items:
-    - "./config enable-tls1_3 CC=gcc-12 CXX=g++-12 --prefix=/opt/openbach/agent/jobs/quic"
+    - "./config enable-tls1_3 CC=gcc-12 CXX=g++-12 --prefix=/opt/openbach/agent/jobs/quic LDFLAGS=\"-L/opt/openbach/agent/jobs/quic/lib\""
     - "make -j$(nproc)"
     - "make install_sw"
 
@@ -128,7 +128,7 @@
   shell: "{{ item }} chdir=/tmp/nghttp3/"
   with_items:
     - "autoreconf -i"
-    - "./configure --enable-lib-only CC=gcc-12 CXX=g++-12 CXXFLAGS=\"-I/opt/openbach/agent/jobs/quic/include\" LDFLAGS=\"-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib\" --prefix=/opt/openbach/agent/jobs/quic"
+    - "./configure CC=gcc-12 CXX=g++-12 CXXFLAGS=\"-I/opt/openbach/agent/jobs/quic/include\" LDFLAGS=\"-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib\" --prefix=/opt/openbach/agent/jobs/quic"
     - "make -j$(nproc) check"
     - "make install"
 
@@ -144,10 +144,15 @@
   shell: "{{ item }} chdir=/tmp/ngtcp2/"
   with_items:
     - "autoreconf -i"
-    - "./configure CC=gcc-12 CXX=g++-12 PKG_CONFIG_PATH=/opt/openbach/agent/jobs/quic/lib/pkgconfig CXXFLAGS=\"-I/opt/openbach/agent/jobs/quic/include\" LDFLAGS=\"-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib\" --prefix=/opt/openbach/agent/jobs/quic"
-      # - "ldconfig"
+    - "./configure CC=gcc-12 CXX=g++-12 PKG_CONFIG_PATH=/opt/openbach/agent/jobs/quic/lib/pkgconfig CXXFLAGS=\"-I/opt/openbach/agent/jobs/quic/include\" LDFLAGS=\"-Wl,-rpath,/opt/openbach/agent/jobs/quic/lib\" --prefix=/opt/openbach/agent/jobs/quic"
     - "make -j$(nproc) check"
     - "make install"
+
+- name: Launch ldconfig
+  shell: "{{ item }} chdir=/tmp/ngtcp2/"
+  with_items:
+    - "ldconfig"
+  become: yes
 
 - name: Install ngtcp2 binaries
   copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
@@ -186,12 +191,13 @@
   environment: 
     CC: gcc-12
     CXX: g++-12
-    CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
-    LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib"
+    #CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
+    #LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl"
   shell: "{{ item }} chdir=/tmp/picotls"
   with_items:
     - "cmake . -DCMAKE_INSTALL_PREFIX=/opt/openbach/agent/jobs/quic"
     - "make preinstall" 
+    - "make"
     - "make check"
 
 - name: Clone Picoquic from github
@@ -206,12 +212,13 @@
   environment:
     CC: gcc-12
     CXX: g++-12 
-    CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
-    LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib"
+    #CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
+    #LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl"
   shell: "{{ item }} chdir=/tmp/picoquic"
   with_items:
     - "cmake . -DCMAKE_INSTALL_PREFIX=/opt/openbach/agent/jobs/quic"
     - "make preinstall"
+    - "make"
 
 - name: Install picoquic binaries
   copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
@@ -246,8 +253,8 @@
   environment:
     CC: gcc-12
     CXX: g++-12
-    CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
-    LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib"
+    #CXXFLAGS: "-I/opt/openbach/agent/jobs/quic/include"
+    #LDFLAGS: "-L/opt/openbach/agent/jobs/quic/lib -Wl,-rpath,/opt/openbach/agent/jobs/quic/lib"
   shell: "{{ item }} chdir=/tmp/quicly"
   with_items:
     - "cmake . -DCMAKE_INSTALL_PREFIX=/opt/openbach/agent/jobs/quic"

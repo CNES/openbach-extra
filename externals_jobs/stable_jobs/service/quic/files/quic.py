@@ -37,6 +37,8 @@ __credits__ = '''Contributors:
 import os
 import sys
 import time
+import string
+import random
 import shlex
 import syslog
 import argparse
@@ -166,7 +168,9 @@ def build_cmd(implementation, mode, server_port, store_logs, log_file, server_ip
     if implementation == Implementations.PICOQUIC.value:
         cmd.extend(['picoquic'])
         if mode == 'client':
+            sni = "".join(random.choice(string.ascii_letters) for i in range(10))
             _, server_ip = _command_build_helper(None, server_ip)
+            cmd.extend(_command_build_helper('-n', sni))
             cmd.extend(_command_build_helper('-o', download_dir))
             if store_logs: cmd.extend(_command_build_helper('-l', log_file))
             if extra_args: cmd.extend(shlex.split(extra_args))
