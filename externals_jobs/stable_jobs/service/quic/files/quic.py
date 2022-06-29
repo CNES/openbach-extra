@@ -71,7 +71,7 @@ LOG_DIR = tempfile.mkdtemp(dir=DOWNLOAD_DIR, prefix='logs-')
 class Implementations(Enum):
     NGTCP2='ngtcp2'
     PICOQUIC='picoquic'
-    QUICLY='quicly'
+    # QUICLY='quicly'
 
 
 class DownloadError(RuntimeError):
