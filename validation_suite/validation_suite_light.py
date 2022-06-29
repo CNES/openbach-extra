@@ -144,6 +144,10 @@ class ValidationSuite(FrontendBase):
                 '-i', '--interfaces', '--middlebox-interfaces', required=True,
                 help='comma-separated list of the network interfaces to emulate link on the middlebox')
         self.parser.add_argument(
+                '-k', '--keep-installed-jobs', action='store_true',
+                help='If enabled, jobs with are kept on agents. Jobs are installed only if not on agent. '
+                'Otherwise, remove installed jobs from controller and reinstall only needed.')
+        self.parser.add_argument(
                 '-u', '--user', default=getpass.getuser(),
                 help='user to log into agent during the installation proccess')
         self.parser.add_argument(
@@ -327,6 +331,8 @@ def main(argv=None):
     del validator.args.middlebox_ip
     middlebox_interfaces = validator.args.interfaces
     del validator.args.interfaces
+    keep_installed_jobs = validator.args.keep_installed_jobs
+    del validator.args.keep_installed_jobs
     install_user = validator.args.user
     del validator.args.user
     install_password = validator.args.agent_password
@@ -504,10 +510,11 @@ def main(argv=None):
     installed_jobs = {job['general']['name'] for job in response}
 
     # Delete all jobs on controller
-    remove_job = validator.share_state(DeleteJob)
-    for job_name in installed_jobs:
-        remove_job.args.job_name = job_name
-        execute(remove_job)
+    if not keep_installed_jobs:
+        remove_job = validator.share_state(DeleteJob)
+        for job_name in installed_jobs:
+            remove_job.args.job_name = job_name
+            execute(remove_job)
 
     # Get all available jobs path
     jobs_list = {}
@@ -544,6 +551,16 @@ def main(argv=None):
         add_job.args.job_name = job_name
         execute(add_job)
 
+    jobs_per_agent = {}
+    # List jobs installed on each agent
+    for address, agent in entities.items():
+        installed_jobs = validator.share_state(ListInstalledJobs)
+        installed_jobs.args.update = True
+        installed_jobs.args.agent_address = address
+        response = execute(installed_jobs)
+        installed_jobs = [job['name'] for job in response['installed_jobs']]
+        jobs_per_agent[agent] = [job['name'] for job in response['installed_jobs']]
+
     # Install on agents
     total_names = []
     total_addresses = []
@@ -551,6 +568,10 @@ def main(argv=None):
         job_names = set()
         for scenario in required_jobs.values():
             job_names.update(scenario[agent])
+        job_names_updated = []
+        for job_name in list(job_names):
+            if job_name not in jobs_per_agent[agent]:
+                job_names_updated.append(job_name)
         total_names.append(list(job_names))
         total_addresses.append([address])
     install_jobs = validator.share_state(InstallJobs)
