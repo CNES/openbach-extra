@@ -123,7 +123,7 @@ class Statistics(InfluxDBCommunicator):
     @classmethod
     def from_default_collector(cls, filepath=DEFAULT_COLLECTOR_FILEPATH):
         with open(filepath) as f:
-            collector = yaml.load(f)
+            collector = yaml.safe_load(f)
 
         influx = collector.get('stats', {})
         return cls(

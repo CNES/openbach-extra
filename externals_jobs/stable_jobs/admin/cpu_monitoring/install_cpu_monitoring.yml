@@ -34,15 +34,6 @@
     update_cache: no
   become: yes
 
-- name: Install Python Dependencies
-  pip:
-    name: apscheduler
-    version: 3.2.0
-    executable: pip3
-    state: present
-  become: yes
-  environment: "{{ openbach_proxies }}"
-
 - name: Create the cpu_monitoring Job Repository
   file:
     path: /opt/openbach/agent/jobs/{{ job_name }}

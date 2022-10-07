@@ -3,7 +3,8 @@
 general:
   name:            quic
   description: >
-      This job runs a client or a server QUIC. Supported QUIC implementations are ngtcp2, picoquic, quicly. 
+      This job runs a client or a server QUIC. Supported QUIC implementations are ngtcp2, picoquic.
+      WARNING: quicly is not working, so this implementation is disabled even if installed on the agents. 
       Known that, by default, each implementation is cloned from its standard repository. 
       The installed version is the HEAD of the master branch. If you wish to install another version, 
       you need to modify global variables related to the implementation to change. 
@@ -20,6 +21,11 @@ platform_configuration:
     ansible_distribution_version: '20.04'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/quic/quic.py'
     command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '22.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/quic/quic.py'
+    command_stop:
 
 arguments:
   required:
@@ -31,7 +37,7 @@ arguments:
       choices:
         - ngtcp2
         - picoquic
-        - quicly
+        #- quicly
   optional:
     - name:        server_port
       type:        int

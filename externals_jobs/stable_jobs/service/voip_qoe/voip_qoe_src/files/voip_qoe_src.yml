@@ -16,6 +16,11 @@ platform_configuration:
     ansible_distribution_version: '20.04'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/voip_qoe_src/voip_qoe_src.py'
     command_stop: 'killall -v ITGSend'
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '22.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/voip_qoe_src/voip_qoe_src.py'
+    command_stop: 'killall -v ITGSend'
 
 arguments:
   required:
@@ -59,6 +64,12 @@ arguments:
       flag: '-Ssd'
       description: >
           The IPv4 destination address for D-ITG signaling channel. Default: same as dest_addr.
+    - name: signaling_dest_port
+      type: 'int'
+      count: 1
+      flag: '-Sdp'
+      description: >
+          Set the destination port for the signaling channel. Default: 9000.
     - name: use_jitter
       type: 'None'
       count: 0
