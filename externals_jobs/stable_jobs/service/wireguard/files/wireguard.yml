@@ -3,7 +3,7 @@
 general:
   name:            wireguard
   description:     This job relies on Wireguard program
-  job_version:     '1.0'
+  job_version:     '1.1'
   keywords:        [Wireguard, VPN]
   persistent:      False
 

@@ -34,15 +34,14 @@ __credits__ = '''Contributors:
  * Corentin Ormiere  <cormiere@silicom.fr>
 '''
 
+
 import os
 import sys
 import shlex
 import syslog
 import pathlib
 import argparse
-import traceback
 import subprocess
-import contextlib
 
 os.environ['XTABLES_LIBDIR'] = '$XTABLES_LIBDIR:/usr/lib/x86_64-linux-gnu/xtables' # Required for Ubuntu 20.04
 import iptc
@@ -52,24 +51,6 @@ import collect_agent
 
 PATH_CONF = pathlib.Path.home()
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def command_line_flag_for_argument(argument, flag):
     if argument is not None:
@@ -126,7 +107,7 @@ def main(beamslot, mode, value_mode, iface, duration, simultaneous_verdict):
 
 
 if __name__ == '__main__':
-    with use_configuration('/opt/openbach/agent/jobs/dambox/dambox_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/dambox/dambox_rstats_filter.conf'):
         # Define Usage
         parser = argparse.ArgumentParser(
             description='', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -154,4 +135,3 @@ if __name__ == '__main__':
         iface = args.iface
     
         main(damslot, mode, value_mode, iface,  duration, simultaneous_verdict)
-

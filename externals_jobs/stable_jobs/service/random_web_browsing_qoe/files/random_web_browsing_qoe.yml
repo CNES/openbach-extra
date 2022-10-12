@@ -4,7 +4,7 @@ general:
   name:            random_web_browsing_qoe
   description: >
       This jobs emulates an real user that is browsing on the web. It also provides performances timing of HTTP Service. 
-  job_version:     '1.2'
+  job_version:     '1.3'
   keywords:        [web, performance, HTTP, QoE]
   persistent:      False
 

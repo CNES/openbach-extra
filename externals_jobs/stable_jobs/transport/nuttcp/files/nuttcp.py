@@ -37,7 +37,6 @@ __credits__ = '''Contributors:
 '''
 
 
-import os
 import re
 import sys
 import time
@@ -50,6 +49,7 @@ from itertools import repeat
 from collections import defaultdict
 
 import collect_agent
+
 
 TCP_STAT = re.compile(
     r"""megabytes=(?P<data_sent>[0-9\.]+) """
@@ -94,35 +94,19 @@ UDP_END_STAT = re.compile(
     """pkt=(?P<total_sent_pkts>[0-9]+) """
     """data_loss=(?P<total_data_loss>[0-9\.]+)""")
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def _command_build_helper(flag, value):
     if value is not None:
         yield flag
         yield str(value)
 
+
 def server(command_port):
     cmd = ['nuttcp', '-S', '--nofork']
     cmd.extend(_command_build_helper('-P', command_port))
     p = subprocess.run(cmd)
     sys.exit(p.returncode)
+
 
 def client(
         server_ip, receiver, n_streams, stats_interval, protocol, 
@@ -159,7 +143,7 @@ def client(
         if p.poll() is not None:
                 break
 
-        timestamp = int(time.time() * 1000)
+        timestamp = collect_agent.now()
         line = p.stdout.readline().decode()
         # Check for last line
         if END_STAT.search(line):
@@ -194,7 +178,7 @@ def client(
 
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/nuttcp/nuttcp_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/nuttcp/nuttcp_rstats_filter.conf'):
         # Define Usage
         parser = argparse.ArgumentParser(
                 description=__doc__,
@@ -266,4 +250,3 @@ if __name__ == "__main__":
         args = vars(parser.parse_args())
         main = args.pop('function')
         main(**args)
-

@@ -31,7 +31,7 @@ general:
       This Job only the socat tools (client or server). The client sends
       a given file (provided or auto generated) and computes the time to
       transmit the file.
-  job_version: '1.0'
+  job_version: '1.1'
   keywords:
     - socat
   persistent: yes

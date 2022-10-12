@@ -29,7 +29,7 @@ general:
   name: cpu_monitoring
   description: >
       This Job monitors CPU and RAM usage.
-  job_version: '1.0'
+  job_version: '1.1'
   keywords:
     - CPU
     - RAM

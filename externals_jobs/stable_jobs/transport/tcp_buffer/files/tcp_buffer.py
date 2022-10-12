@@ -36,43 +36,26 @@ __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 '''
 
-import os
 import sys
 import syslog
 import argparse
-import traceback
 import subprocess
-import contextlib
+
 import collect_agent
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def main(name, min_size, size, max_size):
-    cmd = "sysctl net.ipv4.tcp_{}=\'{} {} {}\'".format(name, min_size, size, max_size)
-    rc = subprocess.call(cmd, shell=True)
-    if rc:
-        message = "WARNING \'{}\' exited with non-zero code".format(cmd)
+    rule = 'net.ipv4.tcp_{}={} {} {}'.format(name, min_size, size, max_size)
+    try:
+        subprocess.run(['sysctl', rule], check=True)
+    except subprocess.CalledProcessError:
+        message = 'WARNING: setting rule \'{}\' exited with non-zero code'.format(rule)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
 
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/tcp_buffer/tcp_buffer_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/tcp_buffer/tcp_buffer_rstats_filter.conf'):
         # Define Usage
         parser = argparse.ArgumentParser(
                 description=__doc__,

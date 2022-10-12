@@ -35,7 +35,6 @@ __credits__ = '''Contributors:
 '''
 
 import os
-import sys
 import yaml
 import time
 import psutil
@@ -43,9 +42,8 @@ import syslog
 import random
 import signal 
 import argparse
-import traceback
-import contextlib
-import collect_agent
+from functools import partial
+
 from selenium import webdriver
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
@@ -53,27 +51,9 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from selenium.common.exceptions import InvalidArgumentException
 from selenium.webdriver import FirefoxOptions
-from functools import partial
 
+import collect_agent
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 # TODO: Add support for other web browsers
 def init_driver(binary_path, binary_type):
@@ -88,14 +68,14 @@ def init_driver(binary_path, binary_type):
     driver = None
     if binary_type == "FirefoxBinary":
         try:
-           binary = FirefoxBinary(binary_path)
+            binary = FirefoxBinary(binary_path)
            options = FirefoxOptions()
            # Disable notifications
            options.add_argument("--disable-notifications")
            options.add_argument("--headless")
            driver = webdriver.Firefox(firefox_binary=binary, options=options)
         except Exception as ex:
-           message = 'ERROR when initializing the web driver: {}'.format(ex)
+            message = 'ERROR when initializing the web driver: {}'.format(ex)
            collect_agent.send_log(syslog.LOG_ERR, message)
            exit(message)
     return driver
@@ -113,18 +93,18 @@ def compute_qos_metrics(driver, url_to_fetch, qos_metrics):
     """
     results = dict()
     try:
-      driver.get(url_to_fetch)
+        driver.get(url_to_fetch)
       for key, value in qos_metrics.items():
           results[key] = driver.execute_script(value)
     except Exception as ex:
-           print(type(ex))
+        print(type(ex))
            message = 'An unexpected error occured: {}'.format(ex)
            collect_agent.send_log(syslog.LOG_WARNING, message)
            print(message)
     finally:
-           return results
-   
-    
+        return results
+
+
 def print_qos_metrics(dict_to_print, config):
     """
     Helper method to print a dictionary of QoS metrics using their pretty names
@@ -145,26 +125,26 @@ def choose_page_to_visit(driver):
     urls= list()
     for clickable_element in driver.find_elements_by_xpath('.//a'):
         try:
-           url = clickable_element.get_attribute('href')
+            url = clickable_element.get_attribute('href')
            urls.append(url)
         # Handle StaleElementReferenceException
         except Exception as ex:
-               pass     
+            pass     
     selected_page = None
     notselected_pages = list()
     if urls:
-       selected_page = random.choice(urls)
+        selected_page = random.choice(urls)
        notselected_pages = [url for url in urls if url != selected_page]
     return selected_page, notselected_pages
 
-    
+
 def kill_children(parent_pid):
     parent = psutil.Process(parent_pid)
     for child in parent.children(recursive=True):
         try:
-           child.kill()
+            child.kill()
         except putil.NoSuchProcess as ex:
-           pass
+            pass
 
 
 def kill_all(parent_pid, signum, frame):
@@ -179,12 +159,13 @@ def main(page_visit_duration):
     signal.signal(signal.SIGTERM, signal_handler_partial)
     signal.signal(signal.SIGINT, signal_handler_partial)
     # Load config from config.yaml
-    config = yaml.safe_load(open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config.yaml')))
+    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config.yaml')) as stream:
+        config = yaml.safe_load(stream)
     binary_path = config['driver']['binary_path']
     binary_type = config['driver']['binary_type']
     my_driver = init_driver(binary_path, binary_type)
     if my_driver is not None:
-       # Init local variables
+        # Init local variables
        qos_metrics_lists = dict()
        qos_metrics = dict()
        for metric in config['qos_metrics']:
@@ -195,10 +176,10 @@ def main(page_visit_duration):
        selected_page = start_page
        prev_notselected_pages = list()
        try:
-         while True:
-            s = "# Consulting web page " + selected_page + " #"
+           while True:
+               s = "# Consulting web page " + selected_page + " #"
             print('\n' + s)
-            timestamp = int(time.time() * 1000)
+            timestamp = collect_agent.now()
             my_qos_metrics = compute_qos_metrics(my_driver, selected_page, qos_metrics)
             if not my_qos_metrics:
                selected_page = random.choice(web_pages_root)
@@ -235,8 +216,9 @@ def main(page_visit_duration):
         collect_agent.send_log(syslog.LOG_ERR, message)
         exit(message)
 
+
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/random_web_browsing_qoe/random_web_browsing_qoe_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/random_web_browsing_qoe/random_web_browsing_qoe_rstats_filter.conf'):
         # Argument parsing
         parser = argparse.ArgumentParser()
         parser.add_argument("page_visit_duration", help="The amount of time in second, spend on each web page once it is loaded", type=int)

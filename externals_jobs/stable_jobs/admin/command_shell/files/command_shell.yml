@@ -4,7 +4,7 @@ general:
   name:            command_shell
   description: >
       This Job allows to launch a command line shell (be careful! The job is launched with root rights).
-  job_version:     '1.0'
+  job_version:     '1.1'
   keywords:        [command, shell, line]
   persistent:      true
 

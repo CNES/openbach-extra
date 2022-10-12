@@ -4,7 +4,7 @@ general:
   name:             pmtud
   description: >
       This job performs a Path MTU discovery
-  job_version:      '1.0'
+  job_version:      '1.1'
   keywords:         [pmtud, mtu, ping]
   persistent:       False
   needs_privileges: True

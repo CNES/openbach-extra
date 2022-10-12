@@ -30,7 +30,7 @@ general:
   description: >
       This Job acts like the server of a client/server chat messaging emulation.
       It generates sporadic traffic to test the interactivity of an emulated service.
-  job_version: '0.2'
+  job_version: '0.3'
   keywords:
     - intractive
     - traffic

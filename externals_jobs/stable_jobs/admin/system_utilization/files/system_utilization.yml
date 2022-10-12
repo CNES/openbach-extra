@@ -4,7 +4,7 @@ general:
   name:            system_utilization
   description: >
       This job retrieves information on system utilization (CPU, memory, disk). 
-  job_version:     '1.0'
+  job_version:     '1.1'
   keywords:        [system, utilization, CPU, memory, disk]
   persistent:      False
 

@@ -30,7 +30,7 @@ general:
   description: >
       This Job discovers the Path MTU (in bytes) from the agent runing the job
       to a distant machine.
-  job_version: '1.1'
+  job_version: '1.2'
   keywords:
     - mtu
   persistent: no

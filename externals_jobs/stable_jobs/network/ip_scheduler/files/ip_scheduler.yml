@@ -29,7 +29,7 @@ general:
   name: ip_scheduler
   description: >
       This Job allows to create a 3-level scheduler from an input file: WRR by trunk, WRR by terminal inside each trunk, and Strict Priority for each terminal
-  job_version: '1.1'
+  job_version: '1.2'
   keywords:
     - tc
     - qdisc

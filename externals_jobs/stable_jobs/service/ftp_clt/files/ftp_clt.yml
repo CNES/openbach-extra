@@ -31,7 +31,7 @@ general:
       This Job launches a ftp client to
       exchange files via FTP. It measures
       block exchange. 
-  job_version: '1.1'
+  job_version: '1.2'
   keywords:
     - ftp
   persistent: no

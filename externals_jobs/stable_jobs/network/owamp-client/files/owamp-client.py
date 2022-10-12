@@ -30,48 +30,29 @@ __author__ = 'Silicom'
 __credits__ = '''Contributor: Marlene MOST <mmost@silicom.fr>'''
 
 
-import os
 import syslog
 import argparse
-import traceback
 import subprocess
-import contextlib
 import numpy as np
 from sys import exit
 from time import sleep
 
 import collect_agent
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def build_parser():
     parser = argparse.ArgumentParser(description='', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('destination_address', type=str, help='Address of destination')
-    parser.add_argument('-c', type=int, dest='count', default=100, help='number of test packets to send '
-                                                                        'Default = 100 packets')
-
-    parser.add_argument('-i', type=str, dest='packets_interval',
-                        help='mean average time between packets (seconds)'
-                             'e=exponential distribution of the packets'
-                             'f=constant distribution of the packets'
-                             'Default = 0.1e')
+    parser.add_argument(
+            '-c', '--count',
+            type=int, default=100,
+            help='number of test packets to send Default = 100 packets')
+    parser.add_argument(
+            '-i', '--packets-interval',
+            help='mean average time between packets (seconds)'
+                 'e=exponential distribution of the packets'
+                 'f=constant distribution of the packets'
+                 'Default = 0.1e')
 
     return parser
 
@@ -255,6 +236,6 @@ def client(destination_address, count, packets_interval):
 
 
 if __name__ == '__main__':
-    with use_configuration('/opt/openbach/agent/jobs/owamp-client/owamp-client_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/owamp-client/owamp-client_rstats_filter.conf'):
         args = build_parser().parse_args()
         client(args.destination_address, args.count, args.packets_interval)

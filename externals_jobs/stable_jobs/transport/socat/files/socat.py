@@ -41,15 +41,15 @@ import os
 import sys
 import time
 import syslog
+import pathlib
 import argparse
-import traceback
-import contextlib
 import subprocess
 
 import collect_agent
 
 
-TMP_FILENAME='/tmp/socat.out'
+TMP_FILENAME = pathlib.Path('/tmp/socat.out')
+
 
 def get_file_size(name):
     if len(name.split('/')) > 1:
@@ -67,25 +67,7 @@ def get_file_size(name):
     elif 'k' in unit.lower():
         size = size * 1024
     return size
-    
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
+
 
 def main(server, dest, port, fn, measure_t, create_f):
     # Verify arguments
@@ -116,8 +98,11 @@ def main(server, dest, port, fn, measure_t, create_f):
             message = "ERROR wrong file name"
             collect_agent.send_log(syslog.LOG_ERR, message)
             sys.exit(message)
-        cmd = ['dd', 'if=/dev/zero', 'of={}'.format(TMP_FILENAME),
-               'bs=1', 'count={}'.format(size)]
+        cmd = [
+                'dd', 'if=/dev/zero',
+                'of={}'.format(TMP_FILENAME),
+                'bs=1', 'count={}'.format(size),
+        ]
         p = subprocess.run(cmd)
         if p.returncode != 0:
             message = "WARNING wrong return code when creating file"
@@ -145,47 +130,42 @@ def main(server, dest, port, fn, measure_t, create_f):
     all_ok = True
     if not server:
         size = get_file_size(fn)
-        if size and size != os.path.getsize(TMP_FILENAME):
-            collect_agent.send_log(syslog.LOG_WARNING, "Wrong file size:"
-                                   " expecting {}, got {}".format(size,
-                                                                os.path.getsize(TMP_FILENAME)))
+        if size and size != TMP_FILENAME.lstat().st_size:
             all_ok = False
+            collect_agent.send_log(
+                    syslog.LOG_WARNING,
+                    "Wrong file size: expecting {}, got {}".format(size, TMP_FILENAME.lstat().st_size))
     
     # Delete file 
-    cmd = ['rm', TMP_FILENAME]
-    r = subprocess.run(cmd)
-    
-    # Send statistics
-    statistics = {}
-    timestamp = int(round(time.time() * 1000))
+    TMP_FILENAME.unlink()
     if not measure_t:
         return
-    if p.returncode == 0 and all_ok:
-        timestamp = int(time.time() * 1000)
-        stderr = p.stderr
-        try:
-            duration = float(stderr)
-        except ValueError:
-            collect_agent.send_log(
-                    syslog.LOG_ERR,
-                    'ERROR: cannot convert output to duration '
-                    'value: {}'.format(stderr))
-        else:
-            try:
-                collect_agent.send_stat(timestamp, duration=duration)
-            except Exception as ex:
-                collect_agent.send_log(
-                        syslog.LOG_ERR,
-                        'ERROR sending stat: {}'.format(ex))
-    elif p.returncode:
+    
+    # Send statistics
+    if p.returncode:
         collect_agent.send_log(
                 syslog.LOG_ERR,
                 'ERROR: return code {}: {}'
                 .format(p.returncode, p.stderr))
+    elif all_ok:
+        try:
+            duration = float(p.stderr)
+        except ValueError:
+            collect_agent.send_log(
+                    syslog.LOG_ERR,
+                    'ERROR: cannot convert output to duration '
+                    'value: {}'.format(p.stderr))
+        else:
+            try:
+                collect_agent.send_stat(collect_agent.now(), duration=duration)
+            except Exception as ex:
+                collect_agent.send_log(
+                        syslog.LOG_ERR,
+                        'ERROR sending stat: {}'.format(ex))
 
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/socat/socat_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/socat/socat_rstats_filter.conf'):
         # Define Usage
         parser = argparse.ArgumentParser(
                 description=__doc__,

@@ -34,17 +34,15 @@ __credits__ = '''Contributors:
  * Bastien TAURAN <bastien.tauran@viveris.fr>
 '''
 
-import sys
 import os
+import sys
 import time
 import shutil
 import socket
 import syslog
 import argparse
 import ipaddress
-import traceback
 import threading
-import contextlib
 import subprocess
 
 import collect_agent
@@ -52,24 +50,6 @@ import collect_agent
 
 job_dir = '/opt/openbach/agent/jobs/voip_qoe_dest'
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def build_parser():
     """
@@ -166,7 +146,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    with use_configuration('{}/voip_qoe_dest_rstats_filter.conf'.format(job_dir)):
+    with collect_agent.use_configuration('{}/voip_qoe_dest_rstats_filter.conf'.format(job_dir)):
         # No internal configuration needed for receiver side
         # Argument parsing
         args = build_parser().parse_args()

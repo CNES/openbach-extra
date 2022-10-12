@@ -31,7 +31,7 @@ general:
       This Job sends identified UDP packets from a Client to a Server in order to
       check if the link introduces packets deordering and/or packets duplication.
       The analysis is performed in one direction only (from Client to Server).
-  job_version: '1.0'
+  job_version: '1.1'
   keywords:
     - order
     - duplicate

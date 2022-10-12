@@ -4,7 +4,7 @@ general:
   name:            smtp
   description: >
       This job run a smtp server or a smtp client that sends email to a server
-  job_version:     '1.1'
+  job_version:     '1.2'
   keywords:        [smtp, email]
   persistent:      True
 

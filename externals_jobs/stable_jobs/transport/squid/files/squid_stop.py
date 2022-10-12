@@ -40,13 +40,15 @@ import squid
 
 
 if __name__ == "__main__":
-    args = squid.parse_command_line()
+    args = squid.command_line_parser().parse_args()
     trans_proxy = args.trans_proxy
     source_addr = args.source_addr
     input_iface = args.input_iface
 
     # delete iptable rule with arguments
-    cmd = "iptables -t nat -D PREROUTING -i {} -s {}/24 -p tcp --dport 80 -j REDIRECT --to-port {} ".format(input_iface, source_addr, trans_proxy)
-    p = subprocess.Popen(cmd, shell=True)
-    p.wait()
-
+    subprocess.run([
+            'iptables', '-t', 'nat', '-D', 'PREROUTING',
+            '-i', input_iface, '-s', '{}/24'.format(source_addr),
+            '-p', 'tcp', '--dport', '80',
+            '-j', 'REDIRECT', '--to-port', str(trans_proxy),
+    ])

@@ -34,38 +34,15 @@ __credits__ = '''Contributors:
  * Bastien TAURAN <bastien.tauran@viveris.fr>
 '''
 
-import os
 import sys
 import syslog
 import argparse
-import traceback
 import subprocess
-import contextlib
-from enum import Enum
 
 import collect_agent
 
 
 OPERATIONS = {'add', 'change', 'replace', 'delete'}
-
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 
 def main(operation, destination_ip, mac_address, device):
@@ -85,10 +62,7 @@ def main(operation, destination_ip, mac_address, device):
 
     if p.returncode:
         error = p.stderr.decode()
-        if any(
-                err in error
-                for err in {'File exists', 'No such process'}
-                ):
+        if any(err in error for err in {'File exists', 'No such process'}):
             message = 'WARNING: {} exited with non-zero return value ({}): {}'.format(
                 command, p.returncode, error)
             collect_agent.send_log(syslog.LOG_WARNING, message)
@@ -105,7 +79,7 @@ def main(operation, destination_ip, mac_address, device):
 
 
 if __name__ == '__main__':
-    with use_configuration('/opt/openbach/agent/jobs/ip_neighbour/ip_neighbour_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/ip_neighbour/ip_neighbour_rstats_filter.conf'):
         # Define Usage
         parser = argparse.ArgumentParser(
                  description=__doc__,
@@ -118,4 +92,3 @@ if __name__ == '__main__':
           
         args = vars(parser.parse_args())
         main(**args)
-

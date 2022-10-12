@@ -42,49 +42,19 @@ import syslog
 import random
 import argparse
 import ipaddress
-import traceback
 import threading
 import subprocess
-import contextlib
-from time import time, sleep
+from time import sleep
 from codec import CodecConstants
-from compute_mos import compute_r_value, compute_mos_value
 
 import collect_agent
+from compute_mos import compute_r_value, compute_mos_value
+
 
 job_dir = '/opt/openbach/agent/jobs/voip_qoe_src'
 dest_job_dir = '/opt/openbach/agent/jobs/voip_qoe_dest'
 
 _FINISHED = False
-
-
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
-
-def get_timestamp():
-    """
-    To get a simple timestamp
-
-    :return: the current time in milliseconds
-    :rtype: int
-    """
-    return int(round(time() * 1000))
 
 
 def build_parser():
@@ -222,7 +192,7 @@ def main(config, args):
         except FileExistsError:
             pass  # Do nothing if the directory already exist
 
-        ref_timestamp = get_timestamp()
+        ref_timestamp = collect_agent.now()
         temp_file_name = "{}flows_{}_{}_{}s".format(args.nb_flows, args.codec, args.protocol, args.duration)
         local_log_file = '{}/logs/run{}/send.log'.format(job_dir, run_id)
         distant_log_file = '{}/logs/run{}/recv.log'.format(dest_job_dir, run_id)
@@ -306,7 +276,7 @@ def main(config, args):
 
 
 if __name__ == "__main__":
-    with use_configuration('{}/voip_qoe_dest_rstats_filter.conf'.format(job_dir)):
+    with collect_agent.use_configuration('{}/voip_qoe_dest_rstats_filter.conf'.format(job_dir)):
         # Internal configuration loading
         config = yaml.safe_load(open('{}/etc/internal_config.yml'.format(job_dir)))
     

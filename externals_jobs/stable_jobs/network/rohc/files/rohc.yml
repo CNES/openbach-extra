@@ -29,7 +29,7 @@ general:
   name: rohc
   description: >
       This Job creates a ROHC compressor and decompressor.
-  job_version: '1.0'
+  job_version: '1.1'
   keywords:
     - ROHC
     - header

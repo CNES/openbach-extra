@@ -33,18 +33,14 @@ __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 '''
 
-import os
 import sys
 import signal
 import socket
 import syslog
 import argparse
-import traceback
-import contextlib
 import subprocess
 from functools import partial
 
-import collect_agent
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import Firefox
 from selenium.webdriver.common.by import By
@@ -52,6 +48,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions as expected
 from selenium.webdriver.support.wait import WebDriverWait
+
+import collect_agent
 
 
 HTTP1 = 'http/1.1'
@@ -66,35 +64,19 @@ DEFAULT_PATH='/dash_content/BigBuckBunny/2sec/BigBuckBunny_2s_simple_2014_05_09.
 HTTP1_PORT = 8081
 HTTP2_PORT = 8082
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def isPortUsed(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         used = (s.connect_ex(('localhost', port)) == 0)
     return used
 
+
 def close_all(driver, p_tornado, signum, frame):
     """ Closes the browser if open """
     driver.quit()
     p_tornado.terminate()
     p_tornado.wait()
+
 
 def main(dst_ip, proto, tornado_port, path, time):
     if isPortUsed(tornado_port):
@@ -142,7 +124,7 @@ def main(dst_ip, proto, tornado_port, path, time):
 
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/dashjs_client/dashjs_client.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/dashjs_client/dashjs_client.conf'):
         # Define usage
         parser = argparse.ArgumentParser(
                 description='',

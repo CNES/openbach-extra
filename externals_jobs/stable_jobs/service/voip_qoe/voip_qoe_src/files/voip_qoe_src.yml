@@ -5,7 +5,7 @@ general:
   description: >
       An OpenBACH job to measure the QoE of one or many VoIP sessions generated with D-ITG software. This job
       corresponds to the caller (source) component and should be launched after the receiver (destination) component.
-  job_version: '2.3'
+  job_version: '2.4'
   keywords: [VoIP, source, QoE, D-ITG, codec]
   persistent: False
   need_privileges: True

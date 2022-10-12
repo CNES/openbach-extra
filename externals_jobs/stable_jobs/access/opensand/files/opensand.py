@@ -34,7 +34,6 @@
 @author   Aurélien DELRIEU <aurelien.delrieu@viveris.fr>
 """
 
-import os
 import re
 import sys
 import json
@@ -42,12 +41,11 @@ import select
 import socket
 import signal
 import syslog
+import os.path
 import argparse
 import tempfile
 import ipaddress
 import threading
-import traceback
-import contextlib
 import subprocess
 
 import collect_agent
@@ -69,24 +67,6 @@ PROC = None
 LOG_RCV = None
 STAT_RCV = None
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def run_entity(temp_dir, bin_dir, infrastructure, topology,
                profile=None, addr='127.0.0.1', logs_port=63000, stats_port=63001):
@@ -263,7 +243,7 @@ def udp_port(text):
 
 
 if __name__ == '__main__':
-    with use_configuration('/opt/openbach/agent/jobs/opensand/opensand_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/opensand/opensand_rstats_filter.conf'):
         parser = argparse.ArgumentParser(
             description='Set up the network configuration and launch an OpenSAND entity',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,

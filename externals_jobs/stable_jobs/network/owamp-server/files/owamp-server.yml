@@ -4,7 +4,7 @@ general:
   name: owamp-server
   description: >
     This Job launches the owamp-server daemon used to open TCP connection with client launching owping command. Must be launched with owamp-client.
-  job_version: '1.0'
+  job_version: '1.1'
   keywords: [owping, owdelay, daemon, server]
   persistent: yes
 

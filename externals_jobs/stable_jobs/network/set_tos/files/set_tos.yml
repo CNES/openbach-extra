@@ -4,7 +4,7 @@ general:
   name:             set_tos
   description: >
       This job adds an iptables rule to set the ToS field of the packets
-  job_version:      '1.0'
+  job_version:      '1.1'
   keywords:         [tos]
   persistent:       False
   needs_privileges: True

@@ -4,7 +4,7 @@ general:
   name:            vlc
   description: >
       This job launches VLC tool (sender or receiver mode) in order to send or receive a video stream. Statistics about medias contained in this video are sent by the receiver. You would start sender first.
-  job_version:     '2.0'
+  job_version:     '2.1'
   keywords:        [vlc, video, streaming, playing, frames lost]
   persistent:      False
 

@@ -35,40 +35,17 @@ __credits__ = '''Contributors:
 '''
 
 
-import os
 import sys
 import time
 import signal
 import syslog
 import socket
 import argparse
-import traceback
 import threading
-import contextlib
 from queue import Queue
 from functools import partial
 
 import collect_agent
-
-
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 
 def _parse_to_packets(entry):
@@ -184,15 +161,16 @@ def parse_udp(server_socket, q_signal):
         else:
             in_order.append(received.pop(0))
 
-    stats = dict()
-    stats['total_packets_received'] = total_received
-    stats['out_of_order_packets'] = len(out_of_order)
-    stats['out_of_order_ratio'] = len(out_of_order) / total_received
-    stats['duplicated_packets'] =  len(received) - len(set(received))
-    stats['duplicated_ratio'] = stats['duplicated_packets'] / total_received
-
-    timestamp = int(time.time() * 1000)
-    collect_agent.send_stat(timestamp, **stats)
+    ooo = len(out_of_order),
+    dupes = len(received) - len(set(received))
+    collect_agent.send_stat(
+            collect_agent.now(),
+            total_packets_received=total_received,
+            out_of_order_packets=ooo,
+            out_of_order_ratio=ooo / total_received,
+            duplicated_packets=dupes,
+            duplicated_ratio=dupes / total_received,
+    )
     message = q_signal.get_nowait()
     if message == 'stop_server':
         return True
@@ -231,7 +209,7 @@ def server(address, server_port, signal_port, exit):
 
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/outoforder_detect/outoforder_detect_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/outoforder_detect/outoforder_detect_rstats_filter.conf'):
         # Define Usage
         parser = argparse.ArgumentParser(
                 description=__doc__,

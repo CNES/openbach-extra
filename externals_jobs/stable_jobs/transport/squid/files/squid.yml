@@ -4,7 +4,7 @@ general:
   name:           squid
   description: >
       This Job launches the Squid caching proxy (in transparent or non transparent modes) and redirects traffic in transparent mode.
-  job_version:     '1.1'
+  job_version:     '1.2'
   keywords:        [squid, proxy, server, caching]
   persistent:      true
 

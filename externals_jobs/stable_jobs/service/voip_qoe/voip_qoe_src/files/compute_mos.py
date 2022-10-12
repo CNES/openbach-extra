@@ -234,8 +234,8 @@ def compute_mos_value(r_value):
     """
     MOS = 1
     if 0 < r_value < 100:
-        MOS = 1 + 0.035 * r_value + r_value * (r_value - 60) * (100 - r_value) * 7 * pow(10, -6)
-    elif r_value > 100:
+        MOS = 1 + 0.035 * r_value + r_value * (r_value - 60) * (100 - r_value) * 7 * 1e-6
+    elif r_value >= 100:
         MOS = 4.5
     return MOS
 

@@ -3,7 +3,7 @@
 general:
   name: ethtool
   description: This Job configures the GSO and TSO options via ethtool
-  job_version: '1.1'
+  job_version: '1.2'
   keywords: [ethtool, GSO, TSO]
   persistent: False
   need_privileges: yes

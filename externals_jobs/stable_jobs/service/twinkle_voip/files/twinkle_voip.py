@@ -42,10 +42,10 @@ import syslog
 import select
 import random
 import argparse
-import traceback
-import contextlib
 import subprocess
+
 import collect_agent
+
 
 TIMEOUT = 5         # timeout for commands
 CALL_TIMEOUT = 600  # timeout for calls
@@ -55,30 +55,11 @@ PORT_MAX = 57500
 
 dev = None     # the sound device to use as mic
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def conf(ip, port, nat):
     global dev
     # Load module snd-aloop
-    p = subprocess.run(["modprobe", "snd-aloop"],
-                         stderr=subprocess.PIPE)
+    p = subprocess.run(["modprobe", "snd-aloop"], stderr=subprocess.PIPE)
     if p.returncode != 0:
         msg = "Error when loading snd-aloop module (code {}: {})"
         msg = msg.format(p.returncode, p.stderr.decode())
@@ -86,7 +67,6 @@ def conf(ip, port, nat):
         return False
 
     # Get the conf files
-    
     try:
         home = os.environ["HOME"]
     except KeyError:
@@ -147,6 +127,7 @@ def conf(ip, port, nat):
 
     return True
 
+
 def wait_for(p, string, timeout=TIMEOUT):
     # set stdout to non blocking
     fd = p.stdout.fileno()
@@ -168,6 +149,7 @@ def wait_for(p, string, timeout=TIMEOUT):
                 return True
     return False
 
+
 def launch_twinkle():
     # Launch twinkle
     t = subprocess.Popen(["twinkle", "-c"], stdin=subprocess.PIPE,
@@ -180,6 +162,7 @@ def launch_twinkle():
         sys.exit(message)
     return t
 
+
 def call(p, remote):
     cmd = "call openbach@{}\n".format(remote)
     # Start call
@@ -191,10 +174,12 @@ def call(p, remote):
         return False
     return True
 
+
 def finish_call(p):
     # Stop call
     p.stdin.write(b'bye\n')
     p.stdin.flush()
+
 
 def play_audio(p, audio, length):
     timeout = length
@@ -236,6 +221,7 @@ def close_twinkle(p):
     p.stdin.flush()
     p.wait()
 
+
 def main(server, remote, audio, length, ip, port, nat):
     if not server and not remote:
         message = "ERROR must provide a remote address"
@@ -270,11 +256,13 @@ def main(server, remote, audio, length, ip, port, nat):
     # Close twinkle
     close_twinkle(t)
 
+
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/twinkle_voip/twinkle_voip_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/twinkle_voip/twinkle_voip_rstats_filter.conf'):
         # Define usage
-        parser = argparse.ArgumentParser(description='',
-                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser = argparse.ArgumentParser(
+                description='',
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
         parser.add_argument("ip", type=str,
                             help='The local IP address')
@@ -286,8 +274,8 @@ if __name__ == "__main__":
                             help='The remotes address')
         parser.add_argument('-a', '--audio', type=str,
                             default=DEFAULT_AUDIO, help='The audio file path to play')
-        parser.add_argument('-l', '--length', type=str,
-                            default='0', help='The length of the call in seconds')
+        parser.add_argument('-l', '--length', type=float,
+                            default=0, help='The length of the call in seconds')
         parser.add_argument('-p', '--port', type=str,
                             default='{}-{}'.format(PORT_MIN, PORT_MAX), help='The RTP port')
         
@@ -296,16 +284,19 @@ if __name__ == "__main__":
         server = args.server
         remote = args.remote
         audio = args.audio
-        length = float(args.length)
+        length = args.length
         port = args.port
         ip = args.ip
         nat = args.nat
-    
-        if len(port.split('-')) > 1:
-            port = random.randrange(int(port.split('-')[0]),
-                                    int(port.split('-')[1]))
-        else:
-            port = int(port)
+
+        try
+            try:
+                begin_range, end_range = port.split('-')
+            except ValueError:
+                port = int(port)
+            else
+                port = random.randrange(int(begin_range), int(end_range))
+        except ValueError:
+            parser.error('port: invalid port or range: {}'.format(port))
         
         main(server, remote, audio, length, ip, port, nat)
-    

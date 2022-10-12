@@ -37,17 +37,15 @@ __credits__ = '''Contributors:
 
 import os
 import sys
-import time
 import syslog
 import argparse
-import traceback
-import contextlib
-import subprocess
-import collect_agent
 
 from pyftpdlib.authorizers import DummyAuthorizer
 from pyftpdlib.handlers import FTPHandler
 from pyftpdlib.servers import ThreadedFTPServer
+
+import collect_agent
+
 
 failed_sent = 0
 failed_received = 0
@@ -55,51 +53,31 @@ failed_received = 0
 
 class MyHandler(FTPHandler):
     def on_file_received(self, file):
-        timestamp = int(time.time() * 1000)        
         time_up = self.data_channel.get_elapsed_time()
         if time_up != 0:
-                collect_agent.send_stat(timestamp,
+                collect_agent.send_stat(
+                        collect_agent.now(),
                         throughput_received = self.data_channel.get_transmitted_bytes()*8/time_up)
         os.system('rm -r /srv/' + file.split('/')[2])
 
     def on_file_sent(self, file):
-        timestamp = int(time.time() * 1000)
         time_up = self.data_channel.get_elapsed_time()
         if time_up != 0:
-                collect_agent.send_stat(timestamp, 
+                collect_agent.send_stat(
+                        collect_agent.now(),
                         throughput_sent = self.data_channel.get_transmitted_bytes()*8/time_up)
 
     def on_incomplete_file_received(self, file):
         global failed_received
-        timestamp = int(time.time() * 1000)
         failed_received += 1
-        collect_agent.send_stat(timestamp, failed_file_received = failed_received)
+        collect_agent.send_stat(collect_agent.now(), failed_file_received=failed_received)
         os.system('rm -r /srv/' + file.split('/')[2])
 
     def on_incomplete_file_sent(self, file):
         global failed_sent
-        timestamp = int(time.time() * 1000)
         failed_sent += 1
-        collect_agent.send_stat(timestamp, failed_file_sent = failed_sent)
+        collect_agent.send_stat(collect_agent.now(), failed_file_sent=failed_sent)
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def build_parser():
     parser = argparse.ArgumentParser(description='FTP Parser')
@@ -135,7 +113,6 @@ def main(server_ip, port, user, password, max_cons, max_cons_ip,):
 
 
 if __name__ == '__main__':
-    with use_configuration('/opt/openbach/agent/jobs/ping/ping_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/ping/ping_rstats_filter.conf'):
         args = build_parser().parse_args()
-        main(args.server_ip, args.port, args.user, args.password, args.max_cons,
-            args.max_cons_ip)
+        main(args.server_ip, args.port, args.user, args.password, args.max_cons, args.max_cons_ip)

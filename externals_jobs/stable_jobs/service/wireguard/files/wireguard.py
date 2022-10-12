@@ -34,45 +34,19 @@ __credits__ = '''Contributors:
  * Romain GUILLOTEAU <romain.guilloteau@viveris.fr>
 '''
 
-import argparse
-import os
-import signal
-import subprocess
 import sys
 import syslog
-import time
-from functools import partial
-import contextlib
+import signal
+import argparse
+import subprocess
+
 import collect_agent
-import psutil
-import traceback
-
-DESCRIPTION = ("""This job relies on Wireguard program to launch openvpn daemon as server or client.
-               Its is used to build a routed VPN tunnel between two remote hosts in p2p mode. This job
-               supports conventionnal encryption using a pre-shared secret key."""
-               )
 
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(
-        syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(
-                syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
+DESCRIPTION = """\
+This job relies on Wireguard program to launch openvpn daemon as server or client.
+Its is used to build a routed VPN tunnel between two remote hosts in p2p mode. This job
+supports conventionnal encryption using a pre-shared secret key."""
 
 
 def create_interface(tun_dev, tun_ip, private_key, listen_port, mtu):
@@ -145,31 +119,27 @@ def peer(tun_dev, peer_pub_key, allowed_ips, endpoint, persistent_keepalive, rem
     p.wait()
 
 
-def parse_command_line():
-    parser = argparse.ArgumentParser(description=DESCRIPTION,
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter
-                                     )
+def command_line_parser():
+    parser = argparse.ArgumentParser(
+            description=DESCRIPTION,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
-        "-tun-dev", "--tun-dev", type=str, default="wg0",
-        help="Name of the WireGuard interface"
-    )
+            "-tun-dev", "--tun-dev",
+            type=str, default="wg0",
+            help="Name of the WireGuard interface")
 
     subparsers = parser.add_subparsers(
         title="Subcommand mode", required=True,
-        help="Choose the action to apply: create an interface, add a peer, remove a peer, delete the interface"
-    )
+        help="Choose the action to apply: create an interface, add a peer, remove a peer, delete the interface")
 
     parser_create_interface = subparsers.add_parser(
-        "create_interface", help="Create a new interface"
-    )
+        "create_interface", help="Create a new interface")
 
     parser_peer = subparsers.add_parser(
-        "peer", help="Add, change or remove a peer to the existing interface"
-    )
+        "peer", help="Add, change or remove a peer to the existing interface")
 
     # Subparser for interface creation
-
     parser_create_interface.add_argument(
         'tun_ip', type=str,
         help='The IP/CIDR address to bind with the wireguard interface'
@@ -188,7 +158,6 @@ def parse_command_line():
     )
 
     # Subparser for peer actions
-
     parser_peer.add_argument(
         'peer_pub_key', type=str,
         help='The Public key of the peers we want to communicate with'
@@ -216,12 +185,12 @@ def parse_command_line():
     parser_create_interface.set_defaults(function=create_interface)
     parser_peer.set_defaults(function=peer)
 
-    return parser.parse_args()
+    return parser
 
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/wireguard/wireguard_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/wireguard/wireguard_rstats_filter.conf'):
         # Get args and call the appropriate function
-        args = vars(parse_command_line())
+        args = vars(command_line_parser().parse_args())
         main = args.pop('function')
         main(**args)

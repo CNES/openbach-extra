@@ -36,29 +36,27 @@ __credits__ = '''Contributors:
 
 import os
 import sys
-import time
 import string
 import random
 import shlex
 import syslog
 import argparse
 import tempfile
-import traceback
-import contextlib
 import subprocess
 from enum import Enum
 from ipaddress import ip_address
-from pathlib import Path
 
 import collect_agent
 
-DESCRIPTION = ("This job runs a client or a server QUIC. Supported QUIC implementations are: "
-               "ngtcp2, picoquic, quicly \n"
-               "By default, for any implemenation, the installed version is the HEAD of the master branch. "
-               "If you wish to install another version, you need to modify global variables related to the implementation "
-               "at the begining of the install file of the job by speficying the address of the git repository as well as "
-               "the version to install"
-              )
+
+DESCRIPTION = (
+        "This job runs a client or a server QUIC. Supported QUIC implementations are: "
+        "ngtcp2, picoquic, quicly \n"
+        "By default, for any implemenation, the installed version is the HEAD of the master branch. "
+        "If you wish to install another version, you need to modify global variables related to the implementation "
+        "at the begining of the install file of the job by speficying the address of the git repository as well as "
+        "the version to install"
+)
 
 SERVER_PORT = 4433
 CERT = "/etc/ssl/certs/quic.openbach.com.crt"
@@ -81,30 +79,6 @@ class DownloadError(RuntimeError):
                 "\n {} \n {}".format(resource, p.stdout.decode(), p.stderr.decode())
                 )
         super().__init__(self.message)
-
-
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
-
-
-def now():
-    return int(time.time() * 1000)
 
 
 def run_command(cmd, cwd=None):
@@ -216,9 +190,9 @@ def client(implementation, server_port, store_logs, log_dir, extra_args, server_
                     download_dir,
                     extra_args=extra_args)
             remove_resources(resources, download_dir) 
-            start_time = now()
+            start_time = collect_agent.now()
             p = run_command(cmd, cwd=download_dir)
-            end_time = now()
+            end_time = collect_agent.now()
         elapsed_time = end_time - start_time
         try:
             downloaded_bytes = check_resources(resources, download_dir, p)
@@ -226,7 +200,7 @@ def client(implementation, server_port, store_logs, log_dir, extra_args, server_
             errors.append((run_number + 1, error.message))
         else:
             collect_agent.send_stat(
-                    now(),
+                    collect_agent.now(),
                     download_time=elapsed_time,
                     downloaded_bytes=downloaded_bytes)
 
@@ -266,7 +240,7 @@ def writable_dir(path):
 
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/quic/quic_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/quic/quic_rstats_filter.conf'):
         # Argument parsing
         parser = argparse.ArgumentParser(
                    description=DESCRIPTION, 
@@ -339,4 +313,3 @@ if __name__ == "__main__":
         args = vars(parser.parse_args())
         main = args.pop('function')
         main(**args)
-
