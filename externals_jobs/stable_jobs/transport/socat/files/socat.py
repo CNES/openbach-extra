@@ -51,117 +51,97 @@ import collect_agent
 TMP_FILENAME = pathlib.Path('/tmp/socat.out')
 
 
-def get_file_size(name):
-    if len(name.split('/')) > 1:
-        return 0
-    
-    size, unit = re.search("([0-9]*)([a-zA-Z]*)", name).groups()
-    
-    try:
-        size = int(size)
-    except ValueError:
-        return 0
-    
-    if 'm' in unit.lower():
-        size = size * 1024 * 1024
-    elif 'k' in unit.lower():
-        size = size * 1024
-    return size
+def compact_bytes(value):
+    match = re.fullmatch(r'(\d+)(K|M|G)?', value)
+    if not match:
+        raise argparse.ArgumentError('wrong format: use numbers followed by an optionnal K, M, or G')
 
-
-def main(server, dest, port, fn, measure_t, create_f):
-    # Verify arguments
-    if server:
-        if not port:
-            message = "ERROR missing port parameter"
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            sys.exit(message)
-        if not fn:
-            message = "ERROR missing file parameter"
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            sys.exit(message)
+    base, unit = match.groups()
+    if unit == 'K':
+        return int(base) * 1024
+    elif unit == 'M':
+        return int(base) * 1024 * 1024
+    elif unit == 'G':
+        return int(base) * 1024 * 1024 * 1024
     else:
-        if not dest:
-            message = "ERROR missing dest parameter"
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            sys.exit(message)
-        if not port:
-            message = "ERROR missing port parameter"
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            sys.exit(message)
+        return int(base)
 
-    # Create file if necessary
-    if server and create_f:
-        # get file size from name
-        size = get_file_size(fn)
-        if not size:
-            message = "ERROR wrong file name"
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            sys.exit(message)
-        cmd = [
-                'dd', 'if=/dev/zero',
-                'of={}'.format(TMP_FILENAME),
-                'bs=1', 'count={}'.format(size),
-        ]
-        p = subprocess.run(cmd)
-        if p.returncode != 0:
-            message = "WARNING wrong return code when creating file"
+
+def server(port, send_file=None, create_file=None, measure_time=False):
+    if send_file:
+        with send_file:
+            filename = send_file.name
+
+    if create_file:
+        filename = TMP_FILENAME.as_posix()
+        output_file = 'of={}'.format(filename)
+        file_size = 'count={}'.format(create_file)
+        try:
+            subprocess.run(['dd', 'if=/dev/zero', output_file, 'bs=1', file_size], check=True)
+        except subprocess.CalledProcessError:
+            message = 'WARNING wrong return code when creating file'
             collect_agent.send_log(syslog.LOG_WARNING, message)
 
-    if server:
-        cmd = ['socat', 'TCP-LISTEN:{},reuseaddr,fork,crlf'.format(port),
-               'SYSTEM:"cat {}"'.format(TMP_FILENAME if create_f else fn)]
-    else:
-        cmd = ['socat', '-u', 'TCP:{}:{}'.format(dest, port),
-               'OPEN:{},creat,trunc'.format(TMP_FILENAME)]
-        
-    if measure_t:
+    cmd = [
+            'socat', 'TCP-LISTEN:{},reuseaddr,fork,crlf'.format(port),
+            'SYSTEM:"cat {}"'.format(filename),
+    ]
+    p = _run_command(cmd, measure_time)
+    TMP_FILENAME.unlink(missing_ok=True)
+
+    if measure_time:
+        _send_statistics(p)
+
+
+def client(dest, port, expected_size=None, measure_time=False):
+    cmd = ['socat', '-u', 'TCP:{}:{}'.format(dest, port), 'OPEN:{},creat,trunc'.format(TMP_FILENAME)]
+    p = _run_command(cmd, measure_time)
+
+    if expected_size and expected_size != TMP_FILENAME.lstat().st_size:
+        message = 'Wrong file size: expecting {}, got {}'.format(expected_size, TMP_FILENAME.lstat().st_size)
+        collect_agent.send_log(syslog.LOG_WARNING, message)
+    TMP_FILENAME.unlink(missing_ok=True)
+
+    if measure_time:
+        _send_statistics(p)
+
+
+def _run_command(cmd, measure_time):
+    if measure_time:
         cmd = ['/usr/bin/time', '-f', '%e', '--quiet'] + cmd
+
     try:
-        p = subprocess.run(cmd, stdout=subprocess.DEVNULL,
-                          stdin=subprocess.PIPE,
-                          stderr=subprocess.PIPE)
+        return subprocess.run(
+                cmd, stdout=subprocess.DEVNULL,
+                stdin=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True)
     except Exception as ex:
         message = "ERROR executing socat: {}".format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(mesage)
-    
-    # Check if file is correct
-    all_ok = True
-    if not server:
-        size = get_file_size(fn)
-        if size and size != TMP_FILENAME.lstat().st_size:
-            all_ok = False
-            collect_agent.send_log(
-                    syslog.LOG_WARNING,
-                    "Wrong file size: expecting {}, got {}".format(size, TMP_FILENAME.lstat().st_size))
-    
-    # Delete file 
-    TMP_FILENAME.unlink()
-    if not measure_t:
-        return
-    
-    # Send statistics
-    if p.returncode:
-        collect_agent.send_log(
-                syslog.LOG_ERR,
-                'ERROR: return code {}: {}'
-                .format(p.returncode, p.stderr))
-    elif all_ok:
+
+
+def _send_statistics(proccess):
+    returncode = process.returncode
+    output = process.stderr
+
+    if returncode:
+        message = 'ERROR: return code {}: {}'.format(returncode, output)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+
+    try:
+        duration = float(output)
+    except ValueError:
+        message = 'ERROR: cannot convert output to duration value: {}'.format(output)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
+    else:
         try:
-            duration = float(p.stderr)
-        except ValueError:
-            collect_agent.send_log(
-                    syslog.LOG_ERR,
-                    'ERROR: cannot convert output to duration '
-                    'value: {}'.format(p.stderr))
-        else:
-            try:
-                collect_agent.send_stat(collect_agent.now(), duration=duration)
-            except Exception as ex:
-                collect_agent.send_log(
-                        syslog.LOG_ERR,
-                        'ERROR sending stat: {}'.format(ex))
+            collect_agent.send_stat(collect_agent.now(), duration=duration)
+        except Exception as ex:
+            collect_agent.send_log(syslog.LOG_ERR, 'ERROR sending stat: {}'.format(ex))
 
 
 if __name__ == "__main__":
@@ -170,28 +150,43 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser(
                 description=__doc__,
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        # TODO: add mutual exclusivities
-        parser.add_argument('-s', '--server', action='store_true',
-                            help='Launch on server mode')
-        parser.add_argument('-d', '--dest', type=str, default='',
-                            help='The dest IP address')
-        parser.add_argument('-f', '--file', type=str, default='',
-                            help='The output file path, or size if create file')#req server
-        parser.add_argument('-t', '--time', action='store_true',
-                            help='Measure the duration of the process') # opt client
-        parser.add_argument('-c', '--create', action='store_true',
-                            help='Create the file') # opt server
-        
-        parser.add_argument('-p', '--port', type=int, default=0,
-                            help='The TCP port number')
-    
-        # get args
-        args = parser.parse_args()
-        server = args.server
-        dest = args.dest
-        port = args.port
-        fn = args.file
-        measure_t = args.time
-        create_f = args.create
-    
-        main(server, dest, port, fn, measure_t, create_f)
+        parser.add_argument(
+                'port', type=int,
+                help='The TCP port number')
+        parser.add_argument(
+                '-t', '--measure-time',
+                action='store_true',
+                help='Measure the duration of the process')
+
+        subparsers = parser.add_subparsers(
+            title='Subcommand mode',
+            help='Choose the socat mode (server mode or client mode)')
+        subparsers.required = True
+
+        # Only server parameters
+        parser_server = subparsers.add_parser('server', help='Run in server mode')
+        group = parser_server.add_mutually_exclusive_group(required=True)
+        group.add_argument(
+                '-f', '--send-file',
+                type=argparse.FileType('r'),
+                help='The file to send back to clients upon connection')
+        group.add_argument(
+                '-c', '--create-file', type=compact_bytes,
+                help='Generate a random file of the given size to send back to clients')
+
+        # Only client parameters
+        parser_client = subparser.add_parser('client', help='Run in client mode')
+        parser_client.add_argument('dest', help='IP address of the server')
+        parser_client.add_argument(
+                '-e', '--expected-size', type=compact_bytes,
+                help='The expected size of the file sent by the server. '
+                'Will not check if not provided, will send an error if '
+                'differences are found.')
+
+        parser_server.set_defaults(function=server)
+        parser_client.set_defaults(function=client)
+
+        # Get args and call the appropriate function
+        args = vars(parser.parse_args())
+        main = args.pop('function')
+        main(**args)

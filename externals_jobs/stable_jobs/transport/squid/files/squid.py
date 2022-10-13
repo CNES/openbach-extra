@@ -91,44 +91,40 @@ def remove_squid_cache():
 
 
 def main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file, clean_cache):
-    if path_conf_file is not None:
-        # copy squid configuration file from other dir
-        shutil.copy(path_conf_file, dstdir)
-    else:
-        srcfile = os.path.join(CURRENT_DIRECTORY, 'squid.conf')
-        dstdir = '/etc/squid/'
+    if path_conf_file is None:
+        path_conf_file = os.path.join(CURRENT_DIRECTORY, 'squid.conf')
 
-        # Copy squid conf file
-        shutil.copy(srcfile, dstdir)
- 
-        # set iptable rule with arguments
-        table = iptc.Table(iptc.Table.NAT)
-        target_chain = None
-        for chain in table.chains:
-            if chain.name == "PREROUTING":
-                target_chain = chain
-                break
-        if target_chain is None:
-            message = "ERROR could not find chain PREROUTING of NAT table"
-            collect_agent.send_log(syslog.LOG_ERROR, message)
-            sys.exit(message)
+    # Copy squid conf file
+    shutil.copy(path_conf_file, '/etc/squid/squid.conf')
 
-        rule = iptc.Rule()
-        rule.in_interface = str(input_iface)
-        rule.src = "{}/24".format(source_addr)
-        rule.protocol = "tcp"
-        match = rule.create_match("tcp")
-        match.dport = "80"
-        rule.create_target("REDIRECT")
-        rule.target.set_parameter("to_ports", str(trans_proxy))
-        try:
-            target_chain.append_rule(rule)
-        except iptc.ip4tc.IPTCError as ex:
-            message = "ERROR \'{}\'".format(ex)
-            collect_agent.send_log(syslog.LOG_ERROR, message)
-            sys.exit(message)
+    # set iptable rule with arguments
+    table = iptc.Table(iptc.Table.NAT)
+    target_chain = None
+    for chain in table.chains:
+        if chain.name == "PREROUTING":
+            target_chain = chain
+            break
+    if target_chain is None:
+        message = "ERROR could not find chain PREROUTING of NAT table"
+        collect_agent.send_log(syslog.LOG_ERROR, message)
+        sys.exit(message)
 
-        configure_platform(trans_proxy, non_transp_proxy)
+    rule = iptc.Rule()
+    rule.in_interface = str(input_iface)
+    rule.src = "{}/24".format(source_addr)
+    rule.protocol = "tcp"
+    match = rule.create_match("tcp")
+    match.dport = "80"
+    rule.create_target("REDIRECT")
+    rule.target.set_parameter("to_ports", str(trans_proxy))
+    try:
+        target_chain.append_rule(rule)
+    except iptc.ip4tc.IPTCError as ex:
+        message = "ERROR \'{}\'".format(ex)
+        collect_agent.send_log(syslog.LOG_ERROR, message)
+        sys.exit(message)
+
+    configure_platform(trans_proxy, non_transp_proxy)
 
     if clean_cache:
         remove_squid_cache()
