@@ -103,6 +103,7 @@ def compute_annotated_histogram(bins):
     _bins = bins[1:]
     def _compute_annotated_histogram(series):
         return pd.DataFrame(dict(zip(_bins, _hist(series))), index=[series.name])
+        
     return _compute_annotated_histogram
 
 
@@ -116,8 +117,8 @@ def save(figure, filename, use_pickle=False, set_legend=True):
                 for axis in figure.axes
                 if axis.get_legend() and set_legend
         ]
-        figure.savefig(filename, additional_artists=[artists], bbox_inches='tight')
-
+        #figure.savefig(filename, additional_artists=[artists], bbox_inches='tight')
+        figure.savefig(filename, bbox_inches='tight')
 
 class Statistics(InfluxDBCommunicator):
     @classmethod
@@ -258,7 +259,7 @@ class _Plot:
         df = self._find_statistic(statistic_name, index)
         df.index = pd.to_datetime(df.index, unit='ms')
 
-        for _, column in df.iteritems():
+        for _, column in df.items():
             groups = column.groupby(getattr(column.index, time_aggregation))
             stats = groups.describe(percentiles=percentiles)
             stats.index.name = 'Time ({}s)'.format(time_aggregation)
@@ -278,7 +279,7 @@ class _Plot:
         nb_segments = math.ceil((maximum - offset) / bin_size)
         bins = np.linspace(offset, maximum, nb_segments + 1, dtype='int')
 
-        for _, column in df.iteritems():
+        for _, column in df.items():
             groups = column.groupby(getattr(column.index, time_aggregation))
             stats = groups.apply(compute_annotated_histogram(bins))
             stats.index = ['{}-{}'.format(i, i+1) for i in stats.index.droplevel()]
@@ -326,13 +327,15 @@ class _Plot:
             statistic_name=None, index=None,
             percentiles=[[5, 95], [25, 75]], time_aggregation='hour',
             median=True, average=True, deviation=True,
-            boundaries=True, min_max=True, legend=True):
+            boundaries=True, min_max=True, legend=True,grid=True):
+
         if not percentiles:
             percentiles = []
         else:
             percentiles.sort(key=lambda x: abs(x[0] - x[1]), reverse=True)
 
         format_percentiles = [p / 100 for pair in percentiles for p in pair]
+
         temporal_binning = self.temporal_binning_statistics(
                 statistic_name, index,
                 time_aggregation, format_percentiles)
@@ -364,10 +367,13 @@ class _Plot:
             if legend:
                 axis.legend()
 
+            if grid:
+                axis.grid()
+                
             axis.set_xlabel(stats.index.name)
             if secondary_title is not None:
                 axis.set_ylabel(secondary_title)
-
+        
         return axis
 
     def plot_temporal_binning_histogram(
@@ -376,6 +382,7 @@ class _Plot:
             bin_size=100, offset=0, maximum=None,
             time_aggregation='hour', add_total=True,
             legend=True, legend_title=None):
+
         temporal_binning = self.temporal_binning_histogram(
                 statistic_name, index,
                 bin_size, offset, maximum,
@@ -385,12 +392,16 @@ class _Plot:
             _, axis = plt.subplots()
 
         for stats in temporal_binning:
+
             colors = plt.cm.jet(np.linspace(0, 1, len(stats.columns)))
+
             xticks_size, xtick_weight = (5, 'bold') if len(stats.index) > 50 else (None, None)
             for index, segments in stats.iterrows():
                 starts = segments.cumsum() - segments
                 bars = axis.bar(index, segments, bottom=starts, width=0.5,
                         label=index, color=colors, edgecolor='k', linewidth='0.1')
+
+                axis.set_xticks(stats.index)      
                 axis.set_xticklabels(stats.index, rotation=90, fontsize=xticks_size, weight=xtick_weight)
             if legend:
                 axis.legend(
