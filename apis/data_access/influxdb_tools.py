@@ -161,6 +161,7 @@ class ConditionTimestamp(ComparatorCondition):
         assert operator not in (Operator.Matches, Operator.DoesNotMatch)
         pattern = 'now() - {}{}' if from_now else '{}{}'
         self.escaped_value = pattern.format(value, unit)
+        
 
     @property
     def is_timestamp(self):

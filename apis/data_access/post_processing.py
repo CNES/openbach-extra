@@ -35,6 +35,7 @@ __all__ = ['save', 'Statistics']
 
 import math
 import pickle
+import stat
 import warnings
 import itertools
 from functools import partial
@@ -48,7 +49,7 @@ import matplotlib.pyplot as plt
 from .influxdb_tools import (
         tags_to_condition, select_query,
         InfluxDBCommunicator, Operator,
-        ConditionTag, ConditionAnd, ConditionOr,
+        ConditionTag, ConditionAnd, ConditionOr,ConditionTimestamp,
 )
 
 
@@ -95,6 +96,7 @@ def compute_histogram(bins):
     def _compute_histogram(series):
         histogram, _ = np.histogram(series.dropna(), bins)
         return histogram / histogram.sum()
+        
     return _compute_histogram
 
 
@@ -102,22 +104,22 @@ def compute_annotated_histogram(bins):
     _hist = compute_histogram(bins)
     _bins = bins[1:]
     def _compute_annotated_histogram(series):
-        return pd.DataFrame(dict(zip(_bins, _hist(series))), index=[series.name])
-        
+        return pd.DataFrame(dict(zip(_bins, _hist(series))), index=[series.name])      
     return _compute_annotated_histogram
 
 
 def save(figure, filename, use_pickle=False, set_legend=True):
+   
     if use_pickle:
         with open(filename, 'wb') as storage:
             pickle.dump(figure, storage)
     else:
-        artists = [
+
+        for axis in figure.axes:
+            
+            if axis.get_legend() and set_legend:
                 axis.legend(loc='center left', bbox_to_anchor=(1., .5))
-                for axis in figure.axes
-                if axis.get_legend() and set_legend
-        ]
-        #figure.savefig(filename, additional_artists=[artists], bbox_inches='tight')
+            
         figure.savefig(filename, bbox_inches='tight')
 
 class Statistics(InfluxDBCommunicator):
@@ -146,18 +148,31 @@ class Statistics(InfluxDBCommunicator):
 
     def _raw_influx_query(
             self, job=None, scenario=None, agent=None, job_instances=(),
-            suffix=None, fields=None, condition=None):
+            suffix=None, fields=None,timestamps=None, condition=None):
+
+        if timestamps is not None:
+            timestamp_condition = ConditionTimestamp.from_timestamps(timestamps)
+            condition=timestamp_condition if condition is None else ConditionAnd(condition, timestamp_condition)
+
+        if agent is not None:
+            agent = agent[0]
+        if job is not None:
+            job=job[0]
         conditions = tags_to_condition(scenario, agent, None, suffix, condition)
+
         instances = [
                 ConditionTag('@job_instance_id', Operator.Equal, job_id)
                 for job_id in job_instances
         ]
 
         if not conditions and not instances:
+            
             _condition = None
         elif conditions and not instances:
+            
             _condition = conditions
         elif not conditions and instances:
+            
             _condition = ConditionOr(*instances)
         else:
             _condition = ConditionAnd(conditions, ConditionOr(*instances))
@@ -194,15 +209,16 @@ class Statistics(InfluxDBCommunicator):
 
     def fetch(
             self, job=None, scenario=None, agent=None, job_instances=(),
-            suffix=None, fields=None, condition=None):
-        query = self._raw_influx_query(job, scenario, agent, job_instances, suffix, fields, condition)
-        data = self.sql_query(query)
+            suffix=None, fields=None,timestamps=None, condition=None):
+        query = self._raw_influx_query(job, scenario, agent, job_instances, suffix, fields, timestamps,condition)
+
+        data = self.sql_query(query)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
         yield from (_Plot(df) for df in self._parse_dataframes(data, query))
 
     def fetch_all(
             self, job=None, scenario=None, agent=None, job_instances=(),
-            suffix=None, fields=None, condition=None, columns=None):
-        query = self._raw_influx_query(job, scenario, agent, job_instances, suffix, fields, condition)
+            suffix=None, fields=None,timestamps=None, condition=None, columns=None):
+        query = self._raw_influx_query(job, scenario, agent, job_instances, suffix, fields,timestamps, condition)
         data = self.sql_query(query)
         df = pd.concat(self._parse_dataframes(data, query), axis=1)
         if not job_instances or columns is None:
@@ -256,9 +272,11 @@ class _Plot:
     def temporal_binning_statistics(
             self, statistic_name=None, index=None,
             time_aggregation='hour', percentiles=[.05, .25, .75, .95]):
-        df = self._find_statistic(statistic_name, index)
-        df.index = pd.to_datetime(df.index, unit='ms')
 
+        df = self._find_statistic(statistic_name, index)
+        
+        df.index = pd.to_datetime(df.index, unit='ms')
+        
         for _, column in df.items():
             groups = column.groupby(getattr(column.index, time_aggregation))
             stats = groups.describe(percentiles=percentiles)
@@ -268,19 +286,28 @@ class _Plot:
     def temporal_binning_histogram(
             self, statistic_name=None, index=None,
             bin_size=100, offset=0, maximum=None,
-            time_aggregation='hour', add_total=True):
+            time_aggregation='hour', add_total=True,stats_unit=None,facteur=None):
+
         df = self._find_statistic(statistic_name, index)
+        
         df.index = pd.to_datetime(df.index, unit='ms')
 
+
+        df =df/facteur
+        bin_size=bin_size/facteur
+        
         if maximum is None:
             nb_segments = math.ceil((df.max().max() - offset) / bin_size)
             maximum = nb_segments * bin_size + offset
-
         nb_segments = math.ceil((maximum - offset) / bin_size)
-        bins = np.linspace(offset, maximum, nb_segments + 1, dtype='int')
 
+        bins = np.linspace(offset, maximum, nb_segments + 1, dtype='int')
+        
         for _, column in df.items():
-            groups = column.groupby(getattr(column.index, time_aggregation))
+
+            dframe=pd.DataFrame({column.name:column})
+           
+            groups = dframe.groupby(getattr(dframe.index, time_aggregation))
             stats = groups.apply(compute_annotated_histogram(bins))
             stats.index = ['{}-{}'.format(i, i+1) for i in stats.index.droplevel()]
             stats.index.name = 'Time ({}s)'.format(time_aggregation)
@@ -289,7 +316,17 @@ class _Plot:
                 total.index = bins[1:]
                 total.columns = ['total']
                 stats = stats.append(total.transpose())
+            
             yield stats * 100
+
+    def compute_mean_median(
+        self,statistics_name=None,index=None):
+
+        df=self._find_statistic(statistics_name,index)
+
+        df.index = pd.to_datetime(df.index, unit='ms')
+        mean=df.mean()
+
         
     def plot_time_series(self, axis=None, secondary_title=None, legend=True):
         axis = self.time_series().plot(ax=axis, legend=legend)
@@ -304,6 +341,7 @@ class _Plot:
         return axis
 
     def plot_histogram(self, axis=None, secondary_title=None, bins=100, legend=True):
+
         axis = self.histogram(bins).plot(ax=axis, ylim=[-0.01, 1.01], legend=legend)
         if secondary_title is not None:
             axis.set_xlabel(secondary_title)
@@ -376,37 +414,54 @@ class _Plot:
         
         return axis
 
+
     def plot_temporal_binning_histogram(
             self, axis=None, secondary_title=None,
             statistic_name=None, index=None,
             bin_size=100, offset=0, maximum=None,
             time_aggregation='hour', add_total=True,
-            legend=True, legend_title=None):
+            legend=True, legend_title=None,stats_unit=None,legend_unit=None,colormap=None,facteur=None):
+
 
         temporal_binning = self.temporal_binning_histogram(
                 statistic_name, index,
                 bin_size, offset, maximum,
-                time_aggregation, add_total)
+                time_aggregation, add_total,stats_unit,facteur)
 
         if axis is None:
+
             _, axis = plt.subplots()
 
         for stats in temporal_binning:
 
-            colors = plt.cm.jet(np.linspace(0, 1, len(stats.columns)))
+            cmap=plt.get_cmap(colormap)
+                
+            colors = cmap(np.linspace(0, 1, len(stats.columns)))        
 
             xticks_size, xtick_weight = (5, 'bold') if len(stats.index) > 50 else (None, None)
-            for index, segments in stats.iterrows():
+
+            label_list=list(stats.columns)
+            label_list.append(0)
+            label_list.sort()      
+            #label.sort(reverse=True)
+            label=[]
+            for index in range(len(list(stats.columns))):
+                label.append('{} - {}'.format( label_list[index], label_list[index+1]))
+            for num,(index, segments) in enumerate(stats.iterrows()):
+
                 starts = segments.cumsum() - segments
-                bars = axis.bar(index, segments, bottom=starts, width=0.5,
-                        label=index, color=colors, edgecolor='k', linewidth='0.1')
+
+                if not num:
+                    axis.bar(index, segments, bottom=starts,width=0.5,label=label,color=colors, edgecolor='k', linewidth=0.1)
+                else:
+                    axis.bar(index, segments, bottom=starts,width=0.5,color=colors, edgecolor='k', linewidth=0.1)
 
                 axis.set_xticks(stats.index)      
                 axis.set_xticklabels(stats.index, rotation=90, fontsize=xticks_size, weight=xtick_weight)
+
             if legend:
-                axis.legend(
-                        handles=reversed(bars.patches), labels=reversed(list(stats.columns)), labelspacing=0.3,
-                        title=legend_title, loc='center left', bbox_to_anchor=(1., .5), fontsize='small')
+                axis.legend(labelspacing=0.5,title=f'{legend_title} ({legend_unit})', loc='center left', bbox_to_anchor=(1., .5))
+               
             axis.set_xlabel(stats.index.name)
             if secondary_title is not None:
                 axis.set_ylabel(secondary_title)
