@@ -51,6 +51,20 @@ class OpenBachFunction:
         self.wait_launched = launched
         self.wait_finished = finished
         self.label = label
+        self.fail_policy = {}
+
+    def ignore_on_fail(self):
+        self.fail_policy = {'policy': 'Ignore'}
+
+    def fail_on_fail(self):
+        self.fail_policy = {'policy': 'Fail'}
+
+    def retry_on_fail(self, limit=None, delay=None):
+        self.fail_policy = {
+                'policy': 'Retry',
+                'retry': limit,
+                'delay': delay,
+        }
 
     def build(self, functions, function_id):
         """Construct a dictionary representing this function.
@@ -67,6 +81,7 @@ class OpenBachFunction:
                     'launched_ids': list(safe_indexor(functions, self.wait_launched)),
                     'finished_ids': list(safe_indexor(functions, self.wait_finished)),
                 },
+                'on_fail': self.fail_policy,
         }
 
 
@@ -183,6 +198,7 @@ class StartScenarioInstance(OpenBachFunction):
 
     def __init__(self, launched, finished, delay, label):
         super().__init__(launched, finished, delay, label)
+        # self.ignore_on_fail()
         self.scenario_name = None
 
     def configure(self, scenario_name, **scenario_arguments):
