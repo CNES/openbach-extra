@@ -40,11 +40,14 @@ import warnings
 import itertools
 from functools import partial
 from contextlib import suppress
+from datetime import datetime,timedelta
 
 import yaml
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from openpyxl import Workbook
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from .influxdb_tools import (
         tags_to_condition, select_query,
@@ -122,6 +125,35 @@ def save(figure, filename, use_pickle=False, set_legend=True):
             
         figure.savefig(filename, bbox_inches='tight')
 
+def aggregator_factory(mapping):
+    def aggregator(pd_datetime):
+        for moment, intervals in mapping.items():
+            for interval in intervals:
+                if pd_datetime in interval:
+                    return moment
+        return 'undefined'
+    return aggregator
+
+def get_time_interval(df,start_journey,start_evening,start_night):
+
+        list_date=set()
+        for date in df.index.date:
+            list_date.add(date)
+        interval_jour=[]
+        interval_soiree=[]
+        interval_nuit=[]
+
+        for item in list_date:
+            journee=pd.Interval(pd.Timestamp('{} {}:00:00'.format(item,start_journey)), pd.Timestamp('{} {}:00:00'.format(item,start_evening)))
+            interval_jour.append(journee)
+            soiree=pd.Interval(pd.Timestamp('{} {}:00:00'.format(item,start_evening)), pd.Timestamp('{} {}:00:00'.format(item+timedelta(days=1),start_night)))
+            interval_soiree.append(soiree)
+            nuit=pd.Interval(pd.Timestamp('{} {}:00:00'.format(item+timedelta(days=1),start_night)), pd.Timestamp('{} {}:00:00'.format(item+timedelta(days=1),start_journey)))
+            interval_nuit.append(nuit)
+
+        mapping={'Journée':interval_jour,'Soirée':interval_soiree,'Nuit':interval_nuit}
+        return mapping
+        
 class Statistics(InfluxDBCommunicator):
     @classmethod
     def from_default_collector(cls, filepath=DEFAULT_COLLECTOR_FILEPATH):
@@ -154,11 +186,8 @@ class Statistics(InfluxDBCommunicator):
             timestamp_condition = ConditionTimestamp.from_timestamps(timestamps)
             condition=timestamp_condition if condition is None else ConditionAnd(condition, timestamp_condition)
 
-        if agent is not None:
-            agent = agent[0]
-        if job is not None:
-            job=job[0]
-        conditions = tags_to_condition(scenario, agent, None, suffix, condition)
+        
+        conditions = tags_to_condition(scenario, agent, None, suffix, condition) 
 
         instances = [
                 ConditionTag('@job_instance_id', Operator.Equal, job_id)
@@ -180,14 +209,16 @@ class Statistics(InfluxDBCommunicator):
 
     def _parse_dataframes(self, response, query):
         offset = self.origin
+      
         names = ['job', 'scenario', 'agent', 'suffix', 'statistic']
         for df in influx_to_pandas(response, query):
             converters = dict.fromkeys(df.columns, partial(pd.to_numeric, errors='coerce'))
+            
             converters.pop('@owner_scenario_instance_id')
             converters.pop('@suffix', None)
             converters['@agent_name'] = _identity
-
             converted = [convert(df[column]) for column, convert in converters.items()]
+
             if '@suffix' in df:
                 converted.append(df['@suffix'].fillna(''))
             else:
@@ -211,7 +242,6 @@ class Statistics(InfluxDBCommunicator):
             self, job=None, scenario=None, agent=None, job_instances=(),
             suffix=None, fields=None,timestamps=None, condition=None):
         query = self._raw_influx_query(job, scenario, agent, job_instances, suffix, fields, timestamps,condition)
-
         data = self.sql_query(query)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
         yield from (_Plot(df) for df in self._parse_dataframes(data, query))
 
@@ -230,11 +260,13 @@ class Statistics(InfluxDBCommunicator):
 class _Plot:
     def __init__(self, dataframe):
         self.dataframe = dataframe
+
         self.df = dataframe[dataframe.index >= 0]
 
     def _find_statistic(self, statistic_name=None, index=None):
         if statistic_name is not None:
             index = self.df.columns.get_level_values(4) == statistic_name
+
 
         if index is None:
             return self.df
@@ -286,7 +318,7 @@ class _Plot:
     def temporal_binning_histogram(
             self, statistic_name=None, index=None,
             bin_size=100, offset=0, maximum=None,
-            time_aggregation='hour', add_total=True,stats_unit=None,facteur=None):
+            time_aggregation='hour', add_total=True,facteur=None):
 
         df = self._find_statistic(statistic_name, index)
         
@@ -294,7 +326,6 @@ class _Plot:
 
 
         df =df/facteur
-        bin_size=bin_size/facteur
         
         if maximum is None:
             nb_segments = math.ceil((df.max().max() - offset) / bin_size)
@@ -304,7 +335,7 @@ class _Plot:
         bins = np.linspace(offset, maximum, nb_segments + 1, dtype='int')
         
         for _, column in df.items():
-
+            
             dframe=pd.DataFrame({column.name:column})
            
             groups = dframe.groupby(getattr(dframe.index, time_aggregation))
@@ -315,17 +346,83 @@ class _Plot:
                 total = column.to_frame().apply(compute_histogram(bins))
                 total.index = bins[1:]
                 total.columns = ['total']
-                stats = stats.append(total.transpose())
-            
+                stats = stats.append(total.transpose())          
             yield stats * 100
+    
 
-    def compute_mean_median(
-        self,statistics_name=None,index=None):
+    def compute_function( self,statistic_name,function,facteur,
+                           start_journey=None,start_evening=None,start_night=None):
 
-        df=self._find_statistic(statistics_name,index)
-
+        df = self._find_statistic(statistic_name, None)
         df.index = pd.to_datetime(df.index, unit='ms')
-        mean=df.mean()
+        df=df/facteur
+
+        mapping=get_time_interval(df,start_journey,start_evening,start_night)
+        moments=mapping.keys()
+        if function=='moyenne':
+            means_Series=df.mean(axis=1)
+            mean_groups=means_Series.groupby(aggregator_factory(mapping))
+            stat=mean_groups.mean()
+
+        if function=='mediane':
+            median_Series=df.median(axis=1)
+            median_groups=median_Series.groupby(aggregator_factory(mapping))
+            stat=median_groups.median()
+
+        if function=='min':
+            min_Series=df.min(axis=1)
+            min_groups=min_Series.groupby(aggregator_factory(mapping))
+            stat=min_groups.min()
+            
+        if function=='max':
+            max_Series=df.max(axis=1)
+            max_groups=max_Series.groupby(aggregator_factory(mapping))
+            stat=max_groups.max() 
+                                                                   
+        return stat,moments  
+
+    def plot_summary_agent_comparison(
+                                self,axis, statistic_name,function,facteur,reference,agent,
+                                num_bar,start_journey=None,start_evening=None,start_night=None):
+
+        stat,_=self.compute_function(
+                                statistic_name,function,facteur,
+                                start_journey,start_evening,start_night)
+       
+        if axis is None:
+            _,axis=plt.subplot()
+        axis[0].axis([0, 10, 0, 10])  
+        axis[0].text(0.1,0.5,agent,fontsize=10,transform=axis[0].transAxes)
+        axis=axis[1:]
+        step=int(100/num_bar)
+        for (axe,value) in zip(axis,stat):
+                
+            if reference is not None:
+                height=range(step,(num_bar+1)*step,step)
+                nb_bars=np.arange(len(height))
+                axe.bar(nb_bars,height,width=0.7,color=(0.1, 0.1, 0.1, 0.1))  
+                if value >=0 and value <= (reference*1/num_bar):
+                    height=[step]
+                if value >(reference*1/num_bar) and value <= (reference*2/num_bar):
+                    height=range(step,3*step,step)
+                if value >(reference*2/num_bar) and value <= (reference*3/num_bar):
+                    height=range(step,4*step,step)
+                if value >(reference*3/num_bar) and value <= (reference*4/num_bar):
+                    height=range(step,5*step,step)
+                if value >(reference*4/num_bar) :
+                    height=range(step,6*step,step)
+                """for i in range(1,num_bar+1):
+                    height=range(step,(i+1)*step,step)"""
+                nb_bars=np.arange(len(height))
+                axe.bar(nb_bars,height,label=round(value,2),width=0.7,color='black')
+                axe.text(-0.3,80,str(round(value,2)),fontsize=7)
+            else:
+
+               axe.axis([0, 10, 0, 10])   
+               axe.text(3,5,str(round(value,2)),fontsize=10)
+
+        return axis  
+
 
         
     def plot_time_series(self, axis=None, secondary_title=None, legend=True):
@@ -426,14 +523,13 @@ class _Plot:
         temporal_binning = self.temporal_binning_histogram(
                 statistic_name, index,
                 bin_size, offset, maximum,
-                time_aggregation, add_total,stats_unit,facteur)
+                time_aggregation, add_total,facteur)
 
         if axis is None:
 
             _, axis = plt.subplots()
 
         for stats in temporal_binning:
-
             cmap=plt.get_cmap(colormap)
                 
             colors = cmap(np.linspace(0, 1, len(stats.columns)))        
@@ -452,18 +548,20 @@ class _Plot:
                 starts = segments.cumsum() - segments
 
                 if not num:
-                    axis.bar(index, segments, bottom=starts,width=0.5,label=label,color=colors, edgecolor='k', linewidth=0.1)
+                   bars= axis.bar(index, segments, bottom=starts,width=0.5,label=label,color=colors, edgecolor='k', linewidth=0.1)
                 else:
-                    axis.bar(index, segments, bottom=starts,width=0.5,color=colors, edgecolor='k', linewidth=0.1)
+                   bars= axis.bar(index, segments, bottom=starts,width=0.5,color=colors, edgecolor='k', linewidth=0.1)
 
                 axis.set_xticks(stats.index)      
                 axis.set_xticklabels(stats.index, rotation=90, fontsize=xticks_size, weight=xtick_weight)
-
+            handles, labels = plt.gca().get_legend_handles_labels()
             if legend:
-                axis.legend(labelspacing=0.5,title=f'{legend_title} ({legend_unit})', loc='center left', bbox_to_anchor=(1., .5))
+                axis.legend(reversed(handles),reversed(labels),labelspacing=0.5,title=f'{legend_title} ({legend_unit})', loc='center left', bbox_to_anchor=(1., .5))
                
             axis.set_xlabel(stats.index.name)
             if secondary_title is not None:
                 axis.set_ylabel(secondary_title)
 
         return axis
+
+
