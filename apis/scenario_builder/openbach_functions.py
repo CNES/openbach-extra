@@ -59,12 +59,13 @@ class OpenBachFunction:
     def fail_on_fail(self):
         self.fail_policy = {'policy': 'Fail'}
 
-    def retry_on_fail(self, limit=None, delay=None):
+    def retry_on_fail(self, limit, delay=None):
         self.fail_policy = {
                 'policy': 'Retry',
                 'retry': limit,
-                'delay': delay,
         }
+        if delay is not None:
+            self.fail_policy['delay'] = delay
 
     def build(self, functions, function_id):
         """Construct a dictionary representing this function.
@@ -198,7 +199,6 @@ class StartScenarioInstance(OpenBachFunction):
 
     def __init__(self, launched, finished, delay, label):
         super().__init__(launched, finished, delay, label)
-        # self.ignore_on_fail()
         self.scenario_name = None
 
     def configure(self, scenario_name, **scenario_arguments):
