@@ -151,7 +151,7 @@ def get_time_interval(df,start_journey,start_evening,start_night):
             nuit=pd.Interval(pd.Timestamp('{} {}:00:00'.format(item+timedelta(days=1),start_night)), pd.Timestamp('{} {}:00:00'.format(item+timedelta(days=1),start_journey)))
             interval_nuit.append(nuit)
 
-        mapping={'Journée':interval_jour,'Soirée':interval_soiree,'Nuit':interval_nuit}
+        mapping={f'Journée ({start_journey}h-{start_evening}h)':interval_jour,f'Soirée ({start_evening}h-{start_night}h)':interval_soiree,f'Nuit ({start_night}h-{start_journey}h)':interval_nuit}
         return mapping
         
 class Statistics(InfluxDBCommunicator):
@@ -209,11 +209,9 @@ class Statistics(InfluxDBCommunicator):
 
     def _parse_dataframes(self, response, query):
         offset = self.origin
-      
         names = ['job', 'scenario', 'agent', 'suffix', 'statistic']
         for df in influx_to_pandas(response, query):
-            converters = dict.fromkeys(df.columns, partial(pd.to_numeric, errors='coerce'))
-            
+            converters = dict.fromkeys(df.columns, partial(pd.to_numeric, errors='coerce'))            
             converters.pop('@owner_scenario_instance_id')
             converters.pop('@suffix', None)
             converters['@agent_name'] = _identity
@@ -350,14 +348,14 @@ class _Plot:
             yield stats * 100
     
 
-    def compute_function( self,statistic_name,function,facteur,
+    def compute_function( self,df,function,facteur,
                            start_journey=None,start_evening=None,start_night=None):
 
-        df = self._find_statistic(statistic_name, None)
         df.index = pd.to_datetime(df.index, unit='ms')
         df=df/facteur
 
         mapping=get_time_interval(df,start_journey,start_evening,start_night)
+    
         moments=mapping.keys()
         if function=='moyenne':
             means_Series=df.mean(axis=1)
@@ -378,51 +376,8 @@ class _Plot:
             max_Series=df.max(axis=1)
             max_groups=max_Series.groupby(aggregator_factory(mapping))
             stat=max_groups.max() 
-                                                                   
+
         return stat,moments  
-
-    def plot_summary_agent_comparison(
-                                self,axis, statistic_name,function,facteur,reference,agent,
-                                num_bar,start_journey=None,start_evening=None,start_night=None):
-
-        stat,_=self.compute_function(
-                                statistic_name,function,facteur,
-                                start_journey,start_evening,start_night)
-       
-        if axis is None:
-            _,axis=plt.subplot()
-        axis[0].axis([0, 10, 0, 10])  
-        axis[0].text(0.1,0.5,agent,fontsize=10,transform=axis[0].transAxes)
-        axis=axis[1:]
-        step=int(100/num_bar)
-        for (axe,value) in zip(axis,stat):
-                
-            if reference is not None:
-                height=range(step,(num_bar+1)*step,step)
-                nb_bars=np.arange(len(height))
-                axe.bar(nb_bars,height,width=0.7,color=(0.1, 0.1, 0.1, 0.1))  
-                if value >=0 and value <= (reference*1/num_bar):
-                    height=[step]
-                if value >(reference*1/num_bar) and value <= (reference*2/num_bar):
-                    height=range(step,3*step,step)
-                if value >(reference*2/num_bar) and value <= (reference*3/num_bar):
-                    height=range(step,4*step,step)
-                if value >(reference*3/num_bar) and value <= (reference*4/num_bar):
-                    height=range(step,5*step,step)
-                if value >(reference*4/num_bar) :
-                    height=range(step,6*step,step)
-                """for i in range(1,num_bar+1):
-                    height=range(step,(i+1)*step,step)"""
-                nb_bars=np.arange(len(height))
-                axe.bar(nb_bars,height,label=round(value,2),width=0.7,color='black')
-                axe.text(-0.3,80,str(round(value,2)),fontsize=7)
-            else:
-
-               axe.axis([0, 10, 0, 10])   
-               axe.text(3,5,str(round(value,2)),fontsize=10)
-
-        return axis  
-
 
         
     def plot_time_series(self, axis=None, secondary_title=None, legend=True):
@@ -538,8 +493,7 @@ class _Plot:
 
             label_list=list(stats.columns)
             label_list.append(0)
-            label_list.sort()      
-            #label.sort(reverse=True)
+            label_list.sort()    
             label=[]
             for index in range(len(list(stats.columns))):
                 label.append('{} - {}'.format( label_list[index], label_list[index+1]))
