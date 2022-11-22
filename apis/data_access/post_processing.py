@@ -35,20 +35,24 @@ __all__ = ['save', 'Statistics']
 
 import math
 import pickle
+import stat
 import warnings
 import itertools
 from functools import partial
 from contextlib import suppress
+from datetime import datetime,timedelta
 
 import yaml
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from openpyxl import Workbook
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from .influxdb_tools import (
         tags_to_condition, select_query,
         InfluxDBCommunicator, Operator,
-        ConditionTag, ConditionAnd, ConditionOr,
+        ConditionTag, ConditionAnd, ConditionOr,ConditionTimestamp,
 )
 
 
@@ -95,6 +99,7 @@ def compute_histogram(bins):
     def _compute_histogram(series):
         histogram, _ = np.histogram(series.dropna(), bins)
         return histogram / histogram.sum()
+        
     return _compute_histogram
 
 
@@ -102,23 +107,53 @@ def compute_annotated_histogram(bins):
     _hist = compute_histogram(bins)
     _bins = bins[1:]
     def _compute_annotated_histogram(series):
-        return pd.DataFrame(dict(zip(_bins, _hist(series))), index=[series.name])
+        return pd.DataFrame(dict(zip(_bins, _hist(series))), index=[series.name])      
     return _compute_annotated_histogram
 
 
 def save(figure, filename, use_pickle=False, set_legend=True):
+   
     if use_pickle:
         with open(filename, 'wb') as storage:
             pickle.dump(figure, storage)
     else:
-        artists = [
+
+        for axis in figure.axes:
+            
+            if axis.get_legend() and set_legend:
                 axis.legend(loc='center left', bbox_to_anchor=(1., .5))
-                for axis in figure.axes
-                if axis.get_legend() and set_legend
-        ]
-        figure.savefig(filename, additional_artists=[artists], bbox_inches='tight')
+            
+        figure.savefig(filename, bbox_inches='tight')
 
+def aggregator_factory(mapping):
+    def aggregator(pd_datetime):
+        for moment, intervals in mapping.items():
+            for interval in intervals:
+                if pd_datetime in interval:
+                    return moment
+        return 'undefined'
+    return aggregator
 
+def get_time_interval(df,start_journey,start_evening,start_night):
+
+        list_date=set()
+        for date in df.index.date:
+            list_date.add(date)
+        interval_jour=[]
+        interval_soiree=[]
+        interval_nuit=[]
+
+        for item in list_date:
+            journee=pd.Interval(pd.Timestamp('{} {}:00:00'.format(item,start_journey)), pd.Timestamp('{} {}:00:00'.format(item,start_evening)))
+            interval_jour.append(journee)
+            soiree=pd.Interval(pd.Timestamp('{} {}:00:00'.format(item,start_evening)), pd.Timestamp('{} {}:00:00'.format(item+timedelta(days=1),start_night)))
+            interval_soiree.append(soiree)
+            nuit=pd.Interval(pd.Timestamp('{} {}:00:00'.format(item+timedelta(days=1),start_night)), pd.Timestamp('{} {}:00:00'.format(item+timedelta(days=1),start_journey)))
+            interval_nuit.append(nuit)
+
+        mapping={f'Journée ({start_journey}h-{start_evening}h)':interval_jour,f'Soirée ({start_evening}h-{start_night}h)':interval_soiree,f'Nuit ({start_night}h-{start_journey}h)':interval_nuit}
+        return mapping
+        
 class Statistics(InfluxDBCommunicator):
     @classmethod
     def from_default_collector(cls, filepath=DEFAULT_COLLECTOR_FILEPATH):
@@ -145,18 +180,28 @@ class Statistics(InfluxDBCommunicator):
 
     def _raw_influx_query(
             self, job=None, scenario=None, agent=None, job_instances=(),
-            suffix=None, fields=None, condition=None):
-        conditions = tags_to_condition(scenario, agent, None, suffix, condition)
+            suffix=None, fields=None,timestamps=None, condition=None):
+
+        if timestamps is not None:
+            timestamp_condition = ConditionTimestamp.from_timestamps(timestamps)
+            condition=timestamp_condition if condition is None else ConditionAnd(condition, timestamp_condition)
+
+        
+        conditions = tags_to_condition(scenario, agent, None, suffix, condition) 
+
         instances = [
                 ConditionTag('@job_instance_id', Operator.Equal, job_id)
                 for job_id in job_instances
         ]
 
         if not conditions and not instances:
+            
             _condition = None
         elif conditions and not instances:
+            
             _condition = conditions
         elif not conditions and instances:
+            
             _condition = ConditionOr(*instances)
         else:
             _condition = ConditionAnd(conditions, ConditionOr(*instances))
@@ -166,12 +211,12 @@ class Statistics(InfluxDBCommunicator):
         offset = self.origin
         names = ['job', 'scenario', 'agent', 'suffix', 'statistic']
         for df in influx_to_pandas(response, query):
-            converters = dict.fromkeys(df.columns, partial(pd.to_numeric, errors='coerce'))
+            converters = dict.fromkeys(df.columns, partial(pd.to_numeric, errors='coerce'))            
             converters.pop('@owner_scenario_instance_id')
             converters.pop('@suffix', None)
             converters['@agent_name'] = _identity
-
             converted = [convert(df[column]) for column, convert in converters.items()]
+
             if '@suffix' in df:
                 converted.append(df['@suffix'].fillna(''))
             else:
@@ -193,15 +238,15 @@ class Statistics(InfluxDBCommunicator):
 
     def fetch(
             self, job=None, scenario=None, agent=None, job_instances=(),
-            suffix=None, fields=None, condition=None):
-        query = self._raw_influx_query(job, scenario, agent, job_instances, suffix, fields, condition)
-        data = self.sql_query(query)
+            suffix=None, fields=None,timestamps=None, condition=None):
+        query = self._raw_influx_query(job, scenario, agent, job_instances, suffix, fields, timestamps,condition)
+        data = self.sql_query(query)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
         yield from (_Plot(df) for df in self._parse_dataframes(data, query))
 
     def fetch_all(
             self, job=None, scenario=None, agent=None, job_instances=(),
-            suffix=None, fields=None, condition=None, columns=None):
-        query = self._raw_influx_query(job, scenario, agent, job_instances, suffix, fields, condition)
+            suffix=None, fields=None,timestamps=None, condition=None, columns=None):
+        query = self._raw_influx_query(job, scenario, agent, job_instances, suffix, fields,timestamps, condition)
         data = self.sql_query(query)
         df = pd.concat(self._parse_dataframes(data, query), axis=1)
         if not job_instances or columns is None:
@@ -213,11 +258,13 @@ class Statistics(InfluxDBCommunicator):
 class _Plot:
     def __init__(self, dataframe):
         self.dataframe = dataframe
+
         self.df = dataframe[dataframe.index >= 0]
 
     def _find_statistic(self, statistic_name=None, index=None):
         if statistic_name is not None:
             index = self.df.columns.get_level_values(4) == statistic_name
+
 
         if index is None:
             return self.df
@@ -255,10 +302,12 @@ class _Plot:
     def temporal_binning_statistics(
             self, statistic_name=None, index=None,
             time_aggregation='hour', percentiles=[.05, .25, .75, .95]):
-        df = self._find_statistic(statistic_name, index)
-        df.index = pd.to_datetime(df.index, unit='ms')
 
-        for _, column in df.iteritems():
+        df = self._find_statistic(statistic_name, index)
+        
+        df.index = pd.to_datetime(df.index, unit='ms')
+        
+        for _, column in df.items():
             groups = column.groupby(getattr(column.index, time_aggregation))
             stats = groups.describe(percentiles=percentiles)
             stats.index.name = 'Time ({}s)'.format(time_aggregation)
@@ -267,19 +316,27 @@ class _Plot:
     def temporal_binning_histogram(
             self, statistic_name=None, index=None,
             bin_size=100, offset=0, maximum=None,
-            time_aggregation='hour', add_total=True):
+            time_aggregation='hour', add_total=True,facteur=None):
+
         df = self._find_statistic(statistic_name, index)
+        
         df.index = pd.to_datetime(df.index, unit='ms')
 
+
+        df =df/facteur
+        
         if maximum is None:
             nb_segments = math.ceil((df.max().max() - offset) / bin_size)
             maximum = nb_segments * bin_size + offset
-
         nb_segments = math.ceil((maximum - offset) / bin_size)
-        bins = np.linspace(offset, maximum, nb_segments + 1, dtype='int')
 
-        for _, column in df.iteritems():
-            groups = column.groupby(getattr(column.index, time_aggregation))
+        bins = np.linspace(offset, maximum, nb_segments + 1, dtype='int')
+        
+        for _, column in df.items():
+            
+            dframe=pd.DataFrame({column.name:column})
+           
+            groups = dframe.groupby(getattr(dframe.index, time_aggregation))
             stats = groups.apply(compute_annotated_histogram(bins))
             stats.index = ['{}-{}'.format(i, i+1) for i in stats.index.droplevel()]
             stats.index.name = 'Time ({}s)'.format(time_aggregation)
@@ -287,8 +344,41 @@ class _Plot:
                 total = column.to_frame().apply(compute_histogram(bins))
                 total.index = bins[1:]
                 total.columns = ['total']
-                stats = stats.append(total.transpose())
+                stats = stats.append(total.transpose())          
             yield stats * 100
+    
+
+    def compute_function( self,df,function,facteur,
+                           start_journey=None,start_evening=None,start_night=None):
+
+        df.index = pd.to_datetime(df.index, unit='ms')
+        df=df/facteur
+
+        mapping=get_time_interval(df,start_journey,start_evening,start_night)
+    
+        moments=mapping.keys()
+        if function=='moyenne':
+            means_Series=df.mean(axis=1)
+            mean_groups=means_Series.groupby(aggregator_factory(mapping))
+            stat=mean_groups.mean()
+
+        if function=='mediane':
+            median_Series=df.median(axis=1)
+            median_groups=median_Series.groupby(aggregator_factory(mapping))
+            stat=median_groups.median()
+
+        if function=='min':
+            min_Series=df.min(axis=1)
+            min_groups=min_Series.groupby(aggregator_factory(mapping))
+            stat=min_groups.min()
+            
+        if function=='max':
+            max_Series=df.max(axis=1)
+            max_groups=max_Series.groupby(aggregator_factory(mapping))
+            stat=max_groups.max() 
+
+        return stat,moments  
+
         
     def plot_time_series(self, axis=None, secondary_title=None, legend=True):
         axis = self.time_series().plot(ax=axis, legend=legend)
@@ -303,6 +393,7 @@ class _Plot:
         return axis
 
     def plot_histogram(self, axis=None, secondary_title=None, bins=100, legend=True):
+
         axis = self.histogram(bins).plot(ax=axis, ylim=[-0.01, 1.01], legend=legend)
         if secondary_title is not None:
             axis.set_xlabel(secondary_title)
@@ -326,13 +417,15 @@ class _Plot:
             statistic_name=None, index=None,
             percentiles=[[5, 95], [25, 75]], time_aggregation='hour',
             median=True, average=True, deviation=True,
-            boundaries=True, min_max=True, legend=True):
+            boundaries=True, min_max=True, legend=True,grid=True):
+
         if not percentiles:
             percentiles = []
         else:
             percentiles.sort(key=lambda x: abs(x[0] - x[1]), reverse=True)
 
         format_percentiles = [p / 100 for pair in percentiles for p in pair]
+
         temporal_binning = self.temporal_binning_statistics(
                 statistic_name, index,
                 time_aggregation, format_percentiles)
@@ -364,40 +457,65 @@ class _Plot:
             if legend:
                 axis.legend()
 
+            if grid:
+                axis.grid()
+                
             axis.set_xlabel(stats.index.name)
             if secondary_title is not None:
                 axis.set_ylabel(secondary_title)
-
+        
         return axis
+
 
     def plot_temporal_binning_histogram(
             self, axis=None, secondary_title=None,
             statistic_name=None, index=None,
             bin_size=100, offset=0, maximum=None,
             time_aggregation='hour', add_total=True,
-            legend=True, legend_title=None):
+            legend=True, legend_title=None,stats_unit=None,legend_unit=None,colormap=None,facteur=None):
+
+
         temporal_binning = self.temporal_binning_histogram(
                 statistic_name, index,
                 bin_size, offset, maximum,
-                time_aggregation, add_total)
+                time_aggregation, add_total,facteur)
 
         if axis is None:
+
             _, axis = plt.subplots()
 
         for stats in temporal_binning:
-            colors = plt.cm.jet(np.linspace(0, 1, len(stats.columns)))
+            cmap=plt.get_cmap(colormap)
+                
+            colors = cmap(np.linspace(0, 1, len(stats.columns)))        
+
             xticks_size, xtick_weight = (5, 'bold') if len(stats.index) > 50 else (None, None)
-            for index, segments in stats.iterrows():
+
+            label_list=list(stats.columns)
+            label_list.append(0)
+            label_list.sort()    
+            label=[]
+            for index in range(len(list(stats.columns))):
+                label.append('{} - {}'.format( label_list[index], label_list[index+1]))
+            for num,(index, segments) in enumerate(stats.iterrows()):
+
                 starts = segments.cumsum() - segments
-                bars = axis.bar(index, segments, bottom=starts, width=0.5,
-                        label=index, color=colors, edgecolor='k', linewidth='0.1')
+
+                if not num:
+                   bars= axis.bar(index, segments, bottom=starts,width=0.5,label=label,color=colors, edgecolor='k', linewidth=0.1)
+                else:
+                   bars= axis.bar(index, segments, bottom=starts,width=0.5,color=colors, edgecolor='k', linewidth=0.1)
+
+                axis.set_xticks(stats.index)      
                 axis.set_xticklabels(stats.index, rotation=90, fontsize=xticks_size, weight=xtick_weight)
+            handles, labels = plt.gca().get_legend_handles_labels()
             if legend:
-                axis.legend(
-                        handles=reversed(bars.patches), labels=reversed(list(stats.columns)), labelspacing=0.3,
-                        title=legend_title, loc='center left', bbox_to_anchor=(1., .5), fontsize='small')
+                axis.legend(reversed(handles),reversed(labels),labelspacing=0.5,title=f'{legend_title} ({legend_unit})', loc='center left', bbox_to_anchor=(1., .5))
+               
             axis.set_xlabel(stats.index.name)
             if secondary_title is not None:
                 axis.set_ylabel(secondary_title)
 
         return axis
+
+
