@@ -426,11 +426,13 @@ class _Plot:
             statistic_name=None, index=None,
             bin_size=100, offset=0, maximum=None,
             time_aggregation='hour', add_total=True,
-            legend=True, legend_title=None,stats_unit=None,legend_unit=None,colormap=None,facteur=None):
+            legend=True, legend_title=None, legend_unit=None,
+            colormap=None, scale_factor=None):
         temporal_binning = self.temporal_binning_histogram(
                 statistic_name, index,
                 bin_size, offset, maximum,
-                time_aggregation, add_total,facteur)
+                time_aggregation, add_total,
+                scale_factor)
 
         if axis is None:
             _, axis = plt.subplots()
@@ -455,10 +457,11 @@ class _Plot:
 
             handles, labels = plt.gca().get_legend_handles_labels()
             if legend:
+                title = legend_title or 'Legend'
                 axis.legend(
                         reversed(handles), reversed(labels),
                         labelspacing=0.5,
-                        title=f'{legend_title} ({legend_unit})',
+                        title=f'{title} ({legend_unit})' if legend_unit else title,
                         loc='center left', bbox_to_anchor=(1., .5))
                
             axis.set_xlabel(stats.index.name)

@@ -38,7 +38,7 @@ def read(fname):
 
 setup(
     name='openbach-api',
-    version='3.11.2',
+    version='3.11.3',
     author='OpenBACH Team',
     author_email='admin@openbach.org',
     description='OpenBACH API: build scenario JSONs and access Collector Data',
