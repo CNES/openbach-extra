@@ -92,7 +92,6 @@
       - libc-ares-dev
       - cython3
       - python3-dev
-      - python-setuptools
       - checkinstall
       - git
     state: present 

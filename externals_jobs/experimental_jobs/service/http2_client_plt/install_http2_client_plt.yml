@@ -51,7 +51,6 @@
     - libc-ares-dev
     - cython
     - python3-dev
-    - python-setuptools
     - checkinstall
     - git
   become: yes
