@@ -129,27 +129,6 @@ def aggregator_factory(mapping):
     return aggregator
 
 
-def get_time_interval(df, start_day, start_evening, start_night, label_day='Journée', label_evening='Soirée', label_night='Nuit'):
-    earliest, midday, latest = sorted(
-            (start_day, f'{label_day} ({start_day}h − {start_evening}h)'),
-            (start_evening, f'{label_evening} ({start_evening}h − {start_night}h)'),
-            (start_night, f'{label_night} ({start_night}h − {start_day}h)'),
-    )
-    intervals = [(
-        pd.Interval(pd.Timestamp(date), pd.Timestamp(date).replace(hour=earliest[0])),
-        pd.Interval(pd.Timestamp(date).replace(hour=earliest[0]), pd.Timestamp(date).replace(hour=midday[0])),
-        pd.Interval(pd.Timestamp(date).replace(hour=midday[0]), pd.Timestamp(date).replace(hour=latest[0])),
-        pd.Interval(pd.Timestamp(date).replace(hour=latest[0]), pd.Timestamp(date) + pd.Timedelta(days=1)),
-    ) for date in np.unique(df.index.date)]
-
-    wrap_around, begin, middle, end = zip(*intervals)
-    return {
-            earliest[1]: begin,
-            midday[1]: middle,
-            latest[1]: end + wrap_around,
-    }
-
-
 class Statistics(InfluxDBCommunicator):
     @classmethod
     def from_default_collector(cls, filepath=DEFAULT_COLLECTOR_FILEPATH):
@@ -236,7 +215,7 @@ class Statistics(InfluxDBCommunicator):
 
     def fetch_all(
             self, job=None, scenario=None, agent=None, job_instances=(),
-            suffix=None, fields=None,timestamps=None, condition=None, columns=None):
+            suffix=None, fields=None, timestamps=None, condition=None, columns=None):
         query = self._raw_influx_query(job, scenario, agent, job_instances, suffix, fields,timestamps, condition)
         data = self.sql_query(query)
         df = pd.concat(self._parse_dataframes(data, query), axis=1)
@@ -332,13 +311,34 @@ class _Plot:
                 stats = stats.append(total.transpose())          
             yield stats * 100
 
-    def compute_function(self, operation, scale_factor, start_journey, start_evening, start_night):
+    def compute_function(
+            self, operation, scale_factor,
+            start_day, start_evening, start_night,
+            label_day='Journée', label_evening='Soirée', label_night='Nuit'):
         df = self.dataframe / scale_factor
         df.index = pd.to_datetime(df.index, unit='ms')
 
-        mapping = get_time_interval(df, start_journey, start_evening, start_night)
+        earliest, midday, latest = sorted([
+                (start_day, f'{label_day} ({start_day}h − {start_evening}h)'),
+                (start_evening, f'{label_evening} ({start_evening}h − {start_night}h)'),
+                (start_night, f'{label_night} ({start_night}h − {start_day}h)'),
+        ])
+        intervals = [(
+            pd.Interval(pd.Timestamp(date), pd.Timestamp(date).replace(hour=earliest[0])),
+            pd.Interval(pd.Timestamp(date).replace(hour=earliest[0]), pd.Timestamp(date).replace(hour=midday[0])),
+            pd.Interval(pd.Timestamp(date).replace(hour=midday[0]), pd.Timestamp(date).replace(hour=latest[0])),
+            pd.Interval(pd.Timestamp(date).replace(hour=latest[0]), pd.Timestamp(date) + pd.Timedelta(days=1)),
+        ) for date in np.unique(df.index.date)]
+
+        wrap_around, begin, middle, end = zip(*intervals)
+        moments = aggregator_factory({
+                earliest[1]: begin,
+                midday[1]: middle,
+                latest[1]: end + wrap_around,
+        })
+
         aggregated = getattr(df, operation)(axis=1)
-        grouped = aggregated.groupby(aggregator_factory(mapping))
+        grouped = aggregated.groupby(moments)
         return getattr(grouped, operation)()
 
     def plot_time_series(self, axis=None, secondary_title=None, legend=True):
