@@ -105,7 +105,7 @@ def compute_annotated_histogram(bins):
     _hist = compute_histogram(bins)
     _bins = bins[1:]
     def _compute_annotated_histogram(series):
-        return pd.DataFrame(dict(zip(_bins, _hist(series))), index=[series.name])      
+        return pd.DataFrame(_hist(series).reshape((1, -1)), index=[series.name], columns=_bins)
     return _compute_annotated_histogram
 
 
@@ -270,9 +270,7 @@ class _Plot:
     def temporal_binning_statistics(
             self, statistic_name=None, index=None,
             time_aggregation='hour', percentiles=[.05, .25, .75, .95]):
-
         df = self._find_statistic(statistic_name, index)
-        
         df.index = pd.to_datetime(df.index, unit='ms')
         
         for _, column in df.items():
@@ -299,17 +297,18 @@ class _Plot:
         bins = np.linspace(offset, maximum, nb_segments + 1, dtype='int')
         
         for _, column in df.items():
-            dframe=pd.DataFrame({column.name:column})
-            groups = dframe.groupby(getattr(dframe.index, time_aggregation))
-            stats = groups.apply(compute_annotated_histogram(bins))
+            cframe = column.to_frame()
+            groups = cframe.groupby(getattr(cframe.index, time_aggregation))
+            stats = groups.apply(compute_annotated_histogram(bins)) * 100
             stats.index = ['{}-{}'.format(i, i+1) for i in stats.index.droplevel()]
             stats.index.name = 'Time ({}s)'.format(time_aggregation)
             if add_total:
-                total = column.to_frame().apply(compute_histogram(bins))
+                total = cframe.apply(compute_histogram(bins)) * 100
                 total.index = bins[1:]
                 total.columns = ['total']
-                stats = stats.append(total.transpose())          
-            yield stats * 100
+                yield pd.concat([stats, total.T])
+            else:
+                yield stats
 
     def compute_function(
             self, operation, scale_factor,
