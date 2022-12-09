@@ -51,6 +51,21 @@ class OpenBachFunction:
         self.wait_launched = launched
         self.wait_finished = finished
         self.label = label
+        self.fail_policy = {}
+
+    def ignore_on_fail(self):
+        self.fail_policy = {'policy': 'Ignore'}
+
+    def fail_on_fail(self):
+        self.fail_policy = {'policy': 'Fail'}
+
+    def retry_on_fail(self, limit, delay=None):
+        self.fail_policy = {
+                'policy': 'Retry',
+                'retry': limit,
+        }
+        if delay is not None:
+            self.fail_policy['delay'] = delay
 
     def build(self, functions, function_id):
         """Construct a dictionary representing this function.
@@ -67,6 +82,7 @@ class OpenBachFunction:
                     'launched_ids': list(safe_indexor(functions, self.wait_launched)),
                     'finished_ids': list(safe_indexor(functions, self.wait_finished)),
                 },
+                'on_fail': self.fail_policy,
         }
 
 

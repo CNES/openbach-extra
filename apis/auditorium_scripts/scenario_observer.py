@@ -251,9 +251,9 @@ class ScenarioObserver(FrontendBase):
                 logging.getLogger(__name__).warning(
                         'Error while fetching scenario status:\n%s\n\n%d retries left',
                         PprintFormatter(response), retries_left)
-            elif status in ('Finished KO',):
+            elif status in ('Finished Ko',):
                 self.parser.error('scenario instance failed (status is \'{}\')'.format(status))
-            elif status in ('Finished', 'Finished OK', 'Stopped'):
+            elif status in ('Finished', 'Finished Ok', 'Stopped'):
                 break
             else:
                 retries_left = MAX_RETRIES_STATUS

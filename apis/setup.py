@@ -27,18 +27,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-import os
+from pathlib import Path
 from setuptools import setup, find_packages
 
 
 def read(fname):
-    with open(os.path.join(os.path.dirname(__file__), fname)) as readme:
+    with open(Path(__file__).parent / fname) as readme:
         return readme.read()
 
 
 setup(
     name='openbach-api',
-    version='3.10.8',
+    version='3.11.5',
     author='OpenBACH Team',
     author_email='admin@openbach.org',
     description='OpenBACH API: build scenario JSONs and access Collector Data',
