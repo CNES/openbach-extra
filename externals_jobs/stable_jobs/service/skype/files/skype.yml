@@ -1,0 +1,104 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016-2023 CNES
+#   Copyright © 2022 Eutelsat
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+
+---
+
+general:
+  name:            skype
+  description: >
+      This Job sign in to a skype user account, finds a contact by its name and makes a 
+      video or audio call. It can also be run to answer a call. 
+  job_version:     '1.1'
+  keywords:        [skype, audio, video, call]
+  persistent:      True
+  need_privileges: yes
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '20.04'
+    command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/skype/skype.py'
+    command_stop:
+
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '16.04'
+    command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/skype/skype.py'
+    command_stop:
+
+arguments:
+  required:
+    - name:        email_address
+      type:        'str'
+      count:        1
+      description: >
+          The email address to use to sign in
+    - name:        password
+      type:        'str'
+      count:       1
+      password: yes
+      description: >
+          The password associated to the email address
+    - name:        call_type
+      type:        'str'
+      count:       1
+      description: >
+          The type of call
+      choices:
+        - audio
+        - video
+  optional:
+    - name:        timeout
+      type:        'int'
+      count:        1
+      flag:         '-t'
+      description: >
+          The waiting period until an expected event occurs, in seconds. 
+          It is set depending of network congestion (Default: 10)
+  subcommand:
+  - group_name:  mode
+    optional:    False
+    choices:
+      - name:    receiver
+        required:
+        optional:
+      - name:    caller
+        required:
+          - name:        contact
+            type:        'str'
+            count:        1
+            description: >
+                The name of the contact to call
+        optional:
+          - name:        call_duration
+            type:        'str'
+            count:        1
+            flag:         '-d'
+            description: >
+                The duration of the call, in seconds (Default: 120)
+                        
+statistics:

@@ -1,0 +1,28 @@
+=== Job description ===
+
+This job generates a gaming traffic between two users. This traffic is unidirectional.
+
+=== Example ===
+
+We launch a gaming session from Agent "sender" with IP address ''192.168.1.4'' to agent "receiver" with IP address ''192.168.1.5''. The session lasts 50 seconds using Quake3 game.
+
+In the web interface, set the following parameters:
+  * For Agent "receiver":
+    * **dest_addr** = 192.168.1.5
+  * For Agent "caller":
+    * **src_addr** = 192.168.1.4
+    * **dest_addr** = 192.168.1.5
+    * **game_played** = Quake3
+    * **duration** = 50
+
+Or launch the job manually from the Agent as follows:
+
+From "receiver" Agent:
+<code>
+JOB_NAME=d-itg_gaming sudo -E python3 /opt/openbach/agent/jobs/d-itg_gaming/d-itg_gaming.py destination 192.168.1.5
+</code>
+
+From "caller" Agent:
+<code>
+JOB_NAME=d-itg_gaming sudo -E python3 /opt/openbach/agent/jobs/voip_qoe_src/voip_qoe_src.py source 192.168.1.4 192.168.1.5 50 -G Quake3
+</code>

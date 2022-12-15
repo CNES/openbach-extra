@@ -1,0 +1,187 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2022 Eutelsat
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+
+---
+
+general:
+  name: d-itg_gaming
+  description: >
+      An OpenBACH job to generate gaming traffic with D-ITG software. This job generate gaming traffic for
+      Quake3 and Counter Strike unidirectionnaly between a source and a destination.
+  job_version: '2.3'
+  keywords: [gaming, source, D-ITG]
+  persistent: False
+  need_privileges: True
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/d-itg_gaming/d-itg_gaming.py'
+    command_stop: 'killall -v ITGSend'
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '22.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/d-itg_gaming/d-itg_gaming.py'
+    command_stop: 'killall -v ITGSend'
+
+arguments:
+  required:
+  optional:
+  subcommand:
+    - group_name: mode
+      optional: no
+      choices:
+        - name: source
+          required:
+            - name: src_addr
+              type: 'ip'
+              count: 1
+              description: >
+                  The IPv4 address generating gaming traffic.
+            - name: dest_addr
+              type: 'ip'
+              count: 1
+              description: >
+                  The IPv4 address receiveing gaming traffic.
+            - name: duration
+              type: 'int'
+              count: 1
+              description: >
+                  The duration of one gaming session in seconds.
+          optional:
+            - name: nb_flows
+              type: 'int'
+              count: 1
+              flag: '-f'
+              description: >
+                  The number of parallel gaming sessions to start. Default: 1.
+            - name: sig_src_addr
+              type: 'ip'
+              count: 1
+              flag: '-Ssa'
+              description: >
+                  The IPv4 source address for D-ITG signaling channel. Default: same as src_addr.
+            - name: sig_dest_addr
+              type: 'ip'
+              count: 1
+              flag: '-Ssd'
+              description: >
+                  The IPv4 destination address for D-ITG signaling channel. Default: same as dest_addr.
+            - name: signaling_dest_port
+              type: 'int'
+              count: 1
+              flag: '-Sdp'
+              description: >
+                  Set the destination port for the signaling channel. Default: 9000.
+            - name: granularity
+              type: 'int'
+              count: 1
+              flag: '-g'
+              description: >
+                  Statistics granularity in milliseconds.  Default: 1000.
+            - name: nb_runs
+              type: 'int'
+              count: 1
+              flag: '-n'
+              description: >
+                  The number of runs to perform for each gaming session. Default: 1.
+            - name: waiting_time
+              type: 'int'
+              count: 1
+              flag: '-w'
+              description: >
+                  The number of seconds to wait between two runs. Default: 0.
+            - name: starting_port
+              type: 'int'
+              count: 1
+              flag: '-p'
+              description: >
+                  The starting port to emit gaming sessions. Each session is emitted on a different port
+                  (e.g., 10000, 10001, etc.).  Default: 10000.
+            - name: control_port
+              type: 'int'
+              count: 1
+              flag: '-cp'
+              description: >
+                  The port used on the dest side to send and receive OpenBACH commands from the sender.
+                  Should be the same on the destination side.  Default: 50000.
+            - name: game_played
+              type: 'str'
+              count: 1
+              flag: '-G'
+              description: >
+                  The game traffic to send. Possible values are: CSa (Counter Strike active), CSi (Counter Strike idle), Quake3.  Default: Quake3.
+              choices:
+                - CSa
+                - CSi
+                - Quake3
+        - name: destination
+          required:
+            - name: dest_addr
+              type: 'ip'
+              count: 1
+              description: >
+                  The destination IPv4 address to use for the gaming session.
+          optional:
+            - name: sig_dest_addr
+              type: 'ip'
+              count: 1
+              flag: '-Ssd'
+              description: >
+                  The IPv4 destination address for D-ITG signaling channel. Default: same as dest_addr.
+            - name: signaling_port
+              type: 'int'
+              count: 1
+              flag: '-sp'
+              description: >
+                  Signaling channel port number. Default: 9100.
+            - name: control_port
+              type: 'int'
+              count: 1
+              flag: '-cp'
+              description: >
+                  The port used on the dest side to send and receive OpenBACH commands from the sender.
+                  Should be the same on the sender side.  Default: 50000.
+
+statistics:
+    - name: bitrate (Kbits/s)
+      description: >
+          Instantaneous bitrate (in Kbits/s) of the current gaming session.
+      frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'
+    - name: delay (ms)
+      description: >
+          Instantaneous one-way delay (in ms) of the current gaming session.
+      frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'
+    - name: jitter (ms)
+      description: >
+          Instantaneous jitter (in ms) of the current gaming session.
+      frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'
+    - name: packet_loss (%)
+      description: >
+          Instantaneous packet loss ration (in %) of the current gaming session.
+          To compute this metric, we rely on the theoretical packet rate specific to each codec.
+      frequency: 'Once the ITGSend task is finished, every *granularity* ms for all the experiment duration.'

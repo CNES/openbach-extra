@@ -1,0 +1,102 @@
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2022 Eutelsat
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under
+#   the terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+
+---
+
+general:
+  name: ip_link_rate_monitoring
+  description: >
+      This Job runs ip-link utilities to monitor rate. 
+  job_version: '1.0'
+  keywords:
+    - ip
+    - link
+    - interface
+    - rate
+  persistent: yes
+  need_privileges: no
+
+platform_configuration:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/ip_link_rate_monitoring/ip_link_rate_monitoring.py'
+    command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '22.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/ip_link_rate_monitoring/ip_link_rate_monitoring.py'
+    command_stop:
+
+arguments:
+  required:
+    - name: interface 
+      type: str
+      count: 1
+      description: The interface to monitor.
+  optional:
+    - name: interval
+      type: int
+      count: 1
+      flag: '-i'
+      description: Interval for statistics in seconds (defaut = 1s).
+
+statistics:
+    - name: tx_bits_in_interval
+      description: Total number of bits sent in last time interval
+      frequency: 'every *metrics_interval* s'
+    - name: tx_pkts_in_interval
+      description: Total number of packets sent in last time interval
+      frequency: 'every *metrics_interval* s'
+    - name: tx_errors_in_interval
+      description: Total number of TX error packets in last time interval
+      frequency: 'every *metrics_interval* s'
+    - name: tx_drops_in_interval
+      description: Total number of TX drops in last time interval
+      frequency: 'every *metrics_interval* s'
+    - name: tx_rate_bits
+      description: Bit rate sent in last time interval
+      frequency: 'every *metrics_interval* s'
+    - name: tx_rate_pkts
+      description: Packet rate sent in last time interval
+      frequency: 'every *metrics_interval* s'
+    - name: rx_bits_in_interval
+      description: Total number of bits received in last time interval
+      frequency: 'every *metrics_interval* s'
+    - name: rx_pkts_in_interval
+      description: Total number of packets received in last time interval
+      frequency: 'every *metrics_interval* s'
+    - name: rx_errors_in_interval
+      description: Total number of RX error packets in last time interval
+      frequency: 'every *metrics_interval* s'
+    - name: rx_drops_in_interval
+      description: Total number of RX drops in last time interval
+      frequency: 'every *metrics_interval* s'
+    - name: rx_rate_bits
+      description: Bit rate received in last time interval
+      frequency: 'every *metrics_interval* s'
+    - name: rx_rate_pkts
+      description: Packet rate received in last time interval
+      frequency: 'every *metrics_interval* s'
