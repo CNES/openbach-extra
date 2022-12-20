@@ -40,114 +40,131 @@ import time
 import shutil
 import socket
 import syslog
+import select
 import argparse
 import ipaddress
 import threading
 import subprocess
+from pathlib import Path
 
 import collect_agent
 
 
-job_dir = '/opt/openbach/agent/jobs/voip_qoe_dest'
+job_dir = Path('/opt/openbach/agent/jobs/voip_qoe_dest')
+
+FINISHED = threading.Event()
 
 
 def build_parser():
-    """
-    Method used to validate the parameters supplied to the program
+    """Method used to validate the parameters supplied to the program
 
     :return: an object containing required/optional arguments with their values
     :rtype: object
     """
-    parser = argparse.ArgumentParser(description='Start a receiver (destination) component to measure QoE of one or '
-                                                 'many VoIP sessions generated with D-ITG software',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('dest_addr', type=ipaddress.ip_address,
-                        help='The destination IPv4 address to use for the signaling channel')
-    parser.add_argument('-sp', '--signaling_port', type=int, default=9000,
-                        help='Signaling channel port number. Default: 9000.')
-    parser.add_argument('-cp', '--control_port', type=int, default=50000,
-                        help='The port used on the sender side to send and receive OpenBACH commands from the client.'
-                             'Should be the same on the destination side.  Default: 50000.')
+    parser = argparse.ArgumentParser(
+            description='Start a receiver (destination) component to measure QoE of one '
+            'or many VoIP sessions generated with D-ITG software',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument(
+            'dest_addr', type=ipaddress.ip_address,
+            help='The destination IPv4 address to use for the signaling channel')
+    parser.add_argument(
+            '-sp', '--signaling-port',
+            type=int, default=9000,
+            help='Signaling channel port number. Default: 9000.')
+    parser.add_argument(
+            '-cp', '--control-port',
+            type=int, default=50000,
+            help='The port used on the sender side to receive OpenBACH commands from '
+            'the client. Should be the same on the sending side. Default: 50000.')
+
     return parser
 
 
 def socket_thread(address, port):
-    s = socket.socket()
-    host = address
-    try:
-        s.bind((host, port))
-    except socket.error as msg:
-        print("Socket binding error: " + str(msg) + "\n" + "Retrying...")
-    s.listen(1)
-    print('Server listening.... on',host,port)
+    with socket.socket() as s:
+        s.bind((address, port))
+        s.listen(1)
+        print('Server listening.... on', address, port)
 
-    while True:
-        conn, addr = s.accept()
-        print('Got connection from', addr)
-        run_id = -1
+        while not FINISHED.is_set():
+            readable, _, _ = select.select([s], [], [], 1)
+            if not readable:
+                continue
 
-        while True:
-            command = conn.recv(1024).decode()
-            print("Received command:", command)
-            if command == "BYE":
-                break
-            elif command == "GET_LOG_FILE":
-                with open('{}/logs/run{}/recv.log'.format(job_dir, run_id),'rb') as f:
-                    l = f.read(1024)
-                    while (l):
-                       conn.send(l)
-                       l = f.read(1024)
-                time.sleep(5)
-                print("TRANSFERT_FINISHED".encode())
-                conn.send("TRANSFERT_FINISHED".encode())
-            elif command == "DELETE_FOLDER":
-                shutil.rmtree('{}/logs/run{}'.format(job_dir, run_id))
-            elif "RUN_ID" in command:
-                run_id = int(command.split("-")[1])
-                print("run_id",run_id)
-                os.mkdir('{}/logs/run{}'.format(job_dir, run_id))
+            control_socket, addr = s.accept()
+            print('Got connection from', addr)
+            run = job_dir / 'logs' / 'run'
 
-        conn.close()
+            with control_socket:
+                while not FINISHED.is_set():
+                    for _ in range(20):
+                        readable, _, _ = select.select([control_socket], [], [], 1)
+                        if readable:
+                            break
+                        if FINISHED.is_set():
+                            return
+                    else:
+                        print('No message received in the last 20 seconds, exiting this run...')
+                        break
+
+                    command = control_socket.recv(1024).decode()
+                    print('Received command:', command)
+
+                    if command == 'BYE':
+                        control_socket.shutdown(socket.SHUT_RDWR)
+                        break
+                    elif command == 'GET_LOG_FILE':
+                        with run.joinpath('recv.log').open('rb') as f:
+                            while True:
+                                block = f.read(1024)
+                                if not block:
+                                    break
+                                control_socket.send(block)
+                        time.sleep(3)
+                        print('TRANSFERT_FINISHED')
+                        control_socket.send(b'TRANSFERT_FINISHED')
+                    elif command == 'DELETE_FOLDER':
+                        shutil.rmtree(run)
+                    elif command.startswith('RUN_ID'):
+                        run_id = command.split('-')[1]
+                        print('run_id', run_id)
+                        run = run.with_name('run' + run_id)
+                        run.mkdir(parents=True, exist_ok=True)
 
 
-def main(args):
-    """
-    Main method
+def main(dest_addr, signaling_port, control_port):
+    """Main method
 
     :return: nothing
     """
     try:
-        th = threading.Thread(target=socket_thread, args=(str(args.dest_addr),args.control_port))
-        th.daemon = True
+        th = threading.Thread(target=socket_thread, args=(str(args.dest_addr), args.control_port))
         th.start()
-    except (KeyboardInterrupt, SystemExit):
-        exit()
+        try:
+            process = subprocess.Popen(
+                    ['ITGRecv', '-Sp', str(args.signaling_port)],
+                    text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except Exception as ex:
+            message = 'Error running ITGRecv : {}'.format(ex)
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            sys.exit(message)
 
-    try:
-        cmd = ['ITGRecv', '-Sp', str(args.signaling_port)]
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except Exception as ex:
-        message = 'Error running ITGRecv : {}'.format(ex)
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
+        while process.poll() is None:
+            output = process.stdout.readline().strip()
+            if output and output != 'Press Ctrl-C to terminate':
+                collect_agent.send_log(syslog.LOG_DEBUG, output)
+            print(output)
 
-    while True:
-        output = process.stdout.readline().decode().strip()
-        if not output:
-            if process.poll is not None:
-                break
-            continue
-        if output != "Press Ctrl-C to terminate":
-            collect_agent.send_log(syslog.LOG_DEBUG, output)
-        print(output)
-
-    msg = "ITGRecv has exited with the following return code: {}".format(output)  # Output contains return code
-    collect_agent.send_log(syslog.LOG_DEBUG, msg)
+        msg = 'ITGRecv has exited with the following return code: {}'.format(output)  # Output contains return code
+        collect_agent.send_log(syslog.LOG_DEBUG, msg)
+    finally:
+        FINISHED.set()
+        th.join()
 
 
-if __name__ == "__main__":
-    with collect_agent.use_configuration('{}/voip_qoe_dest_rstats_filter.conf'.format(job_dir)):
-        # No internal configuration needed for receiver side
+if __name__ == '__main__':
+    with collect_agent.use_configuration(job_dir.joinpath('voip_qoe_dest_rstats_filter.conf').as_posix()):
         # Argument parsing
         args = build_parser().parse_args()
-        main(args)
+        main(**vars(args))
