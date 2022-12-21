@@ -4,7 +4,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #   
 #   
-#   Copyright © 2016-2020 CNES
+#   Copyright © 2016-2023 CNES
 #   
 #   
 #   This file is part of the OpenBACH testbed.
@@ -30,7 +30,7 @@ general:
   description: >
       This Job acts like the client of a client/server chat messaging emulation.
       It generates sporadic traffic to test the interactivity of an emulated service.
-  job_version: '0.2'
+  job_version: '0.3'
   keywords:
     - interactive
     - traffic
@@ -42,6 +42,11 @@ platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/chat_simu_clt/chat_simu_clt.py'
+    command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '22.04'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/chat_simu_clt/chat_simu_clt.py'
     command_stop:
 

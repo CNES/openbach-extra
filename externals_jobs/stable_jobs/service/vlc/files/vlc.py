@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #   
 #   
-#   Copyright © 2016-2020 CNES
+#   Copyright © 2016-2023 CNES
 #   
 #   
 #   This file is part of the OpenBACH testbed.
@@ -34,6 +34,21 @@ __credits__ = '''Contributors:
  * Francklin SIMO <francklin.simo@toulouse.viveris.com>
 '''
 
+import sys
+import math
+import time
+import socket
+import syslog
+import argparse
+import subprocess
+
+import telnetlib
+
+import collect_agent
+
+
+DESCRIPTION = 'This job launches VLC tool (sender or receiver mode) in order to send or receive a video stream. Statistics about medias contained in this video are sent by the receiver. You would start sender first'
+
 DEFAULT_VIDEO='/opt/openbach/agent/jobs/vlc/bigbuckbunny.mp4'
 DEFAULT_PORT=6000
 MRL = "rtp://{}:{}"
@@ -41,45 +56,11 @@ CLI = "cli={{host='telnet://localhost:{}', password='vlc'}}"
 STATS_TO_SEND = ['demux bytes read', 'demux bitrate', 'frames displayed', 'frames lost']
 
 
-import os
-import sys
-import math
-import time
-import socket
-import select
-import syslog
-import argparse
-import telnetlib
-import traceback
-import contextlib
-import subprocess
-import collect_agent
-
-DESCRIPTION = 'This job launches VLC tool (sender or receiver mode) in order to send or receive a video stream. Statistics about medias contained in this video are sent by the receiver. You would start sender first'
-
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
-
 def find_free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(('localhost', 0))
         return sock.getsockname()[1]
+
 
 def multiplier (unit):
     if unit.startswith('B') or unit.startswith('b'):
@@ -92,6 +73,7 @@ def multiplier (unit):
         return 1024 * 1024 * 1024
     collect_agent.send_log(syslog.LOG_ERR, 'Units of vlc metrics are not availables/correct')
     return 1
+
 
 def receive(dst_ip, port, duration, interval):
     mrl = MRL.format(dst_ip, port)
@@ -138,8 +120,7 @@ def receive(dst_ip, port, duration, interval):
                         stat, value = tokens[0].strip(), int(value_units[0])
                     if stat in STATS_TO_SEND:
                         statistics.update({stat:value})
-            timestamp = int(time.time() * 1000)
-            collect_agent.send_stat(timestamp, **statistics)
+            collect_agent.send_stat(collect_agent.now(), **statistics)
             time.sleep(interval)
             
     if p.poll() is None:
@@ -179,7 +160,7 @@ def send(dst_ip, port, filename, vb, ab, duration):
 
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/vlc/vlc_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/vlc/vlc_rstats_filter.conf'):
         # Define usage
         parser = argparse.ArgumentParser(description=DESCRIPTION,
                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -232,4 +213,3 @@ if __name__ == "__main__":
         args = vars(parser.parse_args())
         main = args.pop('function')
         main(**args)
-        

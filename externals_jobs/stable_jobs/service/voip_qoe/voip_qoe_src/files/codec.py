@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -31,9 +31,10 @@
 __author__ = 'Antoine AUGER'
 __credits__ = 'Antoine AUGER <antoine.auger@tesa.prd.fr>'
 
-import os
+import sys
 import yaml
 import syslog
+import os.path
 
 
 class CodecConstants(object):
@@ -54,12 +55,16 @@ class CodecConstants(object):
         :return: nothing
         """
         try:
-            default_constants = yaml.safe_load(open(os.path.join(etc_dir_path, 'default_constants.yml')))  # We load default values
+            with open(os.path.join(etc_dir_path, 'default_constants.yml')) as stream:
+                # We load default values
+                default_constants = yaml.safe_load(stream)
             for key, val in default_constants.items():
-                self.__class__.__setattr__(self, str(key), float(val))  # We assign them to class attributes to use them
+                # We assign them to object attributes to use them
+                setattr(self, str(key), float(val))
         except FileNotFoundError:
-            collect_agent.send_log(syslog.LOG_ERR, 'Unable to find configuration file for default codec values')
-            exit(2)
+            message = 'Unable to find configuration file for default codec values'
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            sys.exit(message)
 
     def load_specific_constants(self, collect_agent, etc_dir_path, codec_name):
         """
@@ -74,12 +79,16 @@ class CodecConstants(object):
         :return: nothing
         """
         try:
-            specific_constants = yaml.safe_load(open(os.path.join(etc_dir_path, "{}.yml".format(codec_name))))  # We load specific values according to codec's name
+            with open(os.path.join(etc_dir_path, "{}.yml".format(codec_name))) as stream:
+                # We load specific values according to codec's name
+                specific_constants = yaml.safe_load(stream)
             for key, val in specific_constants.items():
-                self.__class__.__setattr__(self, str(key), float(val))  # We assign them to class attributes to use them
+                # We assign them to object attributes to use them
+                setattr(self, str(key), float(val))
         except FileNotFoundError:
-            collect_agent.send_log(syslog.LOG_ERR, 'Unable to find configuration file for codec {}'.format(codec_name))
-            exit(2)
+            message = 'Unable to find configuration file for codec {}'.format(codec_name)
+            collect_agent.send_log(syslog.LOG_ERR, message)
+            sys.exit(message)
 
     def __init__(self, collect_agent, etc_dir_path, codec_name):
         """

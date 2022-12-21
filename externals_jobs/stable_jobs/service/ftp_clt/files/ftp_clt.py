@@ -6,7 +6,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -36,63 +36,44 @@ __credits__ = '''Contributors:
 '''
 
 import os
-import time
 import random
 import syslog
 import pathlib
 import argparse
-import traceback
-import contextlib
 from sys import exit
 from ftplib import FTP
 
 import collect_agent
 
 
-class Stat_data:
+class StatData:
     block_len = 0
     total_block_len = 0
     timer = 0
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def handleUpload(block, stat_data):
-    timestamp = time.time() * 1000
+    timestamp = collect_agent.now()
     stat_data.block_len += len(block)
     if timestamp - stat_data.timer >= 1000:
-        collect_agent.send_stat(int(timestamp), throughput_upload  = 
-            (stat_data.block_len*8000/(timestamp - stat_data.timer)))
+        throughput = stat_data.block_len*8000 / (timestamp - stat_data.timer)
+        collect_agent.send_stat(timestamp, throughput_upload=throughput)
         stat_data.timer = timestamp
         stat_data.total_block_len += stat_data.block_len
         stat_data.block_len = 0
 
+
 def handleDownload(block, stat_data, file_download):
-    timestamp = time.time() * 1000
+    timestamp = collect_agent.now()
     stat_data.block_len += len(block)
     file_download.write(block)
     if timestamp - stat_data.timer >= 1000:
-        collect_agent.send_stat(int(timestamp), throughput_download  = 
-            (stat_data.block_len*8000/(timestamp - stat_data.timer)))
+        throughput = stat_data.block_len*8000 / (timestamp - stat_data.timer)
+        collect_agent.send_stat(timestamp, throughput_download=throughput)
         stat_data.timer = timestamp
         stat_data.total_block_len += stat_data.block_len
         stat_data.block_len = 0
+
 
 def generate_path():
     #generate a random directory
@@ -101,76 +82,82 @@ def generate_path():
         path += random.choice('azertyuiopqsdfghjklmwxcvbn')
     return path + '/'
 
+
 def init_ftp(server_ip, port, user, password):
-    stat_data = Stat_data()
+    stat_data = StatData()
     ftp = FTP()
     ftp.connect(server_ip,port)
     ftp.login(user,password)
     return ftp, stat_data
 
+
 def format_path(path, root=''):
     _root = pathlib.Path.cwd().root
-    absolute_path = os.path.abspath(os.path.join(_root, path))
+    relative_path = pathlib.Path(_root, path).resolve().relative_to(_root)
     if root:
-        return os.path.join(root, os.path.relpath(absolute_path, _root))
+        return pathlib.Path(root, relative_path)
     else:
-        return os.path.relpath(absolute_path, _root)
+        return relative_path
+
 
 def download(server_ip, port, user, password, blocksize, file_path):
-    #Open session with FTP Server
+    # Open session with FTP Server
     ftp, stat_data = init_ftp(server_ip, port, user, password)
-    #Create local download directory
+    # Create local download directory
     dl_dir = '/srv/' + generate_path()
     os.mkdir(dl_dir)
-    #Download the file
-    file_name = file_path.split('/')[-1]
-    stat_data.timer = time.time() * 1000
-    file_download = open(dl_dir + file_name, 'wb')
+    # Download the file
+    file_name = file_path.name
+    stat_data.timer = collect_agent.now()
     try:
-        ftp.retrbinary('RETR ' + file_path,
-                lambda block: handleDownload(block, stat_data, file_download),
-                blocksize)
+        with open(dl_dir + file_name, 'rb') as file_download:
+            ftp.retrbinary(
+                    'RETR ' + file_path.as_posix(),
+                    lambda block: handleDownload(block, stat_data, file_download),
+                    blocksize)
     except Exception as ex:
         message = 'Error downloading file : {}'.format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
         exit(message)
-    #Collect stats
-    timestamp = time.time() * 1000
+    # Collect stats
+    timestamp = collect_agent.now()
     stat_data.total_block_len += stat_data.block_len
-    collect_agent.send_stat(int(timestamp), throughput_download = 
-        (stat_data.block_len*8000/(timestamp-stat_data.timer)))
-    collect_agent.send_stat(int(timestamp), total_blocksize_downloaded = 
-        (stat_data.total_block_len * 8))
+    throuhgput = stat_data.block_len*8000 / (timestamp - stat_data.timer)
+    collect_agent.send_stat(timestamp, throughput_download=throuhgput)
+    collect_agent.send_stat(timestamp, total_blocksize_downloaded=(stat_data.total_block_len * 8))
     ftp.close()
-    #Remove temporary files
+    # Remove temporary files
     os.remove(dl_dir + file_name)
     os.system('rm -r ' + dl_dir)
 
+
 def upload(server_ip, port, user, password, blocksize, file_path):
-    #Open session with FTP Server
+    # Open session with FTP Server
     ftp, stat_data = init_ftp(server_ip, port, user, password)
-    #Create storage directory on server
+    # Create storage directory on server
     srv_store_dir = generate_path()
     ftp.mkd(srv_store_dir)
-    #Upload the file 
-    file_name = file_path.split('/')[-1]
-    stat_data.timer = time.time() * 1000
+    # Upload the file 
+    file_name = file_path.name
+    stat_data.timer = collect_agent.now()
     try:
-        file_upload = open(file_path, 'rb')
-        ftp.storbinary('STOR ' + srv_store_dir + file_name, file_upload,
-                blocksize, lambda block: handleUpload(block, stat_data))
+        with file_path.open('rb') as file_upload:
+            ftp.storbinary(
+                    'STOR ' + srv_store_dir + file_name,
+                    file_upload, blocksize,
+                    lambda block: handleUpload(block, stat_data))
     except Exception as ex:
         message = 'Error uploading file : {}'.format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
         exit(message)
-    #Collect stats
-    timestamp = time.time() * 1000
+    # Collect stats
+    timestamp = collect_agent.now()
     stat_data.total_block_len += stat_data.block_len
-    collect_agent.send_stat(int(timestamp), throughput_upload = 
-        (stat_data.block_len*8000/(timestamp-stat_data.timer)))
-    collect_agent.send_stat(int(timestamp), total_blocksize_uploaded = 
-        (stat_data.total_block_len * 8))
+    thoughput = stat_data.block_len*8000 / (timestamp - stat_data.timer)
+    collect_agent.send_stat(timestamp, throughput_upload=throuput)
+    collect_agent.send_stat(timestamp, total_blocksize_uploaded=(stat_data.total_block_len * 8))
     ftp.close()
+
 
 def build_parser():
     parser = argparse.ArgumentParser(description='FTP client Parser')
@@ -199,8 +186,9 @@ def build_parser():
         help = 'Give the file path and name, consider /srv/ as the home directory')
     return parser
 
+
 if __name__ == '__main__':
-    with use_configuration('/opt/openbach/agent/jobs/ftp_clt/ftp_clt_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/ftp_clt/ftp_clt_rstats_filter.conf'):
         #parse the command
         args = build_parser().parse_args()
     
@@ -225,4 +213,3 @@ if __name__ == '__main__':
             message = 'No mode chosen'
             collect_agent.send_log(syslog.LOG_ERR, message)
             exit(message)
-    

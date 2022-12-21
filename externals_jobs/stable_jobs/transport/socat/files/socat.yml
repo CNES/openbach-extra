@@ -4,7 +4,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #   
 #   
-#   Copyright © 2016-2020 CNES
+#   Copyright © 2016-2023 CNES
 #   
 #   
 #   This file is part of the OpenBACH testbed.
@@ -31,7 +31,7 @@ general:
       This Job only the socat tools (client or server). The client sends
       a given file (provided or auto generated) and computes the time to
       transmit the file.
-  job_version: '1.0'
+  job_version: '2.0'
   keywords:
     - socat
   persistent: yes
@@ -43,42 +43,53 @@ platform_configuration:
     ansible_distribution_version: '20.04'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/socat/socat.py'
     command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '22.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/socat/socat.py'
+    command_stop:
 
 arguments:
   required:
-  optional:
-    - name: server
-      type: None
-      count: 0
-      flag: '-s'
-      description: Launch socat on server mode (else client)
-    - name: dst_ip
-      type: ip
-      count: 1
-      flag: '-d'
-      description: The dest IP address (on client mode)
     - name: port
       type: int
       count: 1
-      flag: '-p'
-      description: The TCP port number of server
-    - name: file
-      type: str
-      count: 1
-      flag: '-f'
-      description: >
-          Transmitted file size, or a file path (e.g. "5M" or "/tmp/a.dat").
-          For client, this is used for verifying file size. 
-    - name: create_file
-      type: None
-      count: 0
-      flag: '-c'
-      description: 'Create the output file, according to the size specified in the name (ex: 5M.dat)'
+      description: The TCP port number of the server
+  optional:
     - name: measure_time
       type: None
       count: 0
       flag: '-t'
       description: Measure the duration of the connection (for the client)
+  subcommand:
+    - group_name: mode
+      optional: no
+      choices:
+        - name: server
+          required:
+          optional:
+            - name: send_file
+              type: str
+              count: 1
+              flag: '-f'
+              description: The file to send to the client
+            - name: create_file
+              type: str
+              count: 1
+              flag: '-c'
+              description: Alternativelly, a size to create a file from (e.g.: 3G)
+        - name: client
+          required:
+            - name: dest
+              type: ip
+              count: 1
+              description: IP address of the server
+          optional:
+            - name: expected_size
+              type: str
+              count: 1
+              flag: '-e'
+              description: The expected size of the file sent by the server (e.g.: 20M)
 
 statistics:
     - name: duration

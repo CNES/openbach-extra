@@ -4,7 +4,7 @@ general:
   name:            vlc
   description: >
       This job launches VLC tool (sender or receiver mode) in order to send or receive a video stream. Statistics about medias contained in this video are sent by the receiver. You would start sender first.
-  job_version:     '2.0'
+  job_version:     '2.1'
   keywords:        [vlc, video, streaming, playing, frames lost]
   persistent:      False
 
@@ -12,6 +12,11 @@ platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution:  'Ubuntu'
     ansible_distribution_version: '20.04'
+    command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/vlc/vlc.py'
+    command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '22.04'
     command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/vlc/vlc.py'
     command_stop:
 

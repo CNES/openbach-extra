@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -41,34 +41,12 @@ import re
 import sys
 import syslog
 import argparse
-import traceback
-import contextlib
 import subprocess
 
 os.environ['XTABLES_LIBDIR'] = '$XTABLES_LIBDIR:/usr/lib/x86_64-linux-gnu/xtables' # Required for Ubuntu 20.04
 import iptc
 
 import collect_agent
-
-
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 
 def run_command(command):
@@ -128,7 +106,6 @@ def manage_rule(chain, action, port, mark, in_iface=None, ip_src=None, ip_dst=No
         sys.exit(message)
 
 
-
 def set_conf(ifaces, src_ip, dst_ip, port, mark, table_num, unset=False):
     action = 'del' if unset else 'add'
 
@@ -180,7 +157,8 @@ def main(ifaces, src_ip, dst_ip, stop, port, addr, fopen, maxconns,
                 'pepsal', str(fopen), '-p', str(port),
                 '-a', str(addr), '-c', str(maxconns),
                 '-g', str(gcc_interval), '-l', str(log_file),
-                '-t', str(pending_time)]
+                '-t', str(pending_time),
+        ]
         try:
             p = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         except Exception as ex:
@@ -200,7 +178,7 @@ def main(ifaces, src_ip, dst_ip, stop, port, addr, fopen, maxconns,
 
 
 if __name__ == '__main__':
-    with use_configuration('/opt/openbach/agent/jobs/pep/pep_rstat_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/pep/pep_rstat_filter.conf'):
         # Define Usage
         parser = argparse.ArgumentParser(description='',
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -249,5 +227,3 @@ if __name__ == '__main__':
 
         main(ifaces, src_ip, dst_ip, stop, port, addr, fopen, maxconns,
              gcc_interval, log_file, pending_time, mark, table_num)
-
-

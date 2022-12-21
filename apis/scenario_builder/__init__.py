@@ -8,7 +8,7 @@
 # tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -39,7 +39,7 @@ through objects references rather than manual edition and indexing.
 
 
 __author__ = 'Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>'
-__version__ = 'v0.6.1'
+__version__ = 'v0.6.2'
 __all__ = [
     'Scenario', 'Condition', 'Operand',
     'ImproperlyConfiguredFunction',

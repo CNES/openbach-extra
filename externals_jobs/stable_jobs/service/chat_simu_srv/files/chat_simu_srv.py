@@ -6,7 +6,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -34,55 +34,27 @@ __credits__ = '''Contributors:
  * Léa THIBOUT <lea.thibout@viveris.fr>
 '''
 
-import os
-import sys
 import time
 import signal
 import socket
-import syslog
 import select
 import argparse
-import traceback
 import contextlib
 from functools import partial
 
 import collect_agent
 
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
-
-
-def now():
-    return int(time.time() * 1000)
-
-
 def tcp_pong(sock, message_number):
     message = sock.recv(1024)
-    collect_agent.send_stat(now(), bytes_received=len(message))
+    collect_agent.send_stat(collect_agent.now(), bytes_received=len(message))
     print('Received : {}'.format(message))
     if not message:
         return False
 
     response = f'I am the server -> client msg number {message_number}'.encode()
     sock.send(response)
-    collect_agent.send_stat(now(), bytes_sent=len(response))
+    collect_agent.send_stat(collect_agent.now(), bytes_sent=len(response))
     print('Sent : {}'.format(response))
     return True
 
@@ -135,17 +107,23 @@ def main(address, port, keep_alive):
 
 
 if __name__ == '__main__':
-    with use_configuration('/opt/openbach/agent/jobs/chat_simu_srv/chat_simu_srv_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/chat_simu_srv/chat_simu_srv_rstats_filter.conf'):
         parser = argparse.ArgumentParser(
                 description=__doc__,
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument('-a', '--address', type=str, default='0.0.0.0',
-                    help='The IP address to bind the server')
-        parser.add_argument('-p', '--port', type=int, default=55001,
-                    help='The port to listen on')
-        parser.add_argument('-e', '--exit', action='store_true',
-                    help='Exit as soon as there is no more clients connected'
-                    ' instead of keeping the socket alive for further connections')
+        parser.add_argument(
+                '-a', '--address',
+                type=str, default='0.0.0.0',
+                help='The IP address to bind the server')
+        parser.add_argument(
+                '-p', '--port',
+                type=int, default=55001,
+                help='The port to listen on')
+        parser.add_argument(
+                '-e', '--exit',
+                action='store_true',
+                help='Exit as soon as there is no more clients connected'
+                     ' instead of keeping the socket alive for further connections')
 
         args = parser.parse_args()
         main(args.address, args.port, not args.exit)

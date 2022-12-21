@@ -4,7 +4,7 @@ general:
   name:            vlc_receiver
   description: >
       This job plays a VLC video that is streaming over the network and sends statistics about medias contained in this video
-  job_version:     '1.0'
+  job_version:     '1.1'
   keywords:        [vlc, video, streaming]
   persistent:      False
 
@@ -12,6 +12,11 @@ platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution:  'Ubuntu'
     ansible_distribution_version: '20.04'
+    command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/vlc_receiver/vlc_receiver.py'
+    command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '22.04'
     command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/vlc_receiver/vlc_receiver.py'
     command_stop:
 

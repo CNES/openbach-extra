@@ -1,7 +1,8 @@
 === Job description ===
 
 This job runs a client or a server QUIC. 
-Supported QUIC implementations are ngtcp2, picoquic, quicly. 
+Supported QUIC implementations are ngtcp2, picoquic.
+WARNING: quicly is not working, so this implementation is disabled even if installed on the agents. 
 In server mode, resources are served from /var/www/quic.openbach.com. 
 Some resources are deployed there when installing the job (e.g. '500K_file.txt' or '1M_file.txt'). 
 You can add more resources if needed.

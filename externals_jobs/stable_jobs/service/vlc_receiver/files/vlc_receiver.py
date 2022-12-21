@@ -34,48 +34,30 @@ __credits__ = '''Contributors:
  * Francklin SIMO <francklin.simo@toulouse.viveris.com>
 '''
 
-MRL = "rtp://{}:{}"
-CLI = "cli={{host='telnet://localhost:{}', password='vlc'}}"
-DEFAULT_PORT = 6000
-STATS_TO_SEND = ['demux bytes read', 'demux bitrate', 'frames displayed', 'frames lost']
-
-import os
 import sys
 import time
 import math
 import syslog
 import socket
 import argparse
-import telnetlib
-import traceback
-import contextlib
 import subprocess
+
+import telnetlib
 
 import collect_agent
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
+
+MRL = "rtp://{}:{}"
+CLI = "cli={{host='telnet://localhost:{}', password='vlc'}}"
+DEFAULT_PORT = 6000
+STATS_TO_SEND = ['demux bytes read', 'demux bitrate', 'frames displayed', 'frames lost']
+
 
 def find_free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(('localhost', 0))
         return sock.getsockname()[1]
+
 
 def multiplier (unit):
     if unit.startswith('B') or unit.startswith('b'):
@@ -88,6 +70,7 @@ def multiplier (unit):
         return 1024 * 1024 * 1024
     collect_agent.send_log(syslog.LOG_ERR, 'Units of vlc metrics are not availables/correct')
     return 1
+
 
 def main(mrl, duration, interval):
     # Find an available port
@@ -133,18 +116,19 @@ def main(mrl, duration, interval):
                         stat, value = tokens[0].strip(), int(value_units[0])
                     if stat in STATS_TO_SEND:
                         statistics.update({stat:value})
-            timestamp = int(time.time() * 1000)
-            collect_agent.send_stat(timestamp, **statistics)
+            collect_agent.send_stat(collect_agent.now(), **statistics)
             time.sleep(interval)
             
     if p.poll() is None:
         p.kill()               
-        			
+
+
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/vlc_receiver/vlc_receiver_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/vlc_receiver/vlc_receiver_rstats_filter.conf'):
         # Define usage
-        parser = argparse.ArgumentParser(description='',
-                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser = argparse.ArgumentParser(
+                description='',
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         parser.add_argument('recv_ip', type=str,
                             help='The receiving IP address (may be multicast or a local unicast address)')
         parser.add_argument('-p', '--recv_port', type=int, default=DEFAULT_PORT,

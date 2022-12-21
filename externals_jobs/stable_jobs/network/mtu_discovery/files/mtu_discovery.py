@@ -6,7 +6,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -34,37 +34,13 @@ __credits__ = '''Contributors:
  * David FERNANDES <david.fernandes@viveris.fr>
 '''
 
-import os
 import re
 import sys
-import time
 import syslog
 import argparse
-import traceback
-import contextlib
 import subprocess
 
 import collect_agent
-
-
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 
 def send_and_parse_icmp(ip, payload_size):
@@ -102,13 +78,13 @@ def main(destination_ip):
         print(message)
 
     mtu = r[0] + header_size
-    timestamp = int(time.time() * 1000)
+    timestamp = collect_agent.now()
     collect_agent.send_stat(timestamp, mtu=mtu)
     print('Path MTU : {} bytes'.format(mtu))
     
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/mtu_discovery/mtu_discovery_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/mtu_discovery/mtu_discovery_rstats_filter.conf'):
         # Define Usage
         parser = argparse.ArgumentParser(
                 description=__doc__,
@@ -117,4 +93,3 @@ if __name__ == "__main__":
     
         args = parser.parse_args()
         main(args.destination_ip)
-

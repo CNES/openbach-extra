@@ -4,7 +4,7 @@ general:
   name:            command_shell
   description: >
       This Job allows to launch a command line shell (be careful! The job is launched with root rights).
-  job_version:     '1.0'
+  job_version:     '1.1'
   keywords:        [command, shell, line]
   persistent:      true
 
@@ -12,6 +12,11 @@ platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '20.04'
+    command: 'python3 /opt/openbach/agent/jobs/command_shell/command_shell.py'
+    command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '22.04'
     command: 'python3 /opt/openbach/agent/jobs/command_shell/command_shell.py'
     command_stop:
 

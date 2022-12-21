@@ -6,7 +6,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -33,57 +33,36 @@ __credits__ = '''Contributors:
  * Bastien TAURAN <bastien.tauran@toulouse.viveris.com>
 '''
 
-import os
 import re
 import sys
 import time
 import syslog
 import argparse
-import traceback
 import subprocess
-import contextlib
+
 import collect_agent
 
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
-
 def convert(value):
-    try:
-        if value.replace(".","",1).isdigit():
-            return float(value)
-        val,ext = value[:-1],value[-1]
-        val = float(val)
-        if ext == "G":
-            return 1000000000*val
-        if ext == "M":
-            return 1000000*val
-        if ext in "kK":
-            return 1000*val
-        if ext == "m":
-            return val/1000.0
-        if ext == "u":
-            return val/1000000.0
-        if ext == "n":
-            return val/1000000000.0
-    except ValueError:
+    match = re.fullmatch(r'(-?\d+\.?\d*)([GMKkmun])?', value)
+    if not match:
         return 0.0
+
+    base, unit = match.groups()
+    if unit == 'G':
+        return 1000000000 * float(base)
+    elif unit == 'M':
+        return 1000000 * float(base)
+    elif unit in 'kK':
+        return 1000 * float(base)
+    elif unit == 'm':
+        return float(base) / 1000
+    elif unit == 'u':
+        return float(base) / 1000000
+    elif unit == 'n':
+        return float(base) / 1000000000
+    else:
+        return float(base)
 
 
 BRACKETS = re.compile(r'[\[\]]')
@@ -140,8 +119,7 @@ def send_stats(line, last_sent, current_node, collect_agent, interval_stats):
         print("Cannot parse statistics:", e)
         sys.exit(message)
 
-    timestamp = int(time.time() * 1000)
-    collect_agent.send_stat(timestamp, suffix=current_node, **statistics)
+    collect_agent.send_stat(collect_agent.now(), suffix=current_node, **statistics)
 
 
 def main(interface, qdisc_nodes, interval_stats):
@@ -174,7 +152,7 @@ def main(interface, qdisc_nodes, interval_stats):
 
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/tc_qdisc_stats/tc_qdisc_stats_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/tc_qdisc_stats/tc_qdisc_stats_rstats_filter.conf'):
         # Define Usage
         parser = argparse.ArgumentParser(
                 description=__doc__,
@@ -195,4 +173,3 @@ if __name__ == "__main__":
         qdisc_nodes = args.qdisc_nodes
         interval_stats = args.interval_stats
         main(interface, qdisc_nodes, interval_stats)
-

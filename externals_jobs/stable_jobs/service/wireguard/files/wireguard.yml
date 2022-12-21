@@ -3,7 +3,7 @@
 general:
   name:            wireguard
   description:     This job relies on Wireguard program
-  job_version:     '1.0'
+  job_version:     '1.1'
   keywords:        [Wireguard, VPN]
   persistent:      False
 
@@ -11,6 +11,11 @@ platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution:  'Ubuntu'
     ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/wireguard/wireguard.py'
+    command_stop: '/usr/bin/env python3 /opt/openbach/agent/jobs/wireguard/wireguard_stop.py'
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '22.04'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/wireguard/wireguard.py'
     command_stop: '/usr/bin/env python3 /opt/openbach/agent/jobs/wireguard/wireguard_stop.py'
 

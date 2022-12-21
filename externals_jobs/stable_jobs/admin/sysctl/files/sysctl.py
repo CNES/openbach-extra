@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -34,42 +34,18 @@ __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 '''
 
-import os
-import sys
+
+import shlex
 import syslog
 import argparse
-import traceback
 import subprocess
-import contextlib
+
 import collect_agent
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def main(param, value):
-    shell = False
-    cmd = ['sysctl', '{}={}'.format(param, value)]
-    if len(value.split()) > 1:
-        cmd = ' '.join(cmd)
-        shell = True
     try:
-        p = subprocess.run(cmd, shell=shell)
+        p = subprocess.run(['sysctl', '{}={}'.format(param, shlex.quote(value))])
     except Exception as ex:
         collect_agent.send_log(syslog.LOG_ERR,
                                "ERROR modifying sysctl {}:{}".format(param, ex))
@@ -81,19 +57,18 @@ def main(param, value):
             
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/sysctl/sysctl_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/sysctl/sysctl_rstats_filter.conf'):
         # Define Usage
-        parser = argparse.ArgumentParser(description='',
-                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument('param', metavar='param', type=str,
-                            help='The sysctl parameter name')
-        parser.add_argument('value', metavar='value', type=str, 
-                            help='The sysctl parameter desired value')
+        parser = argparse.ArgumentParser(
+                description='',
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument(
+                'param', metavar='param',
+                help='The sysctl parameter name')
+        parser.add_argument(
+                'value', metavar='value',
+                help='The sysctl parameter desired value')
     
-        # get args
+        # Get args
         args = parser.parse_args()
-        param = args.param
-        value = args.value
-        
-        main(param, value)
-    
+        main(args.param, args.value)

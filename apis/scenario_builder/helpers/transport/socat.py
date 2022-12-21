@@ -7,7 +7,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #
 #
-#   Copyright © 2016-2020 CNES
+#   Copyright © 2016-2023 CNES
 #
 #
 #   This file is part of the OpenBACH testbed.
@@ -41,11 +41,9 @@ def socat_send_files_tcp(
     server.configure(
             'socat', server_entity,
             offset=0,
-            server=True,
             port=port,
-            file=filesize,
-            create_file=True,
-            measure_time=False)
+            measure_time=False,
+            server={create_file=filesize})
 
     wait = []
     delay = 20  # Need big initial delay because file copy is slow
@@ -58,12 +56,9 @@ def socat_send_files_tcp(
         client.configure(
                 'socat', client_entity,
                 offset=2,
-                server=False,
-                dst_ip=destination_ip,
                 port=port,
-                file=filesize,
-                create_file=False,
-                measure_time=True)
+                measure_time=True,
+                client={dest=destination_ip, expected_size=filesize})
         wait = [client]
         delay = 1
 

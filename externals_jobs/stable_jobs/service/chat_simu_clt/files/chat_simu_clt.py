@@ -6,7 +6,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -46,37 +46,13 @@ import contextlib
 import collect_agent
 
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
-
-
-def now():
-    return int(time.time() * 1000)
-
-
 def tcp_ping(sock, message_number):
     message = f'I am the client -> server msg number {message_number}'.encode()
     sock.send(message)
-    collect_agent.send_stat(now(), bytes_sent=len(message))
+    collect_agent.send_stat(collect_agent.now(), bytes_sent=len(message))
     print('Sent : {}'.format(message))
     response = sock.recv(1024)
-    collect_agent.send_stat(now(), bytes_received=len(response))
+    collect_agent.send_stat(collect_agent.now(), bytes_received=len(response))
     print('Received : {}'.format(response))
 
 
@@ -93,21 +69,26 @@ def main(server_ip, server_port, nb_msg):
         s.shutdown(socket.SHUT_RDWR)
     
     duration = time.perf_counter() - start
-    collect_agent.send_stat(now(), duration=duration)
+    collect_agent.send_stat(collect_agent.now(), duration=duration)
     print('Duration of the test : {} s'.format(duration))
 
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/chat_simu_clt/chat_simu_clt_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/chat_simu_clt/chat_simu_clt_rstats_filter.conf'):
         parser = argparse.ArgumentParser(
                 description=__doc__,
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument('server_ip', type=str,
-                    help='The IP address of the server')
-        parser.add_argument('-p', '--server-port', type=int, default='55001',
-                    help='The port of the server')
-        parser.add_argument('-m', '--msg', type=int, default=3,
-                    help='The amount of messsages to send')
+        parser.add_argument(
+                'server_ip', type=str,
+                help='The IP address of the server')
+        parser.add_argument(
+                '-p', '--server-port',
+                type=int, default='55001',
+                help='The port of the server')
+        parser.add_argument(
+                '-m', '--msg',
+                type=int, default=3,
+                help='The amount of messsages to send')
 
         # get args
         args = parser.parse_args()

@@ -6,7 +6,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016−2019 CNES
+# Copyright © 2016−2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -35,40 +35,19 @@ __credits__ = '''Contributors:
  * David FERNANDES <david.fernandes@viveris.fr>
 '''
 
-import os
 import re
 import sys
 import time
 import syslog
+import os.path
 import argparse
-import traceback
-import contextlib
 import subprocess
 
 import collect_agent
 
+
 BRACKETS = re.compile(r'[\[\]]')
 INTERVAL = 1000 # in ms
-
-
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 
 def run_command(cmd):
@@ -168,8 +147,8 @@ def main(remote_ip, local_ip, tunnel_ipv4, tunnel_ipv6, port, direction, behavio
     # Init local variables used to calculate statistics
     comp_stats = init_comp_stats()
     decomp_stats = init_decomp_stats()
-    last_statistics_sent_comp = int(time.time() * 1000)
-    last_statistics_sent_decomp = int(time.time() * 1000)
+    last_statistics_sent_comp = collect_agent.now()
+    last_statistics_sent_decomp = collect_agent.now()
     number_of_stats_interval_comp = 0
     number_of_stats_interval_decomp = 0
 
@@ -190,7 +169,7 @@ def main(remote_ip, local_ip, tunnel_ipv4, tunnel_ipv6, port, direction, behavio
             comp_stats['comp_header_uncompressed'] += int(tokens[5])
             comp_stats['comp_header_compressed'] += int(tokens[7])
             comp_stats['comp_segments'] += int(tokens[9])
-            timestamp = int(time.time() * 1000)
+            timestamp = collect_agent.now()
 
             if timestamp > last_statistics_sent_comp + INTERVAL and number_of_stats_interval_comp:
                 last_statistics_sent_comp = timestamp
@@ -219,7 +198,7 @@ def main(remote_ip, local_ip, tunnel_ipv4, tunnel_ipv6, port, direction, behavio
             decomp_stats['decomp_lost'] = float(tokens[3])
             decomp_stats['decomp_failed'] = float(tokens[4])
             number_of_stats_interval_decomp = 1
-            timestamp = int(time.time() * 1000)
+            timestamp = collect_agent.now()
 
             if timestamp > last_statistics_sent_decomp + INTERVAL and number_of_stats_interval_decomp:
                 last_statistics_sent_decomp = timestamp
@@ -232,7 +211,7 @@ def main(remote_ip, local_ip, tunnel_ipv4, tunnel_ipv6, port, direction, behavio
 
 
 if __name__ == '__main__':
-    with use_configuration('/opt/openbach/agent/jobs/rohc/rohc_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/rohc/rohc_rstats_filter.conf'):
         # Define Usage
         parser = argparse.ArgumentParser(
                 description=__doc__,
@@ -256,4 +235,3 @@ if __name__ == '__main__':
 
         args = vars(parser.parse_args())
         main(**args)
-

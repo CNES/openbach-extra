@@ -6,7 +6,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -29,20 +29,17 @@
 """Restore the default configuration from /opt/openbach/agent/jobs/tcp_conf_linux/
 at job uninstallation"""
 
-src = open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux.conf","r")
-for line in src:
-	name, value = line.split("=")
-	while '.' in name:
-		name = name.replace('.','/')
-	dst=open("/proc/sys/"+name,"w")
-	dst.write(value)
-	dst.close()
-src.close()
+from pathlib import Path
 
-src = open("/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux_cubic.conf","r")
-for line in src:
-	name, value = line.split("=")
-	dst=open("/sys/module/tcp_cubic/parameters/"+name,"w")
-	dst.write(value)
-	dst.close()
-src.close()
+
+def restore_from(conf_file, dest_folder):
+    with open(conf_file) as src:
+        for line in src:
+            name, value = line.split('=')
+            with Path(dest_folder, *name.split('.')).open('w') as dest:
+                dest.write(value)
+
+
+if __name__ == '__main__':
+    restore_from('/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux.conf', '/proc/sys')
+    restore_from('/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux_cubic.conf', '/sys/module/tcp_cubic/parameters')

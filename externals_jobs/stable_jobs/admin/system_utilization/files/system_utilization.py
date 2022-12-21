@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -34,55 +34,34 @@ __credits__ = '''Contributors:
  * Francklin SIMO <francklin.simo@toulouse.viveris.com>
 '''
 
-import os
-import sys
+
 import time
 import psutil
-import syslog
 import argparse
-import traceback
-import contextlib
+
 import collect_agent
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def main(interval):
     while True:
-        statistics= dict()
-        statistics.update({'cpu_percent':psutil.cpu_percent()})
-        statistics.update({'virtual_memory_percent':psutil.virtual_memory().percent})
-        statistics.update({'swap_memory_percent':psutil.swap_memory().percent})
-        statistics.update({'disk_space_percent':psutil.disk_usage(psutil.disk_partitions()[0].mountpoint).percent})
-        timestamp = int(time.time() * 1000)
-        collect_agent.send_stat(timestamp, **statistics)
+        collect_agent.send_stat(
+                collect_agent.now(),
+                cpu_percent=psutil.cpu_percent(),
+                virtual_memory_percent=psutil.virtual_memory().percent,
+                swap_memory_percent=psutil.swap_memory().percent,
+                disk_space_percent=psutil.disk_usage(psutil.disk_partitions()[0].mountpoint).percent,
+        )
         time.sleep(interval)
       
     
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/system_utilization/system_utilization_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/system_utilization/system_utilization_rstats_filter.conf'):
         # Argument parsing
         parser = argparse.ArgumentParser()
-        parser.add_argument('-i', '--interval', type=int, 
-                            help='The pause *interval* seconds between periodic information retrieval (Default: 1 second)',
-                            default=1)
-                                
+        parser.add_argument(
+                '-i', '--interval',
+                type=int, default=1,
+                help='The pause *interval* seconds between periodic information retrieval (Default: 1 second)')
+
         args = parser.parse_args()
         main(args.interval)
-        

@@ -6,7 +6,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016−2019 CNES
+# Copyright © 2016−2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -35,40 +35,18 @@ __credits__ = '''Contributors:
  * David FERNANDES <david.fernandes@viveris.fr>
 '''
 
-import os
+
 import re
-import time
 import syslog
 import argparse
-import traceback
 import subprocess
-import contextlib
 from threading import Thread
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 import collect_agent
 
+
 BRACKETS = re.compile(r'[\[\]]')
-
-
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 
 def cpu_reports(sampling_interval):
@@ -88,7 +66,7 @@ def cpu_reports(sampling_interval):
             o = elts.index('all')
             cpu_user, cpu_sys, cpu_iowait, cpu_idle = map(float, [elts[o + 1], elts[o + 3], elts[o + 4], elts[o + 10]])
             statistics = {}
-            timestamp = int(time.time() * 1000)
+            timestamp = collect_agent.now()
             statistics['cpu_user'] = cpu_user
             statistics['cpu_sys'] = cpu_sys
             statistics['cpu_iowait'] = cpu_iowait
@@ -98,7 +76,7 @@ def cpu_reports(sampling_interval):
 
 def mem_report():
     statistics = {}
-    timestamp = int(time.time() * 1000)
+    timestamp = collect_agent.now()
 
     cmd = ['stdbuf', '-oL', 'free', '-b']
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -133,15 +111,17 @@ def main(sampling_interval):
 
     thread.join()
 
+
 if __name__ == '__main__':
-    with use_configuration('/opt/openbach/agent/jobs/cpu_monitoring/cpu_monitoring_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/cpu_monitoring/cpu_monitoring_rstats_filter.conf'):
         # Define Usage
         parser = argparse.ArgumentParser(
                 description=__doc__,
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument('--sampling-interval', '-i', type=int, default=1,
-                            help='Interval between two measurements in seconds')
+        parser.add_argument(
+                '--sampling-interval', '-i',
+                type=int, default=1,
+                help='Interval between two measurements in seconds')
 
         args = vars(parser.parse_args())
         main(**args)
-

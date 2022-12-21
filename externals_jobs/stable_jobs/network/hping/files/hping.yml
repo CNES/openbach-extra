@@ -4,7 +4,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #   
 #   
-#   Copyright © 2016-2020 CNES
+#   Copyright © 2016-2023 CNES
 #   
 #   
 #   This file is part of the OpenBACH testbed.
@@ -32,7 +32,7 @@ general:
       TCP/IP (e.g. SYN TCP) packets (like ping does with
       ICMP) and measures the RTT delay (every mean*interval
       seconds).
-  job_version: '1.1'
+  job_version: '1.2'
   keywords:
     - hping
     - rate
@@ -49,6 +49,11 @@ platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/hping/hping.py'
+    command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '22.04'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/hping/hping.py'
     command_stop:
 

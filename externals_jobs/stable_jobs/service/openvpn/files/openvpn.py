@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -29,36 +29,28 @@
 
 """Sources of the Job openvpn"""
 
-
-import re
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
  * Francklin SIMO <francklin.simo@viveris.fr>
  * Romain GUILLOTEAU <romain.guilloteau@viveris.fr>
 '''
 
-import os
 import sys
-import time
-import signal
-import psutil
 import syslog
-import argparse
-import traceback
-import contextlib
-import subprocess
-from functools import partial
 import struct
 import socket
+import argparse
+import subprocess
 
 import collect_agent
 
 
-DESCRIPTION = ("This job relies on OpenVPN program to launch openvpn daemon as server or client. "
-               "Its is used to build a routed VPN tunnel between two remote hosts in p2p mode. This job "
-               "supports conventionnal encryption using a pre-shared secret key. It also allows "
-               "to setup non-encrypted TCP/UDP tunnels"
-               )
+DESCRIPTION = (
+        "This job relies on OpenVPN program to launch openvpn daemon as server or client. "
+        "Its is used to build a routed VPN tunnel between two remote hosts in p2p mode. This job "
+        "supports conventionnal encryption using a pre-shared secret key. It also allows "
+        "to setup non-encrypted TCP/UDP tunnels"
+)
 
 PROTOCOL = 'udp'
 PORT = 1194
@@ -79,28 +71,6 @@ def cidr_to_netmask(cidr):
     host_bits = 32 - int(net_bits)
     netmask = socket.inet_ntoa(struct.pack('!I', (1 << 32) - (1 << host_bits)))
     return network, netmask
-
-
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(
-        syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(
-                syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 
 def build_cmd(mode, local_ip, protocol, tun_device, local_tun_ip,
@@ -184,11 +154,12 @@ def client(local_ip, protocol, local_port, tun_device, local_tun_ip, remote_tun_
 
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/openvpn/openvpn_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/openvpn/openvpn_rstats_filter.conf'):
         # Argument parsing
-        parser = argparse.ArgumentParser(description=DESCRIPTION,
-                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter
-                                         )
+        parser = argparse.ArgumentParser(
+                description=DESCRIPTION,
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        )
         parser.add_argument(
             '-local-ip', '--local-ip', type=str,
             help='The IP address used to communicate with peer'
@@ -217,34 +188,34 @@ if __name__ == "__main__":
         )
         parser.add_argument(
             '-pass_tos', '--pass_tos', action='store_true',
-            help=('Set the TOS field of the tunnel packet to what '
-                  'the payload TOS is.')
+            help='Set the TOS field of the tunnel packet to what the payload TOS is.'
         )
 
         parser.add_argument(
             '-no_sec', '--no_security', action='store_true',
-            help=('Disable authentification and encryption. (It must be same '
-                       'on server and client)')
+            help='Disable authentification and encryption. (It must be same on server and client)'
         )
 
         parser.add_argument(
             '-tcp-nodelay', '--tcp-nodelay', action='store_true',
-            help=('Disable Nagle algorithm')
+            help='Disable Nagle algorithm'
         )
 
         parser.add_argument(
             '-ping', '--ping', type=int, default=0,
-            help=('Ping remote over the TCP/UDP control channel if no packets have been sent for at least n seconds')
+            help='Ping remote over the TCP/UDP control channel if no '
+                 'packets have been sent for at least n seconds'
         )
 
         parser.add_argument(
             '-ping-restart', '--ping-restart', type=int, default=-1,
-            help=('Causes OpenVPN to restart after n seconds pass without reception of a ping or other packet from remote')
+            help='Causes OpenVPN to restart after n seconds pass without '
+                 'reception of a ping or other packet from remote'
         )
 
         parser.add_argument(
             '-route-through-vpn', '--route-through-vpn', type=str,
-            help=('Add route with vpn interface as gateway (format: IP/Netmask)')
+            help='Add route with vpn interface as gateway (format: IP/Netmask)'
         )
 
         # Sub-commands to split server and client mode
@@ -252,10 +223,8 @@ if __name__ == "__main__":
             title='Subcommand mode',
             help='Choose the OpenVPN mode (server mode or client mode)'
         )
-        parser_server = subparsers.add_parser(
-            'server', help='Run in server mode')
-        parser_client = subparsers.add_parser(
-            'client', help='Run in client mode')
+        parser_server = subparsers.add_parser('server', help='Run in server mode')
+        parser_client = subparsers.add_parser('client', help='Run in client mode')
         parser_client.add_argument(
             'server_ip', type=str,
             help='The IP address of the server'
@@ -266,7 +235,7 @@ if __name__ == "__main__":
         )
         parser_client.add_argument(
             '-nobind', '--nobind', action='store_true',
-            help=('Do not bind to local address and port')
+            help='Do not bind to local address and port',
         )
         # Set subparsers options to automatically call the right
         # function depending on the chosen subcommand

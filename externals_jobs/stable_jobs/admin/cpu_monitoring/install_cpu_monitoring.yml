@@ -4,7 +4,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #   
 #   
-#   Copyright © 2016−2019 CNES
+#   Copyright © 2016−2023 CNES
 #   
 #   
 #   This file is part of the OpenBACH testbed.
@@ -33,15 +33,6 @@
     state: present
     update_cache: no
   become: yes
-
-- name: Install Python Dependencies
-  pip:
-    name: apscheduler
-    version: 3.2.0
-    executable: pip3
-    state: present
-  become: yes
-  environment: "{{ openbach_proxies }}"
 
 - name: Create the cpu_monitoring Job Repository
   file:

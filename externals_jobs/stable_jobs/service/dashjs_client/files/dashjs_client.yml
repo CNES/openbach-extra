@@ -4,7 +4,7 @@ general:
   name:            'dashjs_client'
   description: >
       Launches a DASH client on the machine, and plays video.
-  job_version:     '1.4'
+  job_version:     '1.5'
   keywords:        [dash, client, video, streaming]
   persistent:      False
 
@@ -12,6 +12,11 @@ platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution:  'Ubuntu'
     ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 "/opt/openbach/agent/jobs/dashjs_client/dashjs_client.py"'
+    command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Ubuntu'
+    ansible_distribution_version: '22.04'
     command: '/usr/bin/env python3 "/opt/openbach/agent/jobs/dashjs_client/dashjs_client.py"'
     command_stop:
 

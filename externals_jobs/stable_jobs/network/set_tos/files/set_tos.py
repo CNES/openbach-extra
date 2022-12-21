@@ -6,7 +6,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -34,37 +34,16 @@ __credits__ = '''Contributors:
  * David FERNANDES <david.fernandes@viveris.fr>
 '''
 
-import os
 import sys
 import syslog
 import argparse
-import traceback
 import subprocess
-import contextlib
 
 import collect_agent
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def main(action, chain, tos, in_interface=None, out_interface=None, protocol=None,
-        destination=None, source=None, dport=None, sport=None):
+         destination=None, source=None, dport=None, sport=None):
 
     if action == 'add':
         action_flag = '-A'
@@ -113,12 +92,15 @@ def main(action, chain, tos, in_interface=None, out_interface=None, protocol=Non
         print(message)
         sys.exit(message)
 
+
 if __name__ == '__main__':
-    with use_configuration('/opt/openbach/agent/jobs/set_tos/set_tos_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/set_tos/set_tos_rstats_filter.conf'):
         parser = argparse.ArgumentParser(
                 description=__doc__,
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument('action', choices=['add','del'], help='Action to perform : add or delete the rule to mark the packets')
+        parser.add_argument(
+                'action', choices=['add','del'],
+                help='Action to perform : add or delete the rule to mark the packets')
         parser.add_argument('tos', help='ToS value to set. Support decimal and hexadecimal values.')
     
         subparsers = parser.add_subparsers(
@@ -129,17 +111,35 @@ if __name__ == '__main__':
         parser_postrouting = subparsers.add_parser('POSTROUTING', help='Apply ToS to POSTROUTING chain')
         parser_forward = subparsers.add_parser('FORWARD', help='Apply ToS to FORWARD chain')
     
-        parser_prerouting.add_argument('-i', '--in-interface', type=str, help='Name of the interface receiving the packet')
-        parser_postrouting.add_argument('-o', '--out-interface', type=str, help='Name of the interface delivering the packet')
-        parser_forward.add_argument('-i', '--in-interface', type=str, help='Name of the interface receiving the packet')
-        parser_forward.add_argument('-o', '--out-interface', type=str, help='Name of the interface delivering the packet')
+        parser_prerouting.add_argument(
+                '-i', '--in-interface',
+                help='Name of the interface receiving the packet')
+        parser_postrouting.add_argument(
+                '-o', '--out-interface',
+                help='Name of the interface delivering the packet')
+        parser_forward.add_argument(
+                '-i', '--in-interface',
+                help='Name of the interface receiving the packet')
+        parser_forward.add_argument(
+                '-o', '--out-interface',
+                help='Name of the interface delivering the packet')
     
-        parser.add_argument('-p', '--protocol', help='Set the protocol to filter if the prtotocol choice is other. '
-                    'If nothing, the flag is set to all protocols')
-        parser.add_argument('-s', '--source', type=str, help='Source IP address. Can be a whole network using IP/netmask.')
-        parser.add_argument('-d', '--destination', type=str, help='Destination IP address. Can be a whole network using IP/netmask.')
-        parser.add_argument('--sport', type=str, help='Source port (if TCP or UDP). Can be a range using ":" as in 5000:5300.')
-        parser.add_argument('--dport', type=str, help='Destination port (if TCP or UDP). Can be a range using ":" as in 5000:5300.')
+        parser.add_argument(
+                '-p', '--protocol',
+                help='Set the protocol to filter if the prtotocol choice is other. '
+                     'If nothing, the flag is set to all protocols')
+        parser.add_argument(
+                '-s', '--source',
+                help='Source IP address. Can be a whole network using IP/netmask.')
+        parser.add_argument(
+                '-d', '--destination',
+                help='Destination IP address. Can be a whole network using IP/netmask.')
+        parser.add_argument(
+                '--sport',
+                help='Source port (if TCP or UDP). Can be a range using ":" as in 5000:5300.')
+        parser.add_argument(
+                '--dport',
+                help='Destination port (if TCP or UDP). Can be a range using ":" as in 5000:5300.')
     
         args = vars(parser.parse_args())
     

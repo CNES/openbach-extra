@@ -34,12 +34,6 @@ __credits__ = '''Contributors:
  * Francklin SIMO <francklin.simo@toulouse.viveris.com>
 '''
 
-SENDER = {'name' : 'Sender', 'email':'sender@mail.dummy.com'}
-RECEIVER = {'name' : 'Receiver', 'email':'receiver@mail.dummy.com'}
-SUBJECT = 'Background traffic'
-DEFAULT_PORT = 1025
-
-import os
 import sys
 import math
 import time
@@ -57,29 +51,18 @@ from email.mime.text import MIMEText
 
 import collect_agent
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
+
+SENDER = {'name' : 'Sender', 'email':'sender@mail.dummy.com'}
+RECEIVER = {'name' : 'Receiver', 'email':'receiver@mail.dummy.com'}
+SUBJECT = 'Background traffic'
+DEFAULT_PORT = 1025
+
 
 def handle_exception(exception):
     message = 'ERROR: {}'.format(exception)
     collect_agent.send_log(syslog.LOG_ERR, message)
     return message
+
 
 class CustomSMTPServer(smtpd.SMTPServer):
     def __init__(self, *args, **kwargs):
@@ -91,22 +74,23 @@ class CustomSMTPServer(smtpd.SMTPServer):
         ''' Handle messages received '''
         self.nb_messages += 1
         self.data_received += (len(data) + sys.getsizeof(''))//1024
-        statistics = {'received  messages':self.nb_messages, 'received data size':self.data_received}
-        timestamp = int(time.time() * 1000)
-        collect_agent.send_stat(timestamp, **statistics)
+        statistics = {'received messages': self.nb_messages, 'received data size': self.data_received}
+        collect_agent.send_stat(collect_agent.now(), **statistics)
         return
+
 
 def server(server_port):
     server = CustomSMTPServer(('0.0.0.0', server_port), None)
     asyncore.loop()
-    
+
 
 def generate_string(size):
     '''Generate a random string of the specified size in kilobytes'''
     string_lenght = size * 1024 
     result = (''.join(choice(ascii_uppercase) for i in range(size * 1024 - sys.getsizeof(''))))
     return result
-    
+
+
 def client(server_ip, server_port, sender, receiver, message_size, interval, duration):
     # Create the message
     message = generate_string(message_size)
@@ -132,10 +116,10 @@ def client(server_ip, server_port, sender, receiver, message_size, interval, dur
         sys.exit(message)
     finally:
         server.quit()
-    
-    
+
+
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/smtp/smtp_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/smtp/smtp_rstats_filter.conf'):
         # Define usage
         parser = argparse.ArgumentParser(description='',
                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -179,4 +163,3 @@ if __name__ == "__main__":
             interval = args.interval
             duration = args.duration
             client(server_ip, server_port, sender, receiver, message_size, interval, duration)
-            

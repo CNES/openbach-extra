@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -161,6 +161,7 @@ class ConditionTimestamp(ComparatorCondition):
         assert operator not in (Operator.Matches, Operator.DoesNotMatch)
         pattern = 'now() - {}{}' if from_now else '{}{}'
         self.escaped_value = pattern.format(value, unit)
+        
 
     @property
     def is_timestamp(self):

@@ -4,7 +4,7 @@
 #   Agents (one for each network entity that wants to be tested).
 #   
 #   
-#   Copyright © 2016-2020 CNES
+#   Copyright © 2016-2023 CNES
 #   
 #   
 #   This file is part of the OpenBACH testbed.
@@ -31,7 +31,7 @@ general:
       This Job sends identified UDP packets from a Client to a Server in order to
       check if the link introduces packets deordering and/or packets duplication.
       The analysis is performed in one direction only (from Client to Server).
-  job_version: '1.0'
+  job_version: '1.1'
   keywords:
     - order
     - duplicate
@@ -42,6 +42,11 @@ platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/outoforder_detect/outoforder_detect.py'
+    command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '22.04'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/outoforder_detect/outoforder_detect.py'
     command_stop:
 

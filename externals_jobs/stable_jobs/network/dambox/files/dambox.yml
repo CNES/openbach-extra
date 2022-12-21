@@ -2,7 +2,7 @@ general:
   name:  dambox
   description: >
       This Job launch the binary dam_box on the agent 
-  job_version:     '1.2'
+  job_version:     '1.3'
   keywords:        [Beam Hopping, dam_box, Dam Slot, Beam Period, Timeline, FIFO]
   persistent:      true
   need_privileges: yes
@@ -11,6 +11,11 @@ platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '20.04'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/dambox/dambox.py'
+    command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '22.04'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/dambox/dambox.py'
     command_stop:
 

@@ -6,7 +6,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -36,7 +36,6 @@ __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 '''
 
-import os
 import re
 import sys
 import time
@@ -50,7 +49,9 @@ from collections import defaultdict
 
 import collect_agent
 
+
 BRACKETS = re.compile(r'[\[\]]')
+
 
 class AutoIncrementFlowNumber:
     def __init__(self):
@@ -60,24 +61,6 @@ class AutoIncrementFlowNumber:
         self.count += 1
         return 'Flow{0.count}'.format(self)
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def multiplier(unit, base):
     if unit == base:
@@ -121,9 +104,9 @@ def client(
     for i in range(iterations):
         subprocess.run(cmd)
         time.sleep(10)
-        
-def server(interval, window_size, port, udp, rate_compute_time, num_flows,
-           iterations):
+
+
+def server(interval, window_size, port, udp, rate_compute_time, num_flows, iterations):
     cmd = ['iperf', '-s']
     cmd.extend(_command_build_helper('-i', interval))
     cmd.extend(_command_build_helper('-w', window_size))
@@ -137,7 +120,7 @@ def server(interval, window_size, port, udp, rate_compute_time, num_flows,
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         flow_map = defaultdict(AutoIncrementFlowNumber())
-        ref = int(time.time())
+        ref = time.perf_counter()
         for flow_number in repeat(None):
             line = p.stdout.readline().decode()
             tokens = BRACKETS.sub('', line).split()
@@ -145,7 +128,7 @@ def server(interval, window_size, port, udp, rate_compute_time, num_flows,
                 if p.poll() is not None:
                     break
                 continue
-            timestamp = int(time.time() * 1000)
+            timestamp = collect_agent.now()
             if len(tokens) > 1 and tokens[1][-1] == '-':
                 tokens[1] = tokens[1] + tokens[2]
                 del(tokens[2])
@@ -174,8 +157,7 @@ def server(interval, window_size, port, udp, rate_compute_time, num_flows,
                 # filter out lines covering the whole duration
                 continue
 
-            elapsed = int(time.time()) - ref
-
+            elapsed = time.perf_counter() - ref
             try:
                 flow_number = flow_map[int(flow)]
             except ValueError:
@@ -208,8 +190,9 @@ def server(interval, window_size, port, udp, rate_compute_time, num_flows,
         collect_agent.send_stat(timestamp, **statistics)
         time.sleep(3)
 
+
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/iperf/iperf_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/iperf/iperf_rstats_filter.conf'):
         # Define Usage
         parser = argparse.ArgumentParser(
                 description=__doc__,

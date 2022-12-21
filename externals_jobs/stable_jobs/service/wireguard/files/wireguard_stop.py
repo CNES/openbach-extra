@@ -7,7 +7,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -34,27 +34,27 @@ __credits__ = '''Contributors:
  * Romain GUILLOTEAU <romain.guilloteau@viveris.fr>
 '''
 
-from wireguard import use_configuration, parse_command_line, create_interface
-import subprocess
-import collect_agent
 import sys
 import syslog
+import subprocess
+
+from wireguard import command_line_parser, create_interface
+import collect_agent
 
 
 def delete_interface(tun_dev):
     cmd = ['ip', 'link', 'delete', tun_dev]
     try:
-        p = subprocess.Popen(cmd, stderr=subprocess.PIPE)
+        p = subprocess.run(cmd, stderr=subprocess.PIPE)
     except Exception as ex:
         message = "Error when deleting interface: {}".format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
-    p.wait()
 
 
 if __name__ == "__main__":
-    with use_configuration('/opt/openbach/agent/jobs/wireguard/wireguard_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/wireguard/wireguard_rstats_filter.conf'):
         # Get args and call the appropriate function
-        args = parse_command_line()
+        args = command_line_parser().parse_args()
         if args.function == create_interface:
             delete_interface(args.tun_dev)

@@ -6,7 +6,7 @@
 # Agents (one for each network entity that wants to be tested).
 #
 #
-# Copyright © 2016-2020 CNES
+# Copyright © 2016-2023 CNES
 #
 #
 # This file is part of the OpenBACH testbed.
@@ -34,40 +34,18 @@ __credits__ = '''Contributors:
  * Joaquin MUGUERZA <joaquin.muguerza@toulouse.viveris.com>
 '''
 
-import os
 import re
 import sys
-import time
 import syslog
 import argparse
-import traceback
 import subprocess
-import contextlib
 from math import floor
-from contextlib import suppress
 
 import collect_agent
 
+
 ERROR = re.compile(r'local error: Message too long')
 
-@contextlib.contextmanager
-def use_configuration(filepath):
-    success = collect_agent.register_collect(filepath)
-    if not success:
-        message = 'ERROR connecting to collect-agent'
-        collect_agent.send_log(syslog.LOG_ERR, message)
-        sys.exit(message)
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job ' + os.environ.get('JOB_NAME', '!'))
-    try:
-        yield
-    except Exception:
-        message = traceback.format_exc()
-        collect_agent.send_log(syslog.LOG_CRIT, message)
-        raise
-    except SystemExit as e:
-        if e.code != 0:
-            collect_agent.send_log(syslog.LOG_CRIT, 'Abrupt program termination: ' + str(e.code))
-        raise
 
 def main(dest, lowest, highest, count):
     collect_agent.send_log(syslog.LOG_DEBUG, 'Starting ifconfig pmtud')
@@ -110,11 +88,11 @@ def main(dest, lowest, highest, count):
     else:
         mtu = lowest
 
-    timestamp = int(time.time() * 1000) 
-    collect_agent.send_stat(timestamp, mtu=mtu)
+    collect_agent.send_stat(collect_agent.now(), mtu=mtu)
+
 
 if __name__ == '__main__':
-    with use_configuration('/opt/openbach/agent/jobs/pmtud/pmtud_rstats_filter.conf'):
+    with collect_agent.use_configuration('/opt/openbach/agent/jobs/pmtud/pmtud_rstats_filter.conf'):
         # Define Usage
         parser = argparse.ArgumentParser(
                 description=__doc__,
