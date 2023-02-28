@@ -38,6 +38,7 @@ __credits__ = '''Contributors:
 
 
 import getpass
+from argparse import FileType
 
 from auditorium_scripts.frontend import FrontendBase
 
@@ -59,6 +60,18 @@ class InstallAgent(FrontendBase):
                 help='username to connect as on the agent-to-be '
                 'if the SSH key of the controller cannot be used to '
                 'connect to the openbach user on the machine.')
+        self.parser.add_argument(
+                '--private_key_file', type=FileType('r'),
+                help='path of private key file on the current computer to be sent to the controller')
+        self.parser.add_argument(
+                '--public_key_file', type=FileType('r'),
+                help='path of public key file on the current computer to be sent to the controller')
+        self.parser.add_argument(
+                 '--http_proxy',
+                help='http proxy variable for this agent')
+        self.parser.add_argument(
+            '--https_proxy',
+            help='https proxy variable for this agent')
         self.parser.add_argument(
                 '-r', '--reattach', '--attach-autonomous-agent',
                 action='store_true',
@@ -84,10 +97,21 @@ class InstallAgent(FrontendBase):
 
         route = 'agent?reattach' if self.args.reattach else 'agent'
 
+        private_key_file=self.args.private_key_file
+        public_key_file=self.args.public_key_file
+        request_data={
+                'address':agent,
+                'name':name,
+                'username':username,
+                'password':password,
+                'collector_ip':collector,
+                'http_proxy':self.args.http_proxy,
+                'https_proxy':self.args.https_proxy
+        }
+        if private_key_file and public_key_file:
+            request_data['files']={'private_file':private_key_file,'public_file':public_key_file}
         self.request(
-                'POST', route, show_response_content=False,
-                address=agent, name=name, username=username,
-                password=password, collector_ip=collector)
+                'POST', route, show_response_content=False,**request_data)
         return self.wait_for_success('install', show_response_content=show_response_content)
 
     def query_state(self):

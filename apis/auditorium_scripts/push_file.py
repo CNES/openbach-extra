@@ -72,7 +72,6 @@ class PushFile(FrontendBase):
                 'path': self.args.remote_path,
                 'keep_file': keep,
         }
-
         if not keep:
             users = self.args.user
             if users:
@@ -95,7 +94,9 @@ class PushFile(FrontendBase):
         else:
             form_data['files'] = {'file': local_file}
 
-        return self.request('POST', 'file', show_response_content, **form_data)
+        response= self.request('POST', 'file', show_response_content, **form_data, check_status=False)
+        print(response.request.body)
+        return response
 
 
 if __name__ == '__main__':

@@ -239,7 +239,6 @@ class FrontendBase:
             credentials = {'login': args.login, 'password': password}
             if args.vault_password:
                 if args.vault_password is self.SENTINEL:
-                    print(args.vault_password)
                     vault_password=getpass.getpass('Ansible Vault Password: ')
                 else:
                     vault_password=args.vault_password
