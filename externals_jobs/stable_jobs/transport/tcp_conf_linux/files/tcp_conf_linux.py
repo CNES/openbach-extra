@@ -175,9 +175,9 @@ def set_main_args(reset,
             'tcp_congestion_control', 'tcp_slow_start_after_idle',
             'tcp_no_metrics_save', 'tcp_sack', 'tcp_recovery', 'tcp_fastopen',
     ]:
-        statistic[param] = read_from_file('/proc/sys/net/ipv4/' + param)
+        statistics[param] = read_from_file('/proc/sys/net/ipv4/' + param)
     for param in ['wmem_default', 'wmem_max', 'rmem_default', 'rmem_max']:
-        statistic['core_' + param] = read_from_file('/proc/sys/net/core/' + param)
+        statistics['core_' + param] = read_from_file('/proc/sys/net/core/' + param)
 
     staticstics['tcp_wmem_min'], staticstics['tcp_wmem_default'], staticstics['tcp_wmem_max'] = read_from_file('/proc/sys/net/ipv4/tcp_wmem').split()
     staticstics['tcp_rmem_min'], staticstics['tcp_rmem_default'], staticstics['tcp_rmem_max'] = read_from_file('/proc/sys/net/ipv4/tcp_rmem').split()
