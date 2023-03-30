@@ -50,7 +50,7 @@ def backup_tcp_stack():
 def backup_tcp_cubic_protocol():
     # Get current name of "hystart_ack_delta" parameter since it can be different
     # according to the Linux kernel
-    hystart_ack_delta = next(hystart.name for hystart in Path('/sys/module/tcp_cubic/parameters').glob('histart_ack_delta*'))
+    hystart_ack_delta = next(hystart.name for hystart in Path('/sys/module/tcp_cubic/parameters').glob('hystart_ack_delta*'))
 
     with open('/opt/openbach/agent/jobs/tcp_conf_linux/default_tcp_conf_linux_cubic.conf', 'w') as dest:
         for param in [
