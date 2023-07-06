@@ -100,7 +100,7 @@ def read_controller_configuration(filename='controller'):
     try:
         stream = open(filename)
     except OSError:
-        return default_ip, None, None,None, True
+        return default_ip, None, None, None, True
 
     with stream:
         try:
@@ -110,7 +110,7 @@ def read_controller_configuration(filename='controller'):
             controller = stream.readline().strip()
             password = None
             login = None
-            vault_password= None
+            vault_password = None
         else:
             if isinstance(content, str):
                 content = {'controller': content}
@@ -126,14 +126,13 @@ def read_controller_configuration(filename='controller'):
             password = content.get('password')
             login = content.get('login')
             vault_password = content.get('vault_password')
-            
 
     should_warn = False
     if not controller:
         controller = default_ip
         should_warn = True
 
-    return controller, login, password,vault_password, should_warn
+    return controller, login, password, vault_password, should_warn
 
 
 def pretty_print(response, content=None, check_status=True):
@@ -164,7 +163,7 @@ class FromFileArgumentParser(argparse.ArgumentParser):
 
 class FrontendBase:
     WAITING_TIME_BETWEEN_STATES_POLL = 5  # seconds
-    SENTINEL=object()
+    SENTINEL = object()
 
     @classmethod
     def autorun(cls):
@@ -184,7 +183,7 @@ class FrontendBase:
 
     def __init__(self, description):
         self.__filename = 'controller'
-        controller, login, password,vault_password, unspecified = read_controller_configuration(self.__filename)
+        controller, login, password, vault_password, unspecified = read_controller_configuration(self.__filename)
         self.parser = FromFileArgumentParser(
                 description=description,
                 epilog='Backend-specific arguments can be specified by '
@@ -205,11 +204,14 @@ class FrontendBase:
                 '--login', '--username', default=login,
                 help='OpenBACH username')
         backend.add_argument(
-                '--password', help='OpenBACH password')
+                '--password', default=password,
+                nargs='?', const=self.SENTINEL,
+                help='OpenBACH password')
         backend.add_argument(
-                '--vault_password', help='Ansible Vault password',default=vault_password,const=self.SENTINEL,nargs='?')
-                
-        self._default_password = password
+                '--vault-password', default=vault_password,
+                nargs='?', const=self.SENTINEL,
+                help='Ansible Vault password')
+
         self._default_controller = controller if unspecified else None
         self.credentials = {'controller': self._default_controller}
 
@@ -233,20 +235,16 @@ class FrontendBase:
 
         self.credentials = {'controller': args.controller}
         if args.login:
-            password = args.password or self._default_password
-            if password is None:
-                password = getpass.getpass('OpenBACH password: ') 
-            credentials = {'login': args.login, 'password': password}
-            if args.vault_password:
-                if args.vault_password is self.SENTINEL:
-                    vault_password=getpass.getpass('Ansible Vault Password: ')
-                else:
-                    vault_password=args.vault_password
-                credentials['vault_password']=vault_password
-            self.credentials.update(credentials)
+            password = args.password
+            if password is self.SENTINEL:
+                password = getpass.getpass('OpenBACH password: ')
+            self.credentials.update(login=args.login, password=password)
+            vault_password = args.vault_password
+            if vault_password is self.SENTINEL:
+                vault_password = getpass.getpass('Ansible Vault Password: ')
+            self.credentials.update(vault_password=vault_password)
             del self.args.login
             del self.args.password
-            del self._default_password
             del self.args.vault_password
             response = self.session.post(url + 'login/', json=credentials)
             response.raise_for_status()
@@ -297,11 +295,13 @@ class FrontendBase:
             else:
                 LOG.error('Retry counter ran out, bailing out.')
                 raise last_error
-            if response.status_code == 504:
-                vault_password = getpass.getpass('Ansible Vault Password: ') 
-                kwargs['vault_password']=vault_password
+
+            if response.status_code == 460:
+                LOG.info('Request could not complete due to missing or wrong Vault password. Asking for it.')
+                kwargs['vault_password'] = getpass.getpass('Ansible Vault Password: ')
             else:
-                break 
+                break
+
         if show_response_content:
             pretty_print(response, check_status=check_status)
         return response
