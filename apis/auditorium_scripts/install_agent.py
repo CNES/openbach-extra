@@ -70,8 +70,8 @@ class InstallAgent(FrontendBase):
                  '--http_proxy',
                 help='http proxy variable for this agent')
         self.parser.add_argument(
-            '--https_proxy',
-            help='https proxy variable for this agent')
+                '--https_proxy',
+                help='https proxy variable for this agent')
         self.parser.add_argument(
                 '-r', '--reattach', '--attach-autonomous-agent',
                 action='store_true',
@@ -89,29 +89,28 @@ class InstallAgent(FrontendBase):
         self.args.password = password
 
     def execute(self, show_response_content=True):
-        agent = self.args.agent_address
-        collector = self.args.collector_address
-        name = self.args.agent_name
-        username = self.args.user
-        password = self.args.password
+        proxy = self.args.http_proxy
+        request_data = {
+                'address': self.args.agent_address,
+                'name': self.args.agent_name,
+                'username': self.args.user,
+                'password': self.args.password,
+                'collector_ip': self.args.collector_address,
+                'http_proxy': proxy,
+                'https_proxy': self.args.https_proxy or proxy,
+        }
+
+        private_key_file = self.args.private_key_file
+        public_key_file = self.args.public_key_file
+        if private_key_file and public_key_file:
+            request_data['files'] = {
+                    'private_file': private_key_file,
+                    'public_file': public_key_file,
+            }
 
         route = 'agent?reattach' if self.args.reattach else 'agent'
-
-        private_key_file=self.args.private_key_file
-        public_key_file=self.args.public_key_file
-        request_data={
-                'address':agent,
-                'name':name,
-                'username':username,
-                'password':password,
-                'collector_ip':collector,
-                'http_proxy':self.args.http_proxy,
-                'https_proxy':self.args.https_proxy
-        }
-        if private_key_file and public_key_file:
-            request_data['files']={'private_file':private_key_file,'public_file':public_key_file}
-        self.request(
-                'POST', route, show_response_content=False,**request_data)
+        request = self.request('POST', route, show_response_content=False, **request_data)
+        request.raise_for_status()
         return self.wait_for_success('install', show_response_content=show_response_content)
 
     def query_state(self):

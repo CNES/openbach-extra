@@ -322,8 +322,9 @@ class FrontendBase:
                 content = content[status]
             returncode = content['returncode']
             if returncode != 202:
-                if show_response_content:
-                    pretty_print(response, content['response'])
+                content_shown = content['response']
+                if show_response_content and content_shown:
+                    pprint.pprint(content_shown, width=200)
                 if returncode not in valid_statuses:
                     raise ActionFailedError(**content)
                 return response
