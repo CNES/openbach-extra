@@ -72,7 +72,6 @@ class PushFile(FrontendBase):
                 'path': self.args.remote_path,
                 'keep_file': keep,
         }
-
         if not keep:
             users = self.args.user
             if users:
