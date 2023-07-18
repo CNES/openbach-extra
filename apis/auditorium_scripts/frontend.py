@@ -44,6 +44,7 @@ __credits__ = '''Contributors:
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
+import os
 import sys
 import json
 import fcntl
@@ -99,7 +100,7 @@ def read_controller_configuration(filename='controller'):
     try:
         stream = open(filename)
     except OSError:
-        return default_ip, None, None, True
+        return default_ip, None, None, None, True
 
     with stream:
         try:
@@ -109,6 +110,7 @@ def read_controller_configuration(filename='controller'):
             controller = stream.readline().strip()
             password = None
             login = None
+            vault_password = None
         else:
             if isinstance(content, str):
                 content = {'controller': content}
@@ -123,13 +125,14 @@ def read_controller_configuration(filename='controller'):
             controller = content.get('controller')
             password = content.get('password')
             login = content.get('login')
+            vault_password = content.get('vault_password')
 
     should_warn = False
     if not controller:
         controller = default_ip
         should_warn = True
 
-    return controller, login, password, should_warn
+    return controller, login, password, vault_password, should_warn
 
 
 def pretty_print(response, content=None, check_status=True):
@@ -160,6 +163,7 @@ class FromFileArgumentParser(argparse.ArgumentParser):
 
 class FrontendBase:
     WAITING_TIME_BETWEEN_STATES_POLL = 5  # seconds
+    SENTINEL = object()
 
     @classmethod
     def autorun(cls):
@@ -179,7 +183,7 @@ class FrontendBase:
 
     def __init__(self, description):
         self.__filename = 'controller'
-        controller, login, password, unspecified = read_controller_configuration(self.__filename)
+        controller, login, password, vault_password, unspecified = read_controller_configuration(self.__filename)
         self.parser = FromFileArgumentParser(
                 description=description,
                 epilog='Backend-specific arguments can be specified by '
@@ -200,8 +204,14 @@ class FrontendBase:
                 '--login', '--username', default=login,
                 help='OpenBACH username')
         backend.add_argument(
-                '--password', help='OpenBACH password')
-        self._default_password = password
+                '--password', default=password,
+                nargs='?', const=self.SENTINEL,
+                help='OpenBACH password')
+        backend.add_argument(
+                '--vault-password', default=vault_password,
+                nargs='?', const=self.SENTINEL,
+                help='Ansible Vault password')
+
         self._default_controller = controller if unspecified else None
         self.credentials = {'controller': self._default_controller}
 
@@ -225,14 +235,17 @@ class FrontendBase:
 
         self.credentials = {'controller': args.controller}
         if args.login:
-            password = args.password or self._default_password
-            if password is None:
+            password = args.password
+            if password is self.SENTINEL:
                 password = getpass.getpass('OpenBACH password: ')
-            credentials = {'login': args.login, 'password': password}
-            self.credentials.update(credentials)
+            self.credentials.update(login=args.login, password=password)
+            vault_password = args.vault_password
+            if vault_password is self.SENTINEL:
+                vault_password = getpass.getpass('Ansible Vault Password: ')
+            self.credentials.update(vault_password=vault_password)
             del self.args.login
             del self.args.password
-            del self._default_password
+            del self.args.vault_password
             response = self.session.post(url + 'login/', json=credentials)
             response.raise_for_status()
 
@@ -264,23 +277,31 @@ class FrontendBase:
         verb = verb.upper()
         url = self.base_url + route
         LOG.debug('%s %s %s', verb, url, kwargs)
-        for _ in range(3):  # Retry 3 times in case we get disconnected
-            try:
-                if verb == 'GET':
-                    response = self.session.get(url, params=kwargs)
-                else:
-                    if files is None:
-                        response = self.session.request(verb, url, json=kwargs)
+        while True:
+            for _ in range(3):  # Retry 3 times in case we get disconnected
+                try:
+                    if verb == 'GET':
+                        response = self.session.get(url, params=kwargs)
                     else:
-                        response = self.session.request(verb, url, data=kwargs, files=files)
-            except requests.exceptions.ConnectionError as error:
-                last_error = error
-                LOG.warning('Connection error while trying request. Retrying.')
+                        if files is None:
+                            response = self.session.request(verb, url, json=kwargs)
+                        else:
+                            response = self.session.request(verb, url, data=kwargs, files=files)
+                except requests.exceptions.ConnectionError as error:
+                    last_error = error
+                    LOG.warning('Connection error while trying request. Retrying.')
+                else:
+                    break
+            else:
+                LOG.error('Retry counter ran out, bailing out.')
+                raise last_error
+
+            if response.status_code == 460:
+                LOG.info('Request could not complete due to missing or wrong Vault password. Asking for it.')
+                kwargs['vault_password'] = getpass.getpass('Ansible Vault Password: ')
             else:
                 break
-        else:
-            LOG.error('Retry counter ran out, bailing out.')
-            raise last_error
+
         if show_response_content:
             pretty_print(response, check_status=check_status)
         return response
@@ -301,8 +322,9 @@ class FrontendBase:
                 content = content[status]
             returncode = content['returncode']
             if returncode != 202:
-                if show_response_content:
-                    pretty_print(response, content['response'])
+                content_shown = content['response']
+                if show_response_content and content_shown:
+                    pprint.pprint(content_shown, width=200)
                 if returncode not in valid_statuses:
                     raise ActionFailedError(**content)
                 return response

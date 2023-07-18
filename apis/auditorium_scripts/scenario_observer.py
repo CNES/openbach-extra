@@ -282,20 +282,22 @@ class ScenarioObserver(FrontendBase):
         finally:
             if self.args.logs:
                 end_date = int(time.time() * 1000)  # Flooring to the last millisecond
+                try:
+                    sleep_duration = 1
+                    elasticsearch = ElasticSearchConnection(self.args.collector_address, self.args.elasticsearch_port)
+                    with suppress(requests.exceptions.BaseHTTPError, LookupError, ValueError):
+                        settings = elasticsearch.settings_query('index.refresh_interval')
+                        intervals = (settings[index]['settings']['index']['refresh_interval'] for index in settings)
+                        sleep_duration = max(map(_convert_time, intervals), default=sleep_duration)
 
-                sleep_duration = 1
-                elasticsearch = ElasticSearchConnection(self.args.collector_address, self.args.elasticsearch_port)
-                with suppress(requests.exceptions.BaseHTTPError, LookupError, ValueError):
-                    settings = elasticsearch.settings_query("index.refresh_interval")
-                    intervals = (settings[index]["settings"]["index"]["refresh_interval"] for index in settings)
-                    sleep_duration = max(map(_convert_time, intervals), default=sleep_duration)
-
-                logger = logging.getLogger(__name__)
-                logger.info('Retrieving logs if any, wait during logstash refreshing (%ds) ...', sleep_duration)
-                time.sleep(sleep_duration)
-                response = elasticsearch.all_logs(timestamps=(begin_date, end_date))
-                for log in response:
-                    logger.error('%s', PprintFormatter(log))
+                    logger = logging.getLogger(__name__)
+                    logger.info('Retrieving logs if any, wait during logstash refreshing (%ds) ...', sleep_duration)
+                    time.sleep(sleep_duration)
+                    response = elasticsearch.all_logs(timestamps=(begin_date, end_date))
+                    for log in response:
+                        logger.error('%s', PprintFormatter(log))
+                except (requests.exceptions.BaseHTTPError, requests.exceptions.RequestException):
+                    logger.error('%s', 'Unable to retrieve logs. Check the ElasticSearch service on your collector')
         return self._last_instance
 
     def _write_json(self, builder=None):
