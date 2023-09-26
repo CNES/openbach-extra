@@ -32,7 +32,7 @@ general:
       generate UDP/TCP traffic with configured parameters (duration,
       bandwidth, parallel flows, ToS, MSS, etc.). It measures
       throughput, sent/lost packets, jitter, etc.
-  job_version: '1.1'
+  job_version: '2.0'
   keywords:
     - iperf
   persistent: yes
@@ -65,12 +65,12 @@ arguments:
       flag:        '-c'
       description: >
           The IP address of server to start the iperf in client mode (only for client mode).
-    - name:        interval
-      type:        'int'
+    - name:        metrics_interval
+      type:        int
       count:       1
       flag:        '-i'
       description: >
-          Pause interval seconds between periodic bandwidth reports (only for server mode).
+          Pause metrics_interval seconds between periodic bandwidth reports (only for server mode).
     - name:        window_size
       type:        'str'
       count:       1
@@ -143,22 +143,22 @@ arguments:
 statistics:
     - name: "sent_data"
       description: The amount of data sent in this period, in Bytes
-      frequency: 'every *interval* seconds'
+      frequency: 'every *metrics_interval* seconds'
     - name: "throughput"
       description: The throughput in this period, in bits/sec
-      frequency: 'every *interval* seconds'
+      frequency: 'every *metrics_interval* seconds'
     - name: "jitter"
       description: The jitter between packets in this period, in seconds
-      frequency: 'every *interval* seconds'
+      frequency: 'every *metrics_interval* seconds'
     - name: "sent_pkts"
       description: The number of sent packets
-      frequency: 'every *interval* seconds'
+      frequency: 'every *metrics_interval* seconds'
     - name: "lost_pkts"
       description: The number of lost packets
-      frequency: 'every *interval* seconds'
+      frequency: 'every *metrics_interval* seconds'
     - name: "plr"
       description: The packet loss rate for this period, in %
-      frequency: 'every *interval* seconds'
+      frequency: 'every *metrics_interval* seconds'
     - name: "max_total_rate"
       description: The max total rate
       frequency: 'once'

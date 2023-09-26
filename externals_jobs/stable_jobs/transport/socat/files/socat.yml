@@ -77,7 +77,7 @@ arguments:
               type: str
               count: 1
               flag: '-c'
-              description: Alternativelly, a size to create a file from (e.g.: 3G)
+              description: "Alternativelly, a size to create a file from (e.g.: 3G)"
         - name: client
           required:
             - name: dest
@@ -89,7 +89,7 @@ arguments:
               type: str
               count: 1
               flag: '-e'
-              description: The expected size of the file sent by the server (e.g.: 20M)
+              description: "The expected size of the file sent by the server (e.g.: 20M)"
 
 statistics:
     - name: duration
