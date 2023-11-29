@@ -51,7 +51,7 @@ import collect_agent
 
 def run_command(command):
     try:
-        p = subprocess.run(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        p = subprocess.run(command, text=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     except Exception as ex:
         message = 'ERROR: {}'.format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
@@ -77,7 +77,7 @@ def run_command(command):
     return p.returncode
 
 
-def manage_rule(chain, action, port, mark, in_iface=None, ip_src=None, ip_dst=None):
+def manage_rule(chain, remove, port, mark, in_iface=None, ip_src=None, ip_dst=None):
     rule = iptc.Rule()
     rule.protocol = 'tcp'
     rule.create_target('TPROXY')
@@ -90,16 +90,9 @@ def manage_rule(chain, action, port, mark, in_iface=None, ip_src=None, ip_dst=No
     if ip_dst is not None:
         rule.dst = str(ip_dst)
 
+    action = chain.delete_rule if remove else chain.append_rule
     try:
-        if action == 'add':
-            chain.append_rule(rule)
-        elif action == 'del':
-            chain.delete_rule(rule)
-        else:
-            message = 'Internal Error : Bad rule action'
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            sys.exit(message)
-
+        action(rule)
     except iptc.ip4tc.IPTCError as ex:
         message = 'ERROR: {}'.format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
@@ -117,25 +110,21 @@ def set_conf(ifaces, src_ip, dst_ip, port, mark, table_num, unset=False):
 
     # Get PREROUTING chain of mangle table
     table = iptc.Table(iptc.Table.MANGLE)
-    target_chain = None
-    for chain in table.chains:
-        if chain.name == 'PREROUTING':
-            target_chain = chain
-            break
-    if target_chain is None:
+    try:
+        target_chain = next(chain for chain in table.chains if chain.name == 'PREROUTING')
+    except StopIteration:
         message = 'ERROR could not find chain PREROUTING of MANGLE table'
         collect_agent.send_log(syslog.LOG_ERROR, message)
         sys.exit(message)
-        print(message)
 
     for iface in ifaces:
-        manage_rule(target_chain, action, port, mark, in_iface=iface)
+        manage_rule(target_chain, unset, port, mark, in_iface=iface)
 
     for ip in src_ip:
-        manage_rule(target_chain, action, port, mark, ip_src=ip)
+        manage_rule(target_chain, unset, port, mark, ip_src=ip)
 
     for ip in dst_ip:
-        manage_rule(target_chain, action, port, mark, ip_dst=ip)
+        manage_rule(target_chain, unset, port, mark, ip_dst=ip)
 
 
 def main(ifaces, src_ip, dst_ip, stop, port, addr, fopen, maxconns,
@@ -177,40 +166,41 @@ def main(ifaces, src_ip, dst_ip, stop, port, addr, fopen, maxconns,
             collect_agent.send_log(syslog.LOG_DEBUG, 'PEP launched successfully')
 
 
+def command_line_parser():
+    parser = argparse.ArgumentParser(description='',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-p', '--port', type=int, default=5000,
+            help='The port PEPsal uses to listen for incoming connection')
+    parser.add_argument('-a', '--address', type=str, default='0.0.0.0',
+            help='The address PEPsal uses to bind the listening socket')
+    parser.add_argument('-f', '--fastopen', action='store_true',
+            help='Enable TCP FastOpen')
+    parser.add_argument('-c', '--maxconns', type=int, default=2112,
+            help='The maximum number of simultaneous connections')
+    parser.add_argument('-g', '--gcc-interval', type=int, default=54000,
+            help='The garbage collector interval')
+    parser.add_argument('-l', '--log-file', type=str, default='/var/log/pepsal/connections.log',
+            help='The connections log path')
+    parser.add_argument('-t', '--pending-lifetime', type=int, default=18000,
+            help='The pending connections lifetime')
+    parser.add_argument('-x', '--stop', action='store_true',
+            help='If set, unset routing configuration')
+    parser.add_argument('-i', '--redirect-ifaces', type=str, default='',
+            help="Redirect all traffic from incoming interfaces to PEPsal (admits multiple interfaces separated by ',' ' ')")
+    parser.add_argument('-s', '--redirect-src-ip', type=str, default='',
+            help="Redirect all traffic with src IP to PEPsal (admits multiple IPs separated by ',' ' ')")
+    parser.add_argument('-d', '--redirect-dst-ip', type=str, default='',
+            help="Redirect all traffic with dest IP to PEPsal (admits multiple IPs separated by ',' ' ')")
+    parser.add_argument('-m', '--mark', type=int, default=1,
+            help='The mark used for routing packets to the PEP')
+    parser.add_argument('-T', '--table-num', type=int, default=100,
+            help='The routing table number used for routing packets to the PEP')
+    return parser
+
+
 if __name__ == '__main__':
     with collect_agent.use_configuration('/opt/openbach/agent/jobs/pep/pep_rstat_filter.conf'):
-        # Define Usage
-        parser = argparse.ArgumentParser(description='',
-                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument('-p', '--port', type=int, default=5000,
-                help='The port PEPsal uses to listen for incoming connection')
-        parser.add_argument('-a', '--address', type=str, default='0.0.0.0',
-                help='The address PEPsal uses to bind the listening socket')
-        parser.add_argument('-f', '--fastopen', action='store_true',
-                help='Enable TCP FastOpen')
-        parser.add_argument('-c', '--maxconns', type=int, default=2112,
-                help='The maximum number of simultaneous connections')
-        parser.add_argument('-g', '--gcc-interval', type=int, default=54000,
-                help='The garbage collector interval')
-        parser.add_argument('-l', '--log-file', type=str, default='/var/log/pepsal/connections.log',
-                help='The connections log path')
-        parser.add_argument('-t', '--pending-lifetime', type=int, default=18000,
-                help='The pending connections lifetime')
-        parser.add_argument('-x', '--stop', action='store_true',
-                help='If set, unset routing configuration')
-        parser.add_argument('-i', '--redirect-ifaces', type=str, default='',
-                help="Redirect all traffic from incoming interfaces to PEPsal (admits multiple interfaces separated by ',' ' ')")
-        parser.add_argument('-s', '--redirect-src-ip', type=str, default='',
-                help="Redirect all traffic with src IP to PEPsal (admits multiple IPs separated by ',' ' ')")
-        parser.add_argument('-d', '--redirect-dst-ip', type=str, default='',
-                help="Redirect all traffic with dest IP to PEPsal (admits multiple IPs separated by ',' ' ')")
-        parser.add_argument('-m', '--mark', type=int, default=1,
-                help='The mark used for routing packets to the PEP')
-        parser.add_argument('-T', '--table-num', type=int, default=100,
-                help='The routing table number used for routing packets to the PEP')
-
-        # get args
-        args = parser.parse_args()
+        args = command_line_parser().parse_args()
         port = args.port
         addr = args.address
         fopen = '-f' if args.fastopen else ''
