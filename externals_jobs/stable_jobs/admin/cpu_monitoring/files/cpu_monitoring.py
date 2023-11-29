@@ -46,67 +46,61 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 import collect_agent
 
 
-BRACKETS = re.compile(r'[\[\]]')
-
-
 def cpu_reports(sampling_interval):
-    cmd = ['stdbuf', '-oL', 'mpstat', str(sampling_interval)]
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    cmd = ['stdbuf', '-oL', 'mpstat', '-P', 'ALL', str(sampling_interval)]
+    p = subprocess.Popen(cmd, text=True, stdout=subprocess.PIPE)
 
-    while True:
-        line = p.stdout.readline().decode()
-        tokens = BRACKETS.sub('', line).split()
-        if not tokens:
-            if p.poll() is not None:
-                break
-            continue
-        line = line.strip()
-        if 'all' in line:
-            elts = line.split()
-            o = elts.index('all')
-            cpu_user, cpu_sys, cpu_iowait, cpu_idle = map(float, [elts[o + 1], elts[o + 3], elts[o + 4], elts[o + 10]])
-            statistics = {}
-            timestamp = collect_agent.now()
-            statistics['cpu_user'] = cpu_user
-            statistics['cpu_sys'] = cpu_sys
-            statistics['cpu_iowait'] = cpu_iowait
-            statistics['cpu_idle'] = cpu_idle
-            collect_agent.send_stat(timestamp, **statistics)
+    p.stdout.readline()  # Skip header
+    while line := p.stdout.readline():
+        try:
+            _, core, cpu_user, _, cpu_sys, cpu_iowait, _, _, _, _, _, cpu_idle = line.split()
+        except ValueError:
+            pass
+        else:
+            if core == 'CPU':
+                timestamp = collect_agent.now()
+            else:
+                prefix = None if core == 'all' else int(core)
+                collect_agent.send_stat(
+                        timestamp, prefix=prefix,
+                        cpu_user=float(cpu_user),
+                        cpu_sys=float(cpu_sys),
+                        cpu_iowait=float(cpu_iowait),
+                        cpu_idle=float(cpu_idle))
 
 
 def mem_report():
-    statistics = {}
     timestamp = collect_agent.now()
-
     cmd = ['stdbuf', '-oL', 'free', '-b']
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    while True:
-        line = p.stdout.readline()
-        if not line:
-            break
-        line = line.decode().strip()
-        if 'Mem:' in line:
-            ram_used = int(line.split()[2])
-            statistics['ram_used'] = ram_used
-        if 'Swap:' in line:
-            swap_used = int(line.split()[2])
-            statistics['swap_used'] = swap_used
+    p = subprocess.run(cmd, text=True, stdout=subprocess.PIPE)
 
-    collect_agent.send_stat(timestamp, **statistics)
+    p.stdout.readline()  # Skip header
+    ram_used = int(p.stdout.readline().split()[2])
+    swap_used = int(p.stdout.readline().split()[2])
+    collect_agent.send_stat(timestamp, ram_used=ram_used, swap_used=swap_used)
+
+
+def command_line_parser():
+    parser = argparse.ArgumentParser(
+            description=__doc__,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument(
+            '--sampling-interval', '-i',
+            type=int, default=1,
+            help='interval between two measurements in seconds')
+    return parser
 
 
 def main(sampling_interval):
     collect_agent.send_log(syslog.LOG_DEBUG, 'Starting cpu_monitoring job')
 
     # Collect CPU reports
-    thread = Thread(target=cpu_reports, args=(sampling_interval, ))
+    thread = Thread(target=cpu_reports, args=(sampling_interval,))
     thread.start()
 
     # Collect memory reports
     sched = BlockingScheduler()
-    sched.add_job(
-            mem_report, 'interval',
-            seconds=sampling_interval)
+    sched.add_job(mem_report, 'interval', seconds=sampling_interval)
     sched.start()
 
     thread.join()
@@ -114,14 +108,5 @@ def main(sampling_interval):
 
 if __name__ == '__main__':
     with collect_agent.use_configuration('/opt/openbach/agent/jobs/cpu_monitoring/cpu_monitoring_rstats_filter.conf'):
-        # Define Usage
-        parser = argparse.ArgumentParser(
-                description=__doc__,
-                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument(
-                '--sampling-interval', '-i',
-                type=int, default=1,
-                help='Interval between two measurements in seconds')
-
-        args = vars(parser.parse_args())
-        main(**args)
+        args = command_line_parser().parse_args()
+        main(**vars(args))
