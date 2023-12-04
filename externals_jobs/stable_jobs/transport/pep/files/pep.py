@@ -58,12 +58,10 @@ def run_command(command):
         sys.exit(message)
 
     if p.returncode:
-        error = p.stderr.decode()
+        error = p.stderr
         if 'del' in command and ('No such file' in error or 'No such process' in error):
-            message = 'WARNING: {} exited with non-zero return value ({}): {}'.format(
-                command, p.returncode, error)
+            message = 'WARNING: {} exited with non-zero return value ({}): {}'.format(command, p.returncode, error)
             collect_agent.send_log(syslog.LOG_WARNING, message)
-            print(message)
         else:
             if 'add' in command and 'File exists' in error:
                 message = 'ERROR: the route to add ({}) already exists. A pepsal instance might be already running'.format(command)
@@ -72,7 +70,7 @@ def run_command(command):
             collect_agent.send_log(syslog.LOG_ERR, message)
             sys.exit(message)
     else:
-        collect_agent.send_log(syslog.LOG_DEBUG, 'Command applied successfully : ' + ' '.join(command))
+        collect_agent.send_log(syslog.LOG_DEBUG, 'Command applied successfully: ' + ' '.join(command))
 
     return p.returncode
 
@@ -132,13 +130,13 @@ def main(ifaces, src_ip, dst_ip, stop, port, addr, fopen, maxconns,
     if stop:
         # unset routing configuration
         set_conf(ifaces, src_ip, dst_ip, port, mark, table_num, unset=True)
+        run_command(['systemctl', 'restart', 'pepsal.service'])
     else:
         # set routing conf
         set_conf(ifaces, src_ip, dst_ip, port, mark, table_num)
 
         # stop pepsal service
-        cmd = ['systemctl', 'stop', 'pepsal.service']
-        run_command(cmd)
+        run_command(['systemctl', 'stop', 'pepsal.service'])
         collect_agent.send_log(syslog.LOG_DEBUG, 'pepsal.service stopped')
 
         # launch pepsal
@@ -149,7 +147,7 @@ def main(ifaces, src_ip, dst_ip, stop, port, addr, fopen, maxconns,
                 '-t', str(pending_time),
         ]
         try:
-            p = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            p = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL)
         except Exception as ex:
             set_conf(ifaces, src_ip, dst_ip, port, mark, table_num, unset=True)
             message = 'ERROR: {}'.format(ex)
