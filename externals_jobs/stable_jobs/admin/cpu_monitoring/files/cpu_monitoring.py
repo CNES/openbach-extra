@@ -60,9 +60,9 @@ def cpu_reports(sampling_interval):
             if core == 'CPU':
                 timestamp = collect_agent.now()
             else:
-                prefix = None if core == 'all' else int(core)
+                cpu_index = None if core == 'all' else int(core)
                 collect_agent.send_stat(
-                        timestamp, prefix=prefix,
+                        timestamp, suffix=cpu_index,
                         cpu_user=float(cpu_user),
                         cpu_sys=float(cpu_sys),
                         cpu_iowait=float(cpu_iowait),
