@@ -48,10 +48,10 @@ import collect_agent
 
 def cpu_reports(sampling_interval):
     cmd = ['stdbuf', '-oL', 'mpstat', '-P', 'ALL', str(sampling_interval)]
-    p = subprocess.Popen(cmd, text=True, stdout=subprocess.PIPE)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
     p.stdout.readline()  # Skip header
-    while line := p.stdout.readline():
+    while line := p.stdout.readline().decode():
         try:
             _, core, cpu_user, _, cpu_sys, cpu_iowait, _, _, _, _, _, cpu_idle = line.split()
         except ValueError:
@@ -60,7 +60,7 @@ def cpu_reports(sampling_interval):
             if core == 'CPU':
                 timestamp = collect_agent.now()
             else:
-                cpu_index = None if core == 'all' else int(core)
+                cpu_index = None if core == 'all' else str(core)
                 collect_agent.send_stat(
                         timestamp, suffix=cpu_index,
                         cpu_user=float(cpu_user),
@@ -72,11 +72,17 @@ def cpu_reports(sampling_interval):
 def mem_report():
     timestamp = collect_agent.now()
     cmd = ['stdbuf', '-oL', 'free', '-b']
-    p = subprocess.run(cmd, text=True, stdout=subprocess.PIPE)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
-    p.stdout.readline()  # Skip header
-    ram_used = int(p.stdout.readline().split()[2])
-    swap_used = int(p.stdout.readline().split()[2])
+    while True:
+        line = p.stdout.readline()
+        if not line:
+            break
+        line = line.decode().strip()
+        if "Mem:" in line:
+            ram_used = int(line.split()[2])
+        elif "Swap:" in line:
+            swap_used = int(line.split()[2])
     collect_agent.send_stat(timestamp, ram_used=ram_used, swap_used=swap_used)
 
 
