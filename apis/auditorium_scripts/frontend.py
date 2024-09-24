@@ -246,7 +246,7 @@ class FrontendBase:
             del self.args.login
             del self.args.password
             del self.args.vault_password
-            response = self.session.post(url + 'login/', json=credentials)
+            response = self.session.post(url + 'login/', json=self.credentials)
             response.raise_for_status()
 
         return args

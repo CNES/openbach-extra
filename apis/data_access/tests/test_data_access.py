@@ -117,9 +117,9 @@ class TestDataAccessInfluxDB(unittest.TestCase):
         condition_all = tags_to_condition(2, 'lulu', 3, 'Test', condition_with_nones)
         self.assertEqual(
                 str(condition_all),
-                '(("@agent_name" = \'toto\') AND ("@scenario_instance_id" = \'1\'))'
-                ' AND ("@agent_name" = \'lulu\') AND ("@scenario_instance_id" = \'2\')'
-                ' AND ("@job_instance_id" = \'3\') AND ("@suffix" = \'Test\')')
+                '("@agent_name" = \'lulu\') AND ("@job_instance_id" = \'3\') '
+                'AND ("@suffix" = \'Test\') AND ("@scenario_instance_id" = \'2\') '
+                'AND (("@agent_name" = \'toto\') AND ("@scenario_instance_id" = \'1\'))')
 
     def test_queries(self):
         simple_condition = ConditionField('field_name', Operator.Equal, 42)
@@ -133,10 +133,10 @@ class TestDataAccessInfluxDB(unittest.TestCase):
         tags = tag_query('tag_name', 'job_name', simple_condition)
 
         self.assertEqual(select_all, 'SELECT * FROM "job_name" WHERE "field_name" = 42')
-        self.assertEqual(select_few, 'SELECT "a","b","c" FROM "job_name"')
+        self.assertRegex(select_few, 'SELECT "(([abc])|(@[a-z_]+))"(,"(([abc])|(@[a-z_]+))")* FROM "job_name"')
         self.assertEqual(measurement, 'SHOW MEASUREMENTS WITH MEASUREMENT = "job" WHERE "field_name" = 42')
-        self.assertEqual(delete_all, 'DROP SERIES FROM /.*/ WHERE ("@scenario_instance_id" = \'1\')'
-                                     ' AND ("@suffix" = \'suffix\')')
+        self.assertEqual(delete_all, 'DROP SERIES FROM /.*/ WHERE ("@suffix" = \'suffix\')'
+                                     ' AND ("@scenario_instance_id" = \'1\')')
         self.assertEqual(tags, 'SHOW TAG VALUES FROM "job_name" WITH '
                                'KEY = "tag_name" WHERE "field_name" = 42')
 
@@ -229,14 +229,14 @@ class TestDataAccessInfluxDB(unittest.TestCase):
                 [1495094169659, 'Controller', '12', '1000', '100', 6]]}]}]}
 
         scenario, owner = parse_statistics(data)
-        self.assertEqual(scenario.instance_id, '100')
-        self.assertEqual(scenario.owner_instance_id, '1000')
-        self.assertEqual(owner.instance_id, '1000')
-        self.assertEqual(list(owner.jobs), [])
+        self.assertEqual(scenario.instance_id, 100)
+        self.assertEqual(scenario.owner_instance_id, 1000)
+        self.assertEqual(owner.instance_id, 1000)
+        self.assertEqual(list(owner.own_jobs), [])
         job, = scenario.jobs
         self.assertEqual(job.name, 'Debug')
         self.assertEqual(job.agent, 'Controller')
-        self.assertEqual(job.instance_id, '12')
+        self.assertEqual(job.instance_id, 12)
         statistics = job.statistics_data[(None,)]
         expected = [
                 {'time': 1495094155683, 'field': 1},
