@@ -72,17 +72,11 @@ def cpu_reports(sampling_interval):
 def mem_report():
     timestamp = collect_agent.now()
     cmd = ['stdbuf', '-oL', 'free', '-b']
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    p = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
 
-    while True:
-        line = p.stdout.readline()
-        if not line:
-            break
-        line = line.decode().strip()
-        if "Mem:" in line:
-            ram_used = int(line.split()[2])
-        elif "Swap:" in line:
-            swap_used = int(line.split()[2])
+    _, ram, swap = p.stdout.splitlines()
+    ram_used = int(ram.split()[2])
+    swap_used = int(swap.split()[2])
     collect_agent.send_stat(timestamp, ram_used=ram_used, swap_used=swap_used)
 
 

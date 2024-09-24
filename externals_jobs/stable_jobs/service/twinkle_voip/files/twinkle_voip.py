@@ -289,7 +289,7 @@ if __name__ == "__main__":
         ip = args.ip
         nat = args.nat
 
-        try
+        try:
             try:
                 begin_range, end_range = port.split('-')
             except ValueError:

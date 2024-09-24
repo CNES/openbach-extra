@@ -412,6 +412,6 @@ class PprintFormatter:
 
 
 def _convert_time(duration):
-    amount, unit = re.match('(\d+)(d$|h$|m$|s$|ms$)', duration).groups()
+    amount, unit = re.match(r'(\d+)(d$|h$|m$|s$|ms$)', duration).groups()
     unit = {'s': 'seconds', 'm': 'minutes', 'd': 'days', 'h': 'hours', 'ms': 'milliseconds'}[unit]
     return datetime.timedelta(**{unit: int(amount)}).total_seconds()
