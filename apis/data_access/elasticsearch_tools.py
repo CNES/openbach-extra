@@ -131,6 +131,15 @@ def parse_timestamp_with_index(date, index, number_of_year_digits=4):
         return int(timestamp.replace(year).timestamp() * 1000)
 
 
+def extract_timestamp_with_index(source, index, number_of_year_digits=4):
+    try:
+        timestamp = source['@timestamp']
+    except KeyError:
+        return parse_timestamp_with_index(source['timestamp'], index, number_of_year_digits)
+    else:
+        return datetime.datetime.fromisoformat(timestamp)
+
+
 def parse_logs(elasticsearch_result):
     """Generate `Scenario`s instances from ElasticSearch stored data"""
     scenarios = {}  # Cache
@@ -151,7 +160,7 @@ def parse_logs(elasticsearch_result):
             _id = record['_id']
             index = record['_index']
             kind = record['_type']
-            timestamp = parse_timestamp_with_index(source['timestamp'], index)
+            timestamp = extract_timestamp_with_index(source, index)
             version = source['@version']
             facility = source['facility']
             facility_label = source['facility_label']
@@ -188,7 +197,7 @@ def parse_orphans(elasticsearch_result, log):
                 _id = record['_id']
                 index = record['_index']
                 kind = record['_type']
-                timestamp = parse_timestamp_with_index(source['timestamp'], index)
+                timestamp = extract_timestamp_with_index(source, index)
                 version = source['@version']
                 facility = source['facility']
                 facility_label = source['facility_label']
