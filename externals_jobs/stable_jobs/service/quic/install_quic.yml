@@ -66,7 +66,10 @@
 
 # Create job repository and deploy files
 - name: Create the quic job repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
 
 # Install ngtcp2
 - name: Install ngtcp2 requirements
@@ -154,7 +157,11 @@
   become: yes
 
 - name: Install ngtcp2 binaries
-  copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
+  copy:
+    src: "{{ item.file }}"
+    dest: /usr/local/bin/{{ item.name }}
+    mode: "{{ item.mode }}"
+    remote_src: yes
   with_items:
     - { file: '/tmp/ngtcp2/examples/client', mode: '0755', name: 'ngtcp2_client' }
     - { file: '/tmp/ngtcp2/examples/server', mode: '0755', name: 'ngtcp2_server' }
@@ -220,7 +227,11 @@
     - "make"
 
 - name: Install picoquic binaries
-  copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
+  copy:
+    src: "{{ item.file }}"
+    dest: /usr/local/bin/{{ item.name }}
+    mode: "{{ item.mode }}"
+    remote_src: yes
   with_items:
     - { file: '/tmp/picoquic/picoquicdemo', mode: '0755', name: 'picoquic' }
   become: yes
@@ -260,20 +271,29 @@
     - "make"
 
 - name: Install quicly binaries
-  copy: src={{ item.file }} dest=/usr/local/bin/{{ item.name }}  mode={{ item.mode }} remote_src=yes
+  copy:
+    src: "{{ item.file }}"
+    dest: /usr/local/bin/{{ item.name }}
+    mode: "{{ item.mode }}"
+    remote_src: yes
   with_items:
     - { file: '/tmp/quicly/cli', mode: '0755', name: 'quicly' }
   become: yes
 
 - name: Copy files into job repository
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'quic.help', mode: '0644' }
     - { file: 'quic_rstats_filter.conf', mode: '0644' }
     - { file: 'quic.py', mode: '0755' }
 
 - name: Create the HTDOCS DIR
-  file: path=/var/www/{{ domain }} state=directory
+  file:
+    path: /var/www/{{ domain }}
+    state: directory
   become: yes
 
 - name: Create size specific files
@@ -287,9 +307,12 @@
 
 # Install keys
 - name: Install pyOpenSSL
-  pip: name=pyopenssl executable=pip3 state=latest
-  become: yes
+  pip:
+    name: pyopenssl
+    state: latest
+    virtualenv: /opt/openbach/virtualenv
   environment: "{{ openbach_proxies }}"
+  remote_user: openbach
 
 - name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
   openssl_privatekey:

@@ -110,7 +110,7 @@ class InstallJobs(FrontendBase):
 
         responses = [
                 self.request(
-                    'POST', 'job', action='install',
+                    'POST', 'job/', action='install',
                     names=jobs, addresses=agents,
                     show_response_content=launch_only and show_response_content,
                     check_status=check_status)

@@ -70,8 +70,7 @@ def server(server_address):
     signal.signal(signal.SIGTERM, stop_server)
 
     # make job persistent
-    while True:
-        sleep(1)
+    signal.pause()
 
 
 if __name__ == '__main__':

@@ -34,7 +34,10 @@
 ---
 
 - name: Create the D-ITG gaming directory for sender (source)
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
 
 - name: Install D-ITG using APT
   apt:
@@ -50,12 +53,16 @@
       - matplotlib
       - pyaml
       - psutil
-    executable: pip3
-  become: yes
+    state: latest
+    virtualenv: /opt/openbach/virtualenv
   environment: "{{ openbach_proxies }}"
+  remote_user: openbach
 
 - name: Install d-itg_gaming job (sender)
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'd-itg_gaming_rstats_filter.conf', mode: '0644' }
     - { file: 'd-itg_gaming.py', mode: '0755' }

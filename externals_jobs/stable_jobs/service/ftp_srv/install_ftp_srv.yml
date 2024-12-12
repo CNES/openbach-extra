@@ -26,15 +26,24 @@
 ---
 
 - name: Install pyftpdlib
-  pip: name=pyftpdlib executable=pip3 
-  become: true
+  pip:
+    name: pyftpdlib
+    state: latest
+    virtualenv: /opt/openbach/virtualenv
   environment: "{{ openbach_proxies }}"
+  remote_user: openbach
 
 - name: Create the ftp Job Repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
 
 - name: Install ftp
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'ftp_srv.help', mode: '0644' }
     - { file: 'ftp_srv_rstats_filter.conf', mode: '0644' }
@@ -47,4 +56,4 @@
     - { size: '1M' }
     - { size: '10M' }
     - { size: '100M' }
-  become: true
+  become: yes

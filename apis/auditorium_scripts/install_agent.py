@@ -37,6 +37,7 @@ __credits__ = '''Contributors:
 '''
 
 
+import pprint
 import getpass
 from argparse import FileType
 
@@ -61,16 +62,16 @@ class InstallAgent(FrontendBase):
                 'if the SSH key of the controller cannot be used to '
                 'connect to the openbach user on the machine.')
         self.parser.add_argument(
-                '--private_key_file', type=FileType('r'),
+                '--private-key-file', type=FileType('r'),
                 help='path of private key file on the current computer to be sent to the controller')
         self.parser.add_argument(
-                '--public_key_file', type=FileType('r'),
+                '--public-key-file', type=FileType('r'),
                 help='path of public key file on the current computer to be sent to the controller')
         self.parser.add_argument(
-                 '--http_proxy',
+                 '--http-proxy',
                 help='http proxy variable for this agent')
         self.parser.add_argument(
-                '--https_proxy',
+                '--https-proxy',
                 help='https proxy variable for this agent')
         self.parser.add_argument(
                 '-r', '--reattach', '--attach-autonomous-agent',
@@ -108,7 +109,7 @@ class InstallAgent(FrontendBase):
                     'public_file': public_key_file,
             }
 
-        route = 'agent?reattach' if self.args.reattach else 'agent'
+        route = 'agent/?reattach' if self.args.reattach else 'agent/'
         request = self.request('POST', route, show_response_content=False, **request_data)
         request.raise_for_status()
         return self.wait_for_success('install', show_response_content=show_response_content)

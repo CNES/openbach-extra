@@ -94,7 +94,7 @@ class AddCollector(FrontendBase):
             action = partial(action, logs_port=logs_port)
         if stats_port is not None:
             action = partial(action, stats_port=stats_port)
-        action('POST', 'collector', show_response_content=False,
+        action('POST', 'collector/', show_response_content=False,
                username=username, password=password,
                address=collector, name=agent_name)
         return self.wait_for_success('add', show_response_content=show_response_content)

@@ -34,11 +34,6 @@
 
 ---
 
-
-- name: Uninstall selenium
-  pip: name=selenium executable=pip3 state=absent
-  become: yes
-  
 - name: Uninstall package unzip
   apt: name=unzip state=absent
   become: yes

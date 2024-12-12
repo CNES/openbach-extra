@@ -45,7 +45,7 @@ class ListProjects(FrontendBase):
         super().__init__('OpenBACH — List all Projects')
 
     def execute(self, show_response_content=True):
-        return self.request('GET', 'project', show_response_content=show_response_content)
+        return self.request('GET', 'project/', show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

@@ -12,12 +12,12 @@ platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution:  'Ubuntu'
     ansible_distribution_version: '20.04'
-    command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/vlc_receiver/vlc_receiver.py'
+    command: 'sudo -E -u openbach /opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/vlc_receiver/vlc_receiver.py'
     command_stop:
   - ansible_system: 'Debian'
     ansible_distribution:  'Ubuntu'
     ansible_distribution_version: '22.04'
-    command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/vlc_receiver/vlc_receiver.py'
+    command: 'sudo -E -u openbach /opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/vlc_receiver/vlc_receiver.py'
     command_stop:
 
 arguments:

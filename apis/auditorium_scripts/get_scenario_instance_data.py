@@ -57,7 +57,7 @@ class GetScenarioInstanceData(FrontendBase):
     def execute(self, show_response_content=True):
         instance_id = self.args.scenario_instance_id
         files = dict(self.args.file)
-        route = 'scenario_instance/{}/archive'.format(instance_id)
+        route = 'scenario_instance/{}/archive/'.format(instance_id)
 
         response = self.request(
                 'GET', route, **files,

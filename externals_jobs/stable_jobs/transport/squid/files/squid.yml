@@ -12,13 +12,13 @@ platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '20.04'
-    command: 'python3 /opt/openbach/agent/jobs/squid/squid.py'
-    command_stop: 'python3 /opt/openbach/agent/jobs/squid/squid_stop.py'
+    command: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/squid/squid.py'
+    command_stop: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/squid/squid_stop.py'
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '22.04'
-    command: 'python3 /opt/openbach/agent/jobs/squid/squid.py'
-    command_stop: 'python3 /opt/openbach/agent/jobs/squid/squid_stop.py'
+    command: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/squid/squid.py'
+    command_stop: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/squid/squid_stop.py'
 
 arguments:
   required:
