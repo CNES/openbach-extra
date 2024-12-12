@@ -57,7 +57,9 @@ import itertools
 import logging.config
 from pathlib import Path
 from random import sample
+from argparse import FileType
 from collections import Counter
+from contextlib import contextmanager
 
 from requests.compat import json
 
@@ -127,10 +129,15 @@ class ValidationSuite(FrontendBase):
                 '-m', '--middlebox', '--middlebox-address', metavar='ADDRESS', required=True,
                 help='address of an agent acting as middlebox for the reference scenarios; '
                 'this can be an existing agent or a new machine to be installed.')
-        self.parser.add_argument(
+        middlebox_ip_group = self.parser.add_mutually_exclusive_group(required=True)
+        middlebox_ip_group.add_argument(
                 '-M', '--middlebox-ip', metavar='ADDRESS',
                 help='private address of the middlebox, for routes management; in case '
                 'it is different from its public install address.')
+        middlebox_ip_group.add_argument(
+                '-R', '--middlebox-route', nargs=2, metavar=('SERVER', 'CLIENT'),
+                help='private addresses of the middlebox, for routes management; in case '
+                'the client and the server reside on two different networks.')
         self.parser.add_argument(
                 '-e', '--agent', '--extra-agent', metavar='ADDRESS', action='append', default=[],
                 help='address of an extra agent to install during the tests; can be specified '
@@ -147,6 +154,21 @@ class ValidationSuite(FrontendBase):
                 help='password to log into agent during the installation process. '
                 'use the flag but omit the value to get it asked using an echoless prompt; '
                 'omit the flag entirelly to rely on SSH keys on the controller instead.')
+        self.parser.add_argument(
+                '--private-key-file', type=FileType('r'),
+                help='path of private key file on the current computer to be sent to the controller')
+        self.parser.add_argument(
+                '--public-key-file', type=FileType('r'),
+                help='path of public key file on the current computer to be sent to the controller')
+        self.parser.add_argument(
+                 '--http-proxy',
+                help='http proxy variable for agents during the installation process')
+        self.parser.add_argument(
+                '--https-proxy',
+                help='https proxy variable for agents during the installation process')
+        self.parser.add_argument(
+                '-w', '--whitelist', '--whitelist-jobs', nargs='+', default=[],
+                help='installation will only try to install jobs randomly from this list if present')
 
     def parse(self, argv=None):
         args = super().parse(argv)
@@ -168,6 +190,18 @@ class DummyResponse:
         logger = logging.getLogger(__name__)
         logger.warning('Using a bad response from an earlier call, request may fail from unexpected argument')
         return super().__str__()
+
+
+@contextmanager
+def MaybeNotFile(filename, *args, **kwargs):
+    logger = logging.getLogger(__name__)
+    logger.debug('Trying to open the file: {}'.format(filename))
+    if filename is None:
+        yield
+    else:
+        with open(filename, *args, **kwargs) as f:
+            logger.debug('Got the following handle: {} ({})'.format(repr(f), id(f)))
+            yield f
 
 
 def load_executor_from_path(path):
@@ -317,12 +351,34 @@ def main(argv=None):
     del validator.args.middlebox
     middlebox_ip = validator.args.middlebox_ip or middlebox
     del validator.args.middlebox_ip
+    if validator.args.middlebox_route is None:
+        middlebox_ip_server = middlebox_ip
+        middlebox_ip_client = middlebox_ip
+    else:
+        middlebox_ip_server, middlebox_ip_client = validator.args.middlebox_route
+    del validator.args.middlebox_route
     middlebox_interfaces = validator.args.interfaces
     del validator.args.interfaces
     install_user = validator.args.user
     del validator.args.user
     install_password = validator.args.agent_password
     del validator.args.agent_password
+    http_proxy = validator.args.http_proxy
+    del validator.args.http_proxy
+    https_proxy = validator.args.https_proxy
+    del validator.args.https_proxy
+    private_key_file = None
+    if validator.args.private_key_file:
+        with validator.args.private_key_file:
+            private_key_file = validator.args.private_key_file.name
+    del validator.args.private_key_file
+    public_key_file = None
+    if validator.args.public_key_file:
+        with validator.args.public_key_file:
+            public_key_file = validator.args.public_key_file.name
+    del validator.args.public_key_file
+    whitelist = set(validator.args.whitelist)
+    del validator.args.whitelist
 
     # List projects
     projects = validator.share_state(ListProjects)
@@ -387,11 +443,16 @@ def main(argv=None):
     install_agent.args.reattach = False
     install_agent.args.user = install_user
     install_agent.args.password = install_password
+    install_agent.args.http_proxy = http_proxy
+    install_agent.args.https_proxy = https_proxy
     for address, agent in free_agents.items():
-        install_agent.args.agent_address = address
-        install_agent.args.collector_address = agent['collector']
-        install_agent.args.agent_name = agent['name']
-        execute(install_agent)
+        with MaybeNotFile(private_key_file) as private_key, MaybeNotFile(public_key_file) as public_key:
+            install_agent.args.private_key_file = private_key
+            install_agent.args.public_key_file = public_key
+            install_agent.args.agent_address = address
+            install_agent.args.collector_address = agent['collector']
+            install_agent.args.agent_name = agent['name']
+            execute(install_agent)
         installed_agents[address] = agent['name']
 
     index = 0
@@ -402,9 +463,12 @@ def main(argv=None):
             index += 1
             if name not in existing_names:
                 break
-        install_agent.args.agent_address = address
-        install_agent.args.agent_name = name
-        execute(install_agent)
+        with MaybeNotFile(private_key_file) as private_key, MaybeNotFile(public_key_file) as public_key:
+            install_agent.args.private_key_file = private_key
+            install_agent.args.public_key_file = public_key
+            install_agent.args.agent_address = address
+            install_agent.args.agent_name = name
+            execute(install_agent)
         installed_agents[address] = name
 
     # Find an agent without collector
@@ -438,13 +502,16 @@ def main(argv=None):
         execute(remove_collector)
 
         # Reinstall the agent we just lost
-        install_agent.args.agent_address = installed_collector
-        install_agent.args.agent_name = installed_agents[installed_collector]
-        try:
-            install_agent.args.collector_address = free_agents[installed_collector]['collector']
-        except KeyError:
-            install_agent.args.collector_address = selected_collector
-        execute(install_agent)
+        with MaybeNotFile(private_key_file) as private_key, MaybeNotFile(public_key_file) as public_key:
+            install_agent.args.private_key_file = private_key
+            install_agent.args.public_key_file = public_key
+            install_agent.args.agent_address = installed_collector
+            install_agent.args.agent_name = installed_agents[installed_collector]
+            try:
+                install_agent.args.collector_address = free_agents[installed_collector]['collector']
+            except KeyError:
+                install_agent.args.collector_address = selected_collector
+            execute(install_agent)
 
     logger.debug('TODO: Reserve an agent for the upcomming project')
 
@@ -534,7 +601,7 @@ def main(argv=None):
     add_entity.args.entity_name = 'Client'
     add_entity.args.agent_address = client
     execute(add_entity)
-    add_entity.args.entity_name = 'Entity'
+    add_entity.args.entity_name = 'Middlebox'
     add_entity.args.agent_address = middlebox
     execute(add_entity)
     add_entity.args.entity_name = 'Server'
@@ -568,11 +635,12 @@ def main(argv=None):
         execute(add_job)
 
     # Install on agents
+    allowed_jobs = list(external_jobs if not whitelist else set(external_jobs) & whitelist)
     job_names = []
     agent_addresses = []
     for agent in installed_agents:
         agent_addresses.append([agent])
-        job_names.append(sample(list(external_jobs), 4))
+        job_names.append(sample(allowed_jobs, max(4, len(allowed_jobs))))
     install_jobs = validator.share_state(InstallJobs)
     install_jobs.args.launch = False
     install_jobs.args.job_name = job_names
@@ -588,8 +656,7 @@ def main(argv=None):
             response = execute(state_job)
             logger.debug('Last installation date: %s', response['install']['last_operation_date'])
 
-    import time
-    time.sleep(20)
+    time.sleep(30)
 
     # Remove jobs from agents
     uninstall_jobs = validator.share_state(UninstallJobs)
@@ -601,9 +668,9 @@ def main(argv=None):
     # Remove extra jobs from controller
     required_jobs = [
             ['fping', 'ip_route'],
-            ['tc_configure_link', 'time_series', 'histogram'],
-            ['iperf3', 'd-itg_send', 'synchronization', 'owamp-client', 'nuttcp', 'ftp_clt', 'dashjs_client', 'voip_qoe_src', 'web_browsing_qoe'],
-            ['iperf3', 'd-itg_recv', 'synchronization', 'owamp-server', 'nuttcp', 'ftp_srv', 'apache2', 'voip_qoe_dest'],
+            ['sysctl', 'tc_configure_link', 'time_series', 'histogram'],
+            ['iperf3', 'd-itg_send', 'synchronization', 'owamp-client', 'nuttcp', 'ftp_clt', 'dashjs_client', 'voip_qoe_dest', 'voip_qoe_src', 'web_browsing_qoe'],
+            ['iperf3', 'd-itg_recv', 'synchronization', 'owamp-server', 'nuttcp', 'ftp_srv', 'apache2', 'voip_qoe_dest', 'voip_qoe_src'],
     ]
     required_jobs_set = {j for jobs in required_jobs for j in jobs}
     remove_job = validator.share_state(DeleteJob)
@@ -762,17 +829,22 @@ def main(argv=None):
     start_job.args.agent_address = server
     start_job.args.argument = {
             'operation': 'add',
-            'gateway_ip': middlebox_ip,
+            'gateway_ip': middlebox_ip_server,
             'destination_ip': {'network_ip': '{}/32'.format(client_ip)}
     }
     execute(start_job)
     start_job.args.agent_address = client
     start_job.args.argument = {
             'operation': 'add',
-            'gateway_ip': middlebox_ip,
+            'gateway_ip': middlebox_ip_client,
             'destination_ip': {'network_ip': '{}/32'.format(server_ip)}
     }
     execute(start_job)
+    start_job.args.agent_address = middlebox
+    start_job.args.argument = {
+            'parameter': 'net.ipv4.ip_forward',
+            'value': '1',
+    }
 
     # Run example executors
     logger.info('Running example executors:')
@@ -784,7 +856,7 @@ def main(argv=None):
         '--controller', controller,
         '--login', validator.credentials.get('login', ''),
         '--password', validator.credentials.get('password', ''),
-        '--entity', 'Entity',
+        '--entity', 'Middlebox',
         '--server', 'Server',
         '--client', 'Client',
         '--file-size', '10M',
@@ -811,7 +883,7 @@ def main(argv=None):
         '--client-entity', 'Client',
         '--server-ip', server_ip,
         '--client-ip', client_ip,
-        '--post-processing-entity', 'Entity',
+        '--post-processing-entity', 'Middlebox',
         project_name, 'run',
     ])
 
@@ -824,7 +896,7 @@ def main(argv=None):
         '--server-entity', 'Server',
         '--client-entity', 'Client',
         '--server-ip', server_ip,
-        '--post-processing-entity', 'Entity',
+        '--post-processing-entity', 'Middlebox',
         project_name, 'run',
     ])
 
@@ -838,7 +910,7 @@ def main(argv=None):
         '--client-entity', 'Client',
         '--server-ip', server_ip,
         '--rate-limit', '10M',
-        '--post-processing-entity', 'Entity',
+        '--post-processing-entity', 'Middlebox',
         project_name, 'run',
     ])
 
@@ -861,7 +933,7 @@ def main(argv=None):
         '--client-entity', 'Client',
         '--server-ip', server_ip,
         '--client-ip', client_ip,
-        '--post-processing-entity', 'Entity',
+        '--post-processing-entity', 'Middlebox',
         project_name, 'run',
     ])
 
@@ -876,7 +948,7 @@ def main(argv=None):
         '--server-ip', server_ip,
         '--client-ip', client_ip,
         '--rate-limit', '10M',
-        '--post-processing-entity', 'Entity',
+        '--post-processing-entity', 'Middlebox',
         project_name, 'run',
     ])
 
@@ -890,7 +962,7 @@ def main(argv=None):
         '--client-entity', 'Client',
         '--server-ip', server_ip,
         '--mode', 'download',
-        '--post-processing-entity', 'Entity',
+        '--post-processing-entity', 'Middlebox',
         project_name, 'run',
     ])
 
@@ -905,7 +977,7 @@ def main(argv=None):
         '--server-ip', server_ip,
         '--duration', '30',
         '--launch-server',
-        '--post-processing-entity', 'Entity',
+        '--post-processing-entity', 'Middlebox',
         project_name, 'run',
     ])
 
@@ -921,7 +993,7 @@ def main(argv=None):
         '--client-ip', client_ip,
         '--server-port', '8010',
         '--duration', '30',
-        '--post-processing-entity', 'Entity',
+        '--post-processing-entity', 'Middlebox',
         project_name, 'run',
     ])
 
@@ -936,7 +1008,7 @@ def main(argv=None):
         '--duration', '30',
         '--url', 'https://{}:8081/website_openbach/www.openbach.org/content/home.php'.format(server_ip),
         '--url', 'https://{}:8082/website_cnes/cnes.fr/fr/index.html'.format(server_ip),
-        '--post-processing-entity', 'Entity',
+        '--post-processing-entity', 'Middlebox',
         project_name, 'run',
     ])
 
@@ -956,7 +1028,7 @@ def main(argv=None):
         # To avoid proxy issues using config.yml, disable web-browsing
         # '--web-browsing', '7', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '10', '2',
         '--voip', '8', 'Server', 'Client', '60', '4', 'None', '5', server_ip, client_ip, '8012', 'G.711.1', 'None', 'None',
-        '--post-processing-entity', 'Entity',
+        '--post-processing-entity', 'Middlebox',
         project_name, 'run',
     ])
 
@@ -970,7 +1042,7 @@ def main(argv=None):
         '--client-entity', 'Client',
         '--server-ip', server_ip,
         '--transmitted-size', '1G',
-        '--post-processing-entity', 'Entity',
+        '--post-processing-entity', 'Middlebox',
         project_name, 'run',
     ])
 
@@ -1009,10 +1081,13 @@ def main(argv=None):
 
     # Reinstall existing free agents
     for address, agent in free_agents.items():
-        install_agent.args.agent_address = address
-        install_agent.args.collector_address = agent['collector']
-        install_agent.args.agent_name = agent['name']
-        execute(install_agent)
+        with MaybeNotFile(private_key_file) as private_key, MaybeNotFile(public_key_file) as public_key:
+            install_agent.args.private_key_file = private_key
+            install_agent.args.public_key_file = public_key
+            install_agent.args.agent_address = address
+            install_agent.args.collector_address = agent['collector']
+            install_agent.args.agent_name = agent['name']
+            execute(install_agent)
         install_jobs.args.job_name = [agent['jobs']]
         install_jobs.args.agent_address = [[address]]
         execute(install_jobs)

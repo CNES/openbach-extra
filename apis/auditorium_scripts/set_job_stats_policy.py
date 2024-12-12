@@ -101,7 +101,7 @@ class SetJobStatsPolicy(FrontendBase):
             action = partial(action, path=path)
 
         return action(
-                'POST', 'job/{}'.format(job), action='stat_policy',
+                'POST', 'job/{}/'.format(job), action='stat_policy',
                 stat_name=statistic, addresses=[agent],
                 show_response_content=show_response_content)
 

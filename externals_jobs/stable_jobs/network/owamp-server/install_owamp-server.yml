@@ -62,11 +62,17 @@
   become: yes
 
 - name: Create owping Job Folder
-  file: path=/opt/openbach/agent/jobs/owamp-server state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/owamp-server
+    state: directory
+    mode: 0755
   become: yes
 
 - name: Install owping Job
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'owamp-server_rstats_filter.conf', mode: '0644' }
     - { file: 'owamp-server.py', mode: '0755' }

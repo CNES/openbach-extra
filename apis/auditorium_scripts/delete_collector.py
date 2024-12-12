@@ -48,7 +48,7 @@ class DeleteCollector(FrontendBase):
     def execute(self, show_response_content=True):
         address = self.args.collector_address
         self.request(
-                'DELETE', 'collector/{}'.format(address),
+                'DELETE', 'collector/{}/'.format(address),
                 show_response_content=False)
         return self.wait_for_success('del', show_response_content=show_response_content)
 

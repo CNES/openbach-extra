@@ -51,7 +51,7 @@ def main(param, value):
                                "ERROR modifying sysctl {}:{}".format(param, ex))
     if p.returncode == 0:
         collect_agent.send_log(syslog.LOG_DEBUG,
-                               "syscll {} set to {}".format(param, value))
+                               "sysctl {} set to {}".format(param, value))
     else:
         collect_agent.send_log(syslog.LOG_ERR, "Wrong return code")
             

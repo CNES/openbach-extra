@@ -58,7 +58,7 @@ class ListJobInstances(FrontendBase):
         update = self.args.update
 
         return self.request(
-                'GET', 'job_instance', show_response_content,
+                'GET', 'job_instance/', show_response_content,
                 address=agents, update=update or None)
 
 

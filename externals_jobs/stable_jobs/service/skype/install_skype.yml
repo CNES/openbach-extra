@@ -40,7 +40,10 @@
   register: cpu_arch
   
 - name: Copy Google-chrome package
-  copy: src={{ item.file }} dest=/tmp/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /tmp/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'google-chrome-stable_102.0.5005.61_amd64.deb', mode: '0444' }
   
@@ -74,21 +77,27 @@
   become: yes
   environment: "{{ openbach_proxies }}"
 
-- name: Install Selenium for python3
-  pip: name=selenium executable=pip3 state=present
-  become: yes
+- name: Install Selenium and WebDriver for Python3
+  pip:
+    name:
+      - selenium
+      - webdriver-manager
+    state: latest
+    virtualenv: /opt/openbach/virtualenv
   environment: "{{ openbach_proxies }}"
-
-- name: Install Webdriver for python3
-  pip: name=webdriver-manager executable=pip3 state=present
-  become: yes
-  environment: "{{ openbach_proxies }}"
+  remote_user: openbach
 
 - name: Create skype repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
   
 - name: Create audio/video repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }}/{{ item.file }}/ state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}/{{ item.file }}/
+    state: directory
+    mode: 0755
   with_items:
   - { file: 'audio' }
   - { file: 'video' }
@@ -104,7 +113,10 @@
   - { file: 'video' }
     
 - name: Install skype file
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'skype.help', mode: '0644' }
     - { file: 'skype.py', mode: '0755' }

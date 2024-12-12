@@ -56,8 +56,8 @@
   become: yes
 
 - name: Uninstall pyOpenSSL
-  pip: name=pyopenssl executable=pip3 state=absent
-  become: yes
+  pip: name=pyopenssl virtualenv=/opt/openbach/virtualenv state=absent
+  remote_user: openbach
 
 - name: Delete certificates and private keys
   file: path={{ item }} state=absent

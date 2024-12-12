@@ -94,7 +94,7 @@ class PushFile(FrontendBase):
         else:
             form_data['files'] = {'file': local_file}
 
-        return self.request('POST', 'file', show_response_content, **form_data)
+        return self.request('POST', 'file/', show_response_content, **form_data)
 
 
 if __name__ == '__main__':

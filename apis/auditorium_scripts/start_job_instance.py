@@ -146,7 +146,7 @@ class StartJobInstance(FrontendBase):
             action = partial(action, date=date)
 
         return action(
-                'POST', 'job_instance', action='start',
+                'POST', 'job_instance/', action='start',
                 agent_ip=agent, job_name=job_name, instance_args=arguments,
                 show_response_content=show_response_content)
 
