@@ -47,406 +47,165 @@ __credits__ = '''Contributors:
  * Bastien TAURAN <bastien.tauran@viveris.fr>
 '''
 
-import os
 import sys
-import time
-import urllib3
-import getpass
 import logging
-import textwrap
-import tempfile
-import itertools
-import logging.config
 from pathlib import Path
-from random import sample
-from collections import Counter
 
-import pprint
+from validation_suite_utils import (
+        InstallerBase,
+        setup_logging,
+        validation_install_agents,
+        validation_list_agents,
+        validation_uninstall_agents,
+        validation_list_projects,
+        validation_create_project,
+        validation_get_project,
+        validation_modify_project,
+        validation_remove_project,
+        validation_add_project,
+        validation_add_entity,
+        validation_list_installed_jobs,
+        validation_list_jobs,
+        validation_add_jobs,
+        validation_install_jobs,
+        validation_remove_jobs,
+        validation_start_job_instance,
+        validation_list_job_instances,
+        validation_stop_job_instance,
+        validation_status_job_instance_stops,
+        validation_stop_all_job_instances,
+        validation_add_scenario,
+        validation_add_scenario_from_file,
+        validation_modify_scenario_from_file,
+        validation_start_scenario,
+        validation_stop_scenario,
+        validation_status_scenario_stops,
+        validation_get_scenario_instance_data,
+)
 
-from requests.compat import json
 
 CWD = Path(__file__).resolve().parent
-sys.path.insert(0, Path(CWD.parent, 'apis').as_posix())
 
-from auditorium_scripts.frontend import FrontendBase, ActionFailedError
-from auditorium_scripts.list_agents import ListAgents
-from auditorium_scripts.list_collectors import ListCollectors
-from auditorium_scripts.list_installed_jobs import ListInstalledJobs
-from auditorium_scripts.list_jobs import ListJobs
-from auditorium_scripts.list_projects import ListProjects
-from auditorium_scripts.list_job_instances import ListJobInstances
-from auditorium_scripts.install_agent import InstallAgent
-from auditorium_scripts.uninstall_agent import UninstallAgent
-from auditorium_scripts.add_collector import AddCollector
-from auditorium_scripts.assign_collector import AssignCollector
-from auditorium_scripts.delete_collector import DeleteCollector
-from auditorium_scripts.add_project import AddProject
-from auditorium_scripts.create_project import CreateProject
-from auditorium_scripts.delete_project import DeleteProject
-from auditorium_scripts.get_project import GetProject
-from auditorium_scripts.modify_project import ModifyProject
-from auditorium_scripts.add_entity import AddEntity
-from auditorium_scripts.delete_entity import DeleteEntity
-from auditorium_scripts.add_job import AddJob
-from auditorium_scripts.install_jobs import InstallJobs
-from auditorium_scripts.start_job_instance import StartJobInstance
-from auditorium_scripts.status_job_instance import StatusJobInstance
-from auditorium_scripts.state_job import StateJob
-from auditorium_scripts.stop_job_instance import StopJobInstance
-from auditorium_scripts.stop_all_job_instances import StopAllJobInstances
-from auditorium_scripts.uninstall_jobs import UninstallJobs
-from auditorium_scripts.delete_job import DeleteJob
-from auditorium_scripts.add_scenario import AddScenario
-from auditorium_scripts.create_scenario import CreateScenario
-from auditorium_scripts.modify_scenario import ModifyScenario
-from auditorium_scripts.start_scenario_instance import StartScenarioInstance
-from auditorium_scripts.status_scenario_instance import StatusScenarioInstance
-from auditorium_scripts.stop_scenario_instance import StopScenarioInstance
-from auditorium_scripts.delete_scenario import DeleteScenario
-from auditorium_scripts.get_scenario_instance_data import GetScenarioInstanceData
 
 # TODO warning: with this script platform must be clean (or user agree to lose everything)
 # TODO: agents must be installed
 
 
-class ValidationSuite(FrontendBase):
+class ValidationSuite(InstallerBase):
     PASSWORD_SENTINEL = object()
 
     def __init__(self):
-        super().__init__('OpenBACH − Validation Suite')
+        super().__init__()
         self.parser.add_argument(
-                '-e', '--entity', '--entity-address', metavar='ADDRESS', required=True,
-                help='address of the agent where the jobs are installed.')
+                'entity', metavar='ADDRESS', nargs='+',
+                help='address of the agents where the jobs are installed')
         self.parser.add_argument(
-                '-j', '--job', type=str, default=None,
-                help='job to add and install (if argument not specified, all jobs are installed)')
+                '-j', '--job', action='append',
+                help='job to add and install (may be specified '
+                'several times, if missing all jobs are installed)')
         self.parser.add_argument(
-                '-u', '--user', default=getpass.getuser(),
-                help='user to log into agent during the installation proccess')
-        self.parser.add_argument(
-                '-p', '--passwd', '--agent-password',
-                dest='agent_password', nargs='?', const=self.PASSWORD_SENTINEL,
-                help='password to log into agent during the installation process. '
-                'use the flag but omit the value to get it asked using an echoless prompt; '
-                'omit the flag entirelly to rely on SSH keys on the controller instead.')
-        self.parser.add_argument(
-                '-o', '--openbach-path', default="../../openbach/src/jobs",
+                '-o', '--openbach-path', type=Path, default=CWD.parent.parent / "openbach",
                 help='Path of jobs folder in OpenBACH repository')
 
     def parse(self, argv=None):
         args = super().parse(argv)
-        if args.agent_password is self.PASSWORD_SENTINEL:
-            prompt = 'Password for user {} on agents: '.format(args.user)
-            self.args.agent_password = getpass.getpass(prompt)
+        openbach_path = CWD.joinpath(args.openbach_path).resolve()
+        self.suite_args.agents = args.entity
+        self.suite_args.jobs = args.job
+        self.suite_args.openbach_path = openbach_path
+        del args.job
+        del args.entity
+        del args.openbach_path
 
-    def execute(self, show_response_content=True):
-        raise NotImplementedError
-
-
-class DummyResponse:
-    def __getitem__(self, key):
-        logger = logging.getLogger(__name__)
-        logger.debug('Trying to get the {} key from a bad response'.format(key))
-        return self
-
-    def __str__(self):
-        logger = logging.getLogger(__name__)
-        logger.warning('Using a bad response from an earlier call, request may fail from unexpected argument')
-        return super().__str__()
-
-
-def setup_logging(
-        default_path='logging.json',
-        default_level=logging.INFO,
-        env_path_key='LOG_CFG',
-        env_lvl_key='LOG_LVL',
-):
-    def basic_config(level=default_level):
-        logging.basicConfig(
-                level=level,
-                format='[%(levelname)s][%(name)s:%(lineno)d:%(funcName)s]'
-                       '[%(asctime)s.%(msecs)d]:%(message)s',
-                datefmt='%Y-%m-%d:%H:%M:%S',
-        )
-
-    warnings = []
-    level = os.getenv(env_lvl_key, None)
-    if level:
-        try:
-            basic_config(level=level.upper())
-        except (TypeError, ValueError) as e:
-            warnings.append(
-                    'Error when using the environment variable '
-                    '{}: {}. Skipping.'.format(env_lvl_key, e))
-        else:
-            return
-
-    path = default_path
-    environ_path = os.getenv(env_path_key, None)
-    if environ_path:
-        path = environ_path
-
-    try:
-        config_file = open(path, 'rt')
-    except FileNotFoundError:
-        basic_config()
-    else:
-        with config_file:
-            try:
-                logging.config.fileConfig(config_file)
-            except Exception:
-                config_file.seek(0)
-                try:
-                    config = json.load(config_file)
-                except json.JSONDecodeError:
-                    warnings.append(
-                            'File {} is neither in INI nor in JSON format, '
-                            'using default level instead'.format(path))
-                    basic_config()
-                else:
-                    try:
-                        logging.config.dictConfig(config)
-                    except Exception:
-                        warnings.append(
-                                'JSON file {} is not suitable for '
-                                'a logging configuration, using '
-                                'default level instead'.format(path))
-                        basic_config()
-    finally:
-        logger = logging.getLogger(__name__)
-        for warning in warnings:
-            logger.warning(warning)
-
-
-def _verify_response(response):
-    logger = logging.getLogger(__name__)
-    try:
-        response.raise_for_status()
-    except:
-        logger.error('Something went wrong', exc_info=True)
-        return DummyResponse()
-    else:
-        logger.info('Done')
-        try:
-            return response.json()
-        except (AttributeError, json.JSONDecodeError):
-            return DummyResponse()
-
-
-def execute(openbach_function):
-    logger = logging.getLogger(__name__)
-    logger.info(
-            'Starting OpenBACH function %s',
-            openbach_function.__class__.__name__)
-
-    openbach_function_args = vars(openbach_function.args)
-    if openbach_function_args:
-        logger.debug('Arguments used:')
-        for name, value in openbach_function_args.items():
-            logger.debug('\t%s: %s', name, '*****' if name == 'password' else value)
-
-    try:
-        response = openbach_function.execute(False)
-    except ActionFailedError:
-        logger.critical('Something went wrong', exc_info=True)
-        return DummyResponse()
-
-    if isinstance(response, list):
-        return [_verify_response(r) for r in response]
-    else:
-        return _verify_response(response)
+        if not openbach_path.is_dir():
+            self.parser.error(f'openbach_path: {openbach_path} is not a directory')
+        return args
 
 
 def main(argv=None):
     logger = logging.getLogger(__name__)
-    logger.debug('TODO: detach and reatach agents')
 
     # Parse arguments
     validator = ValidationSuite()
     validator.parse(argv)
+    controller = validator.args.controller
+    agents = validator.suite_args.agents
 
-    controller = validator.credentials['controller']
-    del validator.args.controller
-    entity = validator.args.entity
-    del validator.args.entity
-    job = validator.args.job
-    del validator.args.job
-    install_user = validator.args.user
-    del validator.args.user
-    install_password = validator.args.agent_password
-    del validator.args.agent_password
-    openbach_path = validator.args.openbach_path
-    del validator.args.openbach_path
+    # Remove existing projects to add only ours
+    project_name = 'Validation Suite Test Jobs'
+    response = validation_list_projects(validator)
+    for project in response:
+        validation_remove_project(validator, project['name'])
+    validation_create_project(validator, project_name)
+    response = validation_get_project(validator, project_name)
 
-    # List projects
-    projects = validator.share_state(ListProjects)
-    response = execute(projects)
-
-    # Remove Projects
-    project_names = {p['name'] for p in response}
-    for project_name in project_names:
-        remove_project = validator.share_state(DeleteProject)
-        remove_project.args.project_name = project_name
-        execute(remove_project)
-
-    # Create project
-    project_name = 'validation_suite_test_jobs'
-    add_project = validator.share_state(CreateProject)
-    add_project.args.project = {
-            'name': project_name,
-            'description': 'Test project for the Validation Suite',
-            'owners': [],
-    }
-    execute(add_project)
-
-    # Check created project
-    project = validator.share_state(GetProject)
-    project.args.project_name = project_name
-    response = execute(project)
-
-    # List agents
-    agents = validator.share_state(ListAgents)
-    agents.args.update = True
-    agents.args.services = True
-    response = execute(agents)
-
-    # Detach all agents
-    uninstall = validator.share_state(UninstallAgent)
-    uninstall.args.detach = False
-    for agent in response:
-        if agent["project"] is not None:
-            uninstall.args.agent_address = agent["address"]
-            execute(uninstall)
-
-    # Find agents unnatached to a project (must be all)
+    # Prepare agents for further tests
+    response = validation_list_agents(validator)
+    validation_uninstall_agents(validator, [
+            agent['address']
+            for agent in response
+            if agent['project'] is not None
+    ])
     free_agents = {
             agent['address']: {'name': agent['name'], 'collector': agent['collector_ip']}
             for agent in response
             if not agent['project'] and not agent['reserved'] and agent['address'] != controller
     }
     existing_names = {agent['name'] for agent in response}
+    validation_install_agents(validator, free_agents)
+    installed_agents = {address: agent['name'] for address, agent in free_agents.items()}
 
-    # List installed agents
-    installed_agents = {}
+    # Attach agents to entities
+    entities = {address: f'Entity {i}' for i, address in enumerate(agents)}
+    for agent, name in entities.items():
+        if agent not in installed_agents:
+            logger.error('Agent %s is not installed', agent, exc_info=True)
+            return
+        validation_add_entity(validator, project_name, agent, name)
 
-    install_agent = validator.share_state(InstallAgent)
-    install_agent.args.reattach = False
-    install_agent.args.user = install_user
-    install_agent.args.password = install_password
-    for address, agent in free_agents.items():
-        install_agent.args.agent_address = address
-        install_agent.args.collector_address = agent['collector']
-        install_agent.args.agent_name = agent['name']
-        installed_agents[address] = agent['name']
+    # Install requested jobs on agents
+    response = validation_list_jobs(validator)
+    installed_jobs = {job['general']['name'] for job in response}
+    validation_remove_jobs(validator, installed_jobs)
 
-    # Check if entity is in installed agents
-    entities = {}
-    if entity in installed_agents:
-        entities[entity] = "entity"
-    else:
-        logger.error('Agent ' + agent + ' is not installed', exc_info=True)
-        return DummyResponse()
-
-    # Add Entities, associate agents
-    add_entity = validator.share_state(AddEntity)
-    add_entity.args.project_name = project_name
-    add_entity.args.description = ''
-    for agent_address, agent_name in entities.items():
-        add_entity.args.entity_name = agent_name
-        add_entity.args.agent_address = agent_address
-        execute(add_entity)
-
-    # List jobs in controller
-    jobs = validator.share_state(ListJobs)
-    jobs.args.string_to_search = None
-    jobs.args.match_ratio = None
-    response = execute(jobs)
-    installed_jobs = {j['general']['name'] for j in response}
-
-    # Delete all jobs on controller
-    remove_job = validator.share_state(DeleteJob)
-    for job_name in installed_jobs:
-        remove_job.args.job_name = job_name
-        execute(remove_job)
-
-    # Get all available jobs path
     jobs_list = {}
-    stable_jobs = Path(CWD.parent, 'externals_jobs', 'stable_jobs')
-    for j in stable_jobs.glob('**/install_*.yml'):
-        job_name = j.stem[len('install_'):]
-        yaml_file = '{}.yml'.format(job_name)
-        has_uninstall = j.with_name('uninstall_' + yaml_file).exists()
-        has_description = Path(j.parent, 'files', yaml_file).exists()
-        if has_uninstall and has_description:
-            jobs_list[job_name] = j.parent.as_posix()
-    stable_jobs = Path(CWD, openbach_path).resolve()
-    for j in stable_jobs.glob('**/install_*.yml'):
-        job_name = j.stem[len('install_'):]
-        yaml_file = '{}.yml'.format(job_name)
-        has_uninstall = j.with_name('uninstall_' + yaml_file).exists()
-        has_description = Path(j.parent, 'files', yaml_file).exists()
-        if has_uninstall and has_description:
-            jobs_list[job_name] = j.parent.as_posix()
+    stable_jobs = CWD.parent / 'externals_jobs' / 'stable_jobs'
+    core_jobs = validator.suite_args.openbach_path / 'src' / 'jobs'
+    for folder in (stable_jobs, core_jobs):
+        for job in folder.glob('**/install_*.yml'):
+            job_name = job.stem[len('install_'):]
+            yaml_file = '{}.yml'.format(job_name)
+            has_uninstall = job.with_name('uninstall_' + yaml_file).exists()
+            has_description = Path(job.parent, 'files', yaml_file).exists()
+            if has_uninstall and has_description:
+                jobs_list[job_name] = job.parent.as_posix()
 
-    # Get required jobs
-    if job is not None:
-        jobs = {}
-        if job not in jobs_list:
-            logger.error("Job " + job + " not found in openbach nor openbach-extra", exc_info=True)
-            return DummyResponse()
-        else:
-            jobs[job] = jobs_list[job]
-        jobs_list = jobs
+    required_jobs = jobs_list
+    if validator.suite_args.jobs:
+        try:
+            required_jobs = {name: jobs_list[name] for name in validator.suite_args.jobs}
+        except KeyError as job:
+            logger.error("Job %s not found in openbach nor openbach-extra", job, exc_info=True)
+            return
+    validation_add_jobs(validator, required_jobs)
+    validation_install_jobs(validator, [list(required_jobs)], [agents])
+    logger.info("Requested %d job(s) install on %d agent(s)", len(required_jobs), len(agents))
 
-    # Add and install jobs
-    for job_name, job_path in jobs_list.items():
-        add_job = validator.share_state(AddJob)
-        add_job.args.path = None
-        add_job.args.tarball = None
-        add_job.args.files = job_path
-        add_job.args.job_name = job_name
-        r = execute(add_job)
+    # Sanity check
+    requested_jobs = set(required_jobs)
+    response = validation_list_jobs(validator)
+    added_jobs = {job['general']['name'] for job in response}
+    logger.info("%d job(s) were added to the controller", len(added_jobs))
+    missing_jobs = requested_jobs - added_jobs
+    if missing_jobs:
+        logger.warning("Job(s) not added: %s", missing_jobs)
 
-        install_jobs = validator.share_state(InstallJobs)
-        install_jobs.args.launch = False
-        install_jobs.args.job_name = [[job_name]]
-        install_jobs.args.agent_address = [[entity]]
-        execute(install_jobs)
+    for agent, jobs in validation_list_installed_jobs(validator, agents):
+        logger.info("%d job(s) were installed onto the agent %s", len(jobs), agent)
+        missing_jobs = requested_jobs - set(jobs)
+        if missing_jobs:
+            logger.warning("Job(s) not added: %s", missing_jobs)
 
-    nb_jobs = len(jobs_list)
-    print(nb_jobs, "job(s) were to be installed")
-
-    # List jobs added to controlled
-    jobs = validator.share_state(ListJobs)
-    jobs.args.string_to_search = None
-    jobs.args.match_ratio = None
-    response = execute(jobs)
-    added_jobs = [j['general']['name'] for j in response]
-    nb_jobs_added = len(added_jobs)
-    print(nb_jobs_added, "job(s) have been added to controlled")
-
-    # List jobs installed on agent
-    installed_jobs = validator.share_state(ListInstalledJobs)
-    installed_jobs.args.update = True
-    installed_jobs.args.agent_address = entity
-    response = execute(installed_jobs)
-    installed_jobs = [job['name'] for job in response['installed_jobs']]
-    nb_jobs_installed = len(installed_jobs)
-    print(nb_jobs_installed, "job(s) have been installed on agent")
-
-    if nb_jobs_added != nb_jobs:
-        print("Not added jobs")
-        for j in jobs_list.keys():
-            if j not in added_jobs:
-                print("   ", j)
-        print()
-
-    if nb_jobs_installed != nb_jobs:
-        print("Not installed jobs")
-        for j in jobs_list.keys():
-            if j not in installed_jobs:
-                print("   ", j)
-        print()
 
 if __name__ == '__main__':
     setup_logging()
