@@ -66,8 +66,19 @@
     name:
       - opensand-core
       - libopensand-gse-encap-plugin
+      - libopensand-gse-rust-encap-plugin
       - libopensand-rle-encap-plugin
     state: present
     update_cache: yes
   register: install
   become: yes
+
+- name: Share OpenSAND Python module into the Virtualenv
+  vars:
+    python_version: "{{ '3.12' if ansible_distribution_version == '24.04' else '3.10' if ansible_distribution_version == '22.04' else '3.8' if ansible_distribution_version == '20.04' else '3' }}"
+  file:
+    path: /opt/openbach/virtualenv/lib/python{{ python_version }}/site-packages/py_opensand_conf.so
+    src: /usr/lib/python3/dist-packages/py_opensand_conf.so.0.0.0
+    state: link
+  remote_user: openbach
+  when: ansible_os_family == 'Debian' and ansible_distribution == 'Ubuntu'

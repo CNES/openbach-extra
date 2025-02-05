@@ -187,6 +187,7 @@ def main(argv=None):
         except KeyError as job:
             logger.error("Job %s not found in openbach nor openbach-extra", job, exc_info=True)
             return
+        validation_add_jobs(validator, {name: path for name, path in jobs_list.items() if path.startswith(core_jobs.as_posix())})
     validation_add_jobs(validator, required_jobs)
     validation_install_jobs(validator, [list(required_jobs)], [agents])
     logger.info("Requested %d job(s) install on %d agent(s)", len(required_jobs), len(agents))
@@ -195,16 +196,18 @@ def main(argv=None):
     requested_jobs = set(required_jobs)
     response = validation_list_jobs(validator)
     added_jobs = {job['general']['name'] for job in response}
-    logger.info("%d job(s) were added to the controller", len(added_jobs))
+    amount = len(added_jobs)
+    logger.info("%d job%s added to the controller", amount, 's were' if amount > 1 else ' was')
     missing_jobs = requested_jobs - added_jobs
     if missing_jobs:
-        logger.warning("Job(s) not added: %s", missing_jobs)
+        logger.warning("Job%s not added: %s", 's' if len(missing_jobs) > 1 else '', missing_jobs)
 
     for agent, jobs in validation_list_installed_jobs(validator, agents):
-        logger.info("%d job(s) were installed onto the agent %s", len(jobs), agent)
+        amount = len(jobs)
+        logger.info("%d job%s installed onto the agent %s", amount, 's were' if amount > 1 else ' was', agent)
         missing_jobs = requested_jobs - set(jobs)
         if missing_jobs:
-            logger.warning("Job(s) not added: %s", missing_jobs)
+            logger.warning("Job%s not added: %s", 's' if len(missing_jobs) > 1 else '', missing_jobs)
 
 
 if __name__ == '__main__':
