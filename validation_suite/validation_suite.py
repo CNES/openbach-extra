@@ -213,14 +213,16 @@ def main(argv=None):
 
     # Check free agents
     response = validation_list_agents(validator, refresh=False)
-    if set(installed_agents) != {
+    available_agents = {
             agent['address']
             for agent in response
-            if not agent['project'] or agent['reserved'] == project_name
-    }:
+            if (not agent['project'] or agent['reserved'] == project_name) and agent['address'] != controller
+    }
+    if set(installed_agents) != available_agents:
         logger.warning(
                 'Agents available for the project %s are different '
-                'than the ones computed previously', project_name)
+                'than the ones computed previously. Expected %s, got %s',
+                project_name, set(installed_agents), available_agents)
 
     # Validate entity-related functions
     validation_add_entity(validator, project_name, installed_agents)

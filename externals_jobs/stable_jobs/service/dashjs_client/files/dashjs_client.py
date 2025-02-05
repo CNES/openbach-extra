@@ -42,10 +42,10 @@ import subprocess
 from functools import partial
 
 from selenium.common.exceptions import WebDriverException
-from selenium.webdriver import Firefox
+from selenium.webdriver import Firefox, FirefoxOptions
+from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions as expected
 from selenium.webdriver.support.wait import WebDriverWait
 
@@ -71,11 +71,11 @@ def isPortUsed(port):
     return used
 
 
-def close_all(driver, p_tornado, signum, frame):
+def close_all(driver, tornado, signum, frame):
     """ Closes the browser if open """
     driver.quit()
-    p_tornado.terminate()
-    p_tornado.wait()
+    tornado.terminate()
+    tornado.wait()
 
 
 def main(dst_ip, proto, tornado_port, path, time):
@@ -84,19 +84,20 @@ def main(dst_ip, proto, tornado_port, path, time):
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
 
-    # Launch Tornado TODO add except ?
-    p_tornado = subprocess.Popen([sys.executable, '/opt/openbach/agent/jobs/dashjs_client/tornado_server.py', '--port', str(tornado_port)])
 
     # Launch Firefox
-    options = Options()
+    options = FirefoxOptions()
     options.add_argument('-headless')
     options.set_preference("network.websocket.allowInsecureFromHTTPS", True)
-    driver = Firefox(executable_path='geckodriver', options=options)
+    driver = Firefox(service=Service(), options=options)
     wait = WebDriverWait(driver, timeout=10)
+
+    tornado = subprocess.Popen([sys.executable, '/opt/openbach/agent/jobs/dashjs_client/tornado_server.py', '--port', str(tornado_port)])
+    cleanup = partial(close_all, driver, tornado)
     
     # Get page
     try:
-        url_proto, port = ('http', HTTP1_PORT) if (proto == HTTP1) else ('https', HTTP2_PORT)
+        url_proto, port = ('http', HTTP1_PORT) if proto == HTTP1 else ('https', HTTP2_PORT)
         driver.get(DEFAULT_URL.format(url_proto, dst_ip, port, tornado_port))
 
         # Update path
@@ -107,20 +108,22 @@ def main(dst_ip, proto, tornado_port, path, time):
 
         # Click Load
         wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR,
-            'span.input-group-btn > button:nth-child(2)'))).click()
+                'span.input-group-btn > button:nth-child(2)'))).click()
     except WebDriverException as ex:
         message = "Exception with webdriver: {}".format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
-        close_all(driver, p_tornado, 0, 0)
+        cleanup(0, 0)
         sys.exit(message)
 
     # Set signal handler
-    close_all_partial = partial(close_all, driver, p_tornado)
-    signal.signal(signal.SIGTERM, close_all_partial)
-    signal.signal(signal.SIGALRM, close_all_partial)
+    signal.signal(signal.SIGTERM, cleanup)
+    signal.signal(signal.SIGALRM, cleanup)
     signal.alarm(time)
 
-    signal.pause()
+    try:
+        signal.pause()
+    finally:
+        cleanup(0, 0)
 
 
 if __name__ == "__main__":
