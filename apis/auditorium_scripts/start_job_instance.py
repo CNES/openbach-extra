@@ -135,7 +135,7 @@ class StartJobInstance(FrontendBase):
     def execute(self, show_response_content=True):
         agent = self.args.agent_address
         job_name = self.args.job_name
-        arguments = self.args.argument
+        arguments = self.args.argument or {}
         date = self.date_to_timestamp()
         interval = self.args.interval
 

@@ -60,6 +60,7 @@ import warnings
 from copy import copy
 from time import sleep
 from pathlib import Path
+from urllib3 import Retry
 from contextlib import suppress
 
 import requests
@@ -216,6 +217,12 @@ class FrontendBase:
         self.credentials = {'controller': self._default_controller}
 
         self.session = requests.Session()
+        self.session.mount('http://', requests.adapters.HTTPAdapter(
+            max_retries=Retry(total=5, connect=3, redirect=1, allowed_methods=None, backoff_factor=0.2),
+            pool_connections=50,
+            pool_maxsize=50,
+            pool_block=True,
+        ))
 
     def parse(self, args=None):
         self.args = args = self.parser.parse_args(args)
@@ -235,19 +242,21 @@ class FrontendBase:
 
         self.credentials = {'controller': args.controller}
         if args.login:
-            password = args.password
-            if password is self.SENTINEL:
+            if (password := args.password) is self.SENTINEL:
                 password = getpass.getpass('OpenBACH password: ')
             self.credentials.update(login=args.login, password=password)
-            vault_password = args.vault_password
-            if vault_password is self.SENTINEL:
+            if (vault_password := args.vault_password) is self.SENTINEL:
                 vault_password = getpass.getpass('Ansible Vault Password: ')
             self.credentials.update(vault_password=vault_password)
-            del self.args.login
-            del self.args.password
-            del self.args.vault_password
             response = self.session.post(url + 'login/', json=self.credentials)
             response.raise_for_status()
+
+        with suppress(AttributeError):
+            del self.args.login
+        with suppress(AttributeError):
+            del self.args.password
+        with suppress(AttributeError):
+            del self.args.vault_password
 
         return args
 
@@ -278,23 +287,13 @@ class FrontendBase:
         url = self.base_url + route
         LOG.debug('%s %s %s', verb, url, kwargs)
         while True:
-            for _ in range(3):  # Retry 3 times in case we get disconnected
-                try:
-                    if verb == 'GET':
-                        response = self.session.get(url, params=kwargs)
-                    else:
-                        if files is None:
-                            response = self.session.request(verb, url, json=kwargs)
-                        else:
-                            response = self.session.request(verb, url, data=kwargs, files=files)
-                except requests.exceptions.ConnectionError as error:
-                    last_error = error
-                    LOG.warning('Connection error while trying request. Retrying.')
-                else:
-                    break
+            if verb == 'GET':
+                response = self.session.get(url, params=kwargs)
             else:
-                LOG.error('Retry counter ran out, bailing out.')
-                raise last_error
+                if files is None:
+                    response = self.session.request(verb, url, json=kwargs)
+                else:
+                    response = self.session.request(verb, url, data=kwargs, files=files)
 
             if response.status_code == 460:
                 LOG.info('Request could not complete due to missing or wrong Vault password. Asking for it.')
