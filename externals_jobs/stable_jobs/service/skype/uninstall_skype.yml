@@ -35,16 +35,15 @@
 ---
 
 - name: Uninstall package unzip
-  apt: name=unzip state=absent
+  apt:
+    pkg:
+      - unzip
+      - google-chrome
+      - chrome-driver
+    state: absent
   become: yes
   
-- name: Uninstall package google-chrome
-  apt: name=google-chrome state=absent
-  become: yes
-  
-- name: Uninstall package chrome-driver
-  apt: name=chromedriver state=absent
-  become: yes
-
 - name: Uninstall Job
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: absent

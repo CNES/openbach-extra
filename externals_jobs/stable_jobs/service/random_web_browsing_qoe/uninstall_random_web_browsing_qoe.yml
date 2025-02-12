@@ -34,12 +34,18 @@
 ---
 
 - name: Uninstall Gecko Driver
-  file: path=/usr/local/bin/geckodriver state=absent
+  file:
+    path: /usr/local/bin/geckodriver
+    state: absent
   become: yes
 
 - name: Uninstall package firefox
-  apt: name=firefox state=absent
+  apt:
+    name: firefox
+    state: absent
   become: yes
 
 - name: Uninstall Job
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: absent

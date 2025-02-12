@@ -53,5 +53,7 @@
   with_items: "{{ killed_processes.results | select('failed') | map(attribute='item') | list }}"
 
 - name: Remove the d-itg_gaming Folder
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: absent
   become: yes

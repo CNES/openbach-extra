@@ -38,23 +38,15 @@
     - { file: 'voip_qoe_src.help', mode: '0644' }
   become: yes
 
-- name: Create the etc directory for config files
+- name: Create the directories for config files, logs and figures
   file:
-    path: /opt/openbach/agent/jobs/{{ job_name }}/etc
+    path: /opt/openbach/agent/jobs/{{ job_name }}/{{ item }}
     state: directory
     mode: 0755
-
-- name: Create the figures directory
-  file:
-    path: /opt/openbach/agent/jobs/{{ job_name }}/figures
-    state: directory
-    mode: 0755
-
-- name: Create the logs directory
-  file:
-    path: /opt/openbach/agent/jobs/{{ job_name }}/logs
-    state: directory
-    mode: 0755
+  with_items:
+    - etc
+    - figures
+    - logs
 
 - name: Copy configuration files
   copy:

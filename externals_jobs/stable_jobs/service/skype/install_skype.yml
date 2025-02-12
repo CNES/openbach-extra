@@ -38,14 +38,25 @@
 - name: Get client architecture
   shell: uname -p
   register: cpu_arch
+
+- fail:
+    msg: "Only 64bits architectures are supported"
+  when: cpu_arch.stdout != "x86_64"
+
+- name: Install unzip and xvfb
+  apt:
+    pkg:
+      - unzip
+      - xvfb
+    state: present
+  become: yes
+  environment: "{{ openbach_proxies }}"
   
 - name: Copy Google-chrome package
   copy:
-    src: "{{ item.file }}"
+    src: google-chrome-stable_102.0.5005.61_amd64.deb
     dest: /tmp/
-    mode: "{{ item.mode }}"
-  with_items:
-    - { file: 'google-chrome-stable_102.0.5005.61_amd64.deb', mode: '0444' }
+    mode: 0444
   
 - name: Install Google-chrome
   apt: 
@@ -54,23 +65,9 @@
   become: yes
   environment: "{{ openbach_proxies }}"
 
-- name: Install unzip
-  apt:
-    name: unzip
-    state: present
-  become: yes
-  environment: "{{ openbach_proxies }}"
-
-- name: Install xvfb
-  apt:
-    name: xvfb
-    state: present
-  become: yes
-  environment: "{{ openbach_proxies }}"
-    
 - name: Install Chrome Driver
   unarchive: 
-    src: http://chromedriver.storage.googleapis.com/2.44/chromedriver_linux{{ 64 if cpu_arch.stdout == "x86_64" else 32 }}.zip
+    src: http://chromedriver.storage.googleapis.com/2.44/chromedriver_linux64.zip
     dest: /usr/local/bin
     creates: /usr/local/bin/chromedriver
     remote_src: yes
@@ -95,22 +92,22 @@
   
 - name: Create audio/video repository
   file:
-    path: /opt/openbach/agent/jobs/{{ job_name }}/{{ item.file }}/
+    path: /opt/openbach/agent/jobs/{{ job_name }}/{{ item }}/
     state: directory
     mode: 0755
   with_items:
-  - { file: 'audio' }
-  - { file: 'video' }
+    - audio
+    - video
   
 - name: Install audio/video files
   openbach_synchronize:
-    src: "{{ item.file }}/"
-    dest: "/opt/openbach/agent/jobs/{{ job_name }}/{{ item.file }}/"
+    src: "{{ item }}/"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/{{ item }}/
     recursive: yes
     delete: yes
   with_items:
-  - { file: 'audio' }
-  - { file: 'video' }
+    - audio
+    - video
     
 - name: Install skype file
   copy:
@@ -123,4 +120,3 @@
     - { file: 'skype_rstats_filter.conf', mode: '0644' }
     - { file: 'config.yaml', mode: '0644' }
 
-  

@@ -37,17 +37,16 @@ __credits__ = '''Contributors:
 import sys
 import math
 import time
-import smtpd
 import syslog
 import smtplib
-import asyncore
+import asyncio
 import argparse
-import traceback
-import contextlib
 import email.utils
 from random import choice
 from string import ascii_uppercase
 from email.mime.text import MIMEText
+
+from aiosmtpd.controller import Controller
 
 import collect_agent
 
@@ -58,30 +57,30 @@ SUBJECT = 'Background traffic'
 DEFAULT_PORT = 1025
 
 
+class Handler:
+    def __init__(self):
+        self.nb_messages = 0
+        self.data_received = 0
+
+    async def handle_DATA(self, server, session, enveloppe):
+        data = enveloppe.content
+        self.nb_messages += 1
+        self.data_received += (len(enveloppe.content) + sys.getsizeof('')) // 1024
+        collect_agent.send_stat(collect_agent.now(), received_messages=self.nb_messages, received_data_size=self.data_received)
+        return '250 OK'
+
+
 def handle_exception(exception):
     message = 'ERROR: {}'.format(exception)
     collect_agent.send_log(syslog.LOG_ERR, message)
     return message
 
 
-class CustomSMTPServer(smtpd.SMTPServer):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.nb_messages = 0
-        self.data_received = 0
-        
-    def process_message(self, peer, mailfrom, rcpttos, data, mail_options=None, rcpt_options=None):
-        ''' Handle messages received '''
-        self.nb_messages += 1
-        self.data_received += (len(data) + sys.getsizeof(''))//1024
-        statistics = {'received messages': self.nb_messages, 'received data size': self.data_received}
-        collect_agent.send_stat(collect_agent.now(), **statistics)
-        return
-
-
 def server(server_port):
-    server = CustomSMTPServer(('0.0.0.0', server_port), None)
-    asyncore.loop()
+    server = Controller(Handler(), hostname='0.0.0.0', port=server_port)
+    server.start()
+    collect_agent.wait_for_signal()
+    server.stop()
 
 
 def generate_string(size):

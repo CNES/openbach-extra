@@ -34,8 +34,12 @@
 ---
   
 - name: Uninstall Wireguard
-  apt: name=wireguard state=absent
+  apt:
+    name: wireguard
+    state: absent
   become: yes
 
 - name: Remove wireguard job repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: absent
