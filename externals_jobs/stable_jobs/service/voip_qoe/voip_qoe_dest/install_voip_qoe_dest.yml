@@ -36,14 +36,11 @@
     - { file: 'voip_qoe_dest.help', mode: '0644' }
   become: yes
 
-- name: Create the figures directory
+- name: Create the logs and figures directories
   file:
-    path: /opt/openbach/agent/jobs/{{ job_name }}/figures
+    path: /opt/openbach/agent/jobs/{{ job_name }}/{{ item }}
     state: directory
     mode: 0755
-
-- name: Create the logs directory
-  file:
-    path: /opt/openbach/agent/jobs/{{ job_name }}/logs
-    state: directory
-    mode: 0755
+  with_items:
+    - logs
+    - figures

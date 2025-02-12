@@ -71,7 +71,7 @@ def isPortUsed(port):
     return used
 
 
-def close_all(driver, tornado, signum, frame):
+def close_all(driver, tornado):
     """ Closes the browser if open """
     driver.quit()
     tornado.terminate()
@@ -93,7 +93,6 @@ def main(dst_ip, proto, tornado_port, path, time):
     wait = WebDriverWait(driver, timeout=10)
 
     tornado = subprocess.Popen([sys.executable, '/opt/openbach/agent/jobs/dashjs_client/tornado_server.py', '--port', str(tornado_port)])
-    cleanup = partial(close_all, driver, tornado)
     
     # Get page
     try:
@@ -112,18 +111,12 @@ def main(dst_ip, proto, tornado_port, path, time):
     except WebDriverException as ex:
         message = "Exception with webdriver: {}".format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
-        cleanup(0, 0)
+        close_all(driver, tornado)
         sys.exit(message)
 
-    # Set signal handler
-    signal.signal(signal.SIGTERM, cleanup)
-    signal.signal(signal.SIGALRM, cleanup)
     signal.alarm(time)
-
-    try:
-        signal.pause()
-    finally:
-        cleanup(0, 0)
+    collect_agent.wait_for_signal()
+    close_all(driver, tornado)
 
 
 if __name__ == "__main__":

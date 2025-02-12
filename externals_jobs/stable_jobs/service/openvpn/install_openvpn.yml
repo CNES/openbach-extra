@@ -34,15 +34,23 @@
 ---
 
 - name: Install OpenVPN
-  apt: name=openvpn state=present
+  apt:
+    name: openvpn
+    state: present
   become: yes
   environment: "{{ openbach_proxies }}"
 
 - name: Create openvpn repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
   
 - name: Install web browsing qoe
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'openvpn.help', mode: '0644' }
     - { file: 'openvpn.py', mode: '0755' }

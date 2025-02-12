@@ -34,4 +34,6 @@
 ---
 
 - name: Uninstall Job
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: absent
