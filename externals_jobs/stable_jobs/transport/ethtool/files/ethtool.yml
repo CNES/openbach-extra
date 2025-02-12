@@ -2,8 +2,8 @@
 
 general:
   name: ethtool
-  description: This Job configures the GSO and TSO options via ethtool
-  job_version: '1.2'
+  description: This Job configures the GSO and TSO options via ethtool. Disabling them by default.
+  job_version: '1.3'
   keywords: [ethtool, GSO, TSO]
   persistent: False
   need_privileges: yes
@@ -19,23 +19,28 @@ platform_configuration:
     ansible_distribution_version: '22.04'
     command: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/ethtool/ethtool.py'
     command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '24.04'
+    command: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/ethtool/ethtool.py'
+    command_stop:
 
 arguments:
   required:
     - name: interface
       type: str
       count: 1
-    - name: enable_GSO
-      type: str
-      count: 1
-      choices: ['True', 'False']
-      description: Enable or disable GSO
-    - name: enable_TSO
-      type: str
-      count: 1
-      choices: ['True', 'False']
-      description: Enable or disable TSO
   optional:
+    - name: enable_GSO
+      type: None
+      count: 0
+      flag: '-gso'
+      description: Enable GSO instead
+    - name: enable_TSO
+      type: None
+      count: 0
+      flag: '-tso'
+      description: Enable TSO instead
 
 statistics:
   - name: "gso"
