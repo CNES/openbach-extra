@@ -19,6 +19,11 @@ platform_configuration:
     ansible_distribution_version: '22.04'
     command: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/netcat/netcat.py'
     command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '24.04'
+    command: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/netcat/netcat.py'
+    command_stop:
 
 arguments:
   required:

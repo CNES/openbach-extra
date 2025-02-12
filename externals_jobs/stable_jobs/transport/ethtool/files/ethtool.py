@@ -41,26 +41,29 @@ import subprocess
 import collect_agent
 
 
+def on_off(value):
+    if value:
+        return 'on'
+    return 'off'
+
+
 def main(interface, gso, tso):
+    cmd = 'ethtool'
     # loading new configuration
-    rc = subprocess.call("ethtool -K " + interface +
-            " gso " + ("on" if gso.lower()=="true" else "off"), shell=True)
-    if rc:
+    p = subprocess.run(['ethtool', '-K', interface, 'gso', on_off(gso)])
+    if p.returncode:
         message = "WARNING \'{}\' exited with non-zero code".format(cmd)
         collect_agent.send_log(syslog.LOG_ERR, message)
-    rc = subprocess.call("ethtool -K " + interface +
-            " tso " + ("on" if tso.lower()=="true" else "off"), shell=True)
-    if rc:
+
+    p = subprocess.run(['ethtool', '-K', interface, 'tso', on_off(tso)])
+    if p.returncode:
         message = "WARNING \'{}\' exited with non-zero code".format(cmd)
         collect_agent.send_log(syslog.LOG_ERR, message)
 
     # retrieving new values
     statistics = {}
-    p = subprocess.Popen(["ethtool", "-k",interface], stdout=subprocess.PIPE)
-    while 1:
-        line = p.stdout.readline().decode().strip()
-        if not line:
-            break
+    p = subprocess.run(['ethtool', '-k', interface], capture_output=True, text=True)
+    for line in p.stdout.splitlines():
         if "generic-segmentation-offload" in line:
             statistics["gso"] = 1 if line.split()[1]=="on" else 0
         if "tcp-segmentation-offload" in line:
@@ -75,8 +78,8 @@ if __name__ == "__main__":
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
         parser.add_argument('interface', type=str, help='The interface to modify')
-        parser.add_argument('gso', type=str, help='Activate GSO, can be True or False')
-        parser.add_argument('tso', type=str, help='Activate TSO, can be True or False')
+        parser.add_argument('-gso', action='store_true', help='Activate GSO, can be True or False')
+        parser.add_argument('-tso', action='store_true', help='Activate TSO, can be True or False')
     
         args = vars(parser.parse_args())
         main(**args)
