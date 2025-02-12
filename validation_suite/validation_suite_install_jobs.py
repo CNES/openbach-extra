@@ -131,6 +131,27 @@ def main(argv=None):
     controller = validator.args.controller
     agents = validator.suite_args.agents
 
+    # Make sure jobs to install exist
+    jobs_list = {}
+    stable_jobs = CWD.parent / 'externals_jobs' / 'stable_jobs'
+    core_jobs = validator.suite_args.openbach_path / 'src' / 'jobs'
+    for folder in (stable_jobs, core_jobs):
+        for job in folder.glob('**/install_*.yml'):
+            job_name = job.stem[len('install_'):]
+            yaml_file = '{}.yml'.format(job_name)
+            has_uninstall = job.with_name('uninstall_' + yaml_file).exists()
+            has_description = Path(job.parent, 'files', yaml_file).exists()
+            if has_uninstall and has_description:
+                jobs_list[job_name] = job.parent.as_posix()
+
+    required_jobs = jobs_list
+    if validator.suite_args.jobs:
+        try:
+            required_jobs = {name: jobs_list[name] for name in validator.suite_args.jobs}
+        except KeyError as job:
+            logger.error("Job %s not found in openbach nor openbach-extra", job, exc_info=True)
+            return
+
     # Remove existing projects to add only ours
     project_name = 'Validation Suite Test Jobs'
     response = validation_list_projects(validator)
@@ -168,25 +189,7 @@ def main(argv=None):
     installed_jobs = {job['general']['name'] for job in response}
     validation_remove_jobs(validator, installed_jobs)
 
-    jobs_list = {}
-    stable_jobs = CWD.parent / 'externals_jobs' / 'stable_jobs'
-    core_jobs = validator.suite_args.openbach_path / 'src' / 'jobs'
-    for folder in (stable_jobs, core_jobs):
-        for job in folder.glob('**/install_*.yml'):
-            job_name = job.stem[len('install_'):]
-            yaml_file = '{}.yml'.format(job_name)
-            has_uninstall = job.with_name('uninstall_' + yaml_file).exists()
-            has_description = Path(job.parent, 'files', yaml_file).exists()
-            if has_uninstall and has_description:
-                jobs_list[job_name] = job.parent.as_posix()
-
-    required_jobs = jobs_list
     if validator.suite_args.jobs:
-        try:
-            required_jobs = {name: jobs_list[name] for name in validator.suite_args.jobs}
-        except KeyError as job:
-            logger.error("Job %s not found in openbach nor openbach-extra", job, exc_info=True)
-            return
         validation_add_jobs(validator, {name: path for name, path in jobs_list.items() if path.startswith(core_jobs.as_posix())})
     validation_add_jobs(validator, required_jobs)
     validation_install_jobs(validator, [list(required_jobs)], [agents])
