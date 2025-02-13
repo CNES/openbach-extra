@@ -49,7 +49,9 @@ def convert(value):
         return 0.0
 
     base, unit = match.groups()
-    if unit == 'G':
+    if not unit:
+        return float(base)
+    elif unit == 'G':
         return 1000000000 * float(base)
     elif unit == 'M':
         return 1000000 * float(base)
