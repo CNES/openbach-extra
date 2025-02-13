@@ -161,7 +161,7 @@ def parse_udp(server_socket, q_signal):
         else:
             in_order.append(received.pop(0))
 
-    ooo = len(out_of_order),
+    ooo = len(out_of_order)
     dupes = len(received) - len(set(received))
     collect_agent.send_stat(
             collect_agent.now(),
