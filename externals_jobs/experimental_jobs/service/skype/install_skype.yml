@@ -93,15 +93,21 @@
     - audio
     - video
   
-- name: Install audio/video files
+- name: Install audio files
   openbach_synchronize:
-    src: "{{ item }}/"
-    dest: /opt/openbach/agent/jobs/{{ job_name }}/{{ item }}/
+    src: audio/
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/audio/
     recursive: yes
     delete: yes
+
+- name: Install video files
+  get_url:
+    src: https://github.com/CNES/openbach-extra/raw/refs/tags/openbach-2.5.0/externals_jobs/stable_jobs/service/skype/files/video/{{ item }}
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/video/{{ item }}
+    mode: 0644
   with_items:
-    - audio
-    - video
+    - akiyo_cif.y4m
+    - bowing_cif.y4m
     
 - name: Install skype file
   copy:
