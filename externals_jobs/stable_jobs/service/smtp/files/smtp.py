@@ -42,7 +42,7 @@ import smtplib
 import asyncio
 import argparse
 import email.utils
-from random import choice
+from random import choices
 from string import ascii_uppercase
 from email.mime.text import MIMEText
 
@@ -85,9 +85,14 @@ def server(server_port):
 
 def generate_string(size):
     '''Generate a random string of the specified size in kilobytes'''
-    string_lenght = size * 1024 
-    result = (''.join(choice(ascii_uppercase) for i in range(size * 1024 - sys.getsizeof(''))))
-    return result
+    # Break string into 1000 char lines, see RFC5321 4.5.3.1.6
+    string_length = size * 1024 
+    lines, footer_length = divmod(string_length, 1000)
+    body = '\n'.join(''.join(choices(ascii_uppercase, k=999)) for _ in range(lines))
+    footer = ''.join(choices(ascii_uppercase, k=footer_length))
+    if body:
+        return body + '\n' + footer
+    return footer
 
 
 def client(server_ip, server_port, sender, receiver, message_size, interval, duration):
