@@ -52,15 +52,9 @@
   become: yes
   environment: "{{ openbach_proxies }}"
   
-- name: Copy Google-chrome package
-  copy:
-    src: google-chrome-stable_102.0.5005.61_amd64.deb
-    dest: /tmp/
-    mode: 0444
-  
 - name: Install Google-chrome
   apt: 
-    deb: /tmp/google-chrome-stable_102.0.5005.61_amd64.deb
+    deb: https://github.com/CNES/openbach-extra/raw/refs/tags/openbach-2.5.0/externals_jobs/stable_jobs/service/skype/files/google-chrome-stable_102.0.5005.61_amd64.deb
     force: yes
   become: yes
   environment: "{{ openbach_proxies }}"
