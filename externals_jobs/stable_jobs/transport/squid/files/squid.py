@@ -37,12 +37,12 @@ __credits__ = '''Contributors:
 
 import os
 import sys
-import enum
 import shutil
 import syslog
 import socket
 import argparse
 import subprocess
+import pathlib
 
 os.environ['XTABLES_LIBDIR'] = '$XTABLES_LIBDIR:/usr/lib/x86_64-linux-gnu/xtables' # Required for Ubuntu 20.04
 import iptc
@@ -52,35 +52,24 @@ import collect_agent
 
 CURRENT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
-
-class Platform(enum.Enum):
-    GATEWAY = 'gw'
-    SATELLITE_TERMINAL = 'st'
-
-
 def configure_platform(trans_proxy, non_transp_proxy):
     hostname = socket.gethostname()
     with open("/etc/squid/squid.conf", "a") as squid_file:
         squid_file.write("visible_hostname {}".format(hostname))
         squid_file.write("\nhttp_port {}".format(non_transp_proxy))
         squid_file.write("\nhttp_port {} intercept".format(trans_proxy))
-        squid_file.write("\nhttp_port 80 vhost")
+        squid_file.write("\nhttp_port 80 accel")
 
 
 def remove_squid_cache():
     shutil.rmtree('/etc/squid/cache', ignore_errors=False)
     try:
-        os.makedirs('/etc/squid/cache')
+        pathlib.Path('/etc/squid/cache').mkdir(mode=0o777, parents=True, exist_ok=True)
+        pathlib.Path('/etc/squid/cache').chmod(0o777)
     except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
-    try:
-        subprocess.run(['chmod', '777', '/etc/squid/cache'], check=True, stderr=subprocess.PIPE) 
-    except subprocess.CalledProcessError as error:
-        if error.returncode not in (-15, -9):
-            message = 'ERROR ({}):\n{}'.format(error.returncode, error.stderr.decode(errors='replace'))
-            collect_agent.send_log(syslog.LOG_ERR, message)
-            sys.exit(message)
+        message = 'ERROR ({}):\n{}'.format(e.errno, e.strerror)
+        collect_agent.send_log(syslog.LOG_ERR, message)
+        sys.exit(message)
     try:
         subprocess.run(['squid', '-z'], check=True, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as error:
@@ -99,12 +88,9 @@ def main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file
 
     # set iptable rule with arguments
     table = iptc.Table(iptc.Table.NAT)
-    target_chain = None
-    for chain in table.chains:
-        if chain.name == "PREROUTING":
-            target_chain = chain
-            break
-    if target_chain is None:
+    try:
+        target_chain = next(chain for chain in table.chains if chain.name == "PREROUTING")
+    except StopIteration:
         message = "ERROR could not find chain PREROUTING of NAT table"
         collect_agent.send_log(syslog.LOG_ERROR, message)
         sys.exit(message)
@@ -131,7 +117,7 @@ def main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file
 
     # launch squid for params
     try:
-        subprocess.run(['squid', '-N', '-C', '-d1'], check=True, stderr=subprocess.PIPE)
+        subprocess.run(['squid', '-N', '-C', '-d1'], check=True)
     except subprocess.CalledProcessError as error:
         if error.returncode not in (-15, -9):
             message = 'ERROR ({}):\n{}'.format(error.returncode, error.stderr.decode(errors='replace'))
@@ -147,13 +133,13 @@ def command_line_parser():
             'non_transp_proxy', type=int,
             help='')
     parser.add_argument(
-            '-t', '--trans_proxy', type=int,
+            'trans_proxy', type=int,
             help='')
     parser.add_argument(
-            '-s', '--source_addr',
+            'source_addr',
             help='')
     parser.add_argument(
-            '-i', '--input_iface',
+            'input_iface',
             help='')
     parser.add_argument(
             '-c', '--clean_cache',
@@ -161,7 +147,6 @@ def command_line_parser():
             help='Remove cache dir')
     parser.add_argument(
             '-p', '--path-conf-file',
-            type=Platform,
             help='')
 
     return parser
