@@ -151,9 +151,7 @@
     - "make install"
 
 - name: Launch ldconfig
-  shell: "{{ item }} chdir=/tmp/ngtcp2/"
-  with_items:
-    - "ldconfig"
+  shell: "ldconfig chdir=/tmp/ngtcp2/"
   become: yes
 
 - name: Install ngtcp2 binaries
