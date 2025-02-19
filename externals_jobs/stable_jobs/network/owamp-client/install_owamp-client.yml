@@ -34,8 +34,8 @@
 
 - name: Download perfSONAR (owping/owamp-client) release repository
   get_url:
-    url: http://downloads.perfsonar.net/debian/perfsonar-jessie-release.list
-    dest: /etc/apt/sources.list.d/perfsonar-jessie-release.list
+    url: http://downloads.perfsonar.net/debian/perfsonar-release.list
+    dest: /etc/apt/sources.list.d/perfsonar-release.list
     mode: 0440
   become: yes
   environment: "{{ openbach_proxies }}"
