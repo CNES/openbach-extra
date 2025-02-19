@@ -69,7 +69,7 @@ LOG_DIR = tempfile.mkdtemp(dir=DOWNLOAD_DIR, prefix='logs-')
 class Implementations(Enum):
     NGTCP2='ngtcp2'
     PICOQUIC='picoquic'
-    # QUICLY='quicly'
+    QUICLY='quicly'
 
 
 class DownloadError(RuntimeError):
@@ -88,7 +88,6 @@ def run_command(cmd, cwd=None):
     except Exception as ex:
         message = "Error running command '{}': '{}'".format(' '.join(cmd), ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
-        print(message)
         sys.exit(message)
     return p
 
@@ -97,6 +96,12 @@ def _command_build_helper(flag, value):
     if value is not None:
         yield flag
         yield str(value)
+
+
+def _deprecated(implementation):
+    message = 'QUIC implementation {} is not supported anymore, please use picoquic instead'.format(implementation)
+    collect_agent.send_log(syslog.LOG_ERR, message)
+    sys.exit(message)
 
 
 def remove_resources(resources, download_dir):
@@ -124,6 +129,7 @@ def build_cmd(implementation, mode, server_port, store_logs, log_file, server_ip
     cmd = []
     _, server_port = _command_build_helper(None, server_port)
     if implementation == Implementations.NGTCP2.value:
+        _deprecated(implementation)
         if mode == 'client':
             _, server_ip = _command_build_helper(None, server_ip)
             cmd.extend(['ngtcp2_client', server_ip, server_port])
@@ -158,6 +164,7 @@ def build_cmd(implementation, mode, server_port, store_logs, log_file, server_ip
             cmd.extend(_command_build_helper('-p', server_port))
             if extra_args: cmd.extend(shlex.split(extra_args))
     if implementation == Implementations.QUICLY.value:
+        _deprecated(implementation)
         cmd.extend(['quicly'])
         if mode == 'client':
             _, server_ip = _command_build_helper(None, server_ip)

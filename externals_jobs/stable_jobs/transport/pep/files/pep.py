@@ -130,6 +130,8 @@ def main(
         nodelay, quickack, cork, mss, congestion_control, syn_sniffer,
         maxconns, gc_interval, log_file, pending_lifetime, mark, table_num):
     # TODO use syn_sniffer in 'set_conf' and pass it to 'cmd'
+    # iptables -t mangle -A PREROUTING -p tcp -i eth0 -m state --state NEW -j TEE --gateway 10.10.42.42
+    # iptables -t mangle -A PREROUTING -p tcp -i eth0 -j TPROXY --on-port 5000 --tproxy-mark 1
 
     ifaces = re.findall(r'[^\,\ \t]+', interfaces)
     src_ip = re.findall(r'[^\,\ \t]+', source)
