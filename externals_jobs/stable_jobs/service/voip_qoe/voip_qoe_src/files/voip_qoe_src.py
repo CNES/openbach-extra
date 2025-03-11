@@ -248,18 +248,29 @@ def main(config, args):
                         delay *= 1000
                         jitter *= 1000
                         pkt_loss /= packets_per_granularity
+                        pkt_loss *= 100 # To switch from loss ratio to percentage
                         R_factor = compute_r_value(codec, delay, delay, pkt_loss, jitter, args.use_jitter)
+                        
                         # We build the dict to send with the collect agent
-                        statistics = {
-                            'instant_mos': compute_mos_value(R_factor),
-                            'instant_r_factor': R_factor,
+                        send_mos_and_rvalue = True
+                        if (bitrate < 0 or delay < 0 or jitter < 0 or pkt_loss < 0):
+                            collect_agent.send_log(syslog.LOG_ERR, 'Cannot compute MOS nor r_value if delay, jitter, or paquet_loss is negative')
+                            send_mos_and_rvalue = False
+                        
+                        statistics = {}
+                        if send_mos_and_rvalue:
+                            statistics.update({
+                                'instant_mos': compute_mos_value(R_factor),
+                                'instant_r_factor': R_factor
+                            })
+                        statistics.update({
                             'bitrate (Kbits/s)': bitrate,
                             'delay (ms)': delay,
                             'jitter (ms)': jitter,
                             'packet_loss (%)': pkt_loss
-                        }
+                        })
                         collect_agent.send_stat(timestamp, **statistics)
-
+                        
                 # We purge D-ITG logs
                 s.send(b'DELETE_FOLDER')
                 sleep(2)
