@@ -33,5 +33,13 @@
 
 ---
 
+- name: Remove the pepsal package
+  apt:
+    name:
+      - pepsal
+    state: absent
+  become: yes
+  environment: "{{ openbach_proxies }}"
+
 - name: Remove the Pep Job Repository
   file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
