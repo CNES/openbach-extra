@@ -357,7 +357,11 @@ def execute(openbach_function):
     if openbach_function_args:
         logger.debug('Arguments used:')
         for name, value in openbach_function_args.items():
-            logger.debug('\t%s: %s', name, '*****' if name == 'password' else value)
+            if name == 'use_controller_file':
+                value = bool(value)
+            elif 'password' in name:
+                value = '*****'
+            logger.debug('\t%s: %s', name, value)
 
     try:
         response = openbach_function.execute(False)
@@ -482,7 +486,7 @@ def validation_add_project(validator, project_content):
         json.dump(project_content, project_file)
         project_file.flush()
         add_project_parser = AddProject()
-        add_project_parser.parse([project_file.name, '--controller', 'localhost'])
+        add_project_parser.parse([project_file.name, '--controller', 'localhost', '--ignore-controller-file'])
     add_project = validator.share_state(AddProject)  # allows to reuse connection cookie
     add_project.args.project = add_project_parser.args.project
     return execute(add_project)
@@ -625,7 +629,7 @@ def validation_add_scenario(validator, project_name, scenario_content):
 
 def validation_add_scenario_from_file(validator, project_name, filename):
     scenario_parser = AddScenario()
-    scenario_parser.parse([filename, project_name, '--controller', 'localhost'])
+    scenario_parser.parse([filename, project_name, '--controller', 'localhost', '--ignore-controller-file'])
     return validation_add_scenario(validator, project_name, scenario_parser.args.scenario)
 
 
@@ -639,7 +643,7 @@ def validation_modify_scenario(validator, project_name, scenario_name, scenario_
 
 def validation_modify_scenario_from_file(validator, project_name, scenario_name, filename):
     scenario_parser = ModifyScenario()
-    scenario_parser.parse([scenario_name, project_name, filename, '--controller', 'localhost'])
+    scenario_parser.parse([scenario_name, project_name, filename, '--controller', 'localhost', '--ignore-controller-file'])
     return validation_modify_scenario(validator, project_name, scenario_name, scenario_parser.args.scenario)
 
 

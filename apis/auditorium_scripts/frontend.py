@@ -184,7 +184,10 @@ class FrontendBase:
 
     def __init__(self, description):
         self.__filename = 'controller'
-        controller, login, password, vault_password, unspecified = read_controller_configuration(self.__filename)
+        controller_file = dict(zip(
+            ('controller', 'login', 'password', 'vault_password', 'unspecified'),
+            read_controller_configuration(self.__filename),
+        ))
         self.parser = FromFileArgumentParser(
                 description=description,
                 epilog='Backend-specific arguments can be specified by '
@@ -199,22 +202,25 @@ class FrontendBase:
                 fromfile_prefix_chars='@')
         backend = self.parser.add_argument_group('backend')
         backend.add_argument(
-                '--controller', default=controller,
+                '--ignore-controller-file', dest='use_controller_file',
+                action='store_false', default=controller_file,
+                help='Avoid parsing default values from the \'' + self.__filename + '\' file')
+        backend.add_argument(
+                '--controller',
                 help='Controller IP address')
         backend.add_argument(
-                '--login', '--username', default=login,
+                '--login', '--username',
                 help='OpenBACH username')
         backend.add_argument(
-                '--password', default=password,
+                '--password',
                 nargs='?', const=self.SENTINEL,
                 help='OpenBACH password')
         backend.add_argument(
-                '--vault-password', default=vault_password,
+                '--vault-password',
                 nargs='?', const=self.SENTINEL,
                 help='Ansible Vault password')
 
-        self._default_controller = controller if unspecified else None
-        self.credentials = {'controller': self._default_controller}
+        self.credentials = {}
 
         self.session = requests.Session()
         self.session.mount('http://', requests.adapters.HTTPAdapter(
@@ -226,21 +232,29 @@ class FrontendBase:
 
     def parse(self, args=None):
         self.args = args = self.parser.parse_args(args)
+        controller_unspecified = False
+
+        if args.use_controller_file:
+            for name, value in args.use_controller_file.items():
+                if name == 'unspecified':
+                    controller_unspecified = value
+                else:
+                    if getattr(args, name, None) is None:
+                        setattr(args, name, value)
         if args.controller is None:
             self.parser.error(
                     'error: no controller was specified '
                     'and the default cannot be found')
-        if args.controller == self._default_controller:
+        if controller_unspecified and args.controller == args.use_controller_file['controller']:
             message = (
                     'File not found or empty: \'{}\'. Using one of your '
                     'IP address instead as the default: \'{}\'.'
                     .format(self.__filename, args.controller))
             warnings.warn(message, RuntimeWarning)
 
-        del self._default_controller
         self.base_url = url = 'http://{}:8000/'.format(args.controller)
 
-        self.credentials = {'controller': args.controller}
+        self.credentials['controller'] = args.controller
         if args.login:
             if (password := args.password) is self.SENTINEL:
                 password = getpass.getpass('OpenBACH password: ')
