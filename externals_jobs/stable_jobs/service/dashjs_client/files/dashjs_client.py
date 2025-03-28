@@ -65,10 +65,13 @@ HTTP1_PORT = 8081
 HTTP2_PORT = 8082
 
 
-def isPortUsed(port):
+def is_port_used(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        used = (s.connect_ex(('localhost', port)) == 0)
-    return used
+        return s.connect_ex(('localhost', port)) == 0
+
+
+def is_visible(css_selector):
+    return expected.visibility_of_element_located((By.CSS_SELECTOR, css_selector))
 
 
 def close_all(driver, tornado):
@@ -79,7 +82,7 @@ def close_all(driver, tornado):
 
 
 def main(dst_ip, proto, tornado_port, path, time):
-    if isPortUsed(tornado_port):
+    if is_port_used(tornado_port):
         message = "Port {} already used, cannot launch Tornado server. Aborting...".format(tornado_port)
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
@@ -100,23 +103,21 @@ def main(dst_ip, proto, tornado_port, path, time):
         driver.get(DEFAULT_URL.format(url_proto, dst_ip, port, tornado_port))
 
         # Update path
-        wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR,
-                'input.form-control:nth-child(3)'))).send_keys(Keys.CONTROL, 'a')
-        wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR,
-                'input.form-control:nth-child(3)'))).send_keys(path)
+        url_input = wait.until(is_visible('input.form-control:nth-child(3)'))
+        url_input.send_keys(Keys.CONTROL, 'a')
+        url_input.send_keys(path)
 
         # Click Load
-        wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR,
-                'span.input-group-btn > button:nth-child(2)'))).click()
+        wait.until(is_visible('span.input-group-btn > button:nth-child(2)')).click()
     except WebDriverException as ex:
         message = "Exception with webdriver: {}".format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
-        close_all(driver, tornado)
         sys.exit(message)
-
-    signal.alarm(time)
-    collect_agent.wait_for_signal()
-    close_all(driver, tornado)
+    else:
+        signal.alarm(time)
+        collect_agent.wait_for_signal()
+    finally:
+        close_all(driver, tornado)
 
 
 if __name__ == "__main__":
