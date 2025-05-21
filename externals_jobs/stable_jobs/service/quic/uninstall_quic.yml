@@ -39,15 +39,21 @@
     cacheable: yes  
   
 - name: Remove the quic job repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: absent
   become: yes
 
 - name: Remove the web files
-  file: path=/var/www/{{ domain }} state=absent
+  file:
+    path: /var/www/{{ domain }}
+    state: absent
   become: yes
 
 - name: Remove binaries
-  file: path=/urs/local/bin/{{ item }} state=absent
+  file:
+    path: /urs/local/bin/{{ item }}
+    state: absent
   with_items:
     - ngtcp2_client
     - ngtcp2_server
@@ -56,11 +62,16 @@
   become: yes
 
 - name: Uninstall pyOpenSSL
-  pip: name=pyopenssl executable=pip3 state=absent
-  become: yes
+  pip:
+    name: pyopenssl
+    virtualenv: /opt/openbach/virtualenv
+    state: absent
+  remote_user: openbach
 
 - name: Delete certificates and private keys
-  file: path={{ item }} state=absent
+  file:
+    path: "{{ item }}"
+    state: absent
   with_items:
     - /etc/ssl/certs/{{ domain }}.csr
     - /etc/ssl/certs/{{ domain }}.crt

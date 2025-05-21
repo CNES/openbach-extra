@@ -60,7 +60,7 @@ class ListInstalledJobs(FrontendBase):
             action = partial(action, update='')
 
         return action(
-                'GET', 'job', address=agent,
+                'GET', 'job/', address=agent,
                 show_response_content=show_response_content)
 
 

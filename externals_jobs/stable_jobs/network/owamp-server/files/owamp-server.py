@@ -46,14 +46,6 @@ def build_parser():
     return parser
 
 
-def stop_server(sig, frame):
-    # stop daemon when job instance stopped
-    stop_cmd = ['pkill', '-SIGTERM', 'owamp']
-    subprocess.run(stop_cmd)
-
-    exit(0)
-
-
 def server(server_address):
     # launch daemon using sudo /usr/sbin/owampd -c /etc/owamp-server -U owamp
     launch_cmd = ['sudo', '/usr/sbin/owampd', '-c', '/etc/owamp-server', '-U', 'owamp']
@@ -63,15 +55,8 @@ def server(server_address):
         launch_cmd += ['-S', server_address]
 
     subprocess.run(launch_cmd)
-
-    # function still running until job instance has stopped
-    # wait for job termination to stop daemon
-    signal.signal(signal.SIGINT, stop_server)
-    signal.signal(signal.SIGTERM, stop_server)
-
-    # make job persistent
-    while True:
-        sleep(1)
+    collect_agent.wait_for_signal()
+    subprocess.run(['pkill', '-SIGTERM', 'owamp'])
 
 
 if __name__ == '__main__':

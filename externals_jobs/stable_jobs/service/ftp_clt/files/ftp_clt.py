@@ -110,7 +110,7 @@ def download(server_ip, port, user, password, blocksize, file_path):
     file_name = file_path.name
     stat_data.timer = collect_agent.now()
     try:
-        with open(dl_dir + file_name, 'rb') as file_download:
+        with open(dl_dir + file_name, 'wb') as file_download:
             ftp.retrbinary(
                     'RETR ' + file_path.as_posix(),
                     lambda block: handleDownload(block, stat_data, file_download),

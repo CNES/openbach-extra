@@ -60,10 +60,10 @@ class ManageDatabases(FrontendBase):
             params['elasticsearch'] = True
 
         if command == 'get':
-            response = self.request('GET', 'databases', 
+            response = self.request('GET', 'databases/', 
                     show_response_content=show_response_content, **params)
         elif command == 'delete':
-            response = self.request('DELETE', 'databases', 
+            response = self.request('DELETE', 'databases/', 
                     show_response_content=show_response_content, **params)
         return response
 

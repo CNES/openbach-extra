@@ -35,8 +35,8 @@
 
 - name: Download perfSONAR release repository
   get_url:
-    url: http://downloads.perfsonar.net/debian/perfsonar-jessie-release.list
-    dest: /etc/apt/sources.list.d/perfsonar-jessie-release.list
+    url: http://downloads.perfsonar.net/debian/perfsonar-release.list
+    dest: /etc/apt/sources.list.d/perfsonar-release.list
     mode: 0440
   become: yes
   environment: "{{ openbach_proxies }}"
@@ -48,22 +48,28 @@
   become: yes
   environment: "{{ openbach_proxies }}"
 
-- name: Update apt packages
+- name: Install package nuttcp
   apt:
+    name: "nuttcp=8.2.2-2"
+    state: present
+    force: yes
+    allow_unauthenticated: yes
     update_cache: yes
   become: yes
   environment: "{{ openbach_proxies }}"
 
-- name: Install package nuttcp
-  apt: name="nuttcp=8.1.3-2" state=present force=yes allow_unauthenticated=yes
-  become: yes
-  environment: "{{ openbach_proxies }}"
 
 - name: Create the nuttcp Job Repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
 
 - name: Install nuttcp
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'nuttcp.help', mode: '0644' }
     - { file: 'nuttcp_rstats_filter.conf', mode: '0644' }

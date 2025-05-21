@@ -44,6 +44,7 @@ __credits__ = '''Contributors:
  * Mathias ETTINGER <mathias.ettinger@toulouse.viveris.com>
 '''
 
+import os
 import sys
 import json
 import fcntl
@@ -59,6 +60,7 @@ import warnings
 from copy import copy
 from time import sleep
 from pathlib import Path
+from urllib3 import Retry
 from contextlib import suppress
 
 import requests
@@ -99,7 +101,7 @@ def read_controller_configuration(filename='controller'):
     try:
         stream = open(filename)
     except OSError:
-        return default_ip, None, None, True
+        return default_ip, None, None, None, True
 
     with stream:
         try:
@@ -109,6 +111,7 @@ def read_controller_configuration(filename='controller'):
             controller = stream.readline().strip()
             password = None
             login = None
+            vault_password = None
         else:
             if isinstance(content, str):
                 content = {'controller': content}
@@ -123,13 +126,14 @@ def read_controller_configuration(filename='controller'):
             controller = content.get('controller')
             password = content.get('password')
             login = content.get('login')
+            vault_password = content.get('vault_password')
 
     should_warn = False
     if not controller:
         controller = default_ip
         should_warn = True
 
-    return controller, login, password, should_warn
+    return controller, login, password, vault_password, should_warn
 
 
 def pretty_print(response, content=None, check_status=True):
@@ -160,6 +164,7 @@ class FromFileArgumentParser(argparse.ArgumentParser):
 
 class FrontendBase:
     WAITING_TIME_BETWEEN_STATES_POLL = 5  # seconds
+    SENTINEL = object()
 
     @classmethod
     def autorun(cls):
@@ -179,7 +184,10 @@ class FrontendBase:
 
     def __init__(self, description):
         self.__filename = 'controller'
-        controller, login, password, unspecified = read_controller_configuration(self.__filename)
+        controller_file = dict(zip(
+            ('controller', 'login', 'password', 'vault_password', 'unspecified'),
+            read_controller_configuration(self.__filename),
+        ))
         self.parser = FromFileArgumentParser(
                 description=description,
                 epilog='Backend-specific arguments can be specified by '
@@ -194,47 +202,75 @@ class FrontendBase:
                 fromfile_prefix_chars='@')
         backend = self.parser.add_argument_group('backend')
         backend.add_argument(
-                '--controller', default=controller,
+                '--ignore-controller-file', dest='use_controller_file',
+                action='store_false', default=controller_file,
+                help='Avoid parsing default values from the \'' + self.__filename + '\' file')
+        backend.add_argument(
+                '--controller',
                 help='Controller IP address')
         backend.add_argument(
-                '--login', '--username', default=login,
+                '--login', '--username',
                 help='OpenBACH username')
         backend.add_argument(
-                '--password', help='OpenBACH password')
-        self._default_password = password
-        self._default_controller = controller if unspecified else None
-        self.credentials = {'controller': self._default_controller}
+                '--password',
+                nargs='?', const=self.SENTINEL,
+                help='OpenBACH password')
+        backend.add_argument(
+                '--vault-password',
+                nargs='?', const=self.SENTINEL,
+                help='Ansible Vault password')
+
+        self.credentials = {}
 
         self.session = requests.Session()
+        self.session.mount('http://', requests.adapters.HTTPAdapter(
+            max_retries=Retry(total=5, connect=3, redirect=1, allowed_methods=None, backoff_factor=0.2),
+            pool_connections=50,
+            pool_maxsize=50,
+            pool_block=True,
+        ))
 
     def parse(self, args=None):
         self.args = args = self.parser.parse_args(args)
+        controller_unspecified = False
+
+        if args.use_controller_file:
+            for name, value in args.use_controller_file.items():
+                if name == 'unspecified':
+                    controller_unspecified = value
+                else:
+                    if getattr(args, name, None) is None:
+                        setattr(args, name, value)
         if args.controller is None:
             self.parser.error(
                     'error: no controller was specified '
                     'and the default cannot be found')
-        if args.controller == self._default_controller:
+        if controller_unspecified and args.controller == args.use_controller_file['controller']:
             message = (
                     'File not found or empty: \'{}\'. Using one of your '
                     'IP address instead as the default: \'{}\'.'
                     .format(self.__filename, args.controller))
             warnings.warn(message, RuntimeWarning)
 
-        del self._default_controller
         self.base_url = url = 'http://{}:8000/'.format(args.controller)
 
-        self.credentials = {'controller': args.controller}
+        self.credentials['controller'] = args.controller
         if args.login:
-            password = args.password or self._default_password
-            if password is None:
+            if (password := args.password) is self.SENTINEL:
                 password = getpass.getpass('OpenBACH password: ')
-            credentials = {'login': args.login, 'password': password}
-            self.credentials.update(credentials)
-            del self.args.login
-            del self.args.password
-            del self._default_password
-            response = self.session.post(url + 'login/', json=credentials)
+            self.credentials.update(login=args.login, password=password)
+            if (vault_password := args.vault_password) is self.SENTINEL:
+                vault_password = getpass.getpass('Ansible Vault Password: ')
+            self.credentials.update(vault_password=vault_password)
+            response = self.session.post(url + 'login/', json=self.credentials)
             response.raise_for_status()
+
+        with suppress(AttributeError):
+            del self.args.login
+        with suppress(AttributeError):
+            del self.args.password
+        with suppress(AttributeError):
+            del self.args.vault_password
 
         return args
 
@@ -264,23 +300,21 @@ class FrontendBase:
         verb = verb.upper()
         url = self.base_url + route
         LOG.debug('%s %s %s', verb, url, kwargs)
-        for _ in range(3):  # Retry 3 times in case we get disconnected
-            try:
-                if verb == 'GET':
-                    response = self.session.get(url, params=kwargs)
+        while True:
+            if verb == 'GET':
+                response = self.session.get(url, params=kwargs)
+            else:
+                if files is None:
+                    response = self.session.request(verb, url, json=kwargs)
                 else:
-                    if files is None:
-                        response = self.session.request(verb, url, json=kwargs)
-                    else:
-                        response = self.session.request(verb, url, data=kwargs, files=files)
-            except requests.exceptions.ConnectionError as error:
-                last_error = error
-                LOG.warning('Connection error while trying request. Retrying.')
+                    response = self.session.request(verb, url, data=kwargs, files=files)
+
+            if response.status_code == 460:
+                LOG.info('Request could not complete due to missing or wrong Vault password. Asking for it.')
+                kwargs['vault_password'] = getpass.getpass('Ansible Vault Password: ')
             else:
                 break
-        else:
-            LOG.error('Retry counter ran out, bailing out.')
-            raise last_error
+
         if show_response_content:
             pretty_print(response, check_status=check_status)
         return response
@@ -301,8 +335,9 @@ class FrontendBase:
                 content = content[status]
             returncode = content['returncode']
             if returncode != 202:
-                if show_response_content:
-                    pretty_print(response, content['response'])
+                content_shown = content['response']
+                if show_response_content and content_shown:
+                    pprint.pprint(content_shown, width=200)
                 if returncode not in valid_statuses:
                     raise ActionFailedError(**content)
                 return response

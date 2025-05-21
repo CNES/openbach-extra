@@ -1,7 +1,10 @@
 ---
 
 - name: Create the VoIP QoE directory for sender (source)
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
 
 - name: Install D-ITG using APT
   apt:
@@ -17,12 +20,16 @@
       - matplotlib
       - pyaml
       - psutil
-    executable: pip3
-  become: yes
+    state: latest
+    virtualenv: /opt/openbach/virtualenv
   environment: "{{ openbach_proxies }}"
+  remote_user: openbach
 
 - name: Install voip_qoe_src job (sender)
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'voip_qoe_src_rstats_filter.conf', mode: '0644' }
     - { file: 'voip_qoe_src.py', mode: '0755' }
@@ -31,17 +38,21 @@
     - { file: 'voip_qoe_src.help', mode: '0644' }
   become: yes
 
-- name: Create the etc directory for config files
-  file: path=/opt/openbach/agent/jobs/{{ job_name }}/etc state=directory mode=0755
-
-- name: Create the figures directory
-  file: path=/opt/openbach/agent/jobs/{{ job_name }}/figures state=directory mode=0755
-
-- name: Create the logs directory
-  file: path=/opt/openbach/agent/jobs/{{ job_name }}/logs state=directory mode=0755
+- name: Create the directories for config files, logs and figures
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}/{{ item }}
+    state: directory
+    mode: 0755
+  with_items:
+    - etc
+    - figures
+    - logs
 
 - name: Copy configuration files
-  copy: src=etc/{{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/etc mode={{ item.mode }}
+  copy:
+    src: etc/{{ item.file }}
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/etc
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'internal_config.yml', mode: '0644' }
     - { file: 'default_constants.yml', mode: '0644' }

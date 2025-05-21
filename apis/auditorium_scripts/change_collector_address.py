@@ -56,7 +56,7 @@ class ChangeCollectorAddress(FrontendBase):
         new_collector = self.args.new_collector_address
 
         return self.request(
-                'POST', 'collector/{}'.format(collector), address=new_collector,
+                'POST', 'collector/{}/'.format(collector), address=new_collector,
                 show_response_content=show_response_content)
 
 

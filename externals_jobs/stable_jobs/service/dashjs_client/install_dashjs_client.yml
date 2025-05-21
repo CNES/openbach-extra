@@ -54,10 +54,13 @@
 
 - name: Install tornado
   pip:
-    name: tornado
-    executable: pip3
-  become: yes
+    name:
+      - tornado
+      - selenium
+    state: latest
+    virtualenv: /opt/openbach/virtualenv
   environment: "{{ openbach_proxies }}"
+  remote_user: openbach
 
 - name: Gather the package facts
   package_facts:
@@ -91,14 +94,6 @@
     name:
       - software-properties-common
       - libdbus-glib-1-2
-    state: present
-  become: yes
-  environment: "{{ openbach_proxies }}"
-
-- name: Install Selenium for python3
-  pip:
-    name: selenium
-    executable: pip3
     state: present
   become: yes
   environment: "{{ openbach_proxies }}"

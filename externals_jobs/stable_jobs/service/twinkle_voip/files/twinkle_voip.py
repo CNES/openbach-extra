@@ -5,28 +5,28 @@
 #   network/physical entities (under test) and collect data from them. It is
 #   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
 #   Agents (one for each network entity that wants to be tested).
-#   
-#   
+#
+#
 #   Copyright © 2016-2023 CNES
-#   
-#   
+#
+#
 #   This file is part of the OpenBACH testbed.
-#   
-#   
+#
+#
 #   OpenBACH is a free software : you can redistribute it and/or modify it under the
 #   terms of the GNU General Public License as published by the Free Software
 #   Foundation, either version 3 of the License, or (at your option) any later
 #   version.
-#   
+#
 #   This program is distributed in the hope that it will be useful, but WITHOUT
 #   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
 #   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 #   details.
-#   
+#
 #   You should have received a copy of the GNU General Public License along with
 #   this program. If not, see http://www.gnu.org/licenses/.
 
-""" Sources of the job twinkle_voip """
+"""Sources of the job twinkle_voip"""
 
 __author__ = 'Viveris Technologies'
 __credits__ = '''Contributors:
@@ -53,6 +53,7 @@ DEFAULT_AUDIO = '/opt/openbach/agent/jobs/twinkle_voip/audio.wav'
 PORT_MIN = 49152
 PORT_MAX = 57500
 
+
 dev = None     # the sound device to use as mic
 
 
@@ -73,7 +74,7 @@ def conf(ip, port, nat):
         home = '/root'
         os.environ["HOME"] = home
     sys_conf_file = os.path.join(home,'.twinkle/twinkle.sys')
-    
+
     # Get the user name
     username = None
     with open(sys_conf_file, 'r') as f:
@@ -88,12 +89,11 @@ def conf(ip, port, nat):
     # Check audio conf
     # Search loopback device number
     p1 = subprocess.Popen(["aplay", "-l"], stdout=subprocess.PIPE)
-    p2 = subprocess.Popen(["grep", "Loopback"], stdin=p1.stdout, 
-                          stdout=subprocess.PIPE)
+    p2 = subprocess.Popen(["grep", "Loopback"], stdin=p1.stdout, stdout=subprocess.PIPE)
     p2.wait()
     for line in p2.stdout.read().decode().splitlines():
         if not line.startswith('card'):
-           continue
+            continue
         dev = line.split(':')[0].split(' ')[1]
     if not dev:
         collect_agent.send_log(syslog.LOG_ERR, "No loopback device found")
@@ -168,7 +168,7 @@ def call(p, remote):
     # Start call
     p.stdin.write(cmd.encode())
     p.stdin.flush()
-    
+
     if not wait_for(p, "200 OK"):
         collect_agent.send_log(syslog.LOG_ERR, "Cannot establish call with server")
         return False
@@ -213,7 +213,7 @@ def wait_for_call(p):
 
     # Wait for call to be established
     return wait_for(p, "established")
-    
+
 
 def close_twinkle(p):
     # Exit twinkle
@@ -246,7 +246,7 @@ def main(server, remote, audio, length, ip, port, nat):
     # Play audio
     if call_ok:
         play_audio(t, audio, length)
-    
+
     # Wait for client to finish call
     if server:
         wait_for(t, "ended", CALL_TIMEOUT)
@@ -263,7 +263,7 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser(
                 description='',
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    
+
         parser.add_argument("ip", type=str,
                             help='The local IP address')
         parser.add_argument('-s', '--server', action='store_true',
@@ -278,7 +278,7 @@ if __name__ == "__main__":
                             default=0, help='The length of the call in seconds')
         parser.add_argument('-p', '--port', type=str,
                             default='{}-{}'.format(PORT_MIN, PORT_MAX), help='The RTP port')
-        
+
         # Get arguments
         args = parser.parse_args()
         server = args.server
@@ -289,14 +289,14 @@ if __name__ == "__main__":
         ip = args.ip
         nat = args.nat
 
-        try
+        try:
             try:
                 begin_range, end_range = port.split('-')
             except ValueError:
                 port = int(port)
-            else
+            else:
                 port = random.randrange(int(begin_range), int(end_range))
         except ValueError:
             parser.error('port: invalid port or range: {}'.format(port))
-        
+
         main(server, remote, audio, length, ip, port, nat)

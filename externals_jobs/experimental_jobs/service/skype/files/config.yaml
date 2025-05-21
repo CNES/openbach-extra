@@ -1,0 +1,27 @@
+# See https://www.w3.org/TR/webrtc-stats/ to know the different statistics released in the context of webRTC
+
+driver:
+  binary_type: GoogleChromeBinary
+  binary_path: /usr/bin/google-chrome
+  executable_path: /usr/local/bin/chromedriver
+  
+statistics:
+
+# Audio chat from http://www.voiptroubleshooter.com/open_speech/american.html
+audio_to_play:
+  - audio/OSR_us_000_0010_8k.wav
+  - audio/OSR_us_000_0011_8k.wav
+
+# Video chat from https://media.xiph.org/video/derf/
+video_to_play:
+  - video/akiyo_cif.y4m
+  - video/bowing_cif.y4m
+
+
+
+# /usr/bin/google-chrome --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-dev-shm-usage --disable-hang-monitor --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-resources --enable-automation --enable-logging --force-fieldtrials=SiteIsolationExtensions/Control --ignore-certificate-errors --load-extension=/tmp/.org.chromium.Chromium.iBvO6q/internal --log-level=0 --metrics-recording-only --no-first-run --password-store=basic --remote-debugging-port=0 --test-type=webdriver --use-fake-device-for-media-stream --use-fake-ui-for-media-stream --use-file-for-fake-audio-capture=/opt/openbach/agent/jobs/skype/audio/OSR_us_000_0010_8k.wav --use-file-for-fake-video-capture=/opt/openbach/agent/jobs/skype/video/akiyo_cif.y4m --use-mock-keychain --user-data-dir=/tmp data:
+# -> sound + video answers
+# -> no P2P
+# google-chrome --use-file-for-fake-audio-capture=/opt/openbach/agent/jobs/skype/files/audio/OSR_us_000_0010_8k.wav --use-fake-device-for-media-stream --use-fake-ui-for-media-stream --use-file-for-fake-video-capture=/opt/openbach/agent/jobs/skype/files/video/bowing_cif.y4m --disable-dev-shm-usage
+# -> sound answer
+# -> P2P

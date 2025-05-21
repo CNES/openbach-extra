@@ -29,7 +29,7 @@ general:
   name: cpu_monitoring
   description: >
       This Job monitors CPU and RAM usage.
-  job_version: '1.1'
+  job_version: '1.2'
   keywords:
     - CPU
     - RAM
@@ -42,12 +42,17 @@ platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '20.04'
-    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/cpu_monitoring/cpu_monitoring.py'
+    command: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/cpu_monitoring/cpu_monitoring.py'
     command_stop:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
     ansible_distribution_version: '22.04'
-    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/cpu_monitoring/cpu_monitoring.py'
+    command: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/cpu_monitoring/cpu_monitoring.py'
+    command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Ubuntu'
+    ansible_distribution_version: '24.04'
+    command: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/cpu_monitoring/cpu_monitoring.py'
     command_stop:
 
 arguments:

@@ -43,7 +43,7 @@ def socat_send_files_tcp(
             offset=0,
             port=port,
             measure_time=False,
-            server={create_file=filesize})
+            server={'create_file': filesize})
 
     wait = []
     delay = 20  # Need big initial delay because file copy is slow
@@ -58,7 +58,7 @@ def socat_send_files_tcp(
                 offset=2,
                 port=port,
                 measure_time=True,
-                client={dest=destination_ip, expected_size=filesize})
+                client={'dest': destination_ip, 'expected_size': filesize})
         wait = [client]
         delay = 1
 

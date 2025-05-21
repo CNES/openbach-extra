@@ -20,5 +20,7 @@
   with_items: "{{ killed_processes.results | select('failed') | map(attribute='item') | list }}"
 
 - name: Remove the voip_qoe_dest Folder
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: absent
   become: yes

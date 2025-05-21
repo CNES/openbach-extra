@@ -110,7 +110,7 @@ class UninstallJobs(FrontendBase):
 
         responses = [
                 self.request(
-                    'POST', 'job', action='uninstall',
+                    'POST', 'job/', action='uninstall',
                     names=jobs, addresses=agents,
                     show_response_content=launch_only and show_response_content,
                     check_status=check_status)

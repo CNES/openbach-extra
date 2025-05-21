@@ -57,7 +57,7 @@ class KillAll(FrontendBase):
             action = partial(action, date=date)
 
         return action(
-                'POST', 'job_instance', action='kill',
+                'POST', 'job_instance/', action='kill',
                 show_response_content=show_response_content)
 
 

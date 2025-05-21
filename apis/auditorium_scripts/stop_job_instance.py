@@ -61,7 +61,7 @@ class StopJobInstance(FrontendBase):
             action = partial(action, date=date)
 
         return action(
-                'POST', 'job_instance', job_instance_ids=instance_ids,
+                'POST', 'job_instance/', job_instance_ids=instance_ids,
                 action='stop', show_response_content=show_response_content)
 
 

@@ -34,8 +34,8 @@
 
 - name: Download perfSONAR (owping/owamp-client) release repository
   get_url:
-    url: http://downloads.perfsonar.net/debian/perfsonar-jessie-release.list
-    dest: /etc/apt/sources.list.d/perfsonar-jessie-release.list
+    url: http://downloads.perfsonar.net/debian/perfsonar-release.list
+    dest: /etc/apt/sources.list.d/perfsonar-release.list
     mode: 0440
   become: yes
   environment: "{{ openbach_proxies }}"
@@ -56,16 +56,25 @@
   environment: "{{ openbach_proxies }}"
 
 - name: Install Python Dependencies
-  pip: name=numpy executable=pip3
-  become: yes
+  pip:
+    name: numpy
+    state: latest
+    virtualenv: /opt/openbach/virtualenv
   environment: "{{ openbach_proxies }}"
+  remote_user: openbach
 
 - name: Create owamp-client Job Folder
-  file: path=/opt/openbach/agent/jobs/owamp-client state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/owamp-client
+    state: directory
+    mode: 0755
   become: yes
 
 - name: Install owamp Job
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'owamp-client_rstats_filter.conf', mode: '0644' }
     - { file: 'owamp-client.py', mode: '0755' }

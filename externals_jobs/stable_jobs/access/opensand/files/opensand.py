@@ -110,7 +110,7 @@ def run_entity(temp_dir, bin_dir, infrastructure, topology,
         if any(
                 err in error
                 for err in {'File exists', 'No such process'}
-                ):
+        ):
             message = 'WARNING: {} exited with non-zero return value ({}): {}'.format(
                 command, PROC.returncode, error)
             collect_agent.send_log(syslog.LOG_WARNING, message)

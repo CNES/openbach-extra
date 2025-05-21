@@ -61,7 +61,7 @@ class ListJobs(FrontendBase):
         if search:
             action = partial(action, ratio=ratio, string_to_search=search)
 
-        return action('GET', 'job', show_response_content=show_response_content)
+        return action('GET', 'job/', show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

@@ -82,15 +82,17 @@ class ScenarioObserver(FrontendBase):
                 '-n', '--scenario-name', '--name',
                 help='name of the scenario to launch')
 
+        self.subparsers = {}
         parsers = self.parser.add_subparsers(title='actions', metavar='action')
         parsers.required = False
 
-        parser = parsers.add_parser(
+        self.subparsers['run'] = parser = parsers.add_parser(
                 'run', help='run the selected scenario on the controller '
                 'after optionally sending it (default action)')
-        # Ensure we keep a reference to this parser before overriding the variable latter on
-        get_defaults = parser.parse_args
-        self.parser.set_defaults(_action=lambda builder=None: self._default_action(get_defaults([]), builder))
+        def _default_run_args(builder=None):
+            default_args = self.subparsers['run'].parse_args([])
+            return self._default_action(default_args, builder)
+        self.parser.set_defaults(_action=_default_run_args)
 
         self.run_group = parser.add_argument_group('scenario arguments')
         group = parser.add_argument_group('collector')
@@ -131,7 +133,7 @@ class ScenarioObserver(FrontendBase):
                 '--poll-waiting-time', type=float, default=self.WAITING_TIME_BETWEEN_STATES_POLL,
                 help='Waiting time in seconds between states poll when monitoring scenario completion.')
 
-        parser = parsers.add_parser(
+        self.subparsers['build'] = parser = parsers.add_parser(
                 'build', help='write the JSON of the selected '
                 'scenario into the given directory')
         parser.add_argument(
@@ -282,20 +284,22 @@ class ScenarioObserver(FrontendBase):
         finally:
             if self.args.logs:
                 end_date = int(time.time() * 1000)  # Flooring to the last millisecond
+                try:
+                    sleep_duration = 1
+                    elasticsearch = ElasticSearchConnection(self.args.collector_address, self.args.elasticsearch_port)
+                    with suppress(requests.exceptions.BaseHTTPError, LookupError, ValueError):
+                        settings = elasticsearch.settings_query('index.refresh_interval')
+                        intervals = (settings[index]['settings']['index']['refresh_interval'] for index in settings)
+                        sleep_duration = max(map(_convert_time, intervals), default=sleep_duration)
 
-                sleep_duration = 1
-                elasticsearch = ElasticSearchConnection(self.args.collector_address, self.args.elasticsearch_port)
-                with suppress(requests.exceptions.BaseHTTPError, LookupError, ValueError):
-                    settings = elasticsearch.settings_query("index.refresh_interval")
-                    intervals = (settings[index]["settings"]["index"]["refresh_interval"] for index in settings)
-                    sleep_duration = max(map(_convert_time, intervals), default=sleep_duration)
-
-                logger = logging.getLogger(__name__)
-                logger.info('Retrieving logs if any, wait during logstash refreshing (%ds) ...', sleep_duration)
-                time.sleep(sleep_duration)
-                response = elasticsearch.all_logs(timestamps=(begin_date, end_date))
-                for log in response:
-                    logger.error('%s', PprintFormatter(log))
+                    logger = logging.getLogger(__name__)
+                    logger.info('Retrieving logs if any, wait during logstash refreshing (%ds) ...', sleep_duration)
+                    time.sleep(sleep_duration)
+                    response = elasticsearch.all_logs(timestamps=(begin_date, end_date))
+                    for log in response:
+                        logger.error('%s', PprintFormatter(log))
+                except (requests.exceptions.BaseHTTPError, requests.exceptions.RequestException):
+                    logger.error('%s', 'Unable to retrieve logs. Check the ElasticSearch service on your collector')
         return self._last_instance
 
     def _write_json(self, builder=None):
@@ -410,6 +414,6 @@ class PprintFormatter:
 
 
 def _convert_time(duration):
-    amount, unit = re.match('(\d+)(d$|h$|m$|s$|ms$)', duration).groups()
+    amount, unit = re.match(r'(\d+)(d$|h$|m$|s$|ms$)', duration).groups()
     unit = {'s': 'seconds', 'm': 'minutes', 'd': 'days', 'h': 'hours', 'ms': 'milliseconds'}[unit]
     return datetime.timedelta(**{unit: int(amount)}).total_seconds()

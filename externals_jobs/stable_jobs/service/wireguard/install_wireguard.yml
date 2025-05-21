@@ -34,18 +34,25 @@
 ---
 
 - name: Install WireGuard
-  apt: name=wireguard state=present
+  apt:
+    name: wireguard
+    state: present
   become: yes
   environment: "{{ openbach_proxies }}"
 
 - name: Create wireguard repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
   
 - name: Install wireguard
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'wireguard.help', mode: '0644' }
     - { file: 'wireguard.py', mode: '0755' }
     - { file: 'wireguard_stop.py', mode: '0755' }
     - { file: 'wireguard_rstats_filter.conf', mode: '0644' }
-

@@ -33,20 +33,32 @@
 ---
 
 - name: Install package pepsal
-  apt: name=pepsal state=present allow_unauthenticated=yes
+  apt:
+    name:
+      - pepsal
+    state: present
+    allow_unauthenticated: yes
   become: yes
   environment: "{{ openbach_proxies }}"
 
 - name: Install python dependencies
-  pip: name=python-iptables executable=pip3 version=0.12.0
-  become: yes
+  pip:
+    name: python-iptables
+    state: latest
+    virtualenv: /opt/openbach/virtualenv
   environment: "{{ openbach_proxies }}"
+  remote_user: openbach
 
 - name: Create the Pep Job Repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
 
 - name: Install the Pep Job
-  copy: src={{ item.name }} dest=/opt/openbach/agent/jobs/{{ job_name }}/{{ item.name }} mode={{ item.mode }}
+  copy:
+    src: "{{ item.name }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/{{ item.name }}
+    mode: "{{ item.mode }}"
   with_items:
     - { name: 'pep.py', mode: '0755' }
     - { name: 'pep.help', mode: '0644' }

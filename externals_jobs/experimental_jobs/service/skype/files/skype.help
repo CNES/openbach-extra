@@ -1,0 +1,32 @@
+=== Examples ===
+
+== Example 1 ==
+
+First, from a "receiver" Agent, sign in to a skype user account using 'receiver_email_address' and 'receiver_password' as email address and password respectively and wait for incoming call. Second, similary, from a "caller" Agent, sign in to a skype user account using 'caller_email_address' and 'caller_password' as email address and password respectively, then from contacts list find 'receiver' and make a video call during 180 seconds. Make sure that 'receiver' is present in contacts list of caller.
+ 
+In the web interface, set the following parameters:
+
+  * For "receiver" Agent:
+    * **email_address** = receiver_email_address
+    * **password** = receiver_password
+    * **call_type** = video
+    * **mode** = receiver
+ 
+  * For "caller" Agent (Start 5s after caller is launched):
+    * **email_address** = caller_email_address
+    * **password** = caller_password
+    * **call_type** = video
+    * **mode** = caller
+    * **call_duration** = 180
+
+Or launch the job manually from the Agents as follows:
+
+From the 'receiver' Agent:
+<code>
+JOB_NAME=skype sudo -E -u openbach python3 /opt/openbach/agent/jobs/skype/skype.py receiver_email_address receiver_password video 'receiver'
+</code>
+
+From the 'caller' Agent:
+<code>
+JOB_NAME=skype sudo -E -u openbach python3 /opt/openbach/agent/jobs/skype/skype.py caller_email_address caller_password video 'caller' -d 180
+</code>
