@@ -33,9 +33,14 @@
 ---
 
 - name: Remove owamp-server
-  apt: name=owamp-server state=absent purge=yes
+  apt:
+    name: owamp-server
+    state: absent
+    purge: yes
   become: yes
 
 - name: Remove the owamp-server Job Folder
-  file: path=/opt/openbach/agent/jobs/owamp-server state=absent
+  file:
+    path: /opt/openbach/agent/jobs/owamp-server
+    state: absent
   become: yes

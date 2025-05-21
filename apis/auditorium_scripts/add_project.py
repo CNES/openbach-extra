@@ -67,7 +67,7 @@ class AddProject(FrontendBase):
 
     def execute(self, show_response_content=True):
         return self.request(
-                'POST', 'project', **self.args.project,
+                'POST', 'project/', **self.args.project,
                 show_response_content=show_response_content)
 
 

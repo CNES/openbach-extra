@@ -26,11 +26,13 @@
 ---
 
 - name: Download Modified Iperf
-  unarchive: src=http://caia.swin.edu.au/tools/teacup/downloads/iperf-2.0.5-mod.tar.gz \
-    dest=/tmp/ copy=no
+  unarchive:
+    src: http://caia.swin.edu.au/tools/teacup/downloads/iperf-2.0.5-mod.tar.gz
+    dest: /tmp/
+    copy: no
     
 - name: Compile Modified Iperf
-  shell: {{ item }} chdir=/tmp/iperf-2.0.5-mod/
+  shell: "{{ item }}" chdir=/tmp/iperf-2.0.5-mod/
   with_items:
     - "./configure"
     - "make"

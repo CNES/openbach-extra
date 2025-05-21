@@ -66,7 +66,7 @@ class ModifyCollector(FrontendBase):
         if stats_port is not None:
             action = partial(action, stats_port=stats_port)
         return action(
-                'PUT', 'collector/{}'.format(collector),
+                'PUT', 'collector/{}/'.format(collector),
                 show_response_content=show_response_content)
 
 

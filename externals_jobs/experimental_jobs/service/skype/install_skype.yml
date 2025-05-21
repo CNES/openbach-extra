@@ -1,0 +1,122 @@
+# 
+#   OpenBACH is a generic testbed able to control/configure multiple
+#   network/physical entities (under test) and collect data from them. It is
+#   composed of an Auditorium (HMIs), a Controller, a Collector and multiple
+#   Agents (one for each network entity that wants to be tested).
+#   
+#   
+#   Copyright © 2016-2023 CNES
+#   Copyright © 2022 Eutelsat
+#   
+#   
+#   This file is part of the OpenBACH testbed.
+#   
+#   
+#   OpenBACH is a free software : you can redistribute it and/or modify it under the
+#   terms of the GNU General Public License as published by the Free Software
+#   Foundation, either version 3 of the License, or (at your option) any later
+#   version.
+#   
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY, without even the implied warranty of MERCHANTABILITY or FITNESS
+#   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+#   details.
+#   
+#   You should have received a copy of the GNU General Public License along with
+#   this program. If not, see http://www.gnu.org/licenses/.
+#   
+#   
+#   
+#   @file     install_skype.yml
+#   @brief    Playbook that install the Job skype
+#   @author   Francklin SIMO <francklin.simo@toulouse.viveris.com>
+#   @author   Bastien TAURAN <bastien.tauran@viveris.fr>
+
+
+---
+ 
+- name: Get client architecture
+  shell: uname -p
+  register: cpu_arch
+
+- fail:
+    msg: "Only 64bits architectures are supported"
+  when: cpu_arch.stdout != "x86_64"
+
+- name: Install unzip and xvfb
+  apt:
+    pkg:
+      - unzip
+      - xvfb
+    state: present
+  become: yes
+  environment: "{{ openbach_proxies }}"
+  
+- name: Install Google-chrome
+  apt: 
+    deb: https://github.com/CNES/openbach-extra/raw/refs/tags/openbach-2.5.0/externals_jobs/stable_jobs/service/skype/files/google-chrome-stable_102.0.5005.61_amd64.deb
+    force: yes
+  become: yes
+  environment: "{{ openbach_proxies }}"
+
+- name: Install Chrome Driver
+  unarchive: 
+    src: http://chromedriver.storage.googleapis.com/2.44/chromedriver_linux64.zip
+    dest: /usr/local/bin
+    creates: /usr/local/bin/chromedriver
+    remote_src: yes
+  become: yes
+  environment: "{{ openbach_proxies }}"
+
+- name: Install Selenium and WebDriver for Python3
+  pip:
+    name:
+      - selenium
+      - webdriver-manager
+    state: latest
+    virtualenv: /opt/openbach/virtualenv
+  environment: "{{ openbach_proxies }}"
+  remote_user: openbach
+
+- name: Create skype repository
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
+  
+- name: Create audio/video repository
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}/{{ item }}/
+    state: directory
+    mode: 0755
+  with_items:
+    - audio
+    - video
+  
+- name: Install audio files
+  openbach_synchronize:
+    src: audio/
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/audio/
+    recursive: yes
+    delete: yes
+
+- name: Install video files
+  get_url:
+    src: https://github.com/CNES/openbach-extra/raw/refs/tags/openbach-2.5.0/externals_jobs/stable_jobs/service/skype/files/video/{{ item }}
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/video/{{ item }}
+    mode: 0644
+  with_items:
+    - akiyo_cif.y4m
+    - bowing_cif.y4m
+    
+- name: Install skype file
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
+  with_items:
+    - { file: 'skype.help', mode: '0644' }
+    - { file: 'skype.py', mode: '0755' }
+    - { file: 'skype_rstats_filter.conf', mode: '0644' }
+    - { file: 'config.yaml', mode: '0644' }
+

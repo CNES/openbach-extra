@@ -87,20 +87,21 @@ class TestScenarioBuilder(unittest.TestCase):
             "openbach_functions": [
                 {
                     "id": 0,
-                    "retrieve_status_agents": {
-                        "addresses": [
-                            "$agentA"
-                        ],
-                        "update": True
+                    "label": "#0",
+                    "reboot": {
+                        "entity_name": "Agent A",
+                        "kernel": "default",
                     },
                     "wait": {
                         "time": 0,
                         "launched_ids": [],
                         "finished_ids": []
-                    }
+                    },
+                    "on_fail": {},
                 },
                 {
                     "id": 1,
+                    "label": "#1",
                     "if": {
                         "condition": {
                             "type": "=",
@@ -122,12 +123,14 @@ class TestScenarioBuilder(unittest.TestCase):
                         "time": 0,
                         "launched_ids": [0],
                         "finished_ids": []
-                    }
+                    },
+                    "on_fail": {},
                 },
                 {
                     "id": 2,
+                    "label": "#2",
                     "start_job_instance": {
-                        "agent_ip": "$agentA",
+                        "entity_name": "Agent A",
                         "fping": {
                             "destination_ip": "$agentB",
                             "duration": 60
@@ -138,12 +141,14 @@ class TestScenarioBuilder(unittest.TestCase):
                         "time": 0,
                         "launched_ids": [],
                         "finished_ids": []
-                    }
+                    },
+                    "on_fail": {},
                 },
                 {
                     "id": 3,
+                    "label": "#3",
                     "start_job_instance": {
-                        "agent_ip": "$agentB",
+                        "entity_name": "Agent B",
                         "fping": {
                             "destination_ip": "$agentA",
                             "duration": 60
@@ -154,12 +159,14 @@ class TestScenarioBuilder(unittest.TestCase):
                         "time": 0,
                         "launched_ids": [],
                         "finished_ids": []
-                    }
+                    },
+                    "on_fail": {},
                 },
                 {
                     "id": 4,
+                    "label": "#4",
                     "start_job_instance": {
-                        "agent_ip": "$agentB",
+                        "entity_name": "Agent B",
                         "fping": {
                             "destination_ip": "$agentC",
                             "duration": 60
@@ -170,29 +177,34 @@ class TestScenarioBuilder(unittest.TestCase):
                         "time": 0,
                         "launched_ids": [],
                         "finished_ids": []
-                    }
+                    },
+                    "on_fail": {},
                 },
                 {
                     "id": 5,
-                    "stop_job_instance": {
+                    "label": "#5",
+                    "stop_job_instances": {
                         "openbach_function_ids": [2, 3]
                     },
                     "wait": {
                         "time": 10,
                         "launched_ids": [2, 3],
                         "finished_ids": []
-                    }
+                    },
+                    "on_fail": {},
                 },
                 {
                     "id": 6,
-                    "stop_job_instance": {
+                    "label": "#6",
+                    "stop_job_instances": {
                         "openbach_function_ids": [4]
                     },
                     "wait": {
                         "time": 10,
                         "launched_ids": [4],
                         "finished_ids": []
-                    }
+                    },
+                    "on_fail": {},
                 }
             ]
         }
@@ -201,19 +213,19 @@ class TestScenarioBuilder(unittest.TestCase):
         scenario.add_constant('agentA', '172.20.34.38')
         scenario.add_constant('agentB', '172.20.34.37')
         scenario.add_constant('agentC', '172.20.34.39')
-        status = scenario.add_function('retrieve_status_agents')
-        status.configure('$agentA', update=True)
-        if_function = scenario.add_function('if', wait_launched=[status])
+        reboot = scenario.add_function('reboot')
+        reboot.configure('Agent A', kernel='default')
+        if_function = scenario.add_function('if', wait_launched=[reboot])
         if_function.configure(
                 sb.Condition('=',
                 sb.Operand('database', 'Agent', '$agentA', 'status'),
                 sb.Operand('value', 'available')))
         ping_a_b = scenario.add_function('start_job_instance')
-        ping_a_b.configure('fping', '$agentA', offset=5, destination_ip='$agentB', duration=60)
+        ping_a_b.configure('fping', 'Agent A', offset=5, destination_ip='$agentB', duration=60)
         ping_b_a = scenario.add_function('start_job_instance')
-        ping_b_a.configure('fping', '$agentB', offset=5, destination_ip='$agentA', duration=60)
+        ping_b_a.configure('fping', 'Agent B', offset=5, destination_ip='$agentA', duration=60)
         ping_b_c = scenario.add_function('start_job_instance')
-        ping_b_c.configure('fping', '$agentB', offset=5, destination_ip='$agentC', duration=60)
+        ping_b_c.configure('fping', 'Agent B', offset=5, destination_ip='$agentC', duration=60)
         if_function.configure_if_true(ping_a_b, ping_b_a)
         if_function.configure_if_false(ping_b_c)
         scenario.add_function('stop_job_instance', 10, [ping_a_b, ping_b_a]).configure(ping_a_b, ping_b_a)
@@ -234,18 +246,21 @@ class TestScenarioBuilder(unittest.TestCase):
             "openbach_functions": [
                 {
                     "id": 0,
-                    "retrieve_status_agents": {
-                        "addresses": ["$agentA"],
-                        "update": True
+                    "label": "#0",
+                    "reboot": {
+                        "entity_name": "Agent A",
+                        "kernel": "default",
                     },
                     "wait": {
                         "time": 0,
                         "launched_ids": [],
                         "finished_ids": []
-                    }
+                    },
+                    "on_fail": {},
                 },
                 {
                     "id": 1,
+                    "label": "#1",
                     "while": {
                         "condition": {
                             "type": "=",
@@ -267,24 +282,28 @@ class TestScenarioBuilder(unittest.TestCase):
                         "time": 0,
                         "launched_ids": [0],
                         "finished_ids": []
-                    }
+                    },
+                    "on_fail": {},
                 },
                 {
                     "id": 2,
-                    "retrieve_status_agents": {
-                        "addresses": ["$agentA"],
-                        "update": True
+                    "label": "#2",
+                    "reboot": {
+                        "entity_name": "Agent B",
+                        "kernel": "default",
                     },
                     "wait": {
                         "time": 0,
                         "launched_ids": [],
                         "finished_ids": []
-                    }
+                    },
+                    "on_fail": {},
                 },
                 {
                     "id": 3,
+                    "label": "#3",
                     "start_job_instance": {
-                        "agent_ip": "$agentB",
+                        "entity_name": "Agent B",
                         "fping": {
                             "destination_ip": "$agentC",
                             "duration": 60
@@ -295,18 +314,21 @@ class TestScenarioBuilder(unittest.TestCase):
                         "time": 0,
                         "launched_ids": [],
                         "finished_ids": []
-                    }
+                    },
+                    "on_fail": {},
                 },
                 {
                     "id": 4,
-                    "stop_job_instance": {
+                    "label": "#4",
+                    "stop_job_instances": {
                         "openbach_function_ids": [3]
                     },
                     "wait": {
                         "time": 10,
                         "launched_ids": [3],
                         "finished_ids": []
-                    }
+                    },
+                    "on_fail": {},
                 }
             ]
         }
@@ -315,18 +337,18 @@ class TestScenarioBuilder(unittest.TestCase):
         scenario.add_constant('agentA', '172.20.34.38')
         scenario.add_constant('agentB', '172.20.34.37')
         scenario.add_constant('agentC', '172.20.34.39')
-        status = scenario.add_function('retrieve_status_agents')
-        status.configure('$agentA', update=True)
-        while_function = scenario.add_function('while', wait_launched=[status])
+        reboot = scenario.add_function('reboot')
+        reboot.configure('Agent A', kernel='default')
+        while_function = scenario.add_function('while', wait_launched=[reboot])
         while_function.configure(
                 sb.Condition('=',
                 sb.Operand('database', 'Agent', '$agentA', 'status'),
                 sb.Operand('value', 'Available')))
-        status = scenario.add_function('retrieve_status_agents')
-        status.configure('$agentA', update=True)
+        reboot = scenario.add_function('reboot')
+        reboot.configure('Agent B', kernel='default')
         ping = scenario.add_function('start_job_instance')
-        ping.configure('fping', '$agentB', offset=5, destination_ip='$agentC', duration=60)
-        while_function.configure_while_body(status)
+        ping.configure('fping', 'Agent B', offset=5, destination_ip='$agentC', duration=60)
+        while_function.configure_while_body(reboot)
         while_function.configure_while_end(ping)
         scenario.add_function('stop_job_instance', 10, [ping]).configure(ping)
 

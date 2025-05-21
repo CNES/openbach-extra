@@ -55,6 +55,21 @@ class CustomWebSocket(websocket.WebSocketHandler):
     def open(self):
         self.set_nodelay(True)
         collect_agent.send_log(syslog.LOG_DEBUG, 'Opened websocket with IP {}'.format(self.request.remote_ip))
+        # TODO: Quick fix as the JS does not seem to send any information about the video
+        # just make sure there is something in the DB so the post-processing jobs do not
+        # choke on concatenating nothing.
+        collect_agent.sent_stat(
+            collect_agent.now(),
+            buffer_length=0.0,
+            bitrate=0,
+            dropped_frames=0,
+            latency_min=0.0,
+            latency_avg=0.0,
+            download_min=0.0,
+            download_avg=0.0,
+            ratio_min=0.0,
+            ratio_avg=0.0,
+        )
 
     def on_message(self, message):
         data = json.loads(message)
@@ -68,13 +83,15 @@ class CustomWebSocket(websocket.WebSocketHandler):
         collect_agent.send_log(syslog.LOG_DEBUG, 'Message received')
 
 
-def run_tornado(port):
+def main(port):
     """
     Start tornado to handle websocket requests
     Args:
-    Returns:
-        NoneType
+        port: the TCP port to listen on
     """
+    # Connect to collect_agent
+    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job dashjs_client')
+
     application = web.Application([
         (r'/websocket/', CustomWebSocket)
     ])
@@ -91,13 +108,6 @@ def run_tornado(port):
         collect_agent.send_log(syslog.LOG_ERR, message)
         ioloop.IOLoop.current().stop()
         sys.exit(message)
-
-
-def main(port):
-    # Connect to collect_agent
-    collect_agent.send_log(syslog.LOG_DEBUG, 'Starting job dashjs_client')
-
-    run_tornado(port) 
 
 
 if __name__ == '__main__':

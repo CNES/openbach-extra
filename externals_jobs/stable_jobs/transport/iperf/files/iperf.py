@@ -84,13 +84,13 @@ def _command_build_helper(flag, value):
 
 
 def client(
-        client, interval, window_size, port, udp, bandwidth, duration,
-        num_flows, cong_control, mss, tos, iterations):
+        client, metrics_interval, window_size, port, udp, bandwidth,
+        duration, num_flows, cong_control, mss, tos, iterations):
     cmd = ['iperf', '-c', client]
-    cmd.extend(_command_build_helper('-i', interval))
+    cmd.extend(_command_build_helper('-i', metrics_interval))
     cmd.extend(_command_build_helper('-w', window_size))
     cmd.extend(_command_build_helper('-p', port))
-    cmd.extend(_command_build_helper('-i', interval))
+    cmd.extend(_command_build_helper('-i', metrics_interval))
     if udp:
         cmd.append('-u')
         cmd.extend(_command_build_helper('-b', bandwidth))
@@ -106,9 +106,9 @@ def client(
         time.sleep(10)
 
 
-def server(interval, window_size, port, udp, rate_compute_time, num_flows, iterations):
+def server(metrics_interval, window_size, port, udp, rate_compute_time, num_flows, iterations):
     cmd = ['iperf', '-s']
-    cmd.extend(_command_build_helper('-i', interval))
+    cmd.extend(_command_build_helper('-i', metrics_interval))
     cmd.extend(_command_build_helper('-w', window_size))
     cmd.extend(_command_build_helper('-p', port))
     cmd.extend(_command_build_helper('-P', num_flows))
@@ -153,7 +153,7 @@ def server(interval, window_size, port, udp, rate_compute_time, num_flows, itera
                 # filter out non-stats lines
                 continue
 
-            if not transfer or interval_end - interval_begin > interval:
+            if not transfer or interval_end - interval_begin > metrics_interval:
                 # filter out lines covering the whole duration
                 continue
 
@@ -205,8 +205,9 @@ if __name__ == "__main__":
                 '-c', '--client', type=str,
                 help='Run in client mode and specify server IP address')
         parser.add_argument(
-                '-i', '--interval', type=int, default=1,
-                help='Pause *interval* seconds between '
+                '-i', '--metrics-interval', '--interval',
+                type=int, default=1,
+                help='Pause *metrics-interval* seconds between '
                 'periodic bandwidth reports')
         parser.add_argument(
                 '-w', '--window-size', type=str,
@@ -255,7 +256,7 @@ if __name__ == "__main__":
     
         # get args
         args = parser.parse_args()
-        interval = args.interval
+        interval = args.metrics_interval
         window_size = args.window_size
         port = args.port
         udp = args.udp

@@ -26,10 +26,16 @@
 ---
 
 - name: Create the ftp client Job Repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
 
 - name: Install ftp_clt
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'ftp_clt.help', mode: '0644' }
     - { file: 'ftp_clt_rstats_filter.conf', mode: '0644' }

@@ -122,7 +122,7 @@ def _run_command(cmd, measure_time):
         sys.exit(mesage)
 
 
-def _send_statistics(proccess):
+def _send_statistics(process):
     returncode = process.returncode
     output = process.stderr
 
@@ -175,7 +175,7 @@ if __name__ == "__main__":
                 help='Generate a random file of the given size to send back to clients')
 
         # Only client parameters
-        parser_client = subparser.add_parser('client', help='Run in client mode')
+        parser_client = subparsers.add_parser('client', help='Run in client mode')
         parser_client.add_argument('dest', help='IP address of the server')
         parser_client.add_argument(
                 '-e', '--expected-size', type=compact_bytes,

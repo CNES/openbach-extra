@@ -60,7 +60,7 @@ class ListAgents(FrontendBase):
         if self.args.services:
             action = partial(action, services='')
 
-        return action('GET', 'agent', show_response_content=show_response_content)
+        return action('GET', 'agent/', show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

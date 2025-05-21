@@ -45,7 +45,7 @@ class ListCollectors(FrontendBase):
         super().__init__('OpenBACH — List Collectors')
 
     def execute(self, show_response_content=True):
-        return self.request('GET', 'collector', show_response_content=show_response_content)
+        return self.request('GET', 'collector/', show_response_content=show_response_content)
 
 
 if __name__ == '__main__':

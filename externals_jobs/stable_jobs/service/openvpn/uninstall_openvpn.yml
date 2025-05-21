@@ -34,8 +34,12 @@
 ---
   
 - name: Uninstall OpenVPN
-  apt: name=openvpn state=absent
+  apt:
+    name: openvpn
+    state: absent
   become: yes
 
 - name: Remove openvpn job repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: absent

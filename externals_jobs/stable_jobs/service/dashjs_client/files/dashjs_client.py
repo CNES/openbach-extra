@@ -42,10 +42,10 @@ import subprocess
 from functools import partial
 
 from selenium.common.exceptions import WebDriverException
-from selenium.webdriver import Firefox
+from selenium.webdriver import Firefox, FirefoxOptions
+from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions as expected
 from selenium.webdriver.support.wait import WebDriverWait
 
@@ -65,62 +65,59 @@ HTTP1_PORT = 8081
 HTTP2_PORT = 8082
 
 
-def isPortUsed(port):
+def is_port_used(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        used = (s.connect_ex(('localhost', port)) == 0)
-    return used
+        return s.connect_ex(('localhost', port)) == 0
 
 
-def close_all(driver, p_tornado, signum, frame):
+def is_visible(css_selector):
+    return expected.visibility_of_element_located((By.CSS_SELECTOR, css_selector))
+
+
+def close_all(driver, tornado):
     """ Closes the browser if open """
     driver.quit()
-    p_tornado.terminate()
-    p_tornado.wait()
+    tornado.terminate()
+    tornado.wait()
 
 
 def main(dst_ip, proto, tornado_port, path, time):
-    if isPortUsed(tornado_port):
+    if is_port_used(tornado_port):
         message = "Port {} already used, cannot launch Tornado server. Aborting...".format(tornado_port)
         collect_agent.send_log(syslog.LOG_ERR, message)
         sys.exit(message)
 
-    # Launch Tornado TODO add except ?
-    p_tornado = subprocess.Popen([sys.executable, '/opt/openbach/agent/jobs/dashjs_client/tornado_server.py', '--port', str(tornado_port)])
 
     # Launch Firefox
-    options = Options()
+    options = FirefoxOptions()
     options.add_argument('-headless')
     options.set_preference("network.websocket.allowInsecureFromHTTPS", True)
-    driver = Firefox(executable_path='geckodriver', options=options)
+    driver = Firefox(service=Service(), options=options)
     wait = WebDriverWait(driver, timeout=10)
+
+    tornado = subprocess.Popen([sys.executable, '/opt/openbach/agent/jobs/dashjs_client/tornado_server.py', '--port', str(tornado_port)])
     
     # Get page
     try:
-        url_proto, port = ('http', HTTP1_PORT) if (proto == HTTP1) else ('https', HTTP2_PORT)
+        url_proto, port = ('http', HTTP1_PORT) if proto == HTTP1 else ('https', HTTP2_PORT)
         driver.get(DEFAULT_URL.format(url_proto, dst_ip, port, tornado_port))
 
         # Update path
-        wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR,
-                'input.form-control:nth-child(3)'))).send_keys(Keys.CONTROL, 'a')
-        wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR,
-                'input.form-control:nth-child(3)'))).send_keys(path)
+        url_input = wait.until(is_visible('input.form-control:nth-child(3)'))
+        url_input.send_keys(Keys.CONTROL, 'a')
+        url_input.send_keys(path)
 
         # Click Load
-        wait.until(expected.visibility_of_element_located((By.CSS_SELECTOR,
-            'span.input-group-btn > button:nth-child(2)'))).click()
+        wait.until(is_visible('span.input-group-btn > button:nth-child(2)')).click()
     except WebDriverException as ex:
         message = "Exception with webdriver: {}".format(ex)
         collect_agent.send_log(syslog.LOG_ERR, message)
-        close_all(driver, p_tornado, 0, 0)
         sys.exit(message)
-
-    # Set signal handler
-    close_all_partial = partial(close_all, driver, p_tornado)
-    signal.signal(signal.SIGTERM, close_all_partial)
-    signal.signal(signal.SIGALRM, close_all_partial)
-    signal.alarm(time)
-
-    signal.pause()
+    else:
+        signal.alarm(time)
+        collect_agent.wait_for_signal()
+    finally:
+        close_all(driver, tornado)
 
 
 if __name__ == "__main__":

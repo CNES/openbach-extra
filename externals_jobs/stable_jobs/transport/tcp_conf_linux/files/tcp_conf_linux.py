@@ -175,12 +175,12 @@ def set_main_args(reset,
             'tcp_congestion_control', 'tcp_slow_start_after_idle',
             'tcp_no_metrics_save', 'tcp_sack', 'tcp_recovery', 'tcp_fastopen',
     ]:
-        statistic[param] = read_from_file('/proc/sys/net/ipv4/' + param)
+        statistics[param] = read_from_file('/proc/sys/net/ipv4/' + param)
     for param in ['wmem_default', 'wmem_max', 'rmem_default', 'rmem_max']:
-        statistic['core_' + param] = read_from_file('/proc/sys/net/core/' + param)
+        statistics['core_' + param] = read_from_file('/proc/sys/net/core/' + param)
 
-    staticstics['tcp_wmem_min'], staticstics['tcp_wmem_default'], staticstics['tcp_wmem_max'] = read_from_file('/proc/sys/net/ipv4/tcp_wmem').split()
-    staticstics['tcp_rmem_min'], staticstics['tcp_rmem_default'], staticstics['tcp_rmem_max'] = read_from_file('/proc/sys/net/ipv4/tcp_rmem').split()
+    statistics['tcp_wmem_min'], statistics['tcp_wmem_default'], statistics['tcp_wmem_max'] = read_from_file('/proc/sys/net/ipv4/tcp_wmem').split()
+    statistics['tcp_rmem_min'], statistics['tcp_rmem_default'], statistics['tcp_rmem_max'] = read_from_file('/proc/sys/net/ipv4/tcp_rmem').split()
 
     collect_agent.send_stat(collect_agent.now(), **statistics)
 
@@ -230,7 +230,7 @@ def cubic(reset,
 
     # Get current name of "hystart_ack_delta" parameter since it can be different
     # according to the Linux kernel
-    hystart_ack_delta_name = next(hystart.name for hystart in Path('/sys/module/tcp_cubic/parameters').glob('histart_ack_delta*'))
+    hystart_ack_delta_name = next(hystart.name for hystart in Path('/sys/module/tcp_cubic/parameters').glob('hystart_ack_delta*'))
 
     # getting changes to CUBIC parameters in /etc/module/tcp_cubic/parameters and
     # writing changes in /etc/sysctl.d/60-openbach-job-cubic.conf

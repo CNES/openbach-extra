@@ -67,7 +67,7 @@ class AddJob(FrontendBase):
 
         if path is not None:
             return self.request(
-                    'POST', 'job', name=job_name, path=path,
+                    'POST', 'job/', name=job_name, path=path,
                     show_response_content=show_response_content)
 
         if files is not None:
@@ -81,7 +81,7 @@ class AddJob(FrontendBase):
         if tarball is not None:
             with open(os.path.expanduser(tarball), 'rb') as tarball_file:
                 return self.request(
-                        'POST', 'job', name=job_name,
+                        'POST', 'job/', name=job_name,
                         files={'file': tarball_file},
                         show_response_content=show_response_content)
 
