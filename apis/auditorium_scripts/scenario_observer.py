@@ -82,15 +82,17 @@ class ScenarioObserver(FrontendBase):
                 '-n', '--scenario-name', '--name',
                 help='name of the scenario to launch')
 
+        self.subparsers = {}
         parsers = self.parser.add_subparsers(title='actions', metavar='action')
         parsers.required = False
 
-        parser = parsers.add_parser(
+        self.subparsers['run'] = parser = parsers.add_parser(
                 'run', help='run the selected scenario on the controller '
                 'after optionally sending it (default action)')
-        # Ensure we keep a reference to this parser before overriding the variable latter on
-        get_defaults = parser.parse_args
-        self.parser.set_defaults(_action=lambda builder=None: self._default_action(get_defaults([]), builder))
+        def _default_run_args(builder=None):
+            default_args = self.subparsers['run'].parse_args([])
+            return self._default_action(default_args, builder)
+        self.parser.set_defaults(_action=_default_run_args)
 
         self.run_group = parser.add_argument_group('scenario arguments')
         group = parser.add_argument_group('collector')
@@ -131,7 +133,7 @@ class ScenarioObserver(FrontendBase):
                 '--poll-waiting-time', type=float, default=self.WAITING_TIME_BETWEEN_STATES_POLL,
                 help='Waiting time in seconds between states poll when monitoring scenario completion.')
 
-        parser = parsers.add_parser(
+        self.subparsers['build'] = parser = parsers.add_parser(
                 'build', help='write the JSON of the selected '
                 'scenario into the given directory')
         parser.add_argument(
