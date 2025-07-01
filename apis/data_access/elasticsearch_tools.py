@@ -137,7 +137,7 @@ def extract_timestamp_with_index(source, index, number_of_year_digits=4):
     except KeyError:
         return parse_timestamp_with_index(source['timestamp'], index, number_of_year_digits)
     else:
-        return datetime.datetime.fromisoformat(timestamp)
+        return datetime.datetime.fromisoformat(timestamp.rstrip('Z'))
 
 
 def parse_logs(elasticsearch_result):
