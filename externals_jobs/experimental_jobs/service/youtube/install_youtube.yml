@@ -34,7 +34,7 @@
 ---
  
 - name: Get client architecture
-  shell: uname -p
+  shell: uname -m
   register: cpu_arch
   
 - name: Download and Install Google-chrome
@@ -66,10 +66,10 @@
       - selenium
       - bs4
       - lxml
-    executable: pip3
     state: present
-  become: yes
+    virtualenv: /opt/openbach/virtualenv
   environment: "{{ openbach_proxies }}"
+  remote_user: openbach
     
 - name: Install youtube file
   copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
@@ -78,5 +78,3 @@
     - { file: 'youtube.py', mode: '0755' }
     - { file: 'youtube_rstats_filter.conf', mode: '0644' }
     - { file: 'config.yaml', mode: '0644' }
-
-  
