@@ -34,7 +34,7 @@
 ---
  
 - name: Get client architecture
-  shell: uname -p
+  shell: uname -m
   register: cpu_arch
   
 - name: Download and Install Google-chrome
@@ -61,15 +61,24 @@
   environment: "{{ openbach_proxies }}"
 
 - name: Install Selenium for python3
-  pip: name=selenium executable=pip3 state=present
-  become: yes
+  pip:
+    name: selenium
+    state: present
+    virtualenv: /opt/openbach/virtualenv
   environment: "{{ openbach_proxies }}"
+  remote_user: openbach
 
 - name: Create facebook repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
   
 - name: Create audio/video repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }}/{{ item.file }}/ state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}/{{ item.file }}/
+    state: directory
+    mode: 0755
   with_items:
   - { file: 'audio' }
   - { file: 'video' }
@@ -85,7 +94,10 @@
   - { file: 'video' }
     
 - name: Install facebook file
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'facebook.help', mode: '0644' }
     - { file: 'facebook.py', mode: '0755' }

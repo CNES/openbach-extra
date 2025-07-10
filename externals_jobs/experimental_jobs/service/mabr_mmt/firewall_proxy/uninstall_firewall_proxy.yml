@@ -34,8 +34,13 @@
 ---
 
 - name: Uninstall twisted
-  pip: name=twisted executable=pip3 state=absent
-  become: yes
+  pip:
+    name: twisted
+    state: absent
+    virtualenv: /opt/openbach/virtualenv
+  remote_user: openbach
 
 - name: Uninstall Job
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=absent
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: absent
