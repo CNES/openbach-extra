@@ -49,6 +49,6 @@ setup(
     packages=find_packages(),
     install_requires=['requests', 'pandas', 'matplotlib'],
 
-    test_suite='nose.collector',
-    tests_require=['nose'],
+    test_suite='nose2.collector.collector',
+    tests_require=['nose2'],
 )
