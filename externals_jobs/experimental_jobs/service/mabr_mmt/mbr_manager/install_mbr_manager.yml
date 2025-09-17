@@ -34,21 +34,33 @@
 ---
 
 - name: Install python3 dependencies
-  pip: name={{ item }} executable=pip3 state=present
-  with_items:
-    - scapy
-    - python-iptables
-  become: yes
+  pip:
+    name:
+      - scapy
+      - python-iptables
+    state: present
+    virtualenv: /opt/openbach/virtualenv
   environment: "{{ openbach_proxies }}"
+  remote_user: openbach
 
 - name: Create mbr_manager repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
   
 - name: Create symlink towards norm job file
-  file: path=/opt/openbach/agent/jobs/{{ job_name }}/norm.py state=link mode=0755 src=../norm/norm.py
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}/norm.py
+    state: link
+    mode: 0755
+    src: ../norm/norm.py
   
 - name: Install mbr_manager_proxy
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: {{ item.mode }}
   with_items:
     - { file: 'mbr_manager_proxy.help', mode: '0644' }
     - { file: 'mbr_manager_rstats_filter.conf', mode: '0644' }
