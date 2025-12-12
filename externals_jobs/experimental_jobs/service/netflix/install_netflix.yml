@@ -34,7 +34,7 @@
 ---
  
 - name: Get client architecture
-  shell: uname -p
+  shell: uname -m
   register: cpu_arch
   
 - name: Download and Install Google-chrome
@@ -65,17 +65,18 @@
     name:
       - selenium
       - bs4
-    executable: pip3
     state: present
-  become: yes
+    virtualenv: /opt/openbach/virtualenv
   environment: "{{ openbach_proxies }}"
+  remote_user: openbach
     
 - name: Install netflix file
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'netflix.help', mode: '0644' }
     - { file: 'netflix.py', mode: '0755' }
     - { file: 'netflix_rstats_filter.conf', mode: '0644' }
     - { file: 'config.yaml', mode: '0644' }
-
-  

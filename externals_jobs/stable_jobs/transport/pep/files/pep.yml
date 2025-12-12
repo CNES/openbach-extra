@@ -9,21 +9,16 @@ general:
   persistent:      False
 
 platform_configuration:
-  - ansible_system: 'Debian'
-    ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '20.04'
-    command: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/pep/pep.py'
-    command_stop: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/pep/pep.py -x'
-  - ansible_system: 'Debian'
-    ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '22.04'
-    command: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/pep/pep.py'
-    command_stop: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/pep/pep.py -x'
-  - ansible_system: 'Debian'
-    ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '24.04'
-    command: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/pep/pep.py'
-    command_stop: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/pep/pep.py -x'
+  ansible_system: 'Debian'
+  ansible_distribution: 'Ubuntu'
+  command: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/pep/pep.py'
+  command_stop: '/opt/openbach/virtualenv/bin/python3 /opt/openbach/agent/jobs/pep/pep.py -x'
+  supported_platforms:
+    - ansible_distribution_release: 'focal'
+    - ansible_distribution_release: 'jammy'
+    - ansible_distribution_release: 'noble'
+    - ansible_distribution: 'Debian'
+      ansible_distribution_release: 'bookworm'
 
 arguments:
   required:

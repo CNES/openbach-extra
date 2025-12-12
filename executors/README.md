@@ -90,10 +90,8 @@ a custom *Action*, it is possible to validate several arguments of
 different types at once **and** store them in a list for easier
 iteration. If need be, you can make the arguments as complex as needed:
 the command-line users will be able to use a file to store and organize
-their options; the [service traffic mix
-executor](https://github.com/CNES/openbach-extra/executors/references/executor_service_traffic_mix.py "wikilink")
-and its [associated example arguments
-file](https://github.com/CNES/openbach-extra/executors/references/executor_service_traffic_mix_arg.txt "wikilink")
+their options; the [service traffic mix executor](references/executor_service_traffic_mix.py)
+and its [associated example arguments file](references/executor_service_traffic_mix_arg.txt)
 are an example of that, run it using:
 
 `PYTHONPATH=~/openbach-extra/apis/ python3 executor_service_traffic_mix.py @executor_service_traffic_mix_arg.txt MyProject run`

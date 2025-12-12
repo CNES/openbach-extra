@@ -12,13 +12,17 @@ general:
 platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution:  'Ubuntu'
-    ansible_distribution_version: '20.04'
+    ansible_distribution_release: 'focal'
     command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/youtube/youtube.py'
     command_stop:
-
   - ansible_system: 'Debian'
     ansible_distribution:  'Ubuntu'
-    ansible_distribution_version: '16.04'
+    ansible_distribution_release: 'xenial'
+    command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/youtube/youtube.py'
+    command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution:  'Debian'
+    ansible_distribution_release: 'bookworm'
     command: 'sudo -E -u openbach /usr/bin/env python3 /opt/openbach/agent/jobs/youtube/youtube.py'
     command_stop:
 

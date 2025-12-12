@@ -34,15 +34,24 @@
 ---
 
 - name: Install twisted for python3
-  pip: name=twisted executable=pip3 state=present
-  become: yes
+  pip:
+    name: twisted
+    state: present
+    virtualenv: /opt/openbach/virtualenv
   environment: "{{ openbach_proxies }}"
+  remote_user: openbach
 
 - name: Create firewall_proxy repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
   
 - name: Install firewall_proxy
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'firewall_proxy.help', mode: '0644' }
     - { file: 'firewall_proxy.py', mode: '0755' }

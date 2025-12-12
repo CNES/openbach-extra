@@ -26,18 +26,27 @@
 ---
 
 - name: Install Python dependencies
-  pip: name={{ item }} executable=pip3 state=present
-  with_items:
-    - requests
-    - grequests
-    - lxml
-  become: yes
+  pip:
+    name:
+      - requests
+      - grequests
+      - lxml
+    state: present
+    virtualenv: /opt/openbach/virtualenv
+  environment: "{{ openbach_proxies }}"
+  remote_user: openbach
   
 - name: Create the HTTP Client Job Repository
-  file: path=/opt/openbach/agent/jobs/{{ job_name }} state=directory mode=0755
+  file:
+    path: /opt/openbach/agent/jobs/{{ job_name }}
+    state: directory
+    mode: 0755
 
 - name: Install the HTTP Client Job
-  copy: src={{ item.file }} dest=/opt/openbach/agent/jobs/{{ job_name }}/ mode={{ item.mode }}
+  copy:
+    src: "{{ item.file }}"
+    dest: /opt/openbach/agent/jobs/{{ job_name }}/
+    mode: "{{ item.mode }}"
   with_items:
     - { file: 'http_client_plt.help', mode: '0644' }
     - { file: 'http_client_plt.py', mode: '0755' }

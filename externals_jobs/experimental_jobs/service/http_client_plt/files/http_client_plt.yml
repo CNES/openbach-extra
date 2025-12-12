@@ -44,22 +44,27 @@ general:
 platform_configuration:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '16.04'
+    ansible_distribution_release: 'xenial'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/http_client_plt/http_client_plt.py'
     command_stop:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '20.04'
+    ansible_distribution_release: 'focal'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/http_client_plt/http_client_plt.py'
     command_stop:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '22.04'
+    ansible_distribution_release: 'jammy'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/http_client_plt/http_client_plt.py'
     command_stop:
   - ansible_system: 'Debian'
     ansible_distribution: 'Ubuntu'
-    ansible_distribution_version: '24.04'
+    ansible_distribution_release: 'noble'
+    command: '/usr/bin/env python3 /opt/openbach/agent/jobs/http_client_plt/http_client_plt.py'
+    command_stop:
+  - ansible_system: 'Debian'
+    ansible_distribution: 'Debian'
+    ansible_distribution_release: 'bookworm'
     command: '/usr/bin/env python3 /opt/openbach/agent/jobs/http_client_plt/http_client_plt.py'
     command_stop:
 
