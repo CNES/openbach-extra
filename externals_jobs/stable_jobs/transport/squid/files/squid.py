@@ -50,22 +50,25 @@ import iptc
 import collect_agent
 
 
-CURRENT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
+CURRENT_DIRECTORY = pathlib.Path(__file__).resolve().parent
+SQUID_CONFIG = pathlib.Path('/etc/squid/squid.conf')
+SQUID_CACHE_DIR = pathlib.Path('/etc/squid/cache')
+
 
 def configure_platform(trans_proxy, non_transp_proxy):
     hostname = socket.gethostname()
-    with open("/etc/squid/squid.conf", "a") as squid_file:
-        squid_file.write("visible_hostname {}".format(hostname))
-        squid_file.write("\nhttp_port {}".format(non_transp_proxy))
-        squid_file.write("\nhttp_port {} intercept".format(trans_proxy))
-        squid_file.write("\nhttp_port 80 accel")
+    with SQUID_CONFIG.open(mode='a') as squid_config:
+        squid_config.write("visible_hostname {}".format(hostname))
+        squid_config.write("\nhttp_port {}".format(non_transp_proxy))
+        squid_config.write("\nhttp_port {} intercept".format(trans_proxy))
+        squid_config.write("\nhttp_port 80 accel")
 
 
 def remove_squid_cache():
-    shutil.rmtree('/etc/squid/cache', ignore_errors=False)
+    shutil.rmtree(SQUID_CACHE_DIR, ignore_errors=False)
     try:
-        pathlib.Path('/etc/squid/cache').mkdir(mode=0o777, parents=True, exist_ok=True)
-        pathlib.Path('/etc/squid/cache').chmod(0o777)
+        SQUID_CACHE_DIR.mkdir(mode=0o777, parents=True, exist_ok=True)
+        SQUID_CACHE_DIR.chmod(0o777)
     except OSError as e:
         message = 'ERROR ({}):\n{}'.format(e.errno, e.strerror)
         collect_agent.send_log(syslog.LOG_ERR, message)
@@ -81,10 +84,10 @@ def remove_squid_cache():
 
 def main(trans_proxy, source_addr, input_iface, non_transp_proxy, path_conf_file, clean_cache):
     if path_conf_file is None:
-        path_conf_file = os.path.join(CURRENT_DIRECTORY, 'squid.conf')
+        path_conf_file = CURRENT_DIRECTORY / 'squid.conf'
 
     # Copy squid conf file
-    shutil.copy(path_conf_file, '/etc/squid/squid.conf')
+    shutil.copy(path_conf_file, SQUID_CONFIG)
 
     # set iptable rule with arguments
     table = iptc.Table(iptc.Table.NAT)
